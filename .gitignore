@@ -1,0 +1,48 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+google_compute_engine*
+
+# ── Agent / IDE scaffolding (not app source) ──
+.hermes/
+.claude/
+.claude/**
+.kilo/
+.cursorrules
+.windsurfrules
+
+# ── Screenshots / evidence artifacts (large, temp) ──
+artifacts/
+screenshots-bukti/
+e2e-screenshots/
+e2e_*.png
+e2e_*.jpg
+**/C:/**
+
+# ── OS / editor junk ──
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+
+# ── Local test output / one-off evidence ──
+test-results/
+server.out
+server.err
+c.txt
+capture-servis.mjs
+verify-split.cjs
+check_tenant_deps.sql
+delete_tenant_2.sql
+delete_tenant_2_clean.sql
+
+# ── Generated diagnostic output ──
+scripts/build_out*.txt
+scripts/err.json
+src/mocks/sed*

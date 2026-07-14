@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POS & Accounting Module Flow</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 40px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; min-height: 100vh; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { text-align: center; color: #f1f5f9; font-size: 2.5rem; margin-bottom: 10px; }
+    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 50px; }
+    .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
+    .module-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; backdrop-filter: blur(10px); }
+    .module-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+    .module-icon { font-size: 2rem; }
+    .flow-diagram { display: flex; flex-direction: column; gap: 12px; }
+    .flow-step { display: flex; align-items: center; gap: 16px; padding: 16px; background: rgba(148,163,179,0.1); border-radius: 12px; border-left: 4px solid #6366f1; }
+    .step-num { width: 32px; height: 32px; background: #6366f1; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .step-text { flex: 1; }
+    .db-table { background: #0f172a; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 0.9rem; color: #10b981; margin-top: 8px; }
+    .arrow { text-align: center; font-size: 2rem; color: #6366f1; margin: 10px 0; }
+    code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 POS & Accounting Module Flow</h1>
+    <p class="subtitle">Vertical Slice Completed • Database • API • Frontend</p>
+
+    <div class="module-grid">
+
+      <!-- POS Module -->
+      <div class="module-card">
+        <div class="module-title">
+          <span class="module-icon">💰</span>
+          POS Module (Point of Sale)
+        </div>
+
+        <div class="flow-diagram">
+          <div class="flow-step">
+            <span class="step-num">1</span>
+            <div class="step-text">
+              <strong>Buka Shift Kasir</strong>
+              <div>Input saldo awal → POST <code>/api/pos/shifts/open</code></div>
+              <div class="db-table">pos_shifts INSERT</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">2</span>
+            <div class="step-text">
+              <strong>Scan & Tambah Item ke Keranjang</strong>
+              <div>Barcode → Produk muncul di cart → qty & diskon</div>
+              <div class="db-table">products SELECT ← UI</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">3</span>
+            <div class="step-text">
+              <strong>Checkout (Create Sale)</strong>
+              <div>POST <code>/api/pos/sales</code> → Server atomic:</div>
+              <div class="db-table">INSERT pos_transactions<br/>UPDATE product_stock<br/>INSERT stock_movements<br/>INSERT journal_entries<br/>INSERT journal_lines<br/>INSERT audit_logs</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">4</span>
+            <div class="step-text">
+              <strong>Tutup Shift</strong>
+              <div>POST <code>/api/pos/shifts/close</code> → Hitung selisih kas</div>
+              <div class="db-table">pos_shifts UPDATE • fraud_alert jika selisih</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">5</span>
+            <div class="step-text">
+              <strong>Void / Refund</strong>
+              <div>POST <code>/api/pos/sales/:id/void</code> → Kembalikan stok & jurnal balik</div>
+              <div class="db-table">pos_transactions UPDATE • stock_movements • journal_lines</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accounting Module -->
+      <div class="module-card">
+        <div class="module-title">
+          <span class="module-icon">📊</span>
+          Accounting Module
+        </div>
+
+        <div class="flow-diagram">
+          <div class="flow-step">
+            <span class="step-num">1</span>
+            <div class="step-text">
+              <strong>Chart of Accounts (COA)</strong>
+              <div>GET <code>/api/accounting/accounts</code> → Tabel rekening: Aset, Liabilitas, Ekuitas, Pendapatan, Beban</div>
+              <div class="db-table">coa_accounts SELECT/INSERT/UPDATE</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">2</span>
+            <div class="step-text">
+              <strong>Jurnal Umum (Double-Entry)</strong>
+              <div>POST <code>/api/accounting/journal</code> → Validasi debit = kredit</div>
+              <div class="db-table">journal_entries INSERT • journal_lines INSERT • trigger balance sync</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">3</span>
+            <div class="step-text">
+              <strong>Buku Kas Operasional</strong>
+              <div>POST <code>/api/accounting/cash</code> → Otomatis buat jurnal kas ↔ akun lawan</div>
+              <div class="db-table">journal_entries + journal_lines (via cash tx)</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">4</span>
+            <div class="step-text">
+              <strong>Trial Balance</strong>
+              <div>GET <code>/api/accounting/trial-balance</code> → Cek keseimbangan semua akun</div>
+              <div class="db-table">coa_accounts SUM(debit-credit)</div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <span class="step-num">5</span>
+            <div class="step-text">
+              <strong>Profit & Loss Report</strong>
+              <div>GET <code>/api/accounting/profit-and-loss</code> → Akumulasi pendapatan - beban</div>
+              <div class="db-table">journal_lines SUM by account type • net profit</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top: 40px; text-align: center; color: #64748b; font-size: 0.9rem;">
+      Built with PostgreSQL (Supabase) • Express.js • React 19 + TypeScript
+    </div>
+  </div>
+</body>
+</html>

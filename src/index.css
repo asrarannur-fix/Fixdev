@@ -1,0 +1,1047 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-syne: "Plus Jakarta Sans", sans-serif;
+  
+  --color-blue-600: #2563eb;
+
+  /* System-wide Theme Mappings */
+  --color-modal-bg: var(--bg-modal);
+  --color-dropdown-bg: var(--bg-dropdown);
+  --color-modal-border: var(--border-modal);
+  --color-dropdown-border: var(--border-dropdown);
+
+  --color-contrast-950: var(--text-contrast-950);
+  --color-contrast-900: var(--text-contrast-900);
+  --color-contrast-800: var(--text-contrast-800);
+  --color-contrast-700: var(--text-contrast-700);
+  --color-contrast-600: var(--text-contrast-600);
+  --color-contrast-500: var(--text-contrast-500);
+  --color-contrast-400: var(--text-contrast-400);
+}
+
+:root {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-syne: "Plus Jakarta Sans", sans-serif;
+
+  /* Premium Light Mode Palette (Cozy slate with rich contrast) */
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --ink: #0f172a;
+  --ink-muted: #475569;
+  --accent: #2563eb;
+  --border: #cbd5e1;
+  --card: #ffffff;
+
+  /* Unified Theme Contrast Variables (Light Mode) */
+  --text-contrast-950: #030712;
+  --text-contrast-900: #0f172a;
+  --text-contrast-800: #1e293b;
+  --text-contrast-700: #334155;
+  --text-contrast-600: #475569;
+  --text-contrast-500: #64748b;
+  --text-contrast-400: #94a3b8;
+
+  --bg-modal: #ffffff;
+  --bg-dropdown: #ffffff;
+  --border-modal: #cbd5e1;
+  --border-dropdown: #e2e8f0;
+}
+
+.dark {
+  /* Premium Dark Mode Palette (Sophisticated modernist dark zinc) */
+  --bg: #09090b;
+  --surface: #121214;
+  --ink: #fafafa;
+  --ink-muted: #a1a1aa;
+  --accent: #2563eb;
+  --border: #27272a;
+  --card: #18181b;
+
+  /* Unified Theme Contrast Variables (Dark Mode) */
+  --text-contrast-950: #fafafa;
+  --text-contrast-900: #f4f4f5;
+  --text-contrast-800: #e4e4e7;
+  --text-contrast-700: #cbd5e1;
+  --text-contrast-600: #a1a1aa;
+  --text-contrast-500: #71717a;
+  --text-contrast-400: #52525b;
+
+  --bg-modal: #18181b;       /* Sophisticated modernist dark zinc-900 */
+  --bg-dropdown: #121214;    /* Slightly deeper background for dropdown hierarchy */
+  --border-modal: #27272a;   /* Slate-800/Zinc-800 border equivalent */
+  --border-dropdown: #27272a;
+}
+
+/* ==========================================================================
+   GLOBAL BASE STYLES
+   ========================================================================== */
+body {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Scrollbars - Elegant & Muted */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0.7; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Premium Layout Helpers */
+.premium-shadow {
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 4px 6px -1px rgba(15, 23, 42, 0.01);
+}
+
+.premium-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 20px -3px rgba(15, 23, 42, 0.04), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
+}
+
+/* ==========================================================================
+   GLOBAL LIGHT MODE TEXT CONTRAST ENHANCEMENTS (Shift by exactly one tier)
+   ========================================================================== */
+html:not(.dark) .text-slate-400,
+body:not(.dark) .text-slate-400 {
+  color: var(--text-contrast-500) !important; /* Clearly legible secondary gray */
+}
+
+html:not(.dark) .text-slate-500,
+body:not(.dark) .text-slate-500 {
+  color: var(--text-contrast-600) !important; /* Rich body subtext */
+}
+
+html:not(.dark) .text-slate-600,
+body:not(.dark) .text-slate-600 {
+  color: var(--text-contrast-700) !important; /* Perfect standard text contrast */
+}
+
+html:not(.dark) .text-slate-700,
+body:not(.dark) .text-slate-700 {
+  color: var(--text-contrast-800) !important; /* Crisp subtitle contrast */
+}
+
+html:not(.dark) .text-slate-800,
+body:not(.dark) .text-slate-800 {
+  color: var(--text-contrast-900) !important; /* Punchy titles */
+}
+
+html:not(.dark) .text-slate-900,
+body:not(.dark) .text-slate-900 {
+  color: var(--text-contrast-950) !important; /* Bold headings */
+}
+
+/* Gray, Zinc, Neutral overrides for consistent legibility */
+html:not(.dark) .text-gray-400,
+body:not(.dark) .text-gray-400,
+html:not(.dark) .text-zinc-400,
+body:not(.dark) .text-zinc-400,
+html:not(.dark) .text-neutral-400,
+body:not(.dark) .text-neutral-400 {
+  color: var(--text-contrast-400) !important;
+}
+
+html:not(.dark) .text-gray-500,
+body:not(.dark) .text-gray-500,
+html:not(.dark) .text-zinc-500,
+body:not(.dark) .text-zinc-500,
+html:not(.dark) .text-neutral-500,
+body:not(.dark) .text-neutral-500 {
+  color: var(--text-contrast-500) !important;
+}
+
+html:not(.dark) .text-gray-600,
+body:not(.dark) .text-gray-600,
+html:not(.dark) .text-zinc-600,
+body:not(.dark) .text-zinc-600,
+html:not(.dark) .text-neutral-600,
+body:not(.dark) .text-neutral-600 {
+  color: var(--text-contrast-600) !important;
+}
+
+html:not(.dark) .text-gray-700,
+body:not(.dark) .text-gray-700,
+html:not(.dark) .text-zinc-700,
+body:not(.dark) .text-zinc-700,
+html:not(.dark) .text-neutral-700,
+body:not(.dark) .text-neutral-700 {
+  color: var(--text-contrast-700) !important;
+}
+
+html:not(.dark) .text-gray-800,
+body:not(.dark) .text-gray-800,
+html:not(.dark) .text-zinc-800,
+body:not(.dark) .text-zinc-800,
+html:not(.dark) .text-neutral-800,
+body:not(.dark) .text-neutral-800 {
+  color: var(--text-contrast-800) !important;
+}
+
+html:not(.dark) ::placeholder {
+  color: var(--text-contrast-500) !important;
+  opacity: 0.8 !important;
+}
+
+/* ==========================================================================
+   GLOBAL DARK MODE COLOR OVERRIDES
+   ========================================================================== */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: var(--bg) !important;
+  color: var(--text-contrast-950);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-contrast-500);
+}
+
+.dark .bg-white {
+  background-color: var(--bg-dropdown) !important;
+}
+
+.dark .bg-slate-50,
+.dark .bg-zinc-50,
+.dark .bg-slate-50\/55,
+.dark .bg-slate-50\/50,
+.dark .bg-slate-50\/40,
+.dark .bg-slate-50\/30,
+.dark .bg-slate-50\/20,
+.dark .bg-slate-50\/10 {
+  background-color: #151616 !important;
+}
+
+.dark .bg-slate-100,
+.dark .bg-zinc-100,
+.dark .bg-slate-100\/50,
+.dark .bg-slate-100\/80 {
+  background-color: #0e0f0e !important;
+}
+
+.dark .bg-slate-200,
+.dark .bg-zinc-200 {
+  background-color: var(--border) !important;
+}
+
+.dark .border-slate-100 {
+  border-color: var(--border) !important;
+}
+
+.dark .border-slate-200 {
+  border-color: var(--border) !important;
+}
+
+.dark .border-slate-200\/50 {
+  border-color: rgba(39, 39, 42, 0.5) !important;
+}
+
+.dark .border-slate-300 {
+  border-color: var(--text-contrast-500) !important;
+}
+
+/* Unifying slate/zinc classes commonly used in components for modals and layouts */
+.dark .bg-slate-900,
+.dark .bg-zinc-900 {
+  background-color: var(--bg-modal) !important;
+}
+
+.dark .bg-slate-950,
+.dark .bg-zinc-950 {
+  background-color: var(--bg) !important;
+}
+
+.dark .bg-slate-800,
+.dark .bg-zinc-800,
+.dark .bg-slate-850,
+.dark .bg-zinc-850 {
+  background-color: var(--bg-dropdown) !important;
+}
+
+.dark .border-slate-800,
+.dark .border-zinc-800,
+.dark .border-slate-700,
+.dark .border-zinc-700,
+.dark .border-slate-850,
+.dark .border-zinc-850 {
+  border-color: var(--border-modal) !important;
+}
+
+/* Dark mode typography overrides using Unified Contrast variables (encompasses slate, zinc, gray, neutral) */
+.dark .text-slate-900, .dark .text-zinc-900, .dark .text-gray-900, .dark .text-neutral-900 {
+  color: var(--text-contrast-950) !important;
+}
+
+.dark .text-slate-800, .dark .text-zinc-800, .dark .text-gray-800, .dark .text-neutral-800 {
+  color: var(--text-contrast-900) !important;
+}
+
+.dark .text-slate-700, .dark .text-zinc-700, .dark .text-gray-700, .dark .text-neutral-700 {
+  color: var(--text-contrast-800) !important;
+}
+
+.dark .text-slate-600, .dark .text-zinc-600, .dark .text-gray-600, .dark .text-neutral-600 {
+  color: var(--text-contrast-600) !important;
+}
+
+.dark .text-slate-500, .dark .text-zinc-500, .dark .text-gray-500, .dark .text-neutral-500 {
+  color: var(--text-contrast-500) !important;
+}
+
+.dark .text-slate-400, .dark .text-zinc-400, .dark .text-gray-400, .dark .text-neutral-400 {
+  color: var(--text-contrast-400) !important;
+}
+
+/* Border overrides to ensure symmetrical separation */
+.dark .border-slate-100, .dark .border-zinc-100, .dark .border-gray-100, .dark .border-neutral-100 {
+  border-color: var(--border) !important;
+}
+
+.dark .border-slate-200, .dark .border-zinc-200, .dark .border-gray-200, .dark .border-neutral-200 {
+  border-color: var(--border) !important;
+}
+
+.dark .border-slate-300, .dark .border-zinc-300, .dark .border-gray-300, .dark .border-neutral-300 {
+  border-color: var(--border-modal) !important;
+}
+
+/* Table elements auto-unification in dark mode */
+.dark table {
+  background-color: var(--bg-dropdown) !important;
+  color: var(--text-contrast-900) !important;
+}
+
+.dark thead, .dark th {
+  background-color: var(--bg-modal) !important;
+  color: var(--text-contrast-950) !important;
+  border-color: var(--border-modal) !important;
+}
+
+.dark tr {
+  border-color: var(--border-modal) !important;
+}
+
+.dark td {
+  border-color: var(--border-modal) !important;
+  color: var(--text-contrast-800) !important;
+}
+
+.dark tr:hover {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Input elements inside dark mode using dropdown theme variables */
+.dark select {
+  background-color: var(--bg-dropdown) !important;
+  color: var(--text-contrast-950) !important;
+  border-color: var(--border-dropdown) !important;
+}
+
+.dark select option,
+.dark option {
+  background-color: var(--bg-dropdown) !important;
+  color: var(--text-contrast-950) !important;
+}
+
+.dark input,
+.dark textarea {
+  background-color: var(--bg-dropdown) !important;
+  color: var(--text-contrast-950) !important;
+  border-color: var(--border-dropdown) !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: var(--accent) !important;
+  outline: none;
+}
+
+/* Target elements explicitly containing "modal" or "dropdown" class names to guarantee unification */
+.dark dialog,
+.dark [class*="modal-"],
+.dark [class*="Modal"] {
+  background-color: var(--bg-modal) !important;
+  border-color: var(--border-modal) !important;
+  color: var(--text-contrast-900) !important;
+}
+
+.dark [class*="dropdown-"],
+.dark [class*="Dropdown"] {
+  background-color: var(--bg-dropdown) !important;
+  border-color: var(--border-dropdown) !important;
+  color: var(--text-contrast-950) !important;
+}
+
+/* Color background overrides for badges and cards in dark mode */
+.dark .bg-amber-50\/30 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+}
+.dark .bg-blue-50\/30 {
+  background-color: #040508 !important;
+}
+.dark .bg-indigo-50\/30,
+.dark .bg-indigo-50\/40,
+.dark .bg-indigo-50\/50 {
+  background-color: #040404 !important;
+}
+.dark .bg-orange-50\/30 {
+  background-color: rgba(249, 115, 22, 0.12) !important;
+}
+.dark .bg-emerald-50\/30 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+/* Unifying unchecked label states and inputs within dark container blocks */
+.dark .bg-slate-50 .bg-white {
+  background-color: #0e0f0e !important;
+  border-color: var(--border-modal) !important;
+}
+
+/* Pastel backgrounds in dark mode mapped to deep elegant shades */
+.dark .bg-indigo-50 {
+  background-color: #050507 !important;
+}
+.dark .bg-blue-50 {
+  background-color: #040508 !important;
+}
+.dark .bg-emerald-50\/55,
+.dark .bg-emerald-50 {
+  background-color: #020704 !important;
+}
+.dark .bg-rose-50\/50,
+.dark .bg-rose-50 {
+  background-color: #090303 !important;
+}
+.dark .bg-purple-50 {
+  background-color: #060308 !important;
+}
+.dark .bg-sky-50 {
+  background-color: #020509 !important;
+}
+.dark .bg-amber-50 {
+  background-color: #080502 !important;
+}
+.dark .bg-orange-50 {
+  background-color: #090502 !important;
+}
+
+/* Color border overrides in dark mode */
+.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+.dark .border-blue-200 {
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+.dark .border-indigo-200 {
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+.dark .border-orange-200 {
+  border-color: rgba(249, 115, 22, 0.3) !important;
+}
+.dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Text color overrides for high-contrast colors in dark mode (700 and 800) */
+.dark .text-amber-800, .dark .text-amber-700 {
+  color: #fbbf24 !important; /* Amber 400 */
+}
+.dark .text-blue-800, .dark .text-blue-700 {
+  color: #60a5fa !important; /* Blue 400 */
+}
+.dark .text-indigo-800, .dark .text-indigo-700 {
+  color: #818cf8 !important; /* Indigo 400 */
+}
+.dark .text-orange-800, .dark .text-orange-700 {
+  color: #fb923c !important; /* Orange 400 */
+}
+.dark .text-emerald-800, .dark .text-emerald-700 {
+  color: #34d399 !important; /* Emerald 400 */
+}
+.dark .text-rose-800, .dark .text-rose-700 {
+  color: #f87171 !important; /* Rose 400 */
+}
+.dark .text-purple-800, .dark .text-purple-700 {
+  color: #c084fc !important; /* Purple 400 */
+}
+.dark .text-sky-800, .dark .text-sky-700 {
+  color: #38bdf8 !important; /* Sky 400 */
+}
+.dark .text-teal-800, .dark .text-teal-700 {
+  color: #2dd4bf !important; /* Teal 400 */
+}
+.dark .text-pink-800, .dark .text-pink-700 {
+  color: #f472b6 !important; /* Pink 400 */
+}
+
+.dark .premium-card {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+}
+
+.dark .premium-card:hover {
+  border-color: #2563eb !important;
+}
+
+/* Modernist Offset Border Styles */
+.modern-deal-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 12px;
+}
+
+.dark .modern-deal-card {
+  background: #18181b !important;
+  border-color: #27272a !important;
+}
+
+.modern-deal-card:hover {
+  transform: translate(-3px, -3px);
+  border-color: #2563eb !important;
+}
+
+.modern-deal-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  border: 1.5px solid #2563eb;
+  z-index: -1;
+  opacity: 0;
+  transform: translate(0, 0);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modern-deal-card:hover::after {
+  opacity: 1;
+  transform: translate(6px, 6px);
+}
+
+/* Modern buttons & Unified Button Classes */
+.btn-modern {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  background: #2563eb;
+  color: #fafafa;
+  border: none;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition: all 0.2s;
+  box-shadow: 4px 4px 0px rgba(37, 99, 235, 0.2);
+}
+
+.btn-modern:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px rgba(37, 99, 235, 0.3);
+}
+
+.btn-modern:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0px rgba(37, 99, 235, 0.1);
+}
+
+/* ERP Unified Button Utilities */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
+  border: 1px solid transparent;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.25);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--bg-dropdown) !important;
+  color: var(--text-contrast-800) !important;
+  border: 1px solid var(--border-dropdown) !important;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-modal) !important;
+  border-color: var(--text-contrast-400) !important;
+  color: var(--text-contrast-950) !important;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border: 1px solid transparent;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(239, 68, 68, 0.25);
+}
+
+/* Enforcing standard HTML button/tag overrides for full ERP consistency in dark mode */
+.dark button:not(.btn-primary):not(.btn-danger):not(.btn-secondary) {
+  transition: all 0.15s ease;
+}
+
+/* Unifying modal overlays, sheets and cards background color globally */
+.dark div[role="dialog"],
+.dark .modal-content,
+.dark .sheet-content {
+  background-color: var(--bg-modal) !important;
+  border-color: var(--border-modal) !important;
+  color: var(--text-contrast-900) !important;
+}
+
+/* Global elegant smooth transition for seamless light/dark mode toggling */
+html,
+body,
+aside,
+main,
+nav,
+header,
+footer,
+section,
+p,
+span,
+h1, h2, h3, h4, h5, h6,
+button,
+input,
+select,
+textarea,
+table,
+thead,
+tbody,
+tr,
+th,
+td,
+a,
+svg,
+label,
+dialog,
+.card,
+div[role="dialog"],
+.modal-content,
+.sheet-content {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-duration: 250ms !important;
+}
+
+/* Sidebar Active State Classes using ERP Theme Accent Variables */
+.sidebar-active-tab {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important;
+}
+.dark .sidebar-active-tab {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15) !important;
+}
+
+.sidebar-active-line {
+  background-color: #0f172a !important;
+}
+.dark .sidebar-active-line {
+  background-color: #ffffff !important;
+}
+
+.sidebar-active-icon-box {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+.dark .sidebar-active-icon-box {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+}
+
+.sidebar-active-subtab {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.1) !important;
+  font-weight: 800 !important;
+}
+.dark .sidebar-active-subtab {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1) !important;
+  font-weight: 800 !important;
+}
+
+.sidebar-active-icon {
+  color: #4f46e5 !important;
+}
+.dark .sidebar-active-icon {
+  color: #818cf8 !important;
+}
+
+/* Focus Mode override for the dynamic subtab selector container */
+div#root > div#main-app-container > div#content-pane-container > main#canvas-main-area > div#tenant-view-wrapper > div#tenant-dashboard-root > div#dynamic-subtab-selector {
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+  margin-top: -12px !important;
+  margin-bottom: 24px !important;
+  padding-top: 12px !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+  padding-bottom: 12px !important;
+  height: auto !important;
+  width: 100% !important;
+  border-radius: 0.875rem !important;
+  border: 1px solid var(--border-modal) !important;
+  background-color: var(--bg-modal) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+div#root > div#main-app-container > div#content-pane-container > main#canvas-main-area > div#tenant-view-wrapper > div#tenant-dashboard-root > div#dynamic-subtab-selector:hover {
+  background-color: var(--bg) !important;
+}
+
+.dark div#root > div#main-app-container > div#content-pane-container > main#canvas-main-area > div#tenant-view-wrapper > div#tenant-dashboard-root > div#dynamic-subtab-selector:hover {
+  background-color: var(--bg-dropdown) !important;
+}
+
+/* ERP Global Auto-Responsiveness and Fluidity Rules */
+@media (max-width: 768px) {
+  div#root > div#main-app-container > div#content-pane-container > main#canvas-main-area > div#tenant-view-wrapper > div#tenant-dashboard-root > div#dynamic-subtab-selector {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    margin-top: -6px !important;
+    margin-bottom: 16px !important;
+    border-radius: 0.75rem !important;
+  }
+}
+
+/* Fluid responsive table handling to prevent layout clipping */
+.overflow-x-auto, .responsive-table-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Ensure tables inside responsive containers look professional and do not shrink excessively on small screens */
+.overflow-x-auto table, .responsive-table-container table {
+  width: 100% !important;
+  min-width: 600px; /* Force minimum horizontal width on mobile so cells have space to breathe */
+  table-layout: auto !important;
+  border-collapse: collapse !important;
+}
+
+/* On medium devices and larger, let the table stretch naturally to fill the space */
+@media (min-width: 768px) {
+  .overflow-x-auto table, .responsive-table-container table {
+    min-width: 100% !important;
+  }
+}
+
+.overflow-x-auto th, .overflow-x-auto td,
+.responsive-table-container th, .responsive-table-container td {
+  white-space: nowrap !important;
+}
+
+/* Sticky headers inside scrollable table containers */
+.responsive-table-container thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: #f8fafc !important;
+}
+
+.dark .responsive-table-container thead th {
+  background-color: #0f172a !important;
+}
+
+/* Scrollbar styling for a consistent professional look */
+table::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+.responsive-table-container::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+table::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track,
+.responsive-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+table::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb,
+.responsive-table-container::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 10px;
+}
+
+.dark table::-webkit-scrollbar-thumb,
+.dark .overflow-x-auto::-webkit-scrollbar-thumb,
+.dark .responsive-table-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================================
+   PERBAIKAN GLOBAL: modal tidak terpotong di layar pendek
+   Menargetkan panel modal (anak / cucu ber-class rounded-*)
+   dari backdrop overlay (fixed inset-0). Memberi batas tinggi
+   90vh + scroll internal sehingga tombol aksi di bagian bawah
+   selalu bisa dijangkau. Berlaku untuk seluruh aplikasi.
+   ============================================================ */
+div.fixed.inset-0[class*="justify-center"] {
+  overflow-y: auto;
+}
+/* Panel modal: anak langsung maupun dibungkus wrapper (cucu) */
+div.fixed.inset-0 > div[class*="rounded-2xl"],
+div.fixed.inset-0 > div[class*="rounded-xl"],
+div.fixed.inset-0 > div[class*="rounded-3xl"],
+div.fixed.inset-0 > div > div[class*="rounded-2xl"],
+div.fixed.inset-0 > div > div[class*="rounded-xl"],
+div.fixed.inset-0 > div > div[class*="rounded-3xl"],
+div.fixed.inset-0 > * > [class*="rounded-2xl"],
+div.fixed.inset-0 > * > [class*="rounded-xl"],
+div.fixed.inset-0 > * > [class*="rounded-3xl"] {
+  max-height: 90vh;
+  overflow-y: auto;
+  margin-block: auto;
+}
+/* Paksa panel yang sengaja overflow-hidden agar bisa di-scroll
+   (overflow-hidden memotong tombol aksi di layar pendek) */
+div.fixed.inset-0 [class*="rounded-2xl"],
+div.fixed.inset-0 [class*="rounded-xl"],
+div.fixed.inset-0 [class*="rounded-3xl"] {
+  overflow-y: auto !important;
+}
+/* fallback untuk panel yang memakai class kustom modal-content /
+   sheet-content / dialog namun belum diberi batas tinggi */
+div.fixed.inset-0 > div[class*="modal"],
+div.fixed.inset-0 > div[class*="Modal"],
+div.fixed.inset-0 > div[class*="sheet"],
+div.fixed.inset-0 > div[class*="dialog"] {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   PERBAIKAN RESPONSIF GLOBAL: tata letak nyaman di mobile &
+   tablet. Grid yang tetap (grid-cols-2/3/4/5) diturunkan
+   jumlah kolomnya di layar kecil agar kartu tidak terlalu
+   sempit. Elemen lebar tetap dipaksa max-width:100% di mobile.
+   ============================================================ */
+@media (max-width: 640px) {
+  .grid.grid-cols-2,
+  .grid.grid-cols-3,
+  .grid.grid-cols-4,
+  .grid.grid-cols-5,
+  .grid.grid-cols-6 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  [class*="w-["] {
+    max-width: 100% !important;
+  }
+  div.fixed.inset-0 > div[class*="rounded-2xl"],
+  div.fixed.inset-0 > div > div[class*="rounded-2xl"],
+  div.fixed.inset-0 > * > [class*="rounded-2xl"] {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid.grid-cols-4,
+  .grid.grid-cols-5,
+  .grid.grid-cols-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+
+
+
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* ==========================================================================
+   LANDING PAGE REDESIGN - GRADIENTS & ANIMATIONS
+   ========================================================================== */
+
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-shift {
+  background: linear-gradient(-45deg, #0a0a1a, #312e81, #06b6d4, #0a0a1a);
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+@keyframes float {
+	0% {
+		transform: translatey(0px);
+	}
+	50% {
+		transform: translatey(-20px);
+	}
+	100% {
+		transform: translatey(0px);
+	}
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 40px -10px var(--glow-color);
+  }
+  50% {
+    box-shadow: 0 0 60px 0px var(--glow-color);
+  }
+}

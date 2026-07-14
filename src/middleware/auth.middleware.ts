@@ -1,0 +1,410 @@
+/**
+ * Authentication & authorization middleware.
+ *
+ * requireSupabaseJwt   — validates Supabase JWT from Authorization header.
+ *                        Attaches req.supabaseUser and req.tenantId.
+ * requireAdminToken    — validates x-supabase-admin-token header (server-to-server ops).
+ * requireSuperAdmin    — checks supabaseUser has superadmin role in DB.
+ */
+import type { Request, Response, NextFunction } from "express";
+import { createClient } from "@supabase/supabase-js";
+import { dbQuery } from "../lib/db.js";
+import { logger } from "../lib/logger.js";
+import { timingSafeEqual as cryptoTimingSafeEqual } from "crypto";
+
+function timingSafeEqual(expected: string, provided: string): boolean {
+  const expectedBuffer = Buffer.from(expected);
+  const providedBuffer = Buffer.from(provided);
+  return expectedBuffer.length === providedBuffer.length && cryptoTimingSafeEqual(expectedBuffer, providedBuffer);
+}
+
+// ---------------------------------------------------------------------------
+// 1. Supabase JWT validation
+// ---------------------------------------------------------------------------
+
+function getAdminClient() {
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Supabase URL or service role key is missing.");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+export interface SupabaseUser {
+  id: string;
+  email?: string;
+  role?: string;
+}
+
+export interface AuthActor {
+  authId: string;
+  userId: string;
+  email?: string;
+  role: string;
+  tenantId?: string;
+  permissions: string[];
+  superadminRole?: string;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      supabaseUser?: SupabaseUser;
+      authActor?: AuthActor;
+      tenantId?: string;
+      branchId?: string;
+      dbTenantId?: string; // UUID from tenants table
+      impersonationSession?: {
+        id: string;
+        tenantId: string;
+        accessMode: "READ_ONLY" | "FULL";
+        expiresAt: string;
+      };
+      superAdminConsoleSession?: {
+        id: string;
+        mode: "READ_ONLY" | "EDIT";
+        expiresAt: string;
+      };
+    }
+  }
+}
+
+/**
+ * Validates the Bearer JWT issued by Supabase Auth.
+ * On success, attaches req.supabaseUser and looks up the matching tenantId.
+ */
+export const requireSupabaseJwt = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing or malformed Authorization header." });
+  }
+
+  const jwt = authHeader.split(" ")[1];
+
+  try {
+    const admin = getAdminClient();
+    const { data, error } = await admin.auth.getUser(jwt);
+    if (error || !data?.user) {
+      return res.status(401).json({ error: "Invalid or expired Supabase JWT." });
+    }
+
+    req.supabaseUser = {
+      id: data.user.id,
+      email: data.user.email,
+      role: data.user.role,
+    };
+
+    // Resolve the application profile. A valid Supabase identity without a local
+    // profile is not authorized to use protected application APIs.
+    try {
+      const result = await dbQuery(
+        `SELECT tenant_id, id, role, email, permissions, superadmin_role FROM users WHERE auth_id = $1 LIMIT 1`,
+        [data.user.id],
+      );
+      if (result.rows.length === 0) {
+        return res.status(403).json({ error: "Authenticated user has no application profile." });
+      }
+
+      const profile = result.rows[0];
+      req.dbTenantId = profile.tenant_id || undefined;
+      req.tenantId = profile.tenant_id || undefined;
+      req.authActor = {
+        authId: data.user.id,
+        userId: profile.id,
+        email: profile.email || data.user.email,
+        role: profile.role,
+        tenantId: profile.tenant_id || undefined,
+        permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+        superadminRole: profile.superadmin_role || undefined,
+      };
+    } catch (dbErr: any) {
+      logger.error({ err: dbErr.message }, "Could not resolve authenticated user profile");
+      return res.status(503).json({ error: "User profile service is unavailable." });
+    }
+
+    next();
+  } catch (err: any) {
+    logger.error({ err: err.message }, "JWT validation error");
+    return res.status(500).json({ error: "Authentication service error." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// 2. Admin token (server-to-server)
+// ---------------------------------------------------------------------------
+
+/**
+ * Validates x-supabase-admin-token header.
+ * Used for /api/supabase/*, /api/admin/audit-trail/clear, billing gateway config.
+ */
+export const requireAdminToken = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const expected = process.env.SUPABASE_ADMIN_TOKEN;
+  if (!expected) {
+    return res.status(503).json({ error: "SUPABASE_ADMIN_TOKEN is not configured on this server." });
+  }
+  const provided = (req.headers["x-supabase-admin-token"] as string) || "";
+  if (!provided || !timingSafeEqual(expected, provided)) {
+    logger.warn({ ip: req.ip, path: req.path }, "Unauthorized admin token attempt");
+    return res.status(401).json({ error: "Unauthorized." });
+  }
+  next();
+};
+
+// ---------------------------------------------------------------------------
+// 3. Tenant scope enforcement
+// ---------------------------------------------------------------------------
+
+/**
+ * Ensures the authenticated user can only access their own tenant's data.
+ * Must be used AFTER requireSupabaseJwt.
+ */
+export const requireTenantScope = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const requestedTenant =
+    (req.headers["x-tenant-id"] as string) ||
+    (req.query.tenantId as string) ||
+    req.authActor?.tenantId;
+
+  if (!requestedTenant) {
+    return res.status(400).json({ error: "tenantId is required." });
+  }
+
+  if (req.authActor?.role === "SUPER_ADMIN") {
+    const sessionId = String(headerValue(req, "x-impersonation-session-id") || "").trim();
+    if (!sessionId) {
+      return res.status(403).json({ error: "Sesi impersonasi diperlukan untuk mengakses data tenant.", code: "IMPERSONATION_REQUIRED" });
+    }
+    try {
+      const sessionResult = await dbQuery(
+        `SELECT id,tenant_id,access_mode,expires_at FROM impersonation_sessions
+         WHERE id=$1 AND actor_user_id=$2 AND ended_at IS NULL AND expires_at>now() LIMIT 1`,
+        [sessionId, req.authActor.userId],
+      );
+      const session = sessionResult.rows[0];
+      if (!session) return res.status(401).json({ error: "Sesi impersonasi tidak valid atau telah berakhir.", code: "IMPERSONATION_EXPIRED" });
+      if (requestedTenant !== session.tenant_id) return res.status(403).json({ error: "Tenant tidak sesuai dengan sesi impersonasi." });
+      if (!SAFE_METHODS.has(req.method) && session.access_mode !== "FULL") {
+        return res.status(423).json({ error: "Sesi impersonasi hanya-baca. Aksi perubahan diblokir.", code: "IMPERSONATION_READ_ONLY" });
+      }
+      req.impersonationSession = { id: session.id, tenantId: session.tenant_id, accessMode: session.access_mode, expiresAt: session.expires_at };
+      req.tenantId = session.tenant_id;
+      req.dbTenantId = session.tenant_id;
+      return next();
+    } catch (dbErr: any) {
+      logger.error({ err: dbErr.message }, "Could not validate impersonation tenant scope");
+      return res.status(503).json({ error: "Layanan impersonasi tidak tersedia." });
+    }
+  }
+
+  if (!req.authActor?.tenantId || requestedTenant !== req.authActor.tenantId) {
+    logger.warn(
+      { authTenant: req.authActor?.tenantId, requestedTenant, userId: req.authActor?.userId },
+      "Cross-tenant access attempt blocked",
+    );
+    return res.status(403).json({ error: "Access to this tenant is forbidden." });
+  }
+
+  req.tenantId = req.authActor.tenantId;
+  next();
+};
+
+export const requireRoles = (...roles: string[]) => (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (!req.authActor) {
+    return res.status(401).json({ error: "Authentication is required." });
+  }
+  if (!roles.includes(req.authActor.role)) {
+    logger.warn(
+      { userId: req.authActor.userId, role: req.authActor.role, path: req.path },
+      "Role authorization denied",
+    );
+    return res.status(403).json({ error: "You do not have permission for this action." });
+  }
+  next();
+};
+
+export const requireSuperAdmin = requireRoles("SUPER_ADMIN");
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Resolves an explicit tenant for control-plane operations. Unlike tenant
+ * impersonation, this is only for dedicated Super Admin endpoints that already
+ * require a granular permission (for example platform billing management).
+ */
+export const requireTenantOrSuperAdminPermission = (permission: string) => async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (req.authActor?.role !== "SUPER_ADMIN") return requireTenantScope(req, res, next);
+
+  const requestedTenant = String(
+    req.headers["x-tenant-id"] ||
+    req.query.tenantId || req.query.tenant_id || "",
+  ).trim();
+  if (!requestedTenant) return res.status(400).json({ error: "tenantId is required." });
+
+  let permissions = req.authActor.permissions;
+  if (req.authActor.superadminRole) {
+    try {
+      const permissionRows = await dbQuery(
+        `SELECT permission FROM superadmin_role_permissions WHERE role=$1`,
+        [req.authActor.superadminRole],
+      );
+      permissions = permissionRows.rows.map((row) => row.permission);
+    } catch (err: any) {
+      logger.error({ err: err.message }, "Could not resolve Super Admin tenant permission");
+      return res.status(503).json({ error: "Layanan izin Super Admin tidak tersedia." });
+    }
+  }
+  if (!permissions.includes("*") && !permissions.includes(permission)) {
+    return res.status(403).json({ error: "Izin Super Admin tidak mencukupi." });
+  }
+  try {
+    const tenant = await dbQuery(`SELECT id FROM tenants WHERE id=$1 LIMIT 1`, [requestedTenant]);
+    if (!tenant.rows[0]) return res.status(404).json({ error: "Tenant tidak ditemukan." });
+    req.tenantId = requestedTenant;
+    req.dbTenantId = requestedTenant;
+    next();
+  } catch (err: any) {
+    logger.error({ err: err.message }, "Could not resolve Super Admin target tenant");
+    return res.status(503).json({ error: "Layanan tenant tidak tersedia." });
+  }
+};
+
+function headerValue(req: Request, name: string) {
+  const value = req.headers[name];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * Validates an authoritative console session for every Super Admin mutation.
+ * Read-only is the safe default: callers cannot enable writes by omitting a header.
+ */
+export const requireSuperAdminConsoleSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (req.authActor?.role !== "SUPER_ADMIN" || SAFE_METHODS.has(req.method)) return next();
+  const sessionId = String(headerValue(req, "x-superadmin-session-id") || "").trim();
+  if (!sessionId) {
+    return res.status(423).json({
+      error: "Sesi konsol edit diperlukan untuk melakukan perubahan.",
+      code: "SUPERADMIN_SESSION_REQUIRED",
+    });
+  }
+  try {
+    const result = await dbQuery(
+      `SELECT id,mode,expires_at FROM superadmin_console_sessions
+       WHERE id=$1 AND actor_user_id=$2 AND ended_at IS NULL AND expires_at>now() LIMIT 1`,
+      [sessionId, req.authActor.userId],
+    );
+    const session = result.rows[0];
+    if (!session) return res.status(401).json({ error: "Sesi konsol tidak valid atau telah berakhir.", code: "SUPERADMIN_SESSION_EXPIRED" });
+    req.superAdminConsoleSession = { id: session.id, mode: session.mode, expiresAt: session.expires_at };
+    if (session.mode !== "EDIT") {
+      return res.status(423).json({ error: "Sesi konsol hanya-baca. Aksi perubahan diblokir.", code: "SUPERADMIN_READ_ONLY" });
+    }
+    next();
+  } catch (err: any) {
+    logger.error({ err: err.message }, "Could not validate Super Admin console session");
+    return res.status(503).json({ error: "Layanan sesi Super Admin tidak tersedia." });
+  }
+};
+
+/**
+ * Validates a server-issued impersonation session whenever a Super Admin enters
+ * tenant scope. The tenant and access mode come from the session, not the client.
+ */
+export const requireImpersonationSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (req.authActor?.role !== "SUPER_ADMIN") return next();
+  const sessionId = String(headerValue(req, "x-impersonation-session-id") || "").trim();
+  if (!sessionId) return res.status(403).json({ error: "Sesi impersonasi diperlukan untuk mengakses data tenant.", code: "IMPERSONATION_REQUIRED" });
+  try {
+    const result = await dbQuery(
+      `SELECT id,tenant_id,access_mode,expires_at FROM impersonation_sessions
+       WHERE id=$1 AND actor_user_id=$2 AND ended_at IS NULL AND expires_at>now() LIMIT 1`,
+      [sessionId, req.authActor.userId],
+    );
+    const session = result.rows[0];
+    if (!session) return res.status(401).json({ error: "Sesi impersonasi tidak valid atau telah berakhir.", code: "IMPERSONATION_EXPIRED" });
+    const requestedTenant = String(headerValue(req, "x-tenant-id") || req.query.tenantId || req.query.tenant_id || req.body?.tenantId || req.body?.tenant_id || "");
+    if (requestedTenant && requestedTenant !== session.tenant_id) return res.status(403).json({ error: "Tenant tidak sesuai dengan sesi impersonasi." });
+    if (!SAFE_METHODS.has(req.method) && session.access_mode !== "FULL") {
+      return res.status(423).json({ error: "Sesi impersonasi hanya-baca. Aksi perubahan diblokir.", code: "IMPERSONATION_READ_ONLY" });
+    }
+    req.impersonationSession = { id: session.id, tenantId: session.tenant_id, accessMode: session.access_mode, expiresAt: session.expires_at };
+    req.tenantId = session.tenant_id;
+    req.dbTenantId = session.tenant_id;
+    next();
+  } catch (err: any) {
+    logger.error({ err: err.message }, "Could not validate impersonation session");
+    return res.status(503).json({ error: "Layanan impersonasi tidak tersedia." });
+  }
+};
+
+/**
+ * Legacy compatibility guard. Security enforcement is performed by
+ * requireSuperAdminConsoleSession and requireImpersonationSession.
+ */
+export const enforceSuperAdminWriteMode = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (
+    req.authActor?.role === "SUPER_ADMIN" &&
+    !SAFE_METHODS.has(req.method) &&
+    String(req.headers["x-superadmin-mode"] || "").toLowerCase() === "read-only"
+  ) {
+    return res.status(423).json({
+      error: "Mode hanya-baca aktif. Aksi perubahan diblokir oleh server.",
+      code: "SUPERADMIN_READ_ONLY",
+    });
+  }
+  next();
+};
+
+export const requireSuperAdminPermission = (permission: string) => async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (req.authActor?.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ error: "Akses Super Admin diperlukan." });
+  }
+
+  let permissions = req.authActor.permissions;
+  if (req.authActor.superadminRole) {
+    try {
+      const result = await dbQuery(`SELECT permission FROM superadmin_role_permissions WHERE role=$1`, [req.authActor.superadminRole]);
+      permissions = result.rows.map((row) => row.permission);
+    } catch (err: any) {
+      logger.error({ err: err.message, role: req.authActor.superadminRole }, "Could not resolve Super Admin permissions");
+      return res.status(503).json({ error: "Layanan izin Super Admin tidak tersedia." });
+    }
+  }
+  if (permissions.length === 0 || (!permissions.includes("*") && !permissions.includes(permission))) {
+    return res.status(403).json({ error: "Izin Super Admin tidak mencukupi." });
+  }
+  next();
+};
