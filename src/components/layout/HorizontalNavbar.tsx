@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 
 import { OPERATIONAL_MODULES } from "../../config/nav.config";
+import { getRequiredTierForModule, isModuleLocked as isFeatureLocked } from "../../lib/featureUtils";
 
 interface HorizontalNavbarProps {
   activeTab: string;
@@ -79,55 +80,8 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
     description: string;
   } | null>(null);
 
-  const isModuleLocked = (modId: string) => {
-    if (isSuperAdmin || isOwner) return false;
-    const moduleFeatureMap: Record<string, string> = {
-      services: "SERVICE",
-      pos: "POS",
-      inventory: "POS",
-      accounting: "ACCOUNTING",
-      hr: "HRM",
-      crm: "CRM",
-      fraud: "SECURITY",
-    };
-    const requiredFeature = moduleFeatureMap[modId];
-    if (!requiredFeature) return false;
-
-    // Gunakan features dari limits, atau fallback berdasarkan tier
-    const tier = activeTenant?.tier || "BASIC";
-    const tierDefaultFeatures: Record<string, string[]> = {
-      BASIC: ["POS", "SERVICE"],
-      PRO: [
-        "POS",
-        "SERVICE",
-        "ACCOUNTING",
-        "HRM",
-        "CRM",
-        "WHATSAPP",
-        "TELEGRAM",
-        "AI_DIAGNOSE",
-      ],
-      ENTERPRISE: [
-        "POS",
-        "SERVICE",
-        "ACCOUNTING",
-        "HRM",
-        "CRM",
-        "WHATSAPP",
-        "TELEGRAM",
-        "AI_DIAGNOSE",
-        "MARKETPLACE",
-        "RENTAL",
-        "SECURITY",
-      ],
-    };
-    const rawFeatures = activeTenant?.limits?.features;
-    const tenantFeatures =
-      Array.isArray(rawFeatures) && rawFeatures.length > 0
-        ? (rawFeatures as string[]).map((f: string) => f.toUpperCase())
-        : tierDefaultFeatures[tier] || ["POS", "SERVICE"];
-    return !tenantFeatures.includes(requiredFeature);
-  };
+  const isModuleLocked = (modId: string) =>
+    !isSuperAdmin && isFeatureLocked(modId, activeTenant || {});
 
   const getLockedDescription = (modId: string) => {
     switch (modId) {
@@ -449,25 +403,45 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
           id="horizontal-modules-scroll"
         >
           {allowedModules
-            .filter((mod) => !isModuleLocked(mod.id))
             .map((mod) => {
               const Icon = mod.icon;
-              const isActive = activeTab === mod.id;
+              const locked = isModuleLocked(mod.id);
+              const requiredTier = getRequiredTierForModule(mod.id);
+              const isActive = !locked && activeTab === mod.id;
 
               return (
                 <button
                   key={mod.id}
-                  onClick={() => onSetTab(mod.id)}
+                  onClick={() => {
+                    if (locked) {
+                      setLockedFeatureInfo({
+                        moduleName: mod.label,
+                        featureName: requiredTier,
+                        requiredTier: requiredTier as "PRO" | "ENTERPRISE",
+                        description: getLockedDescription(mod.id),
+                      });
+                      return;
+                    }
+                    onSetTab(mod.id);
+                  }}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer whitespace-nowrap shrink-0 border select-none ${
-                    isActive
-                      ? `${mod.activeColor} border-transparent shadow-md`
-                      : `bg-slate-100/40 hover:bg-slate-100 dark:bg-zinc-900/40 dark:hover:bg-zinc-900 border-slate-200/35 dark:border-zinc-800/40 text-slate-600 dark:text-slate-400 ${mod.color}`
+                    locked
+                      ? "bg-amber-50/60 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200/60 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-950/30"
+                      : isActive
+                        ? `${mod.activeColor} border-transparent shadow-md`
+                        : `bg-slate-100/40 hover:bg-slate-100 dark:bg-zinc-900/40 dark:hover:bg-zinc-900 border-slate-200/35 dark:border-zinc-800/40 text-slate-600 dark:text-slate-400 ${mod.color}`
                   }`}
                 >
                   <Icon
-                    className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-white" : ""}`}
+                    className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-white" : ""} ${locked ? "text-amber-600 dark:text-amber-400" : ""}`}
                   />
                   <span>{mod.label}</span>
+                  {locked && (
+                    <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-200/80 dark:bg-amber-900/40 px-1 py-0.5 text-[7px] font-extrabold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                      <Lock className="w-2.5 h-2.5" />
+                      {requiredTier}
+                    </span>
+                  )}
                 </button>
               );
             })}

@@ -21,6 +21,7 @@ export default defineConfig(() => {
       allowedHosts: ['fixdev.web.id', 'www.fixdev.web.id'],
     },
     build: {
+      chunkSizeWarningLimit: 700,
       rollupOptions: {
         output: {
           manualChunks: {

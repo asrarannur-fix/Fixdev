@@ -76,13 +76,13 @@ export const OPERATIONAL_MODULES: NavModule[] = [
     subtabs: [
       { id: "new-ticket", label: "Penerimaan", icon: PlusCircle },
       { id: "list", label: "Daftar Servis", icon: Wrench },
-      { id: "knowledge-base", label: "Panduan", icon: BookOpen },
-      { id: "cost-calculator", label: "Penawaran", icon: Sliders },
       { id: "qc-scoring", label: "QC", icon: CheckSquare },
       { id: "warranty-claims", label: "Garansi", icon: ShieldCheck },
       { id: "field-service", label: "Field Service", icon: Truck },
       { id: "rental", label: "Penyewaan", icon: Smartphone },
       { id: "qr-tracker", label: "QR Tracker", icon: QrCode },
+      { id: "knowledge-base", label: "Panduan", icon: BookOpen },
+      { id: "cost-calculator", label: "Penawaran", icon: Sliders },
     ],
   },
   {

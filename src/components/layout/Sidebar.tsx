@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { useSaaS, DEFAULT_ROLE_PERMISSIONS } from "../../context/SaaSContext";
 import { UserRole } from "../../types";
 import { OPERATIONAL_MODULES } from "../../config/nav.config";
+import { getEffectiveFeatures, getRequiredTierForModule, isModuleLocked as isFeatureLocked, isTrialActive } from "../../lib/featureUtils";
 import { RoleAvatar } from "../ui";
 import { PasswordChangeModal } from "../ui/PasswordChangeModal";
 import {
@@ -151,55 +152,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     description: string;
   } | null>(null);
 
-  const isModuleLocked = (modId: string) => {
-    if (isSuperAdmin) return false;
-    const moduleFeatureMap: Record<string, string> = {
-      services: "SERVICE",
-      pos: "POS",
-      inventory: "POS",
-      accounting: "ACCOUNTING",
-      hr: "HRM",
-      crm: "CRM",
-      fraud: "SECURITY",
-    };
-    const requiredFeature = moduleFeatureMap[modId];
-    if (!requiredFeature) return false;
-
-    // Gunakan features dari limits, atau fallback berdasarkan tier
-    const tier = activeTenant?.tier || "BASIC";
-    const tierDefaultFeatures: Record<string, string[]> = {
-      BASIC: ["POS", "SERVICE"],
-      PRO: [
-        "POS",
-        "SERVICE",
-        "ACCOUNTING",
-        "HRM",
-        "CRM",
-        "WHATSAPP",
-        "TELEGRAM",
-        "AI_DIAGNOSE",
-      ],
-      ENTERPRISE: [
-        "POS",
-        "SERVICE",
-        "ACCOUNTING",
-        "HRM",
-        "CRM",
-        "WHATSAPP",
-        "TELEGRAM",
-        "AI_DIAGNOSE",
-        "MARKETPLACE",
-        "RENTAL",
-        "SECURITY",
-      ],
-    };
-    const rawFeatures = activeTenant?.limits?.features;
-    const tenantFeatures =
-      Array.isArray(rawFeatures) && rawFeatures.length > 0
-        ? (rawFeatures as string[]).map((f: string) => f.toUpperCase())
-        : tierDefaultFeatures[tier] || ["POS", "SERVICE"];
-    return !tenantFeatures.includes(requiredFeature);
-  };
+  const isModuleLocked = (modId: string) =>
+    !isSuperAdmin && isFeatureLocked(modId, activeTenant || {});
 
   const getLockedDescription = (modId: string) => {
     switch (modId) {
@@ -218,20 +172,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Categories definition
+  // Categories definition – ordered for service business workflow
   const categories = useMemo(
     () => [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        modules: ["overview"],
+      },
       {
         id: "operations",
         label: "Operasional",
         icon: Layers,
-        modules: ["overview", "services", "pos"],
+        modules: ["services", "pos"],
+      },
+      {
+        id: "inventory",
+        label: "Stok & Pengadaan",
+        icon: Package,
+        modules: ["inventory"],
       },
       {
         id: "finance",
-        label: "Keuangan & Aset",
+        label: "Keuangan",
         icon: TrendingUp,
-        modules: ["inventory", "accounting"],
+        modules: ["accounting"],
+      },
+      {
+        id: "crm",
+        label: "Pelanggan & Penjualan",
+        icon: Megaphone,
+        modules: ["crm"],
       },
       {
         id: "administration",
@@ -240,10 +212,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         modules: ["hr"],
       },
       {
-        id: "crm_intel",
-        label: "CRM & Intelijen",
+        id: "security",
+        label: "Keamanan",
         icon: ShieldCheck,
-        modules: ["crm", "fraud"],
+        modules: ["fraud"],
       },
     ],
     [],
@@ -260,7 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Dynamic user permissions based on tenant custom RBAC or system default
   const userPermissions = useMemo(() => {
-    if (isSuperAdmin || isOwner) {
+    if (isSuperAdmin) {
       return DEFAULT_ROLE_PERMISSIONS.SUPER_ADMIN;
     }
     const currentTenant = tenants.find((t) => t.id === currentTenantId);
@@ -283,10 +255,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   }, [tenantModules, userPermissions]);
 
+  // Keep premium modules visible so users understand which package unlocks them.
   const visibleTenantModules = useMemo(
-    () => allowedTenantModules.filter((mod) => !isModuleLocked(mod.id)),
-    [allowedTenantModules, activeTenant?.tier, activeTenant?.limits?.features, isSuperAdmin, isOwner],
+    () => allowedTenantModules,
+    [allowedTenantModules],
   );
+
+
 
   const filteredModules = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -640,7 +615,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div className="space-y-1.5">
                           {catModules.map((mod) => {
                               const Icon = mod.icon;
-                              const isModActive = activeTab === mod.id;
+                              const locked = isModuleLocked(mod.id);
+                              const requiredTier = getRequiredTierForModule(mod.id);
+                              const isModActive = !locked && activeTab === mod.id;
 
                               return (
                                 <div key={mod.id} className="relative">
@@ -652,14 +629,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                   {/* Module Header Button */}
                                   <button
                                     type="button"
-                                    onClick={() => onSetTab(mod.id, mod.submenus?.[0]?.id)}
+                                    onClick={() => {
+                                      if (locked) {
+                                        setLockedFeatureInfo({
+                                          moduleName: mod.label,
+                                          featureName: requiredTier,
+                                          requiredTier: requiredTier as "PRO" | "ENTERPRISE",
+                                          description: getLockedDescription(mod.id),
+                                        });
+                                        return;
+                                      }
+                                      onSetTab(mod.id, mod.submenus?.[0]?.id);
+                                    }}
                                     aria-expanded={isModActive}
                                     aria-controls={`sidebar-${mod.id}-submenus`}
-                                    aria-label={`${mod.label}${isModActive ? ", terbuka" : ", buka menu"}`}
-                                    className={`w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl text-xs font-black transition-all border text-left cursor-pointer transform hover:translate-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 ${
-                                      isModActive
-                                        ? "bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-500 dark:to-cyan-500 text-white border-indigo-400/60 shadow-lg shadow-indigo-500/20 animate-fadeIn"
-                                        : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-zinc-900 hover:text-slate-950 dark:hover:text-slate-50 shadow-none"
+                                    aria-label={locked ? `${mod.label}, memerlukan paket ${requiredTier}` : `${mod.label}${isModActive ? ", terbuka" : ", buka menu"}`}
+                                    className={`w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl text-xs font-black transition-all border text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 ${
+                                      locked
+                                        ? "cursor-pointer bg-amber-50/70 dark:bg-amber-950/15 text-amber-700 dark:text-amber-300 border-amber-200/70 dark:border-amber-900/50 hover:bg-amber-100 dark:hover:bg-amber-950/30"
+                                        : isModActive
+                                          ? "cursor-pointer transform hover:translate-x-1 bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-500 dark:to-cyan-500 text-white border-indigo-400/60 shadow-lg shadow-indigo-500/20 animate-fadeIn"
+                                          : "cursor-pointer transform hover:translate-x-1 bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-zinc-900 hover:text-slate-950 dark:hover:text-slate-50 shadow-none"
                                     }`}
                                   >
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -678,6 +668,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                           {mod.desc}
                                         </span>
                                       </div>
+                                      {locked && (
+                                        <span className="ml-auto shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-200/80 dark:bg-amber-900/40 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                                          <Lock className="w-2.5 h-2.5" />
+                                          {requiredTier}
+                                        </span>
+                                      )}
                                     </div>
                                   </button>
 
