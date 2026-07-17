@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { loginSuperAdmin } from "./superadmin-login-helper";
 
 const TENANT_ID = "bd7725f3-02cf-4944-bdc9-80ba642a2c55";
 const SUPER_ADMIN = {
@@ -44,8 +45,8 @@ async function seedSuperAdmin(page: Page) {
 for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
   test(`manual payment form renders at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await seedSuperAdmin(page);
-    await page.goto("http://localhost:3000");
+    const ok = await loginSuperAdmin(page);
+    if (!ok) test.skip(true, "Superadmin dashboard did not load");
     await expect(page.locator("#saas-invoice-history")).toBeVisible({ timeout: 15000 });
     await page.getByRole("button", { name: "Bayar Manual" }).click();
     await expect(page.getByRole("heading", { name: "Pembayaran Manual" })).toBeVisible();

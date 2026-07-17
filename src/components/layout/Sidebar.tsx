@@ -212,7 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case "fraud":
         return "Modul Keamanan & Audit (AI Fraud Detector) menggunakan analitik real-time untuk mendeteksi keanehan transaksi void kasir, melacak histori audit trail serta meminimalkan kerugian akibat kebocoran keuangan.";
       default:
-        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium FixFlow ERP.";
+        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium FixDev.";
     }
   };
 

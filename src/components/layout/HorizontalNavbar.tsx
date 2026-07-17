@@ -140,7 +140,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
       case "fraud":
         return "Modul Keamanan & Audit (AI Fraud Detector) mendeteksi keanehan transaksi void kasir dan melacak histori audit trail secara ketat.";
       default:
-        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium FixFlow ERP.";
+        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium FixDev.";
     }
   };
 

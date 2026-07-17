@@ -65,7 +65,9 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
 
   // Function to load logs from local storage
   const loadWaLogs = () => {
-    const saved = localStorage.getItem("saas_wa_logs_" + (currentTenantId || "default"));
+    const saved = localStorage.getItem(
+      "saas_wa_logs_" + (currentTenantId || "default"),
+    );
     if (saved) {
       try {
         setWaLogs(JSON.parse(saved));
@@ -91,7 +93,9 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
 
   // Filter templates from localStorage for the composer
   const templates = useMemo(() => {
-    const saved = localStorage.getItem("saas_wa_templates_" + (currentTenantId || "default"));
+    const saved = localStorage.getItem(
+      "saas_wa_templates_" + (currentTenantId || "default"),
+    );
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -124,11 +128,15 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
 
   // Find customer-specific datasets
   const customerTickets = useMemo(() => {
-    return services.filter((s) => s.customerId === customerId && s.tenantId === currentTenantId);
+    return services.filter(
+      (s) => s.customerId === customerId && s.tenantId === currentTenantId,
+    );
   }, [services, customerId, currentTenantId]);
 
   const customerTransactions = useMemo(() => {
-    return transactions.filter((t) => t.customerId === customerId && t.tenantId === currentTenantId);
+    return transactions.filter(
+      (t) => t.customerId === customerId && t.tenantId === currentTenantId,
+    );
   }, [transactions, customerId, currentTenantId]);
 
   const customerWaLogs = useMemo(() => {
@@ -301,7 +309,9 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
     };
 
     // Append to local storage
-    const savedLogs = localStorage.getItem("saas_wa_logs_" + (currentTenantId || "default"));
+    const savedLogs = localStorage.getItem(
+      "saas_wa_logs_" + (currentTenantId || "default"),
+    );
     let logsArray = [];
     if (savedLogs) {
       try {
@@ -310,7 +320,10 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
     }
 
     const updated = [newLog, ...logsArray];
-    localStorage.setItem("saas_wa_logs_" + (currentTenantId || "default"), JSON.stringify(updated));
+    localStorage.setItem(
+      "saas_wa_logs_" + (currentTenantId || "default"),
+      JSON.stringify(updated),
+    );
     setWaLogs(updated);
 
     addLog(
@@ -606,17 +619,24 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
                         <div className="text-xs text-slate-600 leading-relaxed font-sans bg-white border border-slate-100/80 rounded-xl p-3">
                           <p className="whitespace-pre-wrap">
                             {event.content.split("\n").map((line, lIdx) => {
-                              let f = line.replace(
-                                /\*([^*]+)\*/g,
-                                "<strong>$1</strong>",
-                              );
-                              f = f.replace(/_([^_]+)_/g, "<em>$1</em>");
+                              const escaped = line
+                                .replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;")
+                                .replace(/\"/g, "&quot;")
+                                .replace(/'/g, "&#039;");
+                              const parts = escaped.split(/(\*[^*]+\*|_[^_]+_)/g);
                               return (
                                 <span
                                   key={lIdx}
                                   className="block min-h-[12px]"
-                                  dangerouslySetInnerHTML={{ __html: f }}
-                                />
+                                >
+                                  {parts.map((part, pIdx) => {
+                                    if (/^\*[^*]+\*$/.test(part)) return <strong key={pIdx}>{part.slice(1, -1)}</strong>;
+                                    if (/^_[^_]+_$/.test(part)) return <em key={pIdx}>{part.slice(1, -1)}</em>;
+                                    return <React.Fragment key={pIdx}>{part}</React.Fragment>;
+                                  })}
+                                </span>
                               );
                             })}
                           </p>

@@ -132,7 +132,7 @@ async function ensureServiceTicketColumns() {
 }
 
 export async function moduleRecordsGetHandler(req: Request, res: Response) {
-  const tenantId = String(req.query.tenantId || "");
+  const tenantId = String(req.tenantId || "");
   if (!tenantId) return res.status(400).json({ error: "tenantId is required" });
   try {
     const rows = await withDb(c => c.query(`select * from module_records where tenant_id = $1 and deleted_at is null`, [tenantId]).then((r: any) => r.rows));
@@ -143,7 +143,8 @@ export async function moduleRecordsGetHandler(req: Request, res: Response) {
 }
 
 export async function moduleRecordsPostHandler(req: Request, res: Response) {
-  const { tenantId, module, recordId, payload, action } = req.body || {};
+  const { module, recordId, payload, action } = req.body || {};
+  const tenantId = req.tenantId;
   if (!tenantId || !module || !recordId) return res.status(422).json({ error: "tenantId, module, recordId required" });
   try {
     const now = new Date().toISOString();

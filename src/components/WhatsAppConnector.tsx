@@ -1471,17 +1471,18 @@ export const WhatsAppConnector: React.FC = () => {
                               .replace(/>/g, "&gt;")
                               .replace(/"/g, "&quot;")
                               .replace(/'/g, "&#039;");
-                            let f = escaped.replace(
-                              /\*([^*]+)\*/g,
-                              "<strong>$1</strong>",
-                            );
-                            f = f.replace(/_([^_]+)_/g, "<em>$1</em>");
+                            const parts = escaped.split(/(\*[^*]+\*|_[^_]+_)/g);
                             return (
                               <span
                                 key={lIdx}
                                 className="block min-h-[12px]"
-                                dangerouslySetInnerHTML={{ __html: f }}
-                              />
+                              >
+                                {parts.map((part, pIdx) => {
+                                  if (/^\*[^*]+\*$/.test(part)) return <strong key={pIdx}>{part.slice(1, -1)}</strong>;
+                                  if (/^_[^_]+_$/.test(part)) return <em key={pIdx}>{part.slice(1, -1)}</em>;
+                                  return <React.Fragment key={pIdx}>{part}</React.Fragment>;
+                                })}
+                              </span>
                             );
                           })}
                         </p>

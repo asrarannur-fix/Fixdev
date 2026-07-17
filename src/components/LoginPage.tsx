@@ -3,9 +3,8 @@ import { createPortal } from "react-dom";
 import { useSaaS } from "../context/SaaSContext";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  Building, Shield, User, Mail, ArrowLeft, Wrench, Sparkles, CheckCircle, 
-  Database, ShieldCheck, DollarSign, ShoppingBag, Palette, Layers, Briefcase, Clock, ArrowRight, Lock,
-  Compass, FileText, LayoutDashboard, Package, Users, MessageSquare, Settings
+  ArrowLeft, ArrowRight, Banknote, Building, Lock, Mail, Sparkles, Store,
+  User, Wrench, ShieldCheck, CheckCircle, Palette, Briefcase,
 } from "lucide-react";
 
 interface LoginPageProps {
@@ -15,41 +14,16 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   const { loginUser, addTenant, addUser, users, isAuthenticated, sendPasswordReset } = useSaaS();
 
-  // Tab Management
   const [activeTab, setActiveTab] = useState<"register" | "manual">("manual");
-
-  // Manual Login State
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Lupa Password State
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [forgotError, setForgotError] = useState("");
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!forgotEmail.trim()) {
-      setForgotError("Masukkan alamat email Anda.");
-      return;
-    }
-    setForgotLoading(true);
-    setForgotError("");
-    try {
-      await sendPasswordReset(forgotEmail.trim());
-      setForgotSuccess(true);
-    } catch (err: any) {
-      setForgotError(err.message || "Gagal mengirim email reset password.");
-    } finally {
-      setForgotLoading(false);
-    }
-  };
-
-  // Register Tenant State
   const [shopName, setShopName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [businessSector, setBusinessSector] = useState("IT & Servis Komputer");
@@ -60,34 +34,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   const [registrationSuccess, setRegistrationSuccess] = useState<any | null>(null);
 
   const themePresets = [
-    { name: "Indigo Cyber", color: "#4f46e5", bg: "bg-indigo-600" },
-    { name: "Emerald Tech", color: "#059669", bg: "bg-emerald-600" },
-    { name: "Crimson Flame", color: "#dc2626", bg: "bg-red-600" },
-    { name: "Sunset Gold", color: "#d97706", bg: "bg-amber-600" },
-    { name: "Deep Ocean", color: "#0284c7", bg: "bg-sky-600" },
-    { name: "Grape Purple", color: "#7c3aed", bg: "bg-purple-600" },
+    { name: "Indigo Cyber", color: "#4f46e5" },
+    { name: "Emerald Tech", color: "#059669" },
+    { name: "Crimson Flame", color: "#dc2626" },
+    { name: "Sunset Gold", color: "#d97706" },
+    { name: "Deep Ocean", color: "#0284c7" },
+    { name: "Grape Purple", color: "#7c3aed" },
   ];
 
   const handleShopNameChange = (val: string) => {
     setShopName(val);
-    const slug = val
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
-    setSubdomain(slug);
+    setSubdomain(
+      val.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-"),
+    );
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput.trim()) {
-      setErrorMsg("Harap masukkan alamat email Anda.");
-      return;
-    }
-    if (!passwordInput.trim()) {
-      setErrorMsg("Harap masukkan password Anda.");
-      return;
-    }
+    if (!emailInput.trim()) { setErrorMsg("Harap masukkan alamat email Anda."); return; }
+    if (!passwordInput.trim()) { setErrorMsg("Harap masukkan password Anda."); return; }
     setLoading(true);
     setErrorMsg("");
     try {
@@ -101,50 +66,39 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) { setForgotError("Masukkan alamat email Anda."); return; }
+    setForgotLoading(true);
+    setForgotError("");
+    try {
+      await sendPasswordReset(forgotEmail.trim());
+      setForgotSuccess(true);
+    } catch (err: any) {
+      setForgotError(err.message || "Gagal mengirim email reset password.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const handleTenantRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanShopName = shopName.trim();
     const cleanOwnerName = ownerName.trim();
     const cleanOwnerEmail = ownerEmail.trim().toLowerCase();
     const submittedOwnerPassword = ownerPassword;
-    
     if (!cleanShopName || !cleanOwnerName || !cleanOwnerEmail || !submittedOwnerPassword) {
       setErrorMsg("Harap isi seluruh formulir pendaftaran, termasuk password owner.");
       return;
     }
-    if (!cleanOwnerEmail.includes("@")) {
-      setErrorMsg("Format email owner tidak valid.");
-      return;
-    }
-    if (submittedOwnerPassword.length < 6) {
-      setErrorMsg("Password owner minimal 6 karakter.");
-      return;
-    }
-
-    const cleanSubdomain = (subdomain || "toko-utama")
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-
-    if (!cleanSubdomain) {
-      setErrorMsg("Identitas subdomain tidak valid.");
-      return;
-    }
-
-    const emailExist = users.some(
-      (u) => u.email.toLowerCase() === cleanOwnerEmail,
-    );
-    if (emailExist) {
-      setErrorMsg("Email owner sudah terdaftar dalam sistem. Gunakan email unik lainnya.");
-      return;
-    }
-
+    if (!cleanOwnerEmail.includes("@")) { setErrorMsg("Format email owner tidak valid."); return; }
+    if (submittedOwnerPassword.length < 6) { setErrorMsg("Password owner minimal 6 karakter."); return; }
+    const cleanSubdomain = (subdomain || "toko-utama").trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    if (!cleanSubdomain) { setErrorMsg("Identitas subdomain tidak valid."); return; }
+    const emailExist = users.some((u) => u.email.toLowerCase() === cleanOwnerEmail);
+    if (emailExist) { setErrorMsg("Email owner sudah terdaftar dalam sistem. Gunakan email unik lainnya."); return; }
     setLoading(true);
     setErrorMsg("");
-
     try {
       const response = await fetch("/api/onboarding/register", {
         method: "POST",
@@ -160,18 +114,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
         }),
       });
       const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Gagal melakukan pendaftaran penyewa.");
-      }
-
-      setRegistrationSuccess({
-        tenant: result.tenant,
-        branch: result.branch,
-        ownerEmail: cleanOwnerEmail,
-        ownerName: cleanOwnerName,
-      });
+      if (!response.ok || !result.success) throw new Error(result.message || "Gagal membuat toko baru.");
+      setRegistrationSuccess({ tenant: result.tenant, branch: result.branch, ownerEmail: cleanOwnerEmail, ownerName: cleanOwnerName });
     } catch (err: any) {
-      setErrorMsg("Gagal melakukan pendaftaran penyewa: " + err.message);
+      setErrorMsg("Gagal membuat toko baru: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -191,345 +137,95 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] text-slate-200 flex" id="login-container-root">
-      {/* Left Panel — Branding & Visuals (Desktop) */}
-      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden flex-col justify-between p-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 via-[#0a0a1a] to-purple-900/40" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/10 blur-[150px] rounded-full animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/10 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: "3s" }} />
+    <main className="relative flex min-h-screen flex-col bg-slate-50 text-slate-900" id="login-page">
+      <div className="pointer-events-none fixed inset-x-0 top-0 -z-0 h-[420px] bg-[radial-gradient(circle_at_15%_0%,rgba(99,102,241,.16),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(34,211,238,.12),transparent_30%)]" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-              <Wrench className="w-5 h-5" />
-            </div>
-            <span className="text-xl font-black tracking-tight text-white">
-              FixFlow <span className="text-indigo-400 font-medium">ERP</span>
-            </span>
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+        <button onClick={onBack} className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-indigo-600"><ArrowLeft className="h-4 w-4" /> Kembali</button>
+        <div className="flex items-center gap-2 font-black"><span className="grid h-8 w-8 place-items-center rounded-xl bg-indigo-600 text-white"><Wrench className="h-4 w-4" /></span>FixDev</div>
+      </header>
+
+      <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_1fr] lg:py-10">
+        <aside className="hidden lg:block">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-indigo-100">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600"><Sparkles className="h-4 w-4" /> Multi-cabang</div>
+            <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight">Satu akun, seluruh toko terkelola.</h2>
+            <p className="mt-2 text-xs leading-5 text-slate-600">Masuk untuk melihat servis, kasir, stok, dan laporan toko Anda. Data tiap cabang terpisah dan aman.</p>
+            <ul className="mt-5 grid gap-2 text-xs font-bold text-slate-700">
+              {[["Cabang terisolasi", "Data toko tidak tercampur."], ["Akses per peran", "Owner, Admin, Kasir, Teknisi."], ["Pantauan cepat", "Ringkasan operasional real-time."]].map(([t, d]) => (
+                <li key={t} className="flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-600" /><span><span className="block">{t}</span><span className="block text-[10px] font-semibold text-slate-500">{d}</span></span></li>
+              ))}
+            </ul>
           </div>
-        </div>
+        </aside>
 
-        <div className="relative z-10 space-y-8 max-w-lg">
-          <h2 className="text-4xl font-black text-white leading-tight">
-            Satu Platform untuk <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Mengelola Bengkel</span>
-          </h2>
-          <p className="text-slate-400 leading-relaxed">
-            Dari penerimaan tiket servis hingga pelaporan keuangan. Semua terintegrasi dalam satu dashboard cloud yang aman dan terisolasi per tenant.
-          </p>
-
-          {/* Floating Feature Cards */}
-          <div className="space-y-4 pt-4">
-            {[
-              { icon: Database, text: "Isolasi database multi-tenant per cabang" },
-              { icon: Sparkles, text: "AI Diagnostic Assistant untuk QC servis" },
-              { icon: ShieldCheck, text: "Fraud detection & audit log proaktif" },
-            ].map((f, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400"><f.icon className="w-4 h-4" /></div>
-                <span className="text-sm text-slate-300">{f.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <p className="text-[11px] text-slate-600 font-mono">&copy; 2026 FixFlow ERP. Multi-Tenant SaaS Platform.</p>
-        </div>
-      </div>
-
-      {/* Right Panel — Login/Register Forms */}
-      <div className="w-full lg:w-[45%] flex flex-col">
-        {/* Mobile Header */}
-        <div className="lg:hidden h-16 border-b border-white/5 bg-[#0a0a1a] px-6 flex items-center gap-3">
-          <button onClick={onBack} className="p-2 -ml-2 rounded-lg text-slate-500 hover:text-white transition cursor-pointer"><ArrowLeft className="w-4 h-4" /></button>
-          <div className="h-4 w-[1px] bg-white/10" />
-          <div className="bg-indigo-600 p-1.5 rounded-lg text-white"><Wrench className="w-3.5 h-3.5" /></div>
-          <span className="text-sm font-black text-white">FixFlow <span className="text-indigo-400 font-medium">ERP</span></span>
-        </div>
-
-        {/* Scrollable Form Area */}
-        <main className="flex-1 flex items-center justify-center py-8 px-6 overflow-y-auto">
-          <div className="w-full max-w-md space-y-8">
-            {/* Desktop Back Button */}
-            <div className="hidden lg:block">
-              <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 hover:text-white transition cursor-pointer mb-8">
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali ke Beranda</span>
-              </button>
+        <section className="mx-auto w-full max-w-md">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-indigo-100 sm:p-7">
+            <div className="flex p-1 rounded-xl bg-slate-100">
+              <button onClick={() => { setActiveTab("manual"); setErrorMsg(""); }} className={`flex-1 rounded-lg py-2.5 text-xs font-black transition ${activeTab === "manual" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}><Mail className="mr-1 inline h-3.5 w-3.5" />Masuk</button>
+              <button onClick={() => { setActiveTab("register"); setErrorMsg(""); }} className={`flex-1 rounded-lg py-2.5 text-xs font-black transition ${activeTab === "register" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}><Store className="mr-1 inline h-3.5 w-3.5" />Daftar toko</button>
             </div>
 
-            {/* Section Title */}
-            <div>
-              <h2 className="text-3xl font-extrabold tracking-tight text-white">
-                Portal Akses &amp;{" "}
-                <span className="text-indigo-400">Registrasi</span>
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                Masuk dengan email terdaftar atau daftarkan toko baru untuk Free Trial 30 Hari.
-              </p>
-            </div>
+            {errorMsg && <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] font-medium text-rose-700"><span className="mr-1">⚠️</span>{errorMsg}</div>}
 
-            {/* Tab Switcher */}
-            <div className="flex p-1 bg-white/5 rounded-2xl border border-white/5">
-              <button
-                onClick={() => { setActiveTab("manual"); setErrorMsg(""); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeTab === "manual"
-                    ? "bg-white/10 text-white shadow-lg"
-                    : "text-slate-500 hover:text-white"
-                }`}
-              >
-                <Mail className="w-3.5 h-3.5" /> Masuk Sistem
-              </button>
-              <button
-                onClick={() => { setActiveTab("register"); setErrorMsg(""); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeTab === "register"
-                    ? "bg-white/10 text-white shadow-lg"
-                    : "text-slate-500 hover:text-white"
-                }`}
-              >
-                <Building className="w-3.5 h-3.5" /> Daftar Toko Baru
-              </button>
-            </div>
-
-            {/* Domain Info Banner */}
-            <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 text-xs leading-relaxed">
-              <div className="flex gap-3">
-                <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl h-fit"><Sparkles className="w-4 h-4" /></div>
-                <div className="space-y-1">
-                  <p className="font-bold text-white text-[11px]">⚡ Mode Single Domain Aktif</p>
-                  <p className="text-slate-400">
-                    Semua penyewa mengakses <strong className="text-indigo-400">fixdev.my.id</strong>. Data terisolasi otomatis per tenant.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Error Message */}
-            {errorMsg && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl p-4 text-xs font-medium flex items-start gap-3 animate-shake">
-                <span className="text-base">⚠️</span>
-                <div>
-                  <p className="font-bold text-red-400">Gagal Mengakses</p>
-                  <p className="mt-0.5">{errorMsg}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Forms Container */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl">
-              <AnimatePresence mode="wait">
-                {/* Registration Success */}
-                {registrationSuccess ? (
-                  <motion.div
-                    key="success"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="space-y-6 text-center py-4"
-                  >
-                    <div className="mx-auto w-16 h-16 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl flex items-center justify-center shadow-lg">
-                      <Sparkles className="w-8 h-8 animate-bounce" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-black text-white">Toko Berhasil Terdaftar!</h3>
-                      <p className="text-xs text-slate-400">Sistem telah menginisialisasi lingkungan kerja eksklusif untuk bisnis Anda.</p>
-                    </div>
-                    <div className="bg-white/5 rounded-2xl border border-white/5 p-4 text-left space-y-3 font-mono text-[11px]">
-                      {[
-                        { label: "Penyewa:", value: registrationSuccess.tenant.name },
-                        { label: "Domain:", value: "fixdev.my.id", color: "text-indigo-400" },
-                        { label: "Cabang:", value: registrationSuccess.branch.name, color: "text-emerald-400" },
-                        { label: "Kredensial:", value: registrationSuccess.ownerEmail, color: "text-amber-400" },
-                      ].map((row, i) => (
-                        <div key={i} className={`flex justify-between pb-2 border-b border-white/5 ${i === 3 ? "border-0 pb-0" : ""}`}>
-                          <span className="text-slate-500">{row.label}</span>
-                          <span className={`font-bold ${row.color || "text-white"}`}>{row.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                      <button onClick={() => setRegistrationSuccess(null)} className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-xs py-3 rounded-2xl transition-all cursor-pointer">
-                        Daftar Ulang
-                      </button>
-                      <button onClick={handleLaunchSimulation} disabled={loading} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
-                        {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><span>Masuk ke Dashboard</span><ArrowRight className="w-4 h-4" /></>}
-                      </button>
-                    </div>
-                  </motion.div>
-                ) : activeTab === "register" ? (
-                  /* Register Form */
-                  <motion.div key="register" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-                    <div className="border-b border-white/5 pb-4">
-                      <h3 className="text-lg font-bold text-white flex items-center gap-2"><Building className="w-5 h-5 text-indigo-400" /> Daftar Toko Baru</h3>
-                      <p className="text-xs text-slate-500 mt-1">Mendaftarkan bengkel servis ke dalam database cloud FixFlow ERP.</p>
-                    </div>
-
-                    <form onSubmit={handleTenantRegistration} className="space-y-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-1.5 md:col-span-2">
-                          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><Building className="w-3.5 h-3.5 text-indigo-400" /> Nama Toko</label>
-                          <input type="text" required placeholder="Contoh: FixLab Computer Bandung" value={shopName} onChange={(e) => handleShopNameChange(e.target.value)} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none placeholder:text-slate-600" />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-indigo-400" /> Sektor Layanan</label>
-                          <select value={businessSector} onChange={(e) => setBusinessSector(e.target.value)} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
-                            <option value="IT & Servis Komputer">IT &amp; Servis Komputer</option>
-                            <option value="Servis Smartphone/Gadget">Servis Smartphone &amp; Gadget</option>
-                            <option value="Servis Elektronik Umum">Servis Elektronik Umum</option>
-                            <option value="Bengkel Otomotif">Bengkel Otomotif</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-indigo-400" /> Tema Warna</label>
-                          <div className="flex gap-2 pt-1.5">
-                            {themePresets.map((theme, tIdx) => (
-                              <button key={tIdx} type="button" onClick={() => setSelectedTheme(theme.color)} className={`w-8 h-8 rounded-xl ${theme.bg} relative transition-transform cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center`}>
-                                {selectedTheme === theme.color && <span className="text-white text-xs">✓</span>}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-indigo-400" /> Nama Pemilik</label>
-                          <input type="text" required placeholder="Nama lengkap" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none placeholder:text-slate-600" />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-indigo-400" /> Email Owner</label>
-                          <input type="email" required placeholder="owner@fixlab.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none font-mono placeholder:text-slate-600" />
-                        </div>
-
-                        <div className="space-y-1.5 md:col-span-2">
-                          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-indigo-400" /> Password Owner</label>
-                          <input type="password" required minLength={6} placeholder="Minimal 6 karakter" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none font-mono placeholder:text-slate-600" />
-                        </div>
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 space-y-1.5 text-xs">
-                        <p className="font-bold text-indigo-400 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Otomatisasi Onboarding</p>
-                        <p className="text-slate-500">Sistem membuatkan Cabang Utama, Gudang, dan Chart of Accounts PSAK otomatis.</p>
-                      </div>
-
-                      <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 text-white font-bold text-xs py-3.5 rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
-                        {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><span>Daftar &amp; Aktifkan Toko Baru</span><ArrowRight className="w-4 h-4" /></>}
-                      </button>
-                    </form>
-                  </motion.div>
-                ) : (
-                  /* Login Form */
-                  <motion.div key="manual" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 py-2">
-                    <div className="text-center pb-2">
-                      <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2">
-                        <Lock className="w-5 h-5 text-indigo-400" /> Login Multi-Tenant ERP
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1">Gunakan email dan password terdaftar untuk masuk.</p>
-                    </div>
-
-                    <form onSubmit={handleManualSubmit} className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-indigo-400" /> Alamat Email</label>
-                        <input type="email" required placeholder="Masukkan alamat email Anda" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none font-mono placeholder:text-slate-600" />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-indigo-400" /> Password</label>
-                        <input type="password" required placeholder="••••••••" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none placeholder:text-slate-600" />
-                      </div>
-
-                      <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 text-white font-bold text-xs py-3.5 rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95">
-                        {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><span>Masuk Sistem</span><ArrowRight className="w-4 h-4" /></>}
-                      </button>
-
-                      <div className="text-center pt-1">
-                        <button type="button" onClick={() => { setShowForgotPassword(true); setForgotSuccess(false); setForgotError(""); setForgotEmail(""); }} className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline font-medium cursor-pointer">
-                          Lupa Password?
-                        </button>
-                      </div>
-                    </form>
-
-                    <div className="pt-4 border-t border-white/5 text-center text-[11px] text-slate-600">
-                      <p>Terintegrasi dengan Supabase Cloud &middot; Otorisasi instan via token.</p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </main>
-
-        {/* Footer */}
-        <footer className="py-4 border-t border-white/5 text-center text-[10px] text-slate-700 font-mono px-6">
-          © 2026 FixFlow ERP Systems. Cloud Multi-Tenant SaaS.
-        </footer>
-      </div>
-
-      {/* Forgot Password Modal */}
-      {showForgotPassword && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-[#121214] rounded-3xl shadow-2xl border border-white/10 overflow-hidden animate-fadeIn">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Lupa Password</h3>
-                  <p className="text-[10px] text-slate-500">Kami kirimkan link reset ke email Anda</p>
-                </div>
-              </div>
-              <button onClick={() => setShowForgotPassword(false)} className="p-2 rounded-xl hover:bg-white/5 text-slate-500 hover:text-white transition-all cursor-pointer">
-                <span className="text-lg leading-none">×</span>
-              </button>
-            </div>
-
-            <div className="p-6">
-              {forgotSuccess ? (
-                <div className="text-center space-y-4 py-2">
-                  <div className="mx-auto w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400">
-                    <CheckCircle className="w-7 h-7" />
+            <AnimatePresence mode="wait">
+              {registrationSuccess ? (
+                <motion.div key="success" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 py-4 text-center">
+                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle className="h-7 w-7" /></div>
+                  <div className="space-y-1"><h3 className="text-lg font-black">Toko berhasil dibuat</h3><p className="text-[11px] text-slate-500">Lingkungan kerja eksklusif sudah siap.</p></div>
+                  <div className="space-y-1 rounded-xl border border-slate-100 bg-slate-50 p-3 text-left text-[11px]">
+                    <p className="flex justify-between"><span className="text-slate-500">Toko</span><span className="font-bold text-slate-800">{registrationSuccess.tenant.name}</span></p>
+                    <p className="flex justify-between"><span className="text-slate-500">Cabang</span><span className="font-bold text-slate-800">{registrationSuccess.branch.name}</span></p>
+                    <p className="flex justify-between"><span className="text-slate-500">Email</span><span className="font-bold text-slate-800">{registrationSuccess.ownerEmail}</span></p>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">Email Terkirim!</h4>
-                    <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                      Link reset password telah dikirim ke <strong className="text-white">{forgotEmail}</strong>. Cek inbox atau folder Spam.
-                    </p>
+                  <button onClick={handleLaunchSimulation} disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">{loading ? "Masuk..." : <>Masuk ke dashboard <ArrowRight className="h-4 w-4" /></>}</button>
+                </motion.div>
+              ) : activeTab === "register" ? (
+                <motion.form key="register" onSubmit={handleTenantRegistration} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
+                  <h3 className="text-sm font-black">Daftarkan toko baru</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Nama toko</span><input required value={shopName} onChange={(e) => handleShopNameChange(e.target.value)} placeholder="Nama Toko Anda" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Sektor</span><select value={businessSector} onChange={(e) => setBusinessSector(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"><option>IT & Servis Komputer</option><option>Servis Smartphone & Gadget</option><option>Servis Elektronik Umum</option><option>Bengkel Otomotif</option></select></label>
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Nama pemilik</span><input required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Nama lengkap" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Email owner</span><input required type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="owner@toko.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+                    <label className="block sm:col-span-2"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Password owner</span><input required type="password" minLength={6} value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} placeholder="Minimal 6 karakter" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
                   </div>
-                  <button onClick={() => setShowForgotPassword(false)} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95">
-                    Kembali ke Login
-                  </button>
-                </div>
+                  <div><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Tema warna</span><div className="flex gap-2">{themePresets.map((theme) => <button type="button" key={theme.color} onClick={() => setSelectedTheme(theme.color)} style={{ background: theme.color }} className={`h-8 w-8 rounded-xl transition ${selectedTheme === theme.color ? "ring-2 ring-slate-900 ring-offset-2" : ""}`} aria-label={theme.name} />)}</div></div>
+                  <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">{loading ? "Membuat..." : <>Buat toko <ArrowRight className="h-4 w-4" /></>}</button>
+                  <p className="text-center text-[10px] font-semibold text-slate-500">Sistem menyiapkan cabang, gudang, dan akun otomatis. Data cabang tetap terpisah.</p>
+                </motion.form>
               ) : (
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <p className="text-xs text-slate-400 leading-relaxed">Masukkan email terdaftar. Kami akan mengirimkan link untuk membuat password baru.</p>
-                  <div>
-                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-1.5">
-                      <Mail className="w-3.5 h-3.5 text-indigo-400" /> Alamat Email
-                    </label>
-                    <input type="email" required placeholder="contoh@email.com" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} disabled={forgotLoading} className="w-full text-xs p-3.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none font-mono placeholder:text-slate-600 disabled:opacity-60" />
-                    {forgotError && <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1"><span>⚠️</span> {forgotError}</p>}
-                  </div>
-
-                  <div className="flex gap-2 pt-1">
-                    <button type="button" onClick={() => setShowForgotPassword(false)} disabled={forgotLoading} className="flex-1 py-2.5 text-xs font-medium text-slate-400 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl transition-all cursor-pointer disabled:opacity-50">
-                      Batal
-                    </button>
-                    <button type="submit" disabled={forgotLoading || !forgotEmail.trim()} className="flex-1 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:cursor-not-allowed rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
-                      {forgotLoading ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <>Kirim Link Reset</>}
-                    </button>
-                  </div>
-                </form>
+                <motion.form key="manual" onSubmit={handleManualSubmit} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
+                  <h3 className="text-sm font-black">Masuk ke akun</h3>
+                  <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Alamat email</span><input required type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="nama@toko.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+                  <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Password</span><input required type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="••••••••" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+                  <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">{loading ? "Memeriksa..." : <>Masuk <ArrowRight className="h-4 w-4" /></>}</button>
+                  <button type="button" onClick={() => { setShowForgotPassword(true); setForgotSuccess(false); setForgotError(""); setForgotEmail(""); }} className="block w-full text-center text-[11px] font-bold text-indigo-600 hover:underline">Lupa password?</button>
+                </motion.form>
               )}
-            </div>
+            </AnimatePresence>
+          </div>
+        </section>
+      </div>
+
+      {showForgotPassword && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={() => setShowForgotPassword(false)}>
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-black">Reset password</h3><button onClick={() => setShowForgotPassword(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><span className="text-lg">×</span></button></div>
+            {forgotSuccess ? (
+              <div className="space-y-3 py-2 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle className="h-6 w-6" /></div><p className="text-xs text-slate-600">Link reset dikirim ke <strong>{forgotEmail}</strong>. Cek kotak masuk.</p><button onClick={() => setShowForgotPassword(false)} className="w-full rounded-xl bg-indigo-600 py-2.5 text-xs font-black text-white">Kembali</button></div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-3">
+                <p className="text-xs text-slate-600">Masukkan email terdaftar. Kami kirim link untuk membuat password baru.</p>
+                <input required type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="contoh@email.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
+                {forgotError && <p className="text-[11px] text-rose-600">{forgotError}</p>}
+                <div className="flex gap-2"><button type="button" onClick={() => setShowForgotPassword(false)} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600">Batal</button><button type="submit" disabled={forgotLoading} className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-xs font-black text-white disabled:opacity-50">Kirim link</button></div>
+              </form>
+            )}
           </div>
         </div>,
-        document.body
+        document.body,
       )}
-    </div>
+    </main>
   );
 };

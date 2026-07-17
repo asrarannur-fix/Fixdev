@@ -196,7 +196,8 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
  * Auto-converts TRIAL → ACTIVE status after payment
  */
 export async function upgradeTrialHandler(req: Request, res: Response) {
-  const { tenantId, tier, billingCycle } = req.body || {};
+  const { tier, billingCycle } = req.body || {};
+  const tenantId = req.tenantId;
   
   if (!tenantId || !tier || !billingCycle) {
     return res.status(400).json({ 
@@ -325,7 +326,8 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
  * Extends trial by 7 days (configurable via environment)
  */
 export async function extendTrialHandler(req: Request, res: Response) {
-  const { tenantId, days } = req.body || {};
+  const { days } = req.body || {};
+  const tenantId = req.tenantId;
   
   if (!tenantId) {
     return res.status(400).json({ 

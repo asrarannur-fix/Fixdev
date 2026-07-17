@@ -69,7 +69,9 @@ class AppErrorBoundary extends React.Component<
     return (
       <div className="min-h-[420px] rounded-3xl border border-rose-200 bg-rose-50 p-8 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-100">
         <h1 className="text-xl font-black">Modul gagal dimuat</h1>
-        <p className="mt-2 text-sm opacity-80">Refresh halaman. Jika masih gagal, hubungi admin.</p>
+        <p className="mt-2 text-sm opacity-80">
+          Refresh halaman. Jika masih gagal, hubungi admin.
+        </p>
         <pre className="mt-4 max-h-64 overflow-auto rounded-xl bg-white/70 p-4 text-xs dark:bg-black/30 whitespace-pre-wrap">
           {this.state.error.message}
         </pre>
@@ -78,7 +80,9 @@ class AppErrorBoundary extends React.Component<
         </pre>
         {this.state.componentStack && (
           <details className="mt-2">
-            <summary className="cursor-pointer text-xs font-bold text-rose-700 dark:text-rose-300">Component Stack</summary>
+            <summary className="cursor-pointer text-xs font-bold text-rose-700 dark:text-rose-300">
+              Component Stack
+            </summary>
             <pre className="mt-1 max-h-48 overflow-auto rounded-xl bg-white/70 p-4 text-xs dark:bg-black/30 whitespace-pre-wrap text-rose-600 dark:text-rose-400">
               {this.state.componentStack}
             </pre>
@@ -90,7 +94,9 @@ class AppErrorBoundary extends React.Component<
 }
 
 const MainAppContent: React.FC = () => {
-  const [invitationToken, setInvitationToken] = useState(() => new URLSearchParams(window.location.search).get("invite"));
+  const [invitationToken, setInvitationToken] = useState(() =>
+    new URLSearchParams(window.location.search).get("invite"),
+  );
   const {
     currentUser,
     apiLoading,
@@ -120,12 +126,18 @@ const MainAppContent: React.FC = () => {
   const impersonatedTenant = tenants.find((t) => t.id === currentTenantId);
   const tenantDisplay = impersonatedTenant?.name ?? currentUser.name;
   const impersonationSession = React.useMemo(() => {
-    try { return JSON.parse(localStorage.getItem("saas_impersonation_session") || "null"); }
-    catch { return null; }
+    try {
+      return JSON.parse(
+        localStorage.getItem("saas_impersonation_session") || "null",
+      );
+    } catch {
+      return null;
+    }
   }, [isImpersonating]);
   React.useEffect(() => {
     if (!isImpersonating || !impersonationSession?.expiresAt) return;
-    const remaining = new Date(impersonationSession.expiresAt).getTime() - Date.now();
+    const remaining =
+      new Date(impersonationSession.expiresAt).getTime() - Date.now();
     if (remaining <= 0) {
       localStorage.removeItem("saas_impersonation_session");
       exitImpersonate();
@@ -137,7 +149,12 @@ const MainAppContent: React.FC = () => {
       showToast("Sesi impersonasi telah berakhir otomatis.", "info");
     }, remaining);
     return () => window.clearTimeout(timer);
-  }, [isImpersonating, impersonationSession?.expiresAt, exitImpersonate, showToast]);
+  }, [
+    isImpersonating,
+    impersonationSession?.expiresAt,
+    exitImpersonate,
+    showToast,
+  ]);
 
   // 🛡️ Safety net: paksa sembunyikan loading indicator setelah 35 detik
   // Mencegah notifikasi stuck jika ada edge case yang tidak tertangani
@@ -148,14 +165,15 @@ const MainAppContent: React.FC = () => {
       return;
     }
     const safetyTimer = setTimeout(() => {
-      console.warn("[Safety] apiLoading masih aktif setelah 35 detik — paksa dismiss.");
+      console.warn(
+        "[Safety] apiLoading masih aktif setelah 35 detik — paksa dismiss.",
+      );
       setForceHideLoading(true);
     }, 35000);
     return () => clearTimeout(safetyTimer);
   }, [apiLoading]);
   const effectiveLoading = apiLoading && !forceHideLoading;
   const isSuperAdmin = currentUser.role === UserRole.SUPER_ADMIN;
-
 
   // Intercept window.alert & dispatch clean toast alerts
   React.useEffect(() => {
@@ -276,7 +294,9 @@ const MainAppContent: React.FC = () => {
   const handleSetTab = (tab: string, subTab?: string) => {
     // Normalize SA clicks to safe known tab
     const finalTab =
-      isSuperAdmin && !SUPER_ADMIN_TABS.includes(tab) && tab !== "customer-portal"
+      isSuperAdmin &&
+      !SUPER_ADMIN_TABS.includes(tab) &&
+      tab !== "customer-portal"
         ? "saas-dashboard"
         : tab;
     setActiveTab(finalTab);
@@ -297,7 +317,7 @@ const MainAppContent: React.FC = () => {
       else if (finalTab === "settings")
         finalSub = isSuperAdmin ? "storage" : "branding";
       else if (finalTab === "fraud") finalSub = "audit-log";
-      
+
       setActiveSubTab(finalSub);
       localStorage.setItem("saas_active_sub_tab", finalSub);
     }
@@ -345,7 +365,15 @@ const MainAppContent: React.FC = () => {
   );
 
   if (invitationToken) {
-    return <InvitationAcceptance token={invitationToken} onComplete={() => { window.history.replaceState({}, "", window.location.pathname); setInvitationToken(null); }} />;
+    return (
+      <InvitationAcceptance
+        token={invitationToken}
+        onComplete={() => {
+          window.history.replaceState({}, "", window.location.pathname);
+          setInvitationToken(null);
+        }}
+      />
+    );
   }
 
   if (!isAuthenticated) {
@@ -363,10 +391,7 @@ const MainAppContent: React.FC = () => {
               </div>
               <div>
                 <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-                  FixFlow{" "}
-                  <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                    ERP
-                  </span>
+                  FixDev
                 </span>
                 <span className="text-[10px] text-slate-400 block -mt-1 font-mono">
                   Customer Portal
@@ -419,15 +444,36 @@ const MainAppContent: React.FC = () => {
                 <strong className="text-white underline">
                   {tenantDisplay}
                 </strong>
-                . Mode <strong>{impersonationSession?.accessMode === "FULL" ? "akses penuh" : "hanya-baca"}</strong>
-                {impersonationSession?.expiresAt && <> hingga {new Date(impersonationSession.expiresAt).toLocaleTimeString("id-ID")}</>}. Semua aktivitas dicatat dengan alasan: {impersonationSession?.reason || "dukungan operasional"}.
+                . Mode{" "}
+                <strong>
+                  {impersonationSession?.accessMode === "FULL"
+                    ? "akses penuh"
+                    : "hanya-baca"}
+                </strong>
+                {impersonationSession?.expiresAt && (
+                  <>
+                    {" "}
+                    hingga{" "}
+                    {new Date(
+                      impersonationSession.expiresAt,
+                    ).toLocaleTimeString("id-ID")}
+                  </>
+                )}
+                . Semua aktivitas dicatat dengan alasan:{" "}
+                {impersonationSession?.reason || "dukungan operasional"}.
               </p>
             </div>
           </div>
           <button
             onClick={async () => {
               if (impersonationSession?.id) {
-                await apiFetch(`/api/superadmin/impersonation/${impersonationSession.id}/end`, { method: "POST", body: JSON.stringify({ reason: "USER_EXIT" }) }).catch(() => undefined);
+                await apiFetch(
+                  `/api/superadmin/impersonation/${impersonationSession.id}/end`,
+                  {
+                    method: "POST",
+                    body: JSON.stringify({ reason: "USER_EXIT" }),
+                  },
+                ).catch(() => undefined);
               }
               localStorage.removeItem("saas_impersonation_session");
               exitImpersonate();
@@ -452,14 +498,15 @@ const MainAppContent: React.FC = () => {
         )}
 
         {/* Mobile Sidebar Backdrop Overlay */}
-        {isMobileSidebarOpen && createPortal(
-          <div
-            onClick={() => setIsMobileSidebarOpen(false)}
-            className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs lg:hidden transition-opacity duration-300"
-            id="sidebar-backdrop"
-          />,
-          document.body
-        )}
+        {isMobileSidebarOpen &&
+          createPortal(
+            <div
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs lg:hidden transition-opacity duration-300"
+              id="sidebar-backdrop"
+            />,
+            document.body,
+          )}
 
         {/* Dynamic Navigation Sidebar */}
         {(navigationMode === "sidebar" || isMobileSidebarOpen) && (
@@ -488,7 +535,9 @@ const MainAppContent: React.FC = () => {
           <div className="hidden lg:block">
             <Topbar
               onSetTab={handleSetTab}
-              onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+              onToggleSidebar={() =>
+                setIsMobileSidebarOpen(!isMobileSidebarOpen)
+              }
               onOpenSearch={() => setIsSearchOpen(true)}
               navigationMode={navigationMode}
               setNavigationMode={setNavigationMode}
@@ -518,7 +567,10 @@ const MainAppContent: React.FC = () => {
             )}
 
           {/* Dynamic Canvas Area */}
-          <main className="flex-1 overflow-y-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-24 lg:pb-6" id="canvas-main-area">
+          <main
+            className="flex-1 overflow-y-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-24 lg:pb-6"
+            id="canvas-main-area"
+          >
             <AppErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 {/* Render Super Admin Workspace */}

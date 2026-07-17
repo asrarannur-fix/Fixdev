@@ -92,7 +92,9 @@ export const AssetManager: React.FC = () => {
 
   // 1. Core Assets State (loaded from localStorage with dynamic fallback)
   const [assets, setAssets] = useState<Asset[]>(() => {
-    const saved = localStorage.getItem("saas_assets_" + (currentTenantId || "default"));
+    const saved = localStorage.getItem(
+      "saas_assets_" + (currentTenantId || "default"),
+    );
     return saved
       ? JSON.parse(saved)
       : [
@@ -159,7 +161,9 @@ export const AssetManager: React.FC = () => {
   const [maintenanceRecords, setMaintenanceRecords] = useState<
     MaintenanceRecord[]
   >(() => {
-    const saved = localStorage.getItem("saas_maintenance_records_" + (currentTenantId || "default"));
+    const saved = localStorage.getItem(
+      "saas_maintenance_records_" + (currentTenantId || "default"),
+    );
     return saved
       ? JSON.parse(saved)
       : [
@@ -186,7 +190,9 @@ export const AssetManager: React.FC = () => {
 
   // 3. Assignment Logs
   const [assignmentLogs, setAssignmentLogs] = useState<AssignmentLog[]>(() => {
-    const saved = localStorage.getItem("saas_assignment_logs_" + (currentTenantId || "default"));
+    const saved = localStorage.getItem(
+      "saas_assignment_logs_" + (currentTenantId || "default"),
+    );
     return saved
       ? JSON.parse(saved)
       : [
@@ -211,7 +217,10 @@ export const AssetManager: React.FC = () => {
 
   // Persist local state changes to localStorage
   React.useEffect(() => {
-    localStorage.setItem("saas_assets_" + (currentTenantId || "default"), JSON.stringify(assets));
+    localStorage.setItem(
+      "saas_assets_" + (currentTenantId || "default"),
+      JSON.stringify(assets),
+    );
   }, [assets, currentTenantId]);
 
   React.useEffect(() => {
@@ -231,9 +240,15 @@ export const AssetManager: React.FC = () => {
   // Synchronize on storage changes (e.g., when OfflineSyncModal triggers changes)
   React.useEffect(() => {
     const handleStorageSync = () => {
-      const savedAssets = localStorage.getItem("saas_assets_" + (currentTenantId || "default"));
-      const savedMnt = localStorage.getItem("saas_maintenance_records_" + (currentTenantId || "default"));
-      const savedAsg = localStorage.getItem("saas_assignment_logs_" + (currentTenantId || "default"));
+      const savedAssets = localStorage.getItem(
+        "saas_assets_" + (currentTenantId || "default"),
+      );
+      const savedMnt = localStorage.getItem(
+        "saas_maintenance_records_" + (currentTenantId || "default"),
+      );
+      const savedAsg = localStorage.getItem(
+        "saas_assignment_logs_" + (currentTenantId || "default"),
+      );
       if (savedAssets) setAssets(JSON.parse(savedAssets));
       if (savedMnt) setMaintenanceRecords(JSON.parse(savedMnt));
       if (savedAsg) setAssignmentLogs(JSON.parse(savedAsg));
@@ -368,8 +383,14 @@ export const AssetManager: React.FC = () => {
     const cleanSerial = newAssetSerial.trim().toUpperCase();
     const cleanLocation = newAssetLocation.trim();
     const costNum = Math.max(0, Number(newAssetCost) || 0);
-    const residualNum = Math.min(costNum, Math.max(0, Number(newAssetResidual) || Math.round(costNum * 0.1)));
-    const lifeYears = Math.min(100, Math.max(1, Math.trunc(Number(newAssetLife) || 5)));
+    const residualNum = Math.min(
+      costNum,
+      Math.max(0, Number(newAssetResidual) || Math.round(costNum * 0.1)),
+    );
+    const lifeYears = Math.min(
+      100,
+      Math.max(1, Math.trunc(Number(newAssetLife) || 5)),
+    );
 
     // If offline, save action to local queue
     if (!isOnline) {
@@ -1842,230 +1863,233 @@ export const AssetManager: React.FC = () => {
       )}
 
       {/* QR LABEL MODAL */}
-      {showQRModal && createPortal(
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 animate-scaleUp">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <span className="font-extrabold text-xs uppercase text-blue-900 dark:text-blue-400 tracking-wider font-mono">
-                Print Asset Tag Label
-              </span>
-              <button
-                onClick={() => {
-                  setShowQRModal(null);
-                  setScannedAsset(null);
-                }}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 dark:text-zinc-400 text-xs font-bold font-mono cursor-pointer"
-              >
-                CLOSE
-              </button>
-            </div>
-
-            {/* Printable asset label with QR */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-2xl text-center space-y-3 relative overflow-hidden">
-              <div className="absolute top-0 left-0 bg-blue-600 text-white font-mono text-[8px] font-bold px-2 py-0.5 rounded-br-lg uppercase">
-                Enterprise ID
+      {showQRModal &&
+        createPortal(
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 animate-scaleUp">
+              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                <span className="font-extrabold text-xs uppercase text-blue-900 dark:text-blue-400 tracking-wider font-mono">
+                  Print Asset Tag Label
+                </span>
+                <button
+                  onClick={() => {
+                    setShowQRModal(null);
+                    setScannedAsset(null);
+                  }}
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 dark:text-zinc-400 text-xs font-bold font-mono cursor-pointer"
+                >
+                  CLOSE
+                </button>
               </div>
-              <p className="font-black text-slate-900 dark:text-zinc-100 text-sm mt-3">
-                {assets.find((a) => a.id === showQRModal)?.name}
-              </p>
 
-              {/* Real Generated QR Code */}
-              <div className="w-32 h-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mx-auto flex items-center justify-center p-2 rounded-xl shadow-inner relative group">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f172a&data=${encodeURIComponent(
-                    JSON.stringify({
-                      id: showQRModal,
-                      name: assets.find((a) => a.id === showQRModal)?.name,
-                      serial: assets.find((a) => a.id === showQRModal)
-                        ?.serialNo,
-                      value: assets.find((a) => a.id === showQRModal)
-                        ?.currentValue,
-                      location: assets.find((a) => a.id === showQRModal)
-                        ?.location,
-                      status: assets.find((a) => a.id === showQRModal)?.status,
-                    }),
-                  )}`}
-                  alt="Asset QR Code"
-                  className="w-28 h-28 object-contain rounded"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-blue-600/90 text-white rounded-xl">
-                  <button
-                    onClick={() => handleSimulateScan(showQRModal)}
-                    className="px-2.5 py-1.5 bg-white text-slate-950 rounded-lg text-[10px] font-black flex items-center gap-1 cursor-pointer shadow-md hover:bg-slate-50 transition-all"
-                  >
-                    <ScanLine className="w-3.5 h-3.5" />
-                    <span>Scan Tag</span>
-                  </button>
+              {/* Printable asset label with QR */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-2xl text-center space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 left-0 bg-blue-600 text-white font-mono text-[8px] font-bold px-2 py-0.5 rounded-br-lg uppercase">
+                  Enterprise ID
                 </div>
-              </div>
-
-              <div className="text-[10px] font-mono text-slate-500 dark:text-slate-450 space-y-1">
-                <p>
-                  Asset ID:{" "}
-                  <strong className="font-mono dark:text-zinc-200">
-                    {showQRModal}
-                  </strong>
+                <p className="font-black text-slate-900 dark:text-zinc-100 text-sm mt-3">
+                  {assets.find((a) => a.id === showQRModal)?.name}
                 </p>
-                <p>
-                  Branch: {assets.find((a) => a.id === showQRModal)?.location}
-                </p>
+
+                {/* Real Generated QR Code */}
+                <div className="w-32 h-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mx-auto flex items-center justify-center p-2 rounded-xl shadow-inner relative group">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f172a&data=${encodeURIComponent(
+                      JSON.stringify({
+                        id: showQRModal,
+                        name: assets.find((a) => a.id === showQRModal)?.name,
+                        serial: assets.find((a) => a.id === showQRModal)
+                          ?.serialNo,
+                        value: assets.find((a) => a.id === showQRModal)
+                          ?.currentValue,
+                        location: assets.find((a) => a.id === showQRModal)
+                          ?.location,
+                        status: assets.find((a) => a.id === showQRModal)
+                          ?.status,
+                      }),
+                    )}`}
+                    alt="Asset QR Code"
+                    className="w-28 h-28 object-contain rounded"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-blue-600/90 text-white rounded-xl">
+                    <button
+                      onClick={() => handleSimulateScan(showQRModal)}
+                      className="px-2.5 py-1.5 bg-white text-slate-950 rounded-lg text-[10px] font-black flex items-center gap-1 cursor-pointer shadow-md hover:bg-slate-50 transition-all"
+                    >
+                      <ScanLine className="w-3.5 h-3.5" />
+                      <span>Scan Tag</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-450 space-y-1">
+                  <p>
+                    Asset ID:{" "}
+                    <strong className="font-mono dark:text-zinc-200">
+                      {showQRModal}
+                    </strong>
+                  </p>
+                  <p>
+                    Branch: {assets.find((a) => a.id === showQRModal)?.location}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Scanned Scan HUD result with Maintenance and Assignments timelines */}
-            {scannedAsset && (
-              <div className="p-4 bg-slate-950 dark:bg-zinc-950 text-white rounded-2xl text-xs space-y-4 border border-blue-950 dark:border-blue-900/60 animate-fadeIn max-h-96 overflow-y-auto">
-                <div className="flex items-center gap-1.5 border-b border-blue-950 dark:border-blue-900/40 pb-2">
-                  <ScanLine className="w-4 h-4 text-emerald-400" />
-                  <span className="font-bold text-[10px] font-mono uppercase text-emerald-400">
-                    Scan Decrypted: 100% Verified
-                  </span>
-                </div>
+              {/* Scanned Scan HUD result with Maintenance and Assignments timelines */}
+              {scannedAsset && (
+                <div className="p-4 bg-slate-950 dark:bg-zinc-950 text-white rounded-2xl text-xs space-y-4 border border-blue-950 dark:border-blue-900/60 animate-fadeIn max-h-96 overflow-y-auto">
+                  <div className="flex items-center gap-1.5 border-b border-blue-950 dark:border-blue-900/40 pb-2">
+                    <ScanLine className="w-4 h-4 text-emerald-400" />
+                    <span className="font-bold text-[10px] font-mono uppercase text-emerald-400">
+                      Scan Decrypted: 100% Verified
+                    </span>
+                  </div>
 
-                {/* Asset Details */}
-                <div className="space-y-1.5 text-[11px] leading-relaxed">
-                  <p>
-                    • Aset ID:{" "}
-                    <strong className="font-mono text-blue-300 dark:text-blue-400">
-                      {scannedAsset.id}
-                    </strong>
-                  </p>
-                  <p>
-                    • Name:{" "}
-                    <strong className="text-slate-200 dark:text-zinc-100">
-                      {scannedAsset.name}
-                    </strong>
-                  </p>
-                  <p>
-                    • Serial S/N:{" "}
-                    <strong className="font-mono text-slate-300 dark:text-zinc-300">
-                      {scannedAsset.serialNo}
-                    </strong>
-                  </p>
-                  <p>
-                    • Buku Value:{" "}
-                    <strong className="text-emerald-400 font-mono">
-                      Rp {(scannedAsset.currentValue ?? 0).toLocaleString()}
-                    </strong>
-                  </p>
-                  <p>
-                    • Lokasi Aktif:{" "}
-                    <strong className="text-slate-300 dark:text-zinc-300">
-                      {scannedAsset.location}
-                    </strong>
-                  </p>
-                  <p>
-                    • Status Unit:{" "}
-                    <strong className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-900 dark:bg-blue-950 text-blue-200 dark:text-blue-300 font-mono">
-                      {scannedAsset.status}
-                    </strong>
-                  </p>
-                </div>
-
-                {/* Current Custodian / Assignment Status */}
-                <div className="border-t border-blue-950 dark:border-blue-900/40 pt-3 space-y-1.5">
-                  <h4 className="font-extrabold text-[9px] font-mono uppercase text-blue-400 dark:text-blue-300 tracking-wider">
-                    Status Assignment Custodian
-                  </h4>
-                  {scannedAsset.custodianId ? (
-                    <div className="bg-slate-900 dark:bg-slate-950 p-2 rounded-xl text-[10px] space-y-1 border border-blue-950/40 dark:border-blue-900/30">
-                      <p className="font-bold text-slate-200 dark:text-zinc-100 font-mono">
-                        ID Personel: {scannedAsset.custodianId}
-                      </p>
-                      <p className="text-slate-400 dark:text-slate-550">
-                        Nama:{" "}
-                        {employees.find(
-                          (e) => e.id === scannedAsset.custodianId,
-                        )?.name || "Karyawan"}
-                      </p>
-                      {assignmentLogs.find(
-                        (l) =>
-                          l.assetId === scannedAsset.id &&
-                          l.returnDate === null,
-                      ) && (
-                        <p className="text-[9px] text-slate-500 dark:text-slate-550 italic mt-1">
-                          Catatan: "
-                          {
-                            assignmentLogs.find(
-                              (l) =>
-                                l.assetId === scannedAsset.id &&
-                                l.returnDate === null,
-                            )?.notes
-                          }
-                          "
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-slate-400 dark:text-slate-550 text-[10px] italic">
-                      Standby di Gudang (Tidak ditugaskan ke personel)
+                  {/* Asset Details */}
+                  <div className="space-y-1.5 text-[11px] leading-relaxed">
+                    <p>
+                      • Aset ID:{" "}
+                      <strong className="font-mono text-blue-300 dark:text-blue-400">
+                        {scannedAsset.id}
+                      </strong>
                     </p>
-                  )}
-                </div>
+                    <p>
+                      • Name:{" "}
+                      <strong className="text-slate-200 dark:text-zinc-100">
+                        {scannedAsset.name}
+                      </strong>
+                    </p>
+                    <p>
+                      • Serial S/N:{" "}
+                      <strong className="font-mono text-slate-300 dark:text-zinc-300">
+                        {scannedAsset.serialNo}
+                      </strong>
+                    </p>
+                    <p>
+                      • Buku Value:{" "}
+                      <strong className="text-emerald-400 font-mono">
+                        Rp {(scannedAsset.currentValue ?? 0).toLocaleString()}
+                      </strong>
+                    </p>
+                    <p>
+                      • Lokasi Aktif:{" "}
+                      <strong className="text-slate-300 dark:text-zinc-300">
+                        {scannedAsset.location}
+                      </strong>
+                    </p>
+                    <p>
+                      • Status Unit:{" "}
+                      <strong className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-900 dark:bg-blue-950 text-blue-200 dark:text-blue-300 font-mono">
+                        {scannedAsset.status}
+                      </strong>
+                    </p>
+                  </div>
 
-                {/* Maintenance & Calibration History Timeline */}
-                <div className="border-t border-blue-950 dark:border-blue-900/40 pt-3 space-y-2">
-                  <h4 className="font-extrabold text-[9px] font-mono uppercase text-blue-400 dark:text-blue-300 tracking-wider">
-                    Histori Pemeliharaan & Kalibrasi (
-                    {
-                      maintenanceRecords.filter(
-                        (m) => m.assetId === scannedAsset.id,
-                      ).length
-                    }
-                    )
-                  </h4>
-                  <div className="space-y-2">
-                    {maintenanceRecords.filter(
-                      (m) => m.assetId === scannedAsset.id,
-                    ).length > 0 ? (
-                      maintenanceRecords
-                        .filter((m) => m.assetId === scannedAsset.id)
-                        .map((record) => (
-                          <div
-                            key={record.id}
-                            className="p-2 bg-slate-900 dark:bg-slate-950 rounded-xl text-[10px] border border-blue-950/40 dark:border-blue-900/30 space-y-1"
-                          >
-                            <div className="flex justify-between font-mono text-[9px]">
-                              <span className="text-blue-400 dark:text-blue-300 font-bold">
-                                {record.id} ({record.type})
-                              </span>
-                              <span className="text-slate-500 dark:text-slate-550">
-                                {record.maintenanceDate}
-                              </span>
-                            </div>
-                            <p className="text-slate-300 dark:text-zinc-300 font-medium">
-                              "{record.notes}"
-                            </p>
-                            <div className="flex justify-between items-center text-[9px]">
-                              <span className="text-slate-400 dark:text-slate-550 font-mono">
-                                Biaya: Rp {(record.cost ?? 0).toLocaleString()}
-                              </span>
-                              <span
-                                className={`px-1.5 py-0.2 rounded font-bold uppercase ${
-                                  record.status === "COMPLETED"
-                                    ? "bg-emerald-950 text-emerald-400"
-                                    : "bg-amber-950 text-amber-400"
-                                }`}
-                              >
-                                {record.status}
-                              </span>
-                            </div>
-                          </div>
-                        ))
+                  {/* Current Custodian / Assignment Status */}
+                  <div className="border-t border-blue-950 dark:border-blue-900/40 pt-3 space-y-1.5">
+                    <h4 className="font-extrabold text-[9px] font-mono uppercase text-blue-400 dark:text-blue-300 tracking-wider">
+                      Status Assignment Custodian
+                    </h4>
+                    {scannedAsset.custodianId ? (
+                      <div className="bg-slate-900 dark:bg-slate-950 p-2 rounded-xl text-[10px] space-y-1 border border-blue-950/40 dark:border-blue-900/30">
+                        <p className="font-bold text-slate-200 dark:text-zinc-100 font-mono">
+                          ID Personel: {scannedAsset.custodianId}
+                        </p>
+                        <p className="text-slate-400 dark:text-slate-550">
+                          Nama:{" "}
+                          {employees.find(
+                            (e) => e.id === scannedAsset.custodianId,
+                          )?.name || "Karyawan"}
+                        </p>
+                        {assignmentLogs.find(
+                          (l) =>
+                            l.assetId === scannedAsset.id &&
+                            l.returnDate === null,
+                        ) && (
+                          <p className="text-[9px] text-slate-500 dark:text-slate-550 italic mt-1">
+                            Catatan: "
+                            {
+                              assignmentLogs.find(
+                                (l) =>
+                                  l.assetId === scannedAsset.id &&
+                                  l.returnDate === null,
+                              )?.notes
+                            }
+                            "
+                          </p>
+                        )}
+                      </div>
                     ) : (
-                      <p className="text-slate-400 dark:text-slate-550 text-[10px] italic font-mono">
-                        Belum ada histori pemeliharaan terdaftar.
+                      <p className="text-slate-400 dark:text-slate-550 text-[10px] italic">
+                        Standby di Gudang (Tidak ditugaskan ke personel)
                       </p>
                     )}
                   </div>
+
+                  {/* Maintenance & Calibration History Timeline */}
+                  <div className="border-t border-blue-950 dark:border-blue-900/40 pt-3 space-y-2">
+                    <h4 className="font-extrabold text-[9px] font-mono uppercase text-blue-400 dark:text-blue-300 tracking-wider">
+                      Histori Pemeliharaan & Kalibrasi (
+                      {
+                        maintenanceRecords.filter(
+                          (m) => m.assetId === scannedAsset.id,
+                        ).length
+                      }
+                      )
+                    </h4>
+                    <div className="space-y-2">
+                      {maintenanceRecords.filter(
+                        (m) => m.assetId === scannedAsset.id,
+                      ).length > 0 ? (
+                        maintenanceRecords
+                          .filter((m) => m.assetId === scannedAsset.id)
+                          .map((record) => (
+                            <div
+                              key={record.id}
+                              className="p-2 bg-slate-900 dark:bg-slate-950 rounded-xl text-[10px] border border-blue-950/40 dark:border-blue-900/30 space-y-1"
+                            >
+                              <div className="flex justify-between font-mono text-[9px]">
+                                <span className="text-blue-400 dark:text-blue-300 font-bold">
+                                  {record.id} ({record.type})
+                                </span>
+                                <span className="text-slate-500 dark:text-slate-550">
+                                  {record.maintenanceDate}
+                                </span>
+                              </div>
+                              <p className="text-slate-300 dark:text-zinc-300 font-medium">
+                                "{record.notes}"
+                              </p>
+                              <div className="flex justify-between items-center text-[9px]">
+                                <span className="text-slate-400 dark:text-slate-550 font-mono">
+                                  Biaya: Rp{" "}
+                                  {(record.cost ?? 0).toLocaleString()}
+                                </span>
+                                <span
+                                  className={`px-1.5 py-0.2 rounded font-bold uppercase ${
+                                    record.status === "COMPLETED"
+                                      ? "bg-emerald-950 text-emerald-400"
+                                      : "bg-amber-950 text-amber-400"
+                                  }`}
+                                >
+                                  {record.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <p className="text-slate-400 dark:text-slate-550 text-[10px] italic font-mono">
+                          Belum ada histori pemeliharaan terdaftar.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

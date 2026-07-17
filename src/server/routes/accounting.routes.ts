@@ -6,135 +6,27 @@
  * Cash Transactions, and Financial Reports.
  */
 import express from "express";
-import { requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
-import { sanctumAuthMiddleware, checkAbilities } from "../controllers/apiV1.controller.js";
+import { requireRoles, requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 import {
-  createAccountSchema,
-  updateAccountSchema,
-  createJournalEntrySchema,
-  createCashTxSchema,
-  validateBody,
-  getAccounts,
-  createAccount,
-  updateAccount,
-  createJournalEntry,
-  createCashTransaction,
-  getJournalEntries,
-  getJournalEntryById,
-  getTrialBalance,
-  getProfitAndLoss,
+  createAccountSchema, updateAccountSchema, createJournalEntrySchema, createCashTxSchema, validateBody,
+  getAccounts, createAccount, updateAccount, createJournalEntry, createCashTransaction,
+  getJournalEntries, getJournalEntryById, getTrialBalance, getProfitAndLoss,
 } from "../controllers/accounting.controller.js";
 
 const router = express.Router();
+const accViewer = requireRoles("OWNER", "ADMIN", "MANAGER");
+const accWriter = requireRoles("OWNER", "ADMIN");
+const auth = requireSupabaseJwt;
+const scope = requireTenantScope;
 
-// ──────────────────────────────────────────
-// A. CHART OF ACCOUNTS (COA)
-// ──────────────────────────────────────────
-
-// List accounts (optionally filter by type)
-router.get(
-  "/accounts",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:read", "accounting-coa"]),
-  getAccounts,
-);
-
-// Create new account
-router.post(
-  "/accounts",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:write", "accounting-coa"]),
-  validateBody(createAccountSchema),
-  createAccount,
-);
-
-// Update account
-router.put(
-  "/accounts/:id",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:write", "accounting-coa"]),
-  validateBody(updateAccountSchema),
-  updateAccount,
-);
-
-// ──────────────────────────────────────────
-// B. JOURNAL ENTRIES (Double-Entry)
-// ──────────────────────────────────────────
-
-// List journal entries (with optional filters)
-router.get(
-  "/journal",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:read", "accounting-ledger"]),
-  getJournalEntries,
-);
-
-// Get journal entry by ID (with lines)
-router.get(
-  "/journal/:id",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:read", "accounting-ledger"]),
-  getJournalEntryById,
-);
-
-// Create new journal entry (with balance validation)
-router.post(
-  "/journal",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:write", "accounting-ledger"]),
-  validateBody(createJournalEntrySchema),
-  createJournalEntry,
-);
-
-// ──────────────────────────────────────────
-// C. CASH TRANSACTIONS
-// ──────────────────────────────────────────
-
-// 4. CASH TRANSACTIONS
-router.post(
-  "/cash",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:write", "accounting-cash"]),
-  validateBody(createCashTxSchema),
-  createCashTransaction,
-);
-
-// ──────────────────────────────────────────
-// D. FINANCIAL REPORTS
-// ──────────────────────────────────────────
-
-// Trial Balance
-router.get(
-  "/trial-balance",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:read", "accounting-reports"]),
-  getTrialBalance,
-);
-
-// Profit & Loss
-router.get(
-  "/profit-and-loss",
-  sanctumAuthMiddleware,
-  requireSupabaseJwt,
-  requireTenantScope,
-  checkAbilities(["accounting:read", "accounting-reports"]),
-  getProfitAndLoss,
-);
+router.get("/accounts", auth, scope, accViewer, getAccounts);
+router.post("/accounts", auth, scope, accWriter, validateBody(createAccountSchema), createAccount);
+router.put("/accounts/:id", auth, scope, accWriter, validateBody(updateAccountSchema), updateAccount);
+router.get("/journal", auth, scope, accViewer, getJournalEntries);
+router.get("/journal/:id", auth, scope, accViewer, getJournalEntryById);
+router.post("/journal", auth, scope, accWriter, validateBody(createJournalEntrySchema), createJournalEntry);
+router.post("/cash", auth, scope, accWriter, validateBody(createCashTxSchema), createCashTransaction);
+router.get("/trial-balance", auth, scope, accViewer, getTrialBalance);
+router.get("/profit-and-loss", auth, scope, accViewer, getProfitAndLoss);
 
 export default router;

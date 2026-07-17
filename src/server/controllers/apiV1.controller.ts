@@ -978,16 +978,25 @@ export const createSale = async (req: any, res: any) => {
       ],
     );
 
-    // Deduct stock for each item
+    // Deduct atomically. Insufficient stock or wrong tenant rolls back the sale.
     for (const item of calculatedItems) {
       if (item.productId) {
-        await client.query(
-          `UPDATE product_stock SET quantity = GREATEST(0, quantity - $1)
-           WHERE product_id = $2 AND warehouse_id IN (
-             SELECT id FROM warehouses WHERE branch_id = $3 LIMIT 1
-           )`,
-          [item.quantity, item.productId, branchId],
+        const stockResult = await client.query(
+          `UPDATE product_stock ps
+           SET quantity = ps.quantity - $1
+           WHERE ps.product_id = $2
+             AND ps.tenant_id = $3
+             AND ps.quantity >= $1
+             AND ps.warehouse_id = (
+               SELECT w.id FROM warehouses w
+               WHERE w.branch_id = $4 AND w.tenant_id = $3
+               LIMIT 1
+             )`,
+          [item.quantity, item.productId, tenantId, branchId],
         );
+        if (stockResult.rowCount !== 1) {
+          throw new Error(`Stok tidak cukup untuk produk ${item.productId}.`);
+        }
       }
     }
 

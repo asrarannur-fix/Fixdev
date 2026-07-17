@@ -91,11 +91,15 @@ export const ConsignmentManager: React.FC = () => {
     if (addInventoryProduct) {
       addInventoryProduct(newProd);
       showToast("Produk titipan berhasil didaftarkan!", "success");
-      
+
       if (addLog) {
-        addLog("Pendaftaran barang konsinyasi", `Harga Jual: Rp ${sellVal.toLocaleString()}`, "INVENTORY");
+        addLog(
+          "Pendaftaran barang konsinyasi",
+          `Harga Jual: Rp ${sellVal.toLocaleString()}`,
+          "INVENTORY",
+        );
       }
-      
+
       setItemName("");
       setShowAddModal(false);
     } else {
@@ -108,10 +112,12 @@ export const ConsignmentManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
         <div>
           <h2 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-            <Truck className="w-5 h-5 text-amber-500" /> Manajemen Konsinyasi (Titip Jual)
+            <Truck className="w-5 h-5 text-amber-500" /> Manajemen Konsinyasi
+            (Titip Jual)
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Daftarkan barang titipan dari pelanggan, atur bagi hasil komisi, dan kelola settlement penjualan.
+            Daftarkan barang titipan dari pelanggan, atur bagi hasil komisi, dan
+            kelola settlement penjualan.
           </p>
         </div>
         <button
@@ -155,18 +161,30 @@ export const ConsignmentManager: React.FC = () => {
               <tbody>
                 {consignmentProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-slate-400 italic">
+                    <td
+                      colSpan={5}
+                      className="text-center py-8 text-slate-400 italic"
+                    >
                       Tidak ada barang konsinyasi terdaftar.
                     </td>
                   </tr>
                 ) : (
                   consignmentProducts.map((p: any) => {
-                    const consignor = scopedCustomers.find((c) => c.id === p.consignorId);
+                    const consignor = scopedCustomers.find(
+                      (c) => c.id === p.consignorId,
+                    );
                     return (
-                      <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                      <tr
+                        key={p.id}
+                        className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
+                      >
                         <td className="px-3 py-2.5">
-                          <div className="font-bold text-slate-700">{p.name}</div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{p.sku}</div>
+                          <div className="font-bold text-slate-700">
+                            {p.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            {p.sku}
+                          </div>
                         </td>
                         <td className="px-3 py-2.5 text-slate-600">
                           {consignor ? consignor.name : "Pelanggan Umum"}
@@ -194,9 +212,10 @@ export const ConsignmentManager: React.FC = () => {
         {/* Right: Settlement Summary (1 Column) */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 h-fit">
           <h3 className="font-bold text-xs uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
-            <DollarSign className="w-4 h-4 text-emerald-500" /> Ringkasan Komisi & Settlement
+            <DollarSign className="w-4 h-4 text-emerald-500" /> Ringkasan Komisi
+            & Settlement
           </h3>
-          
+
           <div className="space-y-3">
             <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center text-xs">
               <span className="text-slate-500">Titipan Terjual</span>
@@ -207,12 +226,16 @@ export const ConsignmentManager: React.FC = () => {
               <span className="font-bold text-emerald-600 font-mono">Rp 0</span>
             </div>
             <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center text-xs">
-              <span className="text-slate-500">Hutang Consignor (Settlement)</span>
+              <span className="text-slate-500">
+                Hutang Consignor (Settlement)
+              </span>
               <span className="font-bold text-amber-600 font-mono">Rp 0</span>
             </div>
           </div>
           <button
-            onClick={() => showToast("Tidak ada settlement tertunda saat ini.", "info")}
+            onClick={() =>
+              showToast("Tidak ada settlement tertunda saat ini.", "info")
+            }
             className="w-full py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all text-center cursor-pointer"
           >
             Proses Settlement Kemitraan
@@ -221,104 +244,116 @@ export const ConsignmentManager: React.FC = () => {
       </div>
 
       {/* Add Consignment Modal */}
-      {showAddModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs">
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xl w-full max-w-md animate-scaleIn">
-            <h3 className="text-xs font-bold uppercase text-slate-800 tracking-wider mb-4 flex items-center gap-2">
-              <Truck className="w-4 h-4 text-amber-500" /> Daftarkan Barang Titip Jual Baru
-            </h3>
-            
-            <form onSubmit={handleAddConsignment} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Pemilik Barang (Consignor)</label>
-                <select
-                  value={selectedCustId}
-                  onChange={(e) => setSelectedCustId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white"
-                >
-                  <option value="">Pilih Pelanggan...</option>
-                  {scopedCustomers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.phone || "No HP"})
-                    </option>
-                  ))}
-                </select>
-              </div>
+      {showAddModal &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xl w-full max-w-md animate-scaleIn">
+              <h3 className="text-xs font-bold uppercase text-slate-800 tracking-wider mb-4 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-amber-500" /> Daftarkan Barang
+                Titip Jual Baru
+              </h3>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Nama Barang</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: LCD iPhone 11 Original Cabutan"
-                  value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleAddConsignment} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Harga Target Jual (Rp)</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Pemilik Barang (Consignor)
+                  </label>
+                  <select
+                    value={selectedCustId}
+                    onChange={(e) => setSelectedCustId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white"
+                  >
+                    <option value="">Pilih Pelanggan...</option>
+                    {scopedCustomers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.phone || "No HP"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Nama Barang
+                  </label>
                   <input
-                    type="number"
+                    type="text"
                     required
-                    min="1000"
-                    value={itemPrice}
-                    onChange={(e) => setItemPrice(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono font-bold"
+                    placeholder="Contoh: LCD iPhone 11 Original Cabutan"
+                    value={itemName}
+                    onChange={(e) => setItemName(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Bagi Hasil Komisi (%)</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    max="100"
-                    value={consignmentFee}
-                    onChange={(e) => setConsignmentFee(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono font-bold"
-                  />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">
+                      Harga Target Jual (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1000"
+                      value={itemPrice}
+                      onChange={(e) => setItemPrice(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">
+                      Bagi Hasil Komisi (%)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      max="100"
+                      value={consignmentFee}
+                      onChange={(e) => setConsignmentFee(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono font-bold"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Gudang Penyimpanan</label>
-                <select
-                  value={warehouseId}
-                  onChange={(e) => setWarehouseId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white"
-                >
-                  <option value="">Pilih Gudang...</option>
-                  {warehouses.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Gudang Penyimpanan
+                  </label>
+                  <select
+                    value={warehouseId}
+                    onChange={(e) => setWarehouseId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white"
+                  >
+                    <option value="">Pilih Gudang...</option>
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg cursor-pointer shadow-sm"
-                >
-                  Daftarkan Barang
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg cursor-pointer shadow-sm"
+                  >
+                    Daftarkan Barang
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

@@ -82,17 +82,21 @@ export const CannibalWorkshop: React.FC = () => {
   // History log of disassemblies
   const [harvestLogs, setHarvestLogs] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem(`saas_cannibal_logs_${currentTenantId}`);
-      return saved ? JSON.parse(saved) : [
-        {
-          id: "CAN-0041",
-          donorDevice: "Asus ROG GL503 Broken Screen",
-          partsExtracted: ["Heatsink Dual Fan", "Keyboard RGB Mech"],
-          totalValue: 450000,
-          techName: "Ahmad Teknisi",
-          date: "2026-06-28",
-        },
-      ];
+      const saved = localStorage.getItem(
+        `saas_cannibal_logs_${currentTenantId}`,
+      );
+      return saved
+        ? JSON.parse(saved)
+        : [
+            {
+              id: "CAN-0041",
+              donorDevice: "Asus ROG GL503 Broken Screen",
+              partsExtracted: ["Heatsink Dual Fan", "Keyboard RGB Mech"],
+              totalValue: 450000,
+              techName: "Ahmad Teknisi",
+              date: "2026-06-28",
+            },
+          ];
     } catch {
       return [];
     }
@@ -100,7 +104,9 @@ export const CannibalWorkshop: React.FC = () => {
 
   React.useEffect(() => {
     try {
-      const saved = localStorage.getItem(`saas_cannibal_logs_${currentTenantId}`);
+      const saved = localStorage.getItem(
+        `saas_cannibal_logs_${currentTenantId}`,
+      );
       if (saved) {
         setHarvestLogs(JSON.parse(saved));
       } else {
@@ -169,9 +175,13 @@ export const CannibalWorkshop: React.FC = () => {
     }
 
     const tenantWhs = warehouses.filter((w) => w.tenantId === currentTenantId);
-    const saleWarehouse = tenantWhs.find((w) => w.branchId === currentBranchId) || tenantWhs[0];
+    const saleWarehouse =
+      tenantWhs.find((w) => w.branchId === currentBranchId) || tenantWhs[0];
     if (!saleWarehouse) {
-      showToast("Gagal memanen: tidak ada gudang yang tersedia untuk tenant Anda.", "error");
+      showToast(
+        "Gagal memanen: tidak ada gudang yang tersedia untuk tenant Anda.",
+        "error",
+      );
       return;
     }
     const whId = saleWarehouse.id;
@@ -241,7 +251,10 @@ export const CannibalWorkshop: React.FC = () => {
     setHarvestLogs((prev) => {
       const nextLogs = [newLog, ...prev];
       try {
-        localStorage.setItem(`saas_cannibal_logs_${currentTenantId}`, JSON.stringify(nextLogs));
+        localStorage.setItem(
+          `saas_cannibal_logs_${currentTenantId}`,
+          JSON.stringify(nextLogs),
+        );
       } catch (_) {}
       return nextLogs;
     });

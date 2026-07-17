@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || "";
+const TEST_TENANT_EMAIL = process.env.TEST_TENANT_EMAIL || "";
+const TEST_USER_PASSWORD = process.env.TEST_TENANT_PASSWORD || "";
 const TID = "4e94a9c7-7670-4303-8dc8-e3a2b45accb6";
 const serviceTickets = [
   { id: "st-1", tenantId: TID, ticketNo: "TKT/001", customerId: "b9ab665d-ed13-44c9-8912-95aec217c36f", deviceName: "MacBook Pro", deviceBrandModel: "Apple", customerComplaints: "Tidak bisa nyala", estimatedCost: 1500000, status: "DITERIMA", createdAt: new Date().toISOString(), timeline: [], partsUsed: [], warrantyMonths: 3, isOutsourced: false, initialChecklist: [], initialPhotos: [] },
@@ -20,7 +21,7 @@ async function setupMocks(page: Page) {
     refresh_token: "mock-rt",
     expires_in: 3600,
     token_type: "bearer",
-    user: { id: "u1", email: "asrarannur1@gmail.com" },
+    user: { id: "u1", email: TEST_TENANT_EMAIL },
   };
   await page.route("**/auth/v1/token?grant_type=password**", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(session) }),
@@ -38,7 +39,7 @@ async function setupMocks(page: Page) {
       body: JSON.stringify({
         id: "u1",
         tenant_id: TID,
-        email: "asrarannur1@gmail.com",
+        email: TEST_TENANT_EMAIL,
         name: "Asrar Annur",
         role: "OWNER",
         permissions: ["overview", "services", "services-list", "services-new-ticket"],
@@ -80,11 +81,11 @@ async function login(page: Page) {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector("#root");
-  const portal = page.getByRole("button", { name: /Akses Portal ERP/i }).first();
+  const portal = page.getByRole("button", { name: /^Masuk$/i }).first();
   if (await portal.isVisible().catch(() => false)) await portal.click();
-  await page.locator('input[type="email"]').first().fill("asrarannur1@gmail.com");
+  await page.locator('input[type="email"]').first().fill(TEST_TENANT_EMAIL);
   await page.locator('input[type="password"]').first().fill(TEST_USER_PASSWORD);
-  await page.getByRole("button", { name: /Masuk Sistem/i }).last().click();
+  await page.getByRole("button", { name: /^Masuk$/i }).last().click();
   await expect(page.locator("#main-app-container")).toBeVisible({ timeout: 20_000 });
 }
 

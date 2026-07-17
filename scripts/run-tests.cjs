@@ -6,6 +6,13 @@
 "use strict";
 const { spawn, spawnSync } = require("child_process");
 const http = require("http");
+require("dotenv").config();
+if (!process.env.TEST_TENANT_PASSWORD && process.env.TEST_SUPERADMIN_PASSWORD) {
+  process.env.TEST_TENANT_PASSWORD = process.env.TEST_SUPERADMIN_PASSWORD;
+}
+if (!process.env.TEST_USER_PASSWORD && process.env.TEST_TENANT_PASSWORD) {
+  process.env.TEST_USER_PASSWORD = process.env.TEST_TENANT_PASSWORD;
+}
 
 const BASE_URL = "http://localhost:3000";
 const HEALTH_URL = "/api/health";

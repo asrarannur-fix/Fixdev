@@ -208,7 +208,7 @@ export const ServiceApprovalPortal: React.FC = () => {
           </div>
           <div>
             <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-              FixFlow <span className="text-indigo-600 dark:text-indigo-400 font-medium">ERP</span>
+              FixDev
             </span>
             <span className="text-[10px] text-slate-400 block -mt-1 font-mono">Persetujuan Estimasi</span>
           </div>

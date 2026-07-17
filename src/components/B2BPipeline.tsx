@@ -119,11 +119,17 @@ export const B2BPipeline: React.FC = () => {
   });
 
   React.useEffect(() => {
-    localStorage.setItem(`zk_b2b_deals_${currentTenantId}`, JSON.stringify(deals));
+    localStorage.setItem(
+      `zk_b2b_deals_${currentTenantId}`,
+      JSON.stringify(deals),
+    );
   }, [deals, currentTenantId]);
 
   React.useEffect(() => {
-    localStorage.setItem(`zk_converted_deals_${currentTenantId}`, JSON.stringify(convertedDeals));
+    localStorage.setItem(
+      `zk_converted_deals_${currentTenantId}`,
+      JSON.stringify(convertedDeals),
+    );
   }, [convertedDeals, currentTenantId]);
 
   // Calculate totals

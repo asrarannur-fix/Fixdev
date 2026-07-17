@@ -44,7 +44,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; dot: string; bg: string }
 };
 
 /* ── helpers ────────────────────────────────────────────────── */
-const fmtRp = (n?: number) => n ? 'Rp\u00a0' + n.toLocaleString('id-ID') : '–';
+const fmtRp = (n?: number) => n != null && Number.isFinite(n) ? 'Rp\u00a0' + n.toLocaleString('id-ID') : '–';
 const fmtDt = (s?: string) => s ? new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
 const timeAgo = (s?: string): string => {
   if (!s) return '';
@@ -193,16 +193,24 @@ export const TicketEditorDock: React.FC<{
   const handleSave = async () => {
     setSaving(true);
     try {
+      const parsedWarrantyDays = Number(wDays);
+      const parsedCost = Number(cost);
+      if (!Number.isFinite(parsedWarrantyDays) || parsedWarrantyDays < 0) {
+        throw new Error('Hari garansi tidak valid.');
+      }
+      if (cost && (!Number.isFinite(parsedCost) || parsedCost < 0)) {
+        throw new Error('Estimasi biaya tidak valid.');
+      }
       const wExp = status === ServiceStatus.SELESAI
-        ? new Date(Date.now() + Number(wDays) * 86_400_000).toISOString()
+        ? new Date(Date.now() + parsedWarrantyDays * 86_400_000).toISOString()
         : ticket.warrantyExpiry;
       await onModifyRepair?.({
         ...ticket,
         status,
         notes,
-        estimatedCost: cost ? Number(cost) : ticket.estimatedCost,
+        estimatedCost: cost ? parsedCost : ticket.estimatedCost,
         technicianId:  techId,
-        warrantyDays:  Number(wDays),
+        warrantyDays:  parsedWarrantyDays,
         warrantyExpiry: wExp,
         spareParts:    parts,
         qcChecklist:   qcItems,

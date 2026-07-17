@@ -1,5 +1,6 @@
 ﻿import { test, expect, type Page } from "@playwright/test";
 import * as path from "path";
+import { TEST_TENANT_EMAIL, TEST_TENANT_PASSWORD } from "./tenant-login-helper";
 
 const TID = "bd7725f3-02cf-4944-bdc9-80ba642a2c55";
 const ART = "C:/Users/Administrator/.gemini/antigravity-ide/brain/16c61fbf-05a3-4d42-9390-660edbf1cd18";
@@ -12,7 +13,7 @@ async function login(page: Page) {
   const mainApp = page.locator("#main-app-container");
   if (await mainApp.isVisible().catch(() => false)) return;
 
-  const portal = page.locator('button:has-text("Akses Portal ERP")').first();
+  const portal = page.getByRole("button", { name: /^Masuk$/i }).first();
   if (await portal.isVisible({ timeout: 5000 }).catch(() => false)) {
     await portal.click();
     await page.waitForTimeout(1000);
@@ -20,9 +21,9 @@ async function login(page: Page) {
 
   const email = page.locator('input[type="email"], input[placeholder*="email"]').first();
   if (await email.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await email.fill("owner@komputermakassar.com");
-    await page.locator('input[type="password"]').first().fill("owner123");
-    await page.locator('button:has-text("Masuk Sistem")').last().click();
+    await email.fill(TEST_TENANT_EMAIL);
+    await page.locator('input[type="password"]').first().fill(TEST_TENANT_PASSWORD);
+    await page.getByRole("button", { name: /Masuk/i }).last().click();
     await page.waitForTimeout(5000);
   }
 }
