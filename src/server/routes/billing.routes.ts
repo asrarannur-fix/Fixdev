@@ -41,7 +41,7 @@ router.post("/midtrans-webhook", handleMidtransWebhook);
 // Everything else requires an authenticated Supabase session.
 router.use(requireSupabaseJwt);
 
-router.get("/plans", requireSuperAdminPermission("billing:view_plans"), getBillingPlans);
+router.get("/plans", requireTenantOrSuperAdminPermission("billing:view_plans"), getBillingPlans);
 router.post("/plans", requireSuperAdminPermission("billing:manage_plans"), requireSuperAdminConsoleSession, updateBillingPlans);
 router.get("/subscription", requireTenantOrSuperAdminPermission("billing:view_subscription"), getSubscription);
 router.post("/create-invoice", requireTenantOrSuperAdminPermission("billing:manage_invoices"), requireRoles("OWNER", "ADMIN", "SUPER_ADMIN"), createInvoice);
