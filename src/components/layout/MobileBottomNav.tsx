@@ -15,6 +15,7 @@ import {
   Search,
 } from "lucide-react";
 import { getAvailableModules } from "../../config/nav.config";
+import { getEffectiveFeatures, isModuleLocked } from "../../lib/featureUtils";
 
 interface MobileBottomNavProps {
   activeTab: string;
@@ -31,13 +32,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
 
   const activeTenant = tenants.find((t) => t.id === currentTenantId);
-  const tenantFeatures = (activeTenant?.limits?.features as string[]) || [];
+  const tenantFeatures = getEffectiveFeatures(activeTenant || {});
   const userPermissions = currentUser.permissions || [];
 
   const availableModuleIds = getAvailableModules(tenantFeatures, userPermissions);
 
   const primaryTabs = ["overview", "pos", "services", "inventory", "crm", "settings"];
-  const visibleTabs = primaryTabs.filter((id) => availableModuleIds.includes(id));
+  const visibleTabs = primaryTabs.filter(
+    (id) => (id === "overview" || availableModuleIds.includes(id)) &&
+      (isSuperAdmin || !isModuleLocked(id, activeTenant || {})),
+  );
 
   const getIcon = (modId: string) => {
     switch (modId) {

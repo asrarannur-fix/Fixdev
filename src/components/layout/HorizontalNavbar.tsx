@@ -49,7 +49,7 @@ import {
 } from "lucide-react";
 
 import { OPERATIONAL_MODULES } from "../../config/nav.config";
-import { getRequiredTierForModule, isModuleLocked as isFeatureLocked } from "../../lib/featureUtils";
+import { getEffectiveFeatures, getRequiredTierForModule, isModuleLocked as isFeatureLocked } from "../../lib/featureUtils";
 
 interface HorizontalNavbarProps {
   activeTab: string;
@@ -207,38 +207,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
 
     // Tier-based feature gating untuk settings subtabs
     if (modId === "settings") {
-      const tier = activeTenant?.tier || "BASIC";
-      const tierDefaultFeatures: Record<string, string[]> = {
-        BASIC: ["POS", "SERVICE"],
-        PRO: [
-          "POS",
-          "SERVICE",
-          "ACCOUNTING",
-          "HRM",
-          "CRM",
-          "WHATSAPP",
-          "TELEGRAM",
-          "AI_DIAGNOSE",
-        ],
-        ENTERPRISE: [
-          "POS",
-          "SERVICE",
-          "ACCOUNTING",
-          "HRM",
-          "CRM",
-          "WHATSAPP",
-          "TELEGRAM",
-          "AI_DIAGNOSE",
-          "MARKETPLACE",
-          "RENTAL",
-          "SECURITY",
-        ],
-      };
-      const rawFeatures = activeTenant?.limits?.features;
-      const tenantFeatures =
-        Array.isArray(rawFeatures) && rawFeatures.length > 0
-          ? (rawFeatures as string[]).map((f: string) => f.toUpperCase())
-          : tierDefaultFeatures[tier] || ["POS", "SERVICE"];
+      const tenantFeatures = getEffectiveFeatures(activeTenant || {});
 
       // Settings subtab gating by tier features
       if (subId === "whatsapp" && !tenantFeatures.includes("WHATSAPP"))

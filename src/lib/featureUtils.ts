@@ -6,21 +6,21 @@
 import { SubscriptionTier } from "../types";
 
 export const ALL_FEATURES: string[] = [
-  "POS", "SERVICE", "ACCOUNTING", "HRM", "CRM",
+  "POS", "SERVICE", "INVENTORY", "ACCOUNTING", "HRM", "CRM",
   "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE", "MARKETPLACE",
   "RENTAL", "SECURITY"
 ];
 
 export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
-  BASIC: ["POS", "SERVICE"],
-  PRO: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE"],
+  BASIC: ["POS", "SERVICE", "INVENTORY"],
+  PRO: ["POS", "SERVICE", "INVENTORY", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE"],
   ENTERPRISE: [...ALL_FEATURES]
 };
 
 const MODULE_FEATURE_MAP: Record<string, string> = {
   services: "SERVICE",
   pos: "POS",
-  inventory: "POS",
+  inventory: "INVENTORY",
   accounting: "ACCOUNTING",
   hr: "HRM",
   crm: "CRM",
@@ -56,6 +56,7 @@ export function getEffectiveFeatures(tenant: Tenant): string[] {
   if (isTrialActive(tenant)) {
     return ALL_FEATURES;
   }
+  // If trial expired or not active, fallback to basic/tier features
   return getTenantFeatures(tenant);
 }
 

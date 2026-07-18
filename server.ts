@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { logger } from "./src/lib/logger.js";
 import { requireAdminToken, requireSuperAdmin, requireSupabaseJwt, requireTenantScope } from "./src/middleware/auth.middleware.js";
+import { requireFeature } from "./src/middleware/feature.middleware.js";
 import {
   bootstrapHandler,
   platformBootstrapHandler,
@@ -191,13 +192,13 @@ app.post("/api/onboarding/extend-trial", requireSupabaseJwt, requireTenantScope,
 app.use("/api/admin", requireSupabaseJwt, requireTenantScope, auditRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/superadmin", superadminRoutes);
-app.use("/api/ai", requireSupabaseJwt, requireTenantScope, aiRoutes);
+app.use("/api/ai", requireSupabaseJwt, requireTenantScope, requireFeature("AI_DIAGNOSE"), aiRoutes);
 app.use("/api/tenant", requireSupabaseJwt, requireTenantScope, tenantRoutes);
 app.use("/api/service-receptions", serviceReceptionRoutes);
 app.use("/api/services", serviceWorkflowRoutes);
 app.use("/api/micro-components", microComponentsRoutes);
 app.use("/api/pos", posRoutes);
-app.use("/api/accounting", accountingRoutes);
+app.use("/api/accounting", requireSupabaseJwt, requireTenantScope, requireFeature("ACCOUNTING"), accountingRoutes);
 app.use("/api/complaint-templates", requireSupabaseJwt, requireTenantScope, complaintTemplateRoutes);
 
 // Public / Service routes

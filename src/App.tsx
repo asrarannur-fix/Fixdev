@@ -426,6 +426,30 @@ const MainAppContent: React.FC = () => {
       id="main-app-container"
     >
       {/* Impersonation Banner at the absolute top */}
+      {/* Trial Banner */}
+      {activeTenant?.status === "TRIAL" && isTrialActive(activeTenant) && (
+        <div
+          className="bg-indigo-600 text-white p-2 text-center text-sm font-medium flex items-center justify-center gap-2 z-[9999] shrink-0 border-b border-indigo-500/30"
+          id="trial-banner-top"
+        >
+          <Sparkles className="h-4 w-4" />
+          <span>
+            Masa percobaan {Math.ceil((new Date(activeTenant.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} hari tersisa.
+            <button
+              className="ml-2 underline font-bold"
+              onClick={() => {
+                // TODO: Redirect to billing/upgrade page
+                showToast("Redirecting to upgrade page...", "info");
+                handleSetTab("settings", "subscription"); // Example: Navigate to subscription settings
+              }}
+            >
+              Upgrade Sekarang!
+            </button>
+          </span>
+          <Sparkles className="h-4 w-4" />
+        </div>
+      )}
+
       {isImpersonating && (
         <div
           className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-4 sm:px-6 py-3 text-xs font-bold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-lg z-[9999] animate-fadeIn shrink-0 border-b border-amber-500/30"

@@ -280,38 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     // Tier-based feature gating untuk settings subtabs
     if (modId === "settings") {
-      const tier = activeTenant?.tier || "BASIC";
-      const tierDefaultFeatures: Record<string, string[]> = {
-        BASIC: ["POS", "SERVICE"],
-        PRO: [
-          "POS",
-          "SERVICE",
-          "ACCOUNTING",
-          "HRM",
-          "CRM",
-          "WHATSAPP",
-          "TELEGRAM",
-          "AI_DIAGNOSE",
-        ],
-        ENTERPRISE: [
-          "POS",
-          "SERVICE",
-          "ACCOUNTING",
-          "HRM",
-          "CRM",
-          "WHATSAPP",
-          "TELEGRAM",
-          "AI_DIAGNOSE",
-          "MARKETPLACE",
-          "RENTAL",
-          "SECURITY",
-        ],
-      };
-      const rawFeatures = activeTenant?.limits?.features;
-      const tenantFeatures =
-        Array.isArray(rawFeatures) && rawFeatures.length > 0
-          ? (rawFeatures as string[]).map((f) => f.toUpperCase())
-          : tierDefaultFeatures[tier] || ["POS", "SERVICE"];
+      const tenantFeatures = getEffectiveFeatures(activeTenant || {});
 
       if (subId === "whatsapp" && !tenantFeatures.includes("WHATSAPP"))
         return false;

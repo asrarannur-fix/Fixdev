@@ -11,6 +11,7 @@ import { createClient } from "@supabase/supabase-js";
 import { dbQuery } from "../lib/db.js";
 import { logger } from "../lib/logger.js";
 import { timingSafeEqual as cryptoTimingSafeEqual } from "crypto";
+import { getEffectiveFeatures } from "../lib/featureUtils.js";
 
 function timingSafeEqual(expected: string, provided: string): boolean {
   const expectedBuffer = Buffer.from(expected);
@@ -42,6 +43,7 @@ export interface AuthActor {
   role: string;
   tenantId?: string;
   permissions: string[];
+  features: string[];
   superadminRole?: string;
 }
 
@@ -101,7 +103,7 @@ export const requireSupabaseJwt = async (
     // profile is not authorized to use protected application APIs.
     try {
       const result = await dbQuery(
-        `SELECT tenant_id, id, role, email, permissions, superadmin_role FROM users WHERE auth_id = $1 LIMIT 1`,
+        `SELECT u.tenant_id, u.id, u.role, u.email, u.permissions, u.superadmin_role, t.tier, t.status AS tenant_status, t.trial_ends_at FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id WHERE u.auth_id = $1 LIMIT 1`,
         [data.user.id],
       );
       if (result.rows.length === 0) {
@@ -116,8 +118,13 @@ export const requireSupabaseJwt = async (
         userId: profile.id,
         email: profile.email || data.user.email,
         role: profile.role,
-        tenantId: profile.tenant_id || undefined,
-        permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+        tenantId: profile.tenant_id,
+        permissions: profile.permissions || [],
+        features: getEffectiveFeatures({
+          tier: profile.tier || "BASIC",
+          status: profile.tenant_status || "ACTIVE",
+          trialEndsAt: profile.trial_ends_at,
+        }),
         superadminRole: profile.superadmin_role || undefined,
       };
     } catch (dbErr: any) {

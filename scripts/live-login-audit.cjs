@@ -1,8 +1,8 @@
 const { chromium } = require("playwright");
 
-const EMAIL = process.env.TEST_USER_EMAIL || "asrarannur1@gmail.com";
+const EMAIL = process.env.TEST_USER_EMAIL || "";
 const PASS = process.env.TEST_USER_PASSWORD || "";
-const BASE = "https://fixdev.web.id";
+const BASE = process.env.TEST_BASE_URL || "https://fixdev.web.id";
 const OUT = "/home/ubuntu/barufix/screenshots-bukti";
 
 const fs = require("fs");
@@ -20,15 +20,13 @@ async function shot(page, name) {
 }
 
 async function login(page) {
-  await page.goto(BASE + "/", { waitUntil: "networkidle" });
+  await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => localStorage.clear());
-  await page.goto(BASE + "/", { waitUntil: "networkidle" });
-  // open portal modal
-  const portal = page.getByRole("button", { name: /Akses Portal ERP/i }).first();
-  if (await portal.isVisible().catch(() => false)) await portal.click();
+  await page.getByRole("button", { name: "Masuk", exact: true }).first().click();
+  await page.waitForSelector("#login-page", { timeout: 10000 });
   await page.locator('input[type="email"]').first().fill(EMAIL);
   await page.locator('input[type="password"]').first().fill(PASS);
-  await page.getByRole("button", { name: /Masuk Sistem/i }).last().click();
+  await page.getByRole("button", { name: /^Masuk$/i }).first().click();
   // wait for app container OR error
   try {
     await page.waitForSelector("#main-app-container", { timeout: 25000 });
