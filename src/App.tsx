@@ -20,6 +20,8 @@ import { UserRole } from "./types";
 import { OfflineSyncModal } from "./components/OfflineSyncModal";
 import { LandingPage } from "./components/LandingPage";
 import { InvitationAcceptance } from "./components/InvitationAcceptance";
+import { Sparkles } from "lucide-react";
+import { isTrialActive } from "./lib/featureUtils";
 
 // Lazy-loaded components for optimal bundle chunking and code splitting
 const SuperAdminDashboard = React.lazy(() =>
@@ -124,6 +126,7 @@ const MainAppContent: React.FC = () => {
     useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const impersonatedTenant = tenants.find((t) => t.id === currentTenantId);
+  const activeTenant = impersonatedTenant;
   const tenantDisplay = impersonatedTenant?.name ?? currentUser.name;
   const impersonationSession = React.useMemo(() => {
     try {
@@ -427,28 +430,32 @@ const MainAppContent: React.FC = () => {
     >
       {/* Impersonation Banner at the absolute top */}
       {/* Trial Banner */}
-      {activeTenant?.status === "TRIAL" && isTrialActive(activeTenant) && (
-        <div
-          className="bg-indigo-600 text-white p-2 text-center text-sm font-medium flex items-center justify-center gap-2 z-[9999] shrink-0 border-b border-indigo-500/30"
-          id="trial-banner-top"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>
-            Masa percobaan {Math.ceil((new Date(activeTenant.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} hari tersisa.
-            <button
-              className="ml-2 underline font-bold"
-              onClick={() => {
-                // TODO: Redirect to billing/upgrade page
-                showToast("Redirecting to upgrade page...", "info");
-                handleSetTab("settings", "subscription"); // Example: Navigate to subscription settings
-              }}
-            >
-              Upgrade Sekarang!
-            </button>
-          </span>
-          <Sparkles className="h-4 w-4" />
-        </div>
-      )}
+      {(() => {
+        const isTrial = activeTenant?.status === "TRIAL" && isTrialActive(activeTenant);
+        console.log("[DEBUG] TrialBanner", { status: activeTenant?.status, endsAt: activeTenant?.trialEndsAt, isTrial });
+        if (!isTrial) return null;
+        return (
+          <div
+            className="bg-indigo-600 text-white p-2 text-center text-sm font-medium flex items-center justify-center gap-2 z-[9999] shrink-0 border-b border-indigo-500/30"
+            id="trial-banner-top"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>
+              Masa percobaan {Math.ceil((new Date(activeTenant.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} hari tersisa.
+              <button
+                className="ml-2 underline font-bold"
+                onClick={() => {
+                  showToast("Redirecting to upgrade page...", "info");
+                  handleSetTab("settings", "subscription");
+                }}
+              >
+                Upgrade Sekarang!
+              </button>
+            </span>
+            <Sparkles className="h-4 w-4" />
+          </div>
+        );
+      })()}
 
       {isImpersonating && (
         <div
