@@ -40,8 +40,8 @@ ALTER TABLE service_tickets
   ADD COLUMN IF NOT EXISTS timeline JSONB NOT NULL DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
 
-CREATE UNIQUE INDEX IF NOT EXISTS service_tickets_tenant_ticket_no_unique
-  ON service_tickets (tenant_id, ticket_no);
+-- UNIQUE (tenant_id, ticket_no) is already declared in supabase-schema.sql
+-- as idx_service_tickets_tenant_ticket_no. Do not create a redundant index.
 
 CREATE SEQUENCE IF NOT EXISTS service_ticket_number_seq;
 

@@ -1,7 +1,6 @@
 import express from "express";
 import {
   requireRoles,
-  requireSuperAdmin,
   requireSuperAdminConsoleSession,
   requireSuperAdminPermission,
   requireTenantOrSuperAdminPermission,

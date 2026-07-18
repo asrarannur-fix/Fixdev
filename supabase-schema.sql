@@ -31,13 +31,6 @@ CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_auth_id ON users(auth_id);
 CREATE INDEX IF NOT EXISTS idx_users_tenant_role ON users(tenant_id, role);
 
-CREATE TABLE IF NOT EXISTS user_branches (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, branch_id)
-);
-CREATE INDEX IF NOT EXISTS idx_user_branches_branch ON user_branches(branch_id);
-
 CREATE TABLE IF NOT EXISTS branches (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -49,6 +42,13 @@ CREATE TABLE IF NOT EXISTS branches (
 );
 CREATE INDEX IF NOT EXISTS idx_branches_tenant ON branches(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_branches_tenant_active ON branches(tenant_id, is_active);
+
+CREATE TABLE IF NOT EXISTS user_branches (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, branch_id)
+);
+CREATE INDEX IF NOT EXISTS idx_user_branches_branch ON user_branches(branch_id);
 
 CREATE TABLE IF NOT EXISTS warehouses (
     id UUID PRIMARY KEY,
@@ -111,6 +111,8 @@ CREATE TABLE IF NOT EXISTS service_tickets (
     assigned_tech_id UUID,
     estimated_cost NUMERIC DEFAULT 0,
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    warranty_months INTEGER NOT NULL DEFAULT 0 CHECK (warranty_months >= 0),
+    warranty_ends_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_service_tickets_tenant ON service_tickets(tenant_id);
@@ -253,6 +255,22 @@ CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_tenant ON whatsapp_logs(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_tenant_created ON whatsapp_logs(tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_status ON whatsapp_logs(status);
 
+CREATE TABLE IF NOT EXISTS service_status_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    ticket_id UUID NOT NULL REFERENCES service_tickets(id) ON DELETE CASCADE,
+    from_status TEXT,
+    to_status TEXT NOT NULL,
+    note TEXT NOT NULL,
+    actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_service_status_events_ticket
+    ON service_status_events(tenant_id, ticket_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_service_status_events_actor
+    ON service_status_events(actor_user_id) WHERE actor_user_id IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS whatsapp_queue (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -319,6 +337,7 @@ ALTER TABLE journal_lines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE module_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE whatsapp_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_status_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE whatsapp_queue ENABLE ROW LEVEL SECURITY;
 
 -- Tenants: user can only see and update their own tenant
@@ -338,6 +357,7 @@ CREATE POLICY "Tenant isolation for journal_entries" ON journal_entries FOR ALL 
 CREATE POLICY "Tenant isolation for audit_logs" ON audit_logs FOR ALL USING (tenant_id = current_tenant_id());
 CREATE POLICY "Tenant isolation for module_records" ON module_records FOR ALL USING (tenant_id = current_tenant_id());
 CREATE POLICY "Tenant isolation for whatsapp_logs" ON whatsapp_logs FOR ALL USING (tenant_id = current_tenant_id());
+CREATE POLICY "Tenant isolation for service_status_events" ON service_status_events FOR ALL USING (tenant_id = current_tenant_id());
 CREATE POLICY "Tenant isolation for whatsapp_queue" ON whatsapp_queue FOR ALL USING (tenant_id = current_tenant_id());
 
 -- Tables without direct tenant_id (using joins)

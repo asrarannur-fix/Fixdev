@@ -13,7 +13,6 @@ BEGIN;
 ALTER TABLE whatsapp_queue
   ADD COLUMN IF NOT EXISTS scheduled_time TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
-DROP INDEX IF EXISTS idx_whatsapp_queue_scheduled;
 CREATE INDEX IF NOT EXISTS idx_whatsapp_queue_tenant_status
   ON whatsapp_queue (tenant_id, status, scheduled_time);
 

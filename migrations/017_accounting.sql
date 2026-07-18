@@ -88,12 +88,16 @@ CREATE OR REPLACE FUNCTION sync_account_balance()
 RETURNS TRIGGER AS $$
 DECLARE
     acct_id UUID;
+    old_acct_id UUID;
 BEGIN
     -- Determine which account(s) need recalculation
     IF TG_OP = 'DELETE' THEN
         acct_id := OLD.account_id;
     ELSE
         acct_id := NEW.account_id;
+        IF TG_OP = 'UPDATE' AND OLD.account_id IS DISTINCT FROM NEW.account_id THEN
+            old_acct_id := OLD.account_id;
+        END IF;
     END IF;
 
     -- Recalculate balance from all journal lines for this account
@@ -114,6 +118,24 @@ BEGIN
         END,
         updated_at = NOW()
     WHERE id = acct_id;
+
+    IF old_acct_id IS NOT NULL THEN
+        UPDATE coa_accounts SET
+            balance = CASE
+                WHEN type IN ('ASSET', 'EXPENSE') THEN
+                    COALESCE((SELECT SUM(jl.debit) - SUM(jl.credit)
+                              FROM journal_lines jl
+                              JOIN journal_entries je ON je.id = jl.journal_entry_id
+                              WHERE jl.account_id = old_acct_id AND je.is_posted = TRUE), 0)
+                ELSE
+                    COALESCE((SELECT SUM(jl.credit) - SUM(jl.debit)
+                              FROM journal_lines jl
+                              JOIN journal_entries je ON je.id = jl.journal_entry_id
+                              WHERE jl.account_id = old_acct_id AND je.is_posted = TRUE), 0)
+            END,
+            updated_at = NOW()
+        WHERE id = old_acct_id;
+    END IF;
 
     RETURN COALESCE(NEW, OLD);
 END;

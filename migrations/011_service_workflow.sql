@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS service_status_events (
   from_status TEXT,
   to_status TEXT NOT NULL,
   note TEXT NOT NULL,
-  actor_user_id UUID,
+  actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

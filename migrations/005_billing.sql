@@ -159,7 +159,7 @@ CREATE POLICY "Tenants can insert their own billing notifications" ON billing_no
 CREATE OR REPLACE FUNCTION get_expiring_invoices(days_ahead INTEGER DEFAULT 3)
 RETURNS TABLE (
     id TEXT,
-    tenant_id TEXT,
+    tenant_id UUID,
     due_date DATE,
     amount NUMERIC,
     tier TEXT,
