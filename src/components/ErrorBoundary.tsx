@@ -28,14 +28,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReset = () => {
     this.setState({ hasError: false, error: null });
-    if (this.onReset) {
-      this.onReset();
+    if (this.props.onReset) {
+      this.props.onReset();
     }
   };
-
-  private get onReset() {
-    return this.props.onReset;
-  }
 
   public render() {
     if (this.state.hasError) {

@@ -536,27 +536,27 @@ export const DeviceRentalDashboard: React.FC = () => {
           </div>
         </div>
         <div className="p-5 flex items-center gap-4">
-          <div className="h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-950/20 flex items-center justify-center text-rose-600 dark:text-rose-450 shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-950/20 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
             <AlertCircle className="w-5 h-5" />
           </div>
           <div>
             <p className="text-[10px] uppercase font-mono font-bold text-slate-400 dark:text-slate-500 tracking-wider">
               Terlambat (Overdue)
             </p>
-            <h4 className="text-xl font-bold font-mono text-rose-600 dark:text-rose-450 mt-1">
+            <h4 className="text-xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1">
               {overdueCount} Unit
             </h4>
           </div>
         </div>
         <div className="p-5 flex items-center gap-4">
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600 dark:text-emerald-450 shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
             <TrendingUp className="w-5 h-5" />
           </div>
           <div>
             <p className="text-[10px] uppercase font-mono font-bold text-slate-400 dark:text-slate-500 tracking-wider">
               Akumulasi Pendapatan Sewa
             </p>
-            <h4 className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-450 mt-1">
+            <h4 className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
               Rp {totalRevenue.toLocaleString()}
             </h4>
           </div>
@@ -775,7 +775,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                         <td className="px-3 py-2.5 font-bold text-slate-800 dark:text-zinc-200">
                           {r.customerName}
                         </td>
-                        <td className="px-3 py-2.5 font-semibold text-slate-700 dark:text-zinc-350 leading-tight">
+                        <td className="px-3 py-2.5 font-semibold text-slate-700 dark:text-zinc-400 leading-tight">
                           {r.deviceName}
                         </td>
                         <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400">

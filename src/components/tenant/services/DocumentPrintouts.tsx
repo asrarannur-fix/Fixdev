@@ -10,6 +10,7 @@ import {
   Share2,
 } from "lucide-react";
 import { ServiceTicket, Customer, Employee, User, TenantSettings } from "../../../types";
+import { getPaperWidthStyle } from "../../../utils/print";
 
 type PrintConfig = NonNullable<TenantSettings["printConfig"]>;
 
@@ -27,16 +28,16 @@ const fmtPrintDate = (value?: string | number | Date): string => {
 
 const getPrintCss = (printConfig?: PrintConfig) => {
   const fontSize =
-    printConfig?.printFontSize === "small"
+    printConfig?.printFontSize === "small" || printConfig?.printFontSize === "sm"
       ? 10
-      : printConfig?.printFontSize === "large"
+      : printConfig?.printFontSize === "large" || printConfig?.printFontSize === "lg"
         ? 12
         : 11;
   const margin = Number.isFinite(printConfig?.printMargin)
     ? printConfig?.printMargin
     : 20;
   const pageSize =
-    printConfig?.paperSize === "a4"
+    printConfig?.paperSize === "a4" || printConfig?.paperSize === "hvs_a4" || printConfig?.paperSize === "hvs_letter"
       ? "A4"
       : printConfig?.paperSize === "thermal_58"
         ? "58mm auto"
@@ -83,6 +84,40 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   showToast,
   printConfig,
 }) => {
+  const printReceptionTicket = (ticketId: string) => {
+    const source = document.getElementById(`reception-print-${ticketId}`);
+    if (!source) {
+      showToast("Nota penerimaan belum siap dicetak.", "error");
+      return;
+    }
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.setAttribute("aria-hidden", "true");
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (!doc) {
+      iframe.remove();
+      showToast("Gagal menyiapkan dokumen cetak.", "error");
+      return;
+    }
+    doc.open();
+    doc.write(`<!doctype html><html><head><title>Nota Penerimaan</title><style>
+      ${getPrintCss(printConfig)}
+      body { margin: 0; }
+      .reception-print { width: ${getPaperWidthStyle(printConfig)}; max-width: 100%; margin: 0 auto; }
+      button { display: none !important; }
+    </style></head><body><main class="reception-print">${source.innerHTML}</main></body></html>`);
+    doc.close();
+    window.setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      window.setTimeout(() => iframe.remove(), 1000);
+    }, 100);
+  };
+
   return (
     <>
       {/* SPK Printout Template */}
@@ -93,26 +128,41 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
           const customer = customers.find((c) => c.id === ticket.customerId);
           return createPortal(
             <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-55 p-4 overflow-y-auto">
-              <div className="bg-white p-6 max-w-md w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 font-sans text-slate-800 space-y-4">
-                {/* Close button */}
-                <button
-                  onClick={() => setShowSpkPrintout(null)}
-                  className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+              <div
+                className="bg-white p-6 w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 font-sans text-slate-800 space-y-4"
+                style={{
+                  maxWidth: printConfig?.paperSize === "thermal_58" ? "300px" : printConfig?.paperSize === "thermal_80" ? "390px" : "760px",
+                  fontSize: `${printConfig?.printFontSize === "sm" ? 10 : printConfig?.printFontSize === "lg" ? 13 : 11}px`,
+                }}
+              >
+                  <div id={`reception-print-${ticket.id}`} className="relative">
+                    {/* Close button */}
+                    <button
+                      onClick={() => setShowSpkPrintout(null)}
+                      className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer no-print"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
 
-                {/* Receipt Layout */}
-                <div className="border border-dashed border-slate-300 p-4 rounded-xl space-y-3.5 bg-white">
+                    {/* Print button */}
+                    <button
+                      onClick={() => printReceptionTicket(ticket.id)}
+                      className="absolute top-4 right-12 p-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full cursor-pointer no-print"
+                    >
+                      <Printer className="w-5 h-5" />
+                    </button>
+
+                    {/* Receipt Layout */}
+                    <div className="border border-dashed border-slate-300 p-4 rounded-xl space-y-3.5 bg-white">
                   <div className="text-center space-y-0.5">
+                    {printConfig?.printHeaderLogo && (
+                      <img src="/logo.png" alt="Logo usaha" className="h-9 mx-auto mb-2 object-contain" />
+                    )}
                     <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">
-                      SURAT PERINTAH KERJA (SPK)
+                      {printConfig?.customHeaderTitle || "SURAT PERINTAH KERJA (SPK)"}
                     </h4>
                     <p className="text-[10px] text-slate-500 font-mono uppercase">
-                      TANDA TERIMA UNIT MASUK - REPAIR HUB
-                    </p>
-                    <p className="text-[9px] text-slate-400">
-                      Kav. 32 Boulevard, BSD City, Tangerang
+                      TANDA TERIMA UNIT MASUK
                     </p>
                   </div>
 
@@ -173,7 +223,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                           Kunci Layar:
                         </strong>{" "}
                         <span className="font-mono font-bold text-indigo-700">
-                          {ticket.screenLockPin || "Tidak Ada"}
+                          {ticket.screenLockPin ? "••••••" : "Tidak Ada"}
                         </span>
                       </p>
                       <p>
@@ -274,24 +324,27 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     </span>
                   </div>
 
+                  {printConfig?.printQrCode && (
+                    <div className="flex flex-col items-center justify-center py-2 border-t border-dashed border-slate-200">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${window.location.origin}/?ticket=${ticket.ticketNo}`)}`}
+                        alt={`QR tracking ${ticket.ticketNo}`}
+                        className="w-20 h-20"
+                      />
+                      <span className="text-[8px] text-slate-500 mt-1">Scan untuk lacak status servis</span>
+                    </div>
+                  )}
+
                   {/* Agreement terms */}
-                  <div className="text-[7.5px] text-slate-400 leading-normal space-y-1">
-                    <p>
-                      <strong>SYARAT & KETENTUAN SERVICE:</strong>
-                    </p>
-                    <p>
-                      1. Barang yang tidak diambil dalam waktu 30 hari di luar
-                      tanggung jawab toko.
-                    </p>
-                    <p>
-                      2. Nota ini adalah bukti sah kepemilikan unit untuk
-                      pengambilan perangkat.
-                    </p>
-                    <p>
-                      3. Estimasi biaya bersifat sementara & dapat berubah
-                      tergantung ketersediaan parts.
-                    </p>
-                  </div>
+                  {printConfig?.printTermsAndConditions ? (
+                    <div className="text-[7.5px] text-slate-400 leading-normal space-y-1">
+                      <p><strong>SYARAT & KETENTUAN SERVICE:</strong></p>
+                      {(printConfig.termsAndConditionsText || "")
+                        .split("\n")
+                        .filter(Boolean)
+                        .map((line, i) => <p key={i}>{line}</p>)}
+                    </div>
+                  ) : null}
 
                   {/* Signature area */}
                   <div className="border-t border-dashed border-slate-200 pt-3.5 grid grid-cols-2 gap-4 text-center text-[9px] font-mono">
@@ -316,6 +369,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   </div>
                 </div>
               </div>
+            </div>
             </div>,
             document.body
           );

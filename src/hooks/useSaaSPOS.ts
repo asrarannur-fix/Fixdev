@@ -113,13 +113,22 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
     const newTx = res.data.data;
 
     // Refresh products to sync deducted stock locally immediately
-    // In a real robust system we'd refetch or merge the response, doing a simple map here based on cart:
     setProducts((prev) =>
       prev.map((p) => {
         const cartItem = cart.find((c) => c.product.id === p.id);
         if (cartItem && p.category !== "JASA") {
-           // We just optimistic-update the total qty, exact warehouse object needs a full refetch
-           return { ...p, stockQty: Math.max(0, p.stockQty - cartItem.qty) };
+          const newStock = { ...p };
+          // Use warehouse IDs from cart item's warehouseStock if available
+          if (newStock.warehouseStock) {
+            Object.keys(newStock.warehouseStock).forEach(wId => {
+              const wItem = cart.find((c) => c.product.id === p.id);
+              if (wItem) {
+                newStock.warehouseStock[wId] = Math.max(0, Number(newStock.warehouseStock[wId] || 0));
+              }
+            });
+          }
+          newStock.stockQty = Math.max(0, p.stockQty - cartItem.qty);
+          return newStock;
         }
         return p;
       })

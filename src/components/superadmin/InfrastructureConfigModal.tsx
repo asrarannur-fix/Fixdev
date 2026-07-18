@@ -443,7 +443,7 @@ export const InfrastructureConfigModal: React.FC<
                         <span className="block font-bold text-[11px] text-slate-800 dark:text-zinc-200">
                           {feature.label}
                         </span>
-                        <span className="block text-[9px] text-slate-450 dark:text-zinc-500 mt-0.5 leading-tight">
+                        <span className="block text-[9px] text-slate-500 dark:text-zinc-500 mt-0.5 leading-tight">
                           {feature.desc}
                         </span>
                       </div>

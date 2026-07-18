@@ -245,7 +245,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
           <div className="lg:col-span-5 space-y-4">
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4.5 shadow-xs space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-350 block">
+                <label className="text-xs font-bold text-slate-700 dark:text-zinc-400 block">
                   Pilih Tiket Servis Aktif
                 </label>
                 <select
@@ -534,7 +534,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                         setSelectedTicketId(t.id);
                         setCameraState("success");
                       }}
-                      className="p-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800/80 rounded-xl text-left text-[11px] font-mono font-bold text-slate-700 dark:text-zinc-350 flex items-center justify-between cursor-pointer"
+                      className="p-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800/80 rounded-xl text-left text-[11px] font-mono font-bold text-slate-700 dark:text-zinc-400 flex items-center justify-between cursor-pointer"
                     >
                       <span>⚡ Hubungkan QR Tiket #{t.ticketNo}</span>
                       <span className="text-[9px] text-slate-400 font-normal truncate max-w-[120px]">

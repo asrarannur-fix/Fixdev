@@ -172,7 +172,7 @@ export const closeShift = async (req: any, res: any) => {
          COALESCE(SUM(grand_total), 0)::numeric AS "totalSales",
          COALESCE(SUM(CASE WHEN payment_method = 'CASH' THEN grand_total ELSE 0 END), 0)::numeric AS "totalCashSales",
          COALESCE(SUM(CASE WHEN payment_method != 'CASH' THEN grand_total ELSE 0 END), 0)::numeric AS "totalNonCashSales",
-         COALESCE(SUM(CASE WHEN is_refunded THEN grand_total ELSE 0 END), 0)::numeric AS "totalRefunds"
+         COALESCE(SUM(CASE WHEN is_refunded AND payment_method = 'CASH' THEN grand_total ELSE 0 END), 0)::numeric AS "totalRefunds"
        FROM pos_transactions WHERE shift_id = $1 AND tenant_id = $2`,
       [shiftId, tenantId],
     );
@@ -335,7 +335,9 @@ export const createSale = async (req: any, res: any) => {
   const userId = req.authActor?.userId;
   const parsed = req.validatedBody;
 
-  const result = await dbTransaction(async (client) => {
+  let result: any = null;
+  try {
+  const resultTx = await dbTransaction(async (client) => {
     // ── 5a. Find active shift ──
     const shiftRes = await client.query(
       `SELECT id FROM pos_shifts WHERE tenant_id=$1 AND branch_id=$2 AND cashier_id=$3 AND status='OPEN' ORDER BY opened_at DESC LIMIT 1`,
@@ -429,7 +431,7 @@ export const createSale = async (req: any, res: any) => {
       if (item.productId && warehouseId) {
         const stockUpdate = await client.query(
           `UPDATE product_stock SET quantity = quantity - $1
-           WHERE product_id=$2 AND warehouse_id=$3 AND tenant_id=$4 AND quantity >= $1`,
+           WHERE product_id=$2 AND warehouse_id=$3 AND quantity >= $1`,
           [item.quantity, item.productId, warehouseId, tenantId],
         );
         if (stockUpdate.rowCount !== 1) {
@@ -463,9 +465,9 @@ export const createSale = async (req: any, res: any) => {
 
     if (cashAcct.rows[0] && salesAcct.rows[0]) {
       const journalRes = await client.query(
-        `INSERT INTO journal_entries (id, tenant_id, description, ref_no)
-         VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`,
-        [tenantId, `POS Penjualan ${invoiceNo}`, invoiceNo],
+        `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4) RETURNING id`,
+        [tenantId, branchId, `POS Penjualan ${invoiceNo}`, invoiceNo],
       );
       const journalId = journalRes.rows[0].id;
 
@@ -522,6 +524,10 @@ export const createSale = async (req: any, res: any) => {
 
     return { id: txId, invoiceNo, grandTotal: Number(grandTotal), timestamp: txRes.rows[0].timestamp, items };
   });
+    result = resultTx;
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 
   res.status(201).json({ data: result, message: "Transaksi POS berhasil." });
 };
@@ -529,7 +535,6 @@ export const createSale = async (req: any, res: any) => {
 // ──────────────────────────────────────────
 // 6. VOID SALE (with stock restoration + reversal journal + audit)
 // ──────────────────────────────────────────
-
 export const voidSale = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const branchId = req.branchId;
@@ -537,62 +542,81 @@ export const voidSale = async (req: any, res: any) => {
   const { id } = req.params;
   const { reason } = req.validatedBody;
 
-  const result = await dbTransaction(async (client) => {
-    // Find the transaction
-    const txRes = await client.query(
-      `SELECT id, invoice_no as "invoiceNo", items, grand_total as "grandTotal",
-              subtotal, discount_amount as "discountAmount", tax_amount as "taxAmount",
-              payment_method as "paymentMethod", is_refunded, shift_id as "shiftId"
-       FROM pos_transactions WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 FOR UPDATE`,
-      [id, tenantId, branchId],
-    );
-    if (txRes.rows.length === 0) throw new Error("Transaksi tidak ditemukan.");
-    const tx = txRes.rows[0];
-    if (tx.is_refunded) throw new Error("Transaksi sudah dibatalkan sebelumnya.");
+  if (!branchId) {
+    return res.status(422).json({ error: "branchId wajib diisi untuk membatalkan transaksi POS." });
+  }
 
-    // Mark as refunded
-    await client.query(
-      `UPDATE pos_transactions SET is_refunded=TRUE, status='VOIDED', voided_at=NOW(),
-       void_reason=$1 WHERE id=$2`,
-      [reason, id],
-    );
-
-    // Restore stock + log stock movements
-    const warehouseRes = await client.query(
-      `SELECT id FROM warehouses WHERE branch_id=$1 AND tenant_id=$2 LIMIT 1`,
-      [branchId, tenantId],
-    );
-    const defaultWarehouseId = warehouseRes.rows[0]?.id;
-    for (const item of tx.items) {
-      if (item.productId) {
-        const restoreWarehouseId = item.warehouseId || defaultWarehouseId;
-        if (!restoreWarehouseId) continue;
-        await client.query(
-          `UPDATE product_stock SET quantity = quantity + $1
-           WHERE product_id=$2 AND warehouse_id=$3 AND tenant_id=$4`,
-          [item.quantity, item.productId, restoreWarehouseId, tenantId],
-        );
-        await client.query(
-          `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity_change, reference_id, notes)
-           VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
-          [tenantId, restoreWarehouseId, item.productId, item.quantity, id, `Refund ${item.name} x${item.quantity}: ${reason}`],
-        );
+  try {
+    const result = await dbTransaction(async (client) => {
+      // Find the transaction
+      const txRes = await client.query(
+        `SELECT id, invoice_no as "invoiceNo", items, grand_total as "grandTotal",
+                subtotal, discount_amount as "discountAmount", tax_amount as "taxAmount",
+                payment_method as "paymentMethod", is_refunded, shift_id as "shiftId"
+         FROM pos_transactions WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 FOR UPDATE`,
+        [id, tenantId, branchId],
+      );
+      if (txRes.rows.length === 0) {
+        const error: any = new Error("Transaksi tidak ditemukan.");
+        error.status = 404;
+        throw error;
       }
-    }
+      const tx = txRes.rows[0];
+      if (tx.is_refunded) {
+        const error: any = new Error("Transaksi sudah dibatalkan sebelumnya.");
+        error.status = 409;
+        throw error;
+      }
 
-    // Reversal journal
-    const journalRes = await client.query(
-      `INSERT INTO journal_entries (id, tenant_id, description, ref_no)
-       VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`,
-      [tenantId, `VOID Transaksi ${tx.invoiceNo}: ${reason}`, `REV-${tx.invoiceNo}`],
-    );
-    const journalId = journalRes.rows[0].id;
+      // Mark as refunded
+      await client.query(
+        `UPDATE pos_transactions SET is_refunded=TRUE, status='VOIDED', voided_at=NOW(),
+         void_reason=$1 WHERE id=$2`,
+        [reason, id],
+      );
 
-    const cashAcct = await client.query(`SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='10100' LIMIT 1`, [tenantId]);
-    const salesAcct = await client.query(`SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='40100' LIMIT 1`, [tenantId]);
-    const taxAcct = await client.query(`SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='20100' LIMIT 1`, [tenantId]);
+      // Restore stock + log stock movements
+      const warehouseRes = await client.query(
+        `SELECT id FROM warehouses WHERE branch_id=$1 AND tenant_id=$2 LIMIT 1`,
+        [branchId, tenantId],
+      );
+      const defaultWarehouseId = warehouseRes.rows[0]?.id;
+      for (const item of tx.items) {
+        if (item.productId) {
+          const restoreWarehouseId = item.warehouseId || defaultWarehouseId;
+          if (!restoreWarehouseId) continue;
+          await client.query(
+            `UPDATE product_stock SET quantity = quantity + $1
+             WHERE product_id=$2 AND warehouse_id=$3`,
+            [item.quantity, item.productId, restoreWarehouseId],
+          );
+          await client.query(
+            `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity_change, reference_id, notes)
+             VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
+            [tenantId, restoreWarehouseId, item.productId, item.quantity, id, `Refund ${item.name} x${item.quantity}: ${reason}`],
+          );
+        }
+      }
 
-    if (cashAcct.rows[0] && salesAcct.rows[0]) {
+      // Reversal journal
+      const journalRes = await client.query(
+        `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4) RETURNING id`,
+        [tenantId, branchId, `VOID Transaksi ${tx.invoiceNo}: ${reason}`, `REV-${tx.invoiceNo}`],
+      );
+      const journalId = journalRes.rows[0].id;
+
+      const cashAcct = await client.query(`SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='10100' LIMIT 1`, [tenantId]);
+      const salesAcct = await client.query(`SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='40100' LIMIT 1`, [tenantId]);
+      const taxAcct = await client.query(`SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='20100' LIMIT 1`, [tenantId]);
+
+      // Validate accounts before inserting journal lines
+      if (!cashAcct.rows[0] || !salesAcct.rows[0]) {
+        const error: any = new Error("Akun kas (10100) atau penjualan (40100) belum dikonfigurasi.");
+        error.status = 422;
+        throw error;
+      }
+
       // Credit: Cash (reversal)
       await client.query(
         `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
@@ -613,19 +637,22 @@ export const voidSale = async (req: any, res: any) => {
           [journalId, taxAcct.rows[0].id, tx.taxAmount],
         );
       }
-    }
 
-    // Audit log
-    await client.query(
-      `INSERT INTO audit_logs (id, tenant_id, user_id, action, details)
-       VALUES (gen_random_uuid(), $1, $2, 'POS_VOID', $3)`,
-      [tenantId, userId, `VOID ${tx.invoiceNo}: ${reason} — Rp${tx.grandTotal.toLocaleString("id-ID")}`],
-    );
+      // Audit log
+      await client.query(
+        `INSERT INTO audit_logs (id, tenant_id, user_id, action, details)
+         VALUES (gen_random_uuid(), $1, $2, 'POS_VOID', $3)`,
+        [tenantId, userId, `VOID ${tx.invoiceNo}: ${reason} — Rp${tx.grandTotal.toLocaleString("id-ID")}`],
+      );
 
-    return { id: tx.id, invoiceNo: tx.invoiceNo, status: "VOIDED" };
-  });
+      return { id: tx.id, invoiceNo: tx.invoiceNo, status: "VOIDED" };
+    });
 
-  res.json({ data: result, message: "Transaksi berhasil dibatalkan. Stok telah dikembalikan." });
+    res.json({ data: result, message: "Transaksi berhasil dibatalkan. Stok telah dikembalikan." });
+  } catch (err: any) {
+    logger.error({ err: err.message, id, tenantId }, "[pos.voidSale] Failed to void transaction");
+    res.status(err.status || 500).json({ error: err.message || "Failed to void transaction." });
+  }
 };
 
 // ──────────────────────────────────────────

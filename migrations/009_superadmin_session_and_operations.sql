@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS platform_incident_events (
 );
 CREATE INDEX IF NOT EXISTS idx_platform_incident_events
   ON platform_incident_events(incident_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_platform_incident_events_actor
+  ON platform_incident_events(actor_user_id) WHERE actor_user_id IS NOT NULL;
 ALTER TABLE platform_incident_events ENABLE ROW LEVEL SECURITY;
 
 INSERT INTO superadmin_role_permissions(role, permission) VALUES

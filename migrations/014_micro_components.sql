@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS micro_component_usages (
   note TEXT, consumed_by UUID, consumed_at TIMESTAMP NOT NULL DEFAULT NOW(), UNIQUE(tenant_id,idempotency_key)
 );
 CREATE INDEX IF NOT EXISTS micro_component_usages_ticket_idx ON micro_component_usages(tenant_id,ticket_id,consumed_at);
+CREATE INDEX IF NOT EXISTS idx_micro_component_usages_component ON micro_component_usages(component_id);
+CREATE INDEX IF NOT EXISTS idx_micro_component_usages_warehouse ON micro_component_usages(warehouse_id) WHERE warehouse_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS micro_component_movements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,

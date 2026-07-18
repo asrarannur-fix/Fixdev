@@ -408,7 +408,7 @@ export const WarrantyClaims: React.FC = () => {
           {filteredWarranties.length === 0 ? (
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-12 text-center">
               <ShieldCheck className="w-12 h-12 text-slate-300 dark:text-zinc-700 mx-auto mb-3" />
-              <p className="font-extrabold text-slate-700 dark:text-zinc-350">
+              <p className="font-extrabold text-slate-700 dark:text-zinc-400">
                 Tidak Ada Garansi Aktif Terdeteksi
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">

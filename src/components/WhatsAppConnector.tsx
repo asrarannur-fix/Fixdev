@@ -75,6 +75,14 @@ export interface WhatsAppQueueItem {
   status: "PENDING" | "PAUSED";
 }
 
+const sanitizeWhatsAppPhone = (phone: string): string => {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("62")) return digits;
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  if (digits.startsWith("8")) return `62${digits}`;
+  return digits;
+};
+
 const DEFAULT_TEMPLATES: WhatsAppTemplate[] = [
   {
     id: "tpl-1",
@@ -679,7 +687,11 @@ export const WhatsAppConnector: React.FC = () => {
       showToast("Pesan tidak boleh kosong!", "error");
       return;
     }
-    if (!isConnected) {
+
+    const custObj = tenantCustomers.find((c) => c.id === selectedCustomer);
+    if (!custObj || !custObj.phone) return;
+
+    if (waSendingMethod === "API" && !isConnected) {
       showToast(
         "WhatsApp Gateway belum terkoneksi! Silakan pairing terlebih dahulu.",
         "error",
@@ -687,55 +699,64 @@ export const WhatsAppConnector: React.FC = () => {
       return;
     }
 
-    const custObj = tenantCustomers.find((c) => c.id === selectedCustomer);
-    if (!custObj) return;
+    const waPhone = sanitizeWhatsAppPhone(custObj.phone);
 
-    // Determine target status randomly for simulation of live delivery (90% Delivered/Read, 10% Failed)
-    const statuses: Array<"SENT" | "DELIVERED" | "READ" | "FAILED"> = [
-      "READ",
-      "DELIVERED",
-      "READ",
-      "SENT",
-      "FAILED",
-    ];
-    const simulatedStatus =
-      statuses[Math.floor(Math.random() * statuses.length)];
+    if (waSendingMethod === "MANUAL") {
+      window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(manualMessage)}`, "_blank");
+      addLog(
+        "WhatsApp Direct Sent (Manual)",
+        `Membuka WhatsApp Web untuk ${custObj.name} dengan pesan manual.`,
+        "SERVICE",
+      );
+      showToast("Link WhatsApp Web dibuka di tab baru.", "success");
+    } else {
+      // API Sending Logic (existing)
+      const statuses: Array<"SENT" | "DELIVERED" | "READ" | "FAILED"> = [
+        "READ",
+        "DELIVERED",
+        "READ",
+        "SENT",
+        "FAILED",
+      ];
+      const simulatedStatus =
+        statuses[Math.floor(Math.random() * statuses.length)];
 
-    const newLog: WhatsAppLog = {
-      id: "wa-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-      timestamp: new Date().toISOString(),
-      recipientName: custObj.name,
-      recipientPhone: custObj.phone,
-      type: selectedTemplateId === "custom" ? "MANUAL_CHAT" : "BROADCAST",
-      message: manualMessage,
-      status: simulatedStatus,
-      senderName: `${currentUser.name} (Staf)`,
-      channel:
-        gateway === "meta"
-          ? "Meta Cloud API"
-          : gateway === "wablas"
-            ? "Unofficial Gateway (Wablas)"
-            : "Local Session Node",
-    };
+      const newLog: WhatsAppLog = {
+        id: "wa-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+        timestamp: new Date().toISOString(),
+        recipientName: custObj.name,
+        recipientPhone: custObj.phone,
+        type: selectedTemplateId === "custom" ? "MANUAL_CHAT" : "BROADCAST",
+        message: manualMessage,
+        status: simulatedStatus,
+        senderName: `${currentUser.name} (Staf)`,
+        channel:
+          gateway === "meta"
+            ? "Meta Cloud API"
+            : gateway === "wablas"
+              ? "Unofficial Gateway (Wablas)"
+              : "Local Session Node",
+      };
 
-    setLogs((prev) => [newLog, ...prev]);
-    addLog(
-      "WhatsApp Direct Sent",
-      `Mengirim pesan manual via WhatsApp ke ${custObj.name} dengan status ${simulatedStatus}`,
-      "SERVICE",
-    );
+      setLogs((prev) => [newLog, ...prev]);
+      addLog(
+        "WhatsApp Direct Sent",
+        `Mengirim pesan manual via WhatsApp ke ${custObj.name} dengan status ${simulatedStatus}`,
+        "SERVICE",
+      );
+      showToast(
+        `WhatsApp berhasil dikirim ke ${custObj.name}! Status: ${simulatedStatus}.`,
+        "success",
+      );
+    }
 
-    showToast(
-      `WhatsApp berhasil dikirim ke ${custObj.name}! Status: ${simulatedStatus}.`,
-      "success",
-    );
     setManualMessage("");
     setSelectedTemplateId("custom");
   };
 
   // Re-send log item
   const handleResendLog = (logItem: WhatsAppLog) => {
-    if (!isConnected) {
+    if (!isConnected && waSendingMethod === "API") {
       showToast("WhatsApp API belum terkoneksi!", "error");
       return;
     }
@@ -822,7 +843,7 @@ export const WhatsAppConnector: React.FC = () => {
 
   // Queue actions
   const handleTriggerQueueItem = (item: WhatsAppQueueItem) => {
-    if (!isConnected) {
+    if (!isConnected && waSendingMethod === "API") {
       showToast(
         "WhatsApp Gateway tidak terhubung! Tidak dapat mengirim.",
         "error",
@@ -1019,173 +1040,188 @@ export const WhatsAppConnector: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Gateway Settings Column */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Connection Status & QR Code scanner */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <Settings2 className="w-4 h-4 text-emerald-500" />
-                    Konfigurasi WhatsApp Gateway
-                  </h3>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
-                    />
-                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-slate-500">
-                      {isConnected ? "CONNECTED" : "DISCONNECTED"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Gateway Selectors */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {[
-                    {
-                      id: "fonnte",
-                      title: "Fonnte API",
-                      note: "Token per penyewa",
-                    },
-                    {
-                      id: "meta",
-                      title: "Meta Cloud API",
-                      note: "Official Integration",
-                    },
-                    {
-                      id: "wablas",
-                      title: "Wablas API",
-                      note: "Third-party Service",
-                    },
-                    {
-                      id: "local",
-                      title: "Local Session",
-                      note: "Scan Web QR Node",
-                    },
-                  ].map((gw) => (
-                    <button
-                      key={gw.id}
-                      onClick={() => setGateway(gw.id as any)}
-                      className={`p-3 rounded-xl border text-xs font-bold text-center cursor-pointer transition-all ${
-                        gateway === gw.id
-                          ? "bg-slate-900 text-white border-slate-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800"
-                          : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100/50"
-                      }`}
-                    >
-                      <p className="font-sans text-[11px]">{gw.title}</p>
-                      <span className="text-[8px] font-mono opacity-80 block mt-1 font-normal">
-                        {gw.note}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs pt-1">
-                  <div>
-                    <label className="block text-[9px] font-mono uppercase text-slate-400 mb-1.5 font-bold tracking-wider">
-                      {gateway === "fonnte"
-                        ? "FONNTE ENDPOINT"
-                        : gateway === "meta"
-                          ? "META BUSINESS PHONE ID"
-                          : "GATEWAY URL ENDPOINT"}
-                    </label>
-                    <input
-                      type="text"
-                      value={
-                        gateway === "fonnte"
-                          ? "https://api.fonnte.com/send"
-                          : gateway === "meta"
-                            ? "109827391920839"
-                            : gateway === "wablas"
-                              ? "https://api.wablas.com/api/v2/send-message"
-                              : "http://localhost:3000/api/wa/session"
-                      }
-                      readOnly
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-300 outline-none font-mono text-[11px]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-mono uppercase text-slate-400 mb-1.5 font-bold tracking-wider">
-                      {gateway === "fonnte" ? "FONNTE TOKEN PENYEWA" : "API BEARER ACCESS TOKEN"}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="password"
-                        value={apiToken}
-                        onChange={(e) => setApiToken(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-3 pr-10 py-2 text-slate-700 dark:text-slate-300 outline-none font-mono text-[11px]"
-                      />
-                      <div className="absolute right-2.5 top-1.5 p-1 text-slate-400 hover:text-slate-600 cursor-pointer">
-                        <Copy
-                          className="w-3.5 h-3.5"
-                          onClick={() => {
-                            navigator.clipboard.writeText(apiToken);
-                            showToast(
-                              "API Token tersalin ke clipboard!",
-                              "success",
-                            );
-                          }}
+              {/* API connection controls are irrelevant in Manual Link mode. */}
+              {waSendingMethod === "API" ? (
+                <>
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                        <Settings2 className="w-4 h-4 text-emerald-500" />
+                        Konfigurasi WhatsApp Gateway
+                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
                         />
+                        <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-slate-500">
+                          {isConnected ? "CONNECTED" : "DISCONNECTED"}
+                        </span>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Simulated Connection QR Scan */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5">
-                    <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-inner shrink-0">
-                      {isConnected ? (
-                        <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-                      ) : isScanning ? (
-                        <RefreshCw className="w-10 h-10 text-blue-500 animate-spin" />
-                      ) : (
-                        <QrCode className="w-10 h-10 text-slate-400" />
-                      )}
+                    {/* Gateway Selectors */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {[
+                        {
+                          id: "fonnte",
+                          title: "Fonnte API",
+                          note: "Token per penyewa",
+                        },
+                        {
+                          id: "meta",
+                          title: "Meta Cloud API",
+                          note: "Official Integration",
+                        },
+                        {
+                          id: "wablas",
+                          title: "Wablas API",
+                          note: "Third-party Service",
+                        },
+                        {
+                          id: "local",
+                          title: "Local Session",
+                          note: "Scan Web QR Node",
+                        },
+                      ].map((gw) => (
+                        <button
+                          key={gw.id}
+                          onClick={() => setGateway(gw.id as any)}
+                          className={`p-3 rounded-xl border text-xs font-bold text-center cursor-pointer transition-all ${
+                            gateway === gw.id
+                              ? "bg-slate-900 text-white border-slate-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800"
+                              : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100/50"
+                          }`}
+                        >
+                          <p className="font-sans text-[11px]">{gw.title}</p>
+                          <span className="text-[8px] font-mono opacity-80 block mt-1 font-normal">
+                            {gw.note}
+                          </span>
+                        </button>
+                      ))}
                     </div>
-                    <div className="text-left">
-                      <p className="font-bold text-xs text-slate-800 dark:text-slate-100">
-                        {isConnected
-                          ? `Sesi Aktif: ${phoneNumber}`
-                          : "WhatsApp Terputus"}
-                      </p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 leading-normal">
-                        {isConnected
-                          ? "Koneksi stabil. Token gateway penyewa aktif untuk antrean otomatis."
-                          : isScanning
-                            ? `Menginisialisasi QR handshake (${scanStep}/3)...`
-                            : "Pilih Fonnte lalu masukkan Token API milik penyewa ini."}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
-                    {isConnected && (
-                      <button
-                        onClick={testConnection}
-                        className="flex-1 md:flex-initial bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs px-3.5 py-2 rounded-xl transition duration-150 cursor-pointer"
-                      >
-                        Ping Test
-                      </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs pt-1">
+                      <div>
+                        <label className="block text-[9px] font-mono uppercase text-slate-400 mb-1.5 font-bold tracking-wider">
+                          {gateway === "fonnte"
+                            ? "FONNTE ENDPOINT"
+                            : gateway === "meta"
+                              ? "META BUSINESS PHONE ID"
+                              : "GATEWAY URL ENDPOINT"}
+                        </label>
+                        <input
+                          type="text"
+                          value={
+                            gateway === "fonnte"
+                              ? "https://api.fonnte.com/send"
+                              : gateway === "meta"
+                                ? "109827391920839"
+                                : gateway === "wablas"
+                                  ? "https://api.wablas.com/api/v2/send-message"
+                                  : "http://localhost:3000/api/wa/session"
+                          }
+                          readOnly
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-300 outline-none font-mono text-[11px]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-mono uppercase text-slate-400 mb-1.5 font-bold tracking-wider">
+                          {gateway === "fonnte" ? "FONNTE TOKEN PENYEWA" : "API BEARER ACCESS TOKEN"}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="password"
+                            value={apiToken}
+                            onChange={(e) => setApiToken(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-3 pr-10 py-2 text-slate-700 dark:text-slate-300 outline-none font-mono text-[11px]"
+                          />
+                          <div className="absolute right-2.5 top-1.5 p-1 text-slate-400 hover:text-slate-600 cursor-pointer">
+                            <Copy
+                              className="w-3.5 h-3.5"
+                              onClick={() => {
+                                navigator.clipboard.writeText(apiToken);
+                                showToast(
+                                  "API Token tersalin ke clipboard!",
+                                  "success",
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Simulated Connection QR Scan */}
+                    {waSendingMethod === "API" && (
+                      <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 animate-fadeIn">
+                        <div className="flex items-center gap-3.5">
+                          <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-inner shrink-0">
+                            {isConnected ? (
+                              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+                            ) : isScanning ? (
+                              <RefreshCw className="w-10 h-10 text-blue-500 animate-spin" />
+                            ) : (
+                              <QrCode className="w-10 h-10 text-slate-400" />
+                            )}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                              {isConnected
+                                ? `Sesi Aktif: ${phoneNumber}`
+                                : "WhatsApp Terputus"}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 leading-normal">
+                              {isConnected
+                                ? "Koneksi stabil. Token gateway penyewa aktif untuk antrean otomatis."
+                                : isScanning
+                                  ? `Menginisialisasi QR handshake (${scanStep}/3)...`
+                                  : "Pilih Fonnte lalu masukkan Token API milik penyewa ini."}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                          {isConnected && (
+                            <button
+                              onClick={testConnection}
+                              className="flex-1 md:flex-initial bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs px-3.5 py-2 rounded-xl transition duration-150 cursor-pointer"
+                            >
+                              Ping Test
+                            </button>
+                          )}
+                          <button
+                            onClick={startQRScan}
+                            disabled={isScanning}
+                            className={`flex-1 md:flex-initial font-bold text-xs px-4 py-2 rounded-xl text-white shadow-sm transition duration-150 cursor-pointer ${
+                              isConnected
+                                ? "bg-red-600 hover:bg-red-700"
+                                : isScanning
+                                  ? "bg-blue-400 cursor-not-allowed"
+                                  : "bg-emerald-600 hover:bg-emerald-700"
+                            }`}
+                          >
+                            {isConnected
+                              ? "Putuskan"
+                              : isScanning
+                                ? `Pairing (${scanStep}/3)`
+                                : "Koneksikan WA"}
+                          </button>
+                        </div>
+                      </div>
                     )}
-                    <button
-                      onClick={startQRScan}
-                      disabled={isScanning}
-                      className={`flex-1 md:flex-initial font-bold text-xs px-4 py-2 rounded-xl text-white shadow-sm transition duration-150 cursor-pointer ${
-                        isConnected
-                          ? "bg-red-600 hover:bg-red-700"
-                          : isScanning
-                            ? "bg-blue-400 cursor-not-allowed"
-                            : "bg-emerald-600 hover:bg-emerald-700"
-                      }`}
-                    >
-                      {isConnected
-                        ? "Putuskan"
-                        : isScanning
-                          ? `Pairing (${scanStep}/3)`
-                          : "Koneksikan WA"}
-                    </button>
                   </div>
+                </>
+              ) : (
+                <div className="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900 rounded-2xl p-5 shadow-sm space-y-2 animate-fadeIn">
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold text-xs">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Mode Manual Link Aktif
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Pesan dibuka melalui WhatsApp Web/wa.me untuk ditinjau dan dikirim operator. Token API, webhook, pairing, dan status koneksi tidak diperlukan.
+                  </p>
                 </div>
-              </div>
-
+              )}
               {/* Automated Workflows trigger mappings */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -2288,95 +2324,97 @@ export const WhatsAppConnector: React.FC = () => {
                 </div>
 
                 {/* Credentials block */}
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-xl p-4 space-y-3.5">
-                  <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-300 font-bold">
-                    <Settings2 className="w-4 h-4 text-indigo-600" />
-                    <span>Kredensial Meta WhatsApp Business Cloud API</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Gunakan panel developer Meta di{" "}
-                    <a
-                      href="https://developers.facebook.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 underline font-mono"
-                    >
-                      developers.facebook.com
-                    </a>{" "}
-                    untuk mendaftarkan nomor resmi dan mendapatkan Token Akses
-                    Permanen Sistem.
-                  </p>
+                  {waSendingMethod === "API" && (
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-xl p-4 space-y-3.5 animate-fadeIn">
+                      <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-300 font-bold">
+                        <Settings2 className="w-4 h-4 text-indigo-600" />
+                        <span>Kredensial Meta WhatsApp Business Cloud API</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Gunakan panel developer Meta di{" "}
+                        <a
+                          href="https://developers.facebook.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 underline font-mono"
+                        >
+                          developers.facebook.com
+                        </a>{" "}
+                        untuk mendaftarkan nomor resmi dan mendapatkan Token Akses
+                        Permanen Sistem.
+                      </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                        Phone Number ID
-                      </label>
-                      <input
-                        type="text"
-                        value={waPhoneId}
-                        onChange={(e) => {
-                          setWaPhoneId(e.target.value);
-                        }}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                        WABA ID (Business Account ID)
-                      </label>
-                      <input
-                        type="text"
-                        value={waWabaId}
-                        onChange={(e) => {
-                          setWaWabaId(e.target.value);
-                        }}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
-                      />
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                            Phone Number ID
+                          </label>
+                          <input
+                            type="text"
+                            value={waPhoneId}
+                            onChange={(e) => {
+                              setWaPhoneId(e.target.value);
+                            }}
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                            WABA ID (Business Account ID)
+                          </label>
+                          <input
+                            type="text"
+                            value={waWabaId}
+                            onChange={(e) => {
+                              setWaWabaId(e.target.value);
+                            }}
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
+                          />
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                        Verify Token (Webhook Secret)
-                      </label>
-                      <input
-                        type="password"
-                        value={waWebhookSecret}
-                        onChange={(e) => {
-                          setWaWebhookSecret(e.target.value);
-                        }}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                        Webhook Callback URL
-                      </label>
-                      <input
-                        type="text"
-                        value={waCallbackUrl}
-                        className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl outline-none font-mono text-slate-400 cursor-not-allowed"
-                        disabled
-                      />
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                            Verify Token (Webhook Secret)
+                          </label>
+                          <input
+                            type="password"
+                            value={waWebhookSecret}
+                            onChange={(e) => {
+                              setWaWebhookSecret(e.target.value);
+                            }}
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                            Webhook Callback URL
+                          </label>
+                          <input
+                            type="text"
+                            value={waCallbackUrl}
+                            className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl outline-none font-mono text-slate-400 cursor-not-allowed"
+                            disabled
+                          />
+                        </div>
+                      </div>
 
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                      System Permanent User Access Token (Bearer Key)
-                    </label>
-                    <input
-                      type="password"
-                      value={whatsappKey}
-                      onChange={(e) => {
-                        setWhatsappKey(e.target.value);
-                      }}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
-                    />
-                  </div>
-                </div>
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                          System Permanent User Access Token (Bearer Key)
+                        </label>
+                        <input
+                          type="password"
+                          value={whatsappKey}
+                          onChange={(e) => {
+                            setWhatsappKey(e.target.value);
+                          }}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
+                        />
+                      </div>
+                    </div>
+                  )}
               </div>
 
               {/* Right Sandbox Tester Panel */}

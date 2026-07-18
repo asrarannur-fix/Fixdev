@@ -1230,13 +1230,13 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           <div className="grid grid-cols-3 gap-1.5">
                             <button
                               onClick={() => triggerSimulatedScan("success")}
-                              className="p-1.5 border border-emerald-100 dark:border-emerald-950/40 hover:bg-emerald-50 dark:hover:bg-emerald-950/10 text-emerald-800 dark:text-emerald-450 text-[9px] font-bold rounded-lg transition"
+                              className="p-1.5 border border-emerald-100 dark:border-emerald-950/40 hover:bg-emerald-50 dark:hover:bg-emerald-950/10 text-emerald-800 dark:text-emerald-400 text-[9px] font-bold rounded-lg transition"
                             >
                               🔵 Scan Sukses
                             </button>
                             <button
                               onClick={() => triggerSimulatedScan("error_blur")}
-                              className="p-1.5 border border-rose-100 dark:border-rose-950/40 hover:bg-rose-50 dark:hover:bg-rose-950/10 text-rose-800 dark:text-rose-450 text-[9px] font-bold rounded-lg transition"
+                              className="p-1.5 border border-rose-100 dark:border-rose-950/40 hover:bg-rose-50 dark:hover:bg-rose-950/10 text-rose-800 dark:text-rose-400 text-[9px] font-bold rounded-lg transition"
                             >
                               🔴 Scan Blur
                             </button>
@@ -1244,7 +1244,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                               onClick={() =>
                                 triggerSimulatedScan("error_invalid")
                               }
-                              className="p-1.5 border border-amber-100 dark:border-amber-950/40 hover:bg-amber-50 dark:hover:bg-amber-950/10 text-amber-800 dark:text-amber-450 text-[9px] font-bold rounded-lg transition"
+                              className="p-1.5 border border-amber-100 dark:border-amber-950/40 hover:bg-amber-50 dark:hover:bg-amber-950/10 text-amber-800 dark:text-amber-400 text-[9px] font-bold rounded-lg transition"
                             >
                               🟡 Kode Palsu
                             </button>
@@ -1846,7 +1846,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                                   </button>
                                   <button
                                     onClick={() => downloadInvoiceReceipt(tx)}
-                                    className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-450 text-[10.5px] font-bold cursor-pointer hover:underline inline-flex items-center gap-0.5"
+                                    className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 text-[10.5px] font-bold cursor-pointer hover:underline inline-flex items-center gap-0.5"
                                   >
                                     <Download className="w-3 h-3 shrink-0" />{" "}
                                     Unduh
@@ -1903,7 +1903,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                                       onClick={() =>
                                         downloadInvoiceReceipt(ticket)
                                       }
-                                      className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-450 text-[10.5px] font-bold cursor-pointer hover:underline inline-flex items-center gap-0.5"
+                                      className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 text-[10.5px] font-bold cursor-pointer hover:underline inline-flex items-center gap-0.5"
                                     >
                                       <Download className="w-3 h-3 shrink-0" />{" "}
                                       Unduh

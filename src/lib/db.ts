@@ -1,7 +1,7 @@
 /**
  * Shared PostgreSQL connection pool.
  * Single instance reused across all controllers and routes.
- * Uses Supabase Transaction Pooler (port 6543) for production.
+ * Uses Supabase Transaction Pooler (port 5432) for production (supports multi-statement transactions).
  */
 import pg from "pg";
 import { logger } from "./logger.js";
@@ -21,7 +21,7 @@ export function getPool(): InstanceType<typeof Pool> {
   const poolMax = Number(process.env.SUPABASE_DB_POOL_MAX || 10);
 
   _pool = new Pool({
-    connectionString: dbUrl,
+    connectionString: dbUrl.replace(/:6543\b/, ":5432"), // Fix: use Session Pooler port 5432 for transaction support
     ssl: { rejectUnauthorized: false },
     max: poolMax,
     idleTimeoutMillis: 30_000,

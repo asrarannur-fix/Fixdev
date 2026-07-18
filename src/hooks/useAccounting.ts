@@ -108,6 +108,20 @@ export function useAccounting(props: UseAccountingProps) {
     return res.data.data;
   };
 
+  const fetchBalanceSheet = async (): Promise<{
+    assets: COAAccount[];
+    liabilities: COAAccount[];
+    equity: COAAccount[];
+    retainedEarnings: number;
+    totalAssets: number;
+    totalLiabilities: number;
+    totalEquity: number;
+    isBalanced: boolean;
+  }> => {
+    const res = await api.get("/accounting/balance-sheet", { headers });
+    return res.data.data;
+  };
+
   return {
     fetchAccounts,
     createAccount,
@@ -118,5 +132,6 @@ export function useAccounting(props: UseAccountingProps) {
     createCashTransaction,
     fetchTrialBalance,
     fetchProfitAndLoss,
+    fetchBalanceSheet,
   };
 }

@@ -1923,7 +1923,7 @@ export const AssetManager: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-450 space-y-1">
+                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 space-y-1">
                   <p>
                     Asset ID:{" "}
                     <strong className="font-mono dark:text-zinc-200">

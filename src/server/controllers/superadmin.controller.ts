@@ -298,7 +298,9 @@ export async function endImpersonation(req: Request, res: Response) {
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
     res.json({ success: true, ...result });
-  } catch { res.status(500).json({ error: "Sesi impersonasi gagal diakhiri." }); }
+  } catch (err: any) {
+    logger.error({ err: err.message }, "Super Admin impersonation end failed");
+    res.status(500).json({ error: "Sesi impersonasi gagal diakhiri." }); }
 }
 
 export async function listAudit(req: Request, res: Response) {

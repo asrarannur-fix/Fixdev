@@ -175,75 +175,80 @@ export const updateAccount = async (req: any, res: any) => {
 
 export const createJournalEntry = async (req: any, res: any) => {
   const tenantId = req.tenantId;
+  const branchId = req.branchId;
   const userId = req.authActor?.userId;
   const { description, refNo, sourceType, sourceId, lines } = req.validatedBody;
 
-  // Validate: total debit must equal total credit
-  const totalDebit = lines.reduce((sum: number, l: any) => sum + (Number(l.debit) || 0), 0);
-  const totalCredit = lines.reduce((sum: number, l: any) => sum + (Number(l.credit) || 0), 0);
-
-  if (Math.abs(totalDebit - totalCredit) > 0.01) {
-    return res.status(422).json({
-      message: "Jurnal tidak seimbang. Total debit harus sama dengan total kredit.",
-      errors: {
-        balance: [`Debit: Rp${totalDebit.toLocaleString("id-ID")}, Kredit: Rp${totalCredit.toLocaleString("id-ID")}, Selisih: Rp${Math.abs(totalDebit - totalCredit).toLocaleString("id-ID")}`],
-      },
-    });
+  if (!branchId) {
+    return res.status(422).json({ error: "branchId wajib diisi untuk transaksi akuntansi." });
   }
 
-  // Validate: no line has both debit and credit > 0
-  for (const line of lines) {
-    if ((Number(line.debit) || 0) > 0 && (Number(line.credit) || 0) > 0) {
-      return res.status(422).json({
-        message: `Baris akun tidak valid: satu baris tidak boleh memiliki debit DAN kredit sekaligus.`,
-      });
-    }
-  }
-
-  const result = await dbTransaction(async (client) => {
-    // Insert journal entry header
-    const entryRes = await client.query(
-      `INSERT INTO journal_entries (tenant_id, description, ref_no, source_type, source_id, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [tenantId, description, refNo || null, sourceType || null, sourceId || null, userId],
-    );
-    const entryId = entryRes.rows[0].id;
-
-    // Insert journal lines
+  try {
+    // Validate: no line has both debit and credit > 0
     for (const line of lines) {
-      await client.query(
-        `INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit, description)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [entryId, line.accountId, Number(line.debit) || 0, Number(line.credit) || 0, line.description || null],
-      );
+      if ((Number(line.debit) || 0) > 0 && (Number(line.credit) || 0) > 0) {
+        return res.status(422).json({
+          message: `Baris akun tidak valid: satu baris tidak boleh memiliki debit DAN kredit sekaligus.`,
+        });
+      }
     }
 
-    // Return entry with lines
-    const fullEntry = await client.query(
-      `SELECT id, tenant_id as "tenantId", entry_date as "entryDate", description, ref_no as "refNo",
-              source_type as "sourceType", source_id as "sourceId", is_posted as "isPosted"
-       FROM journal_entries WHERE id = $1`,
-      [entryId],
+    const result = await dbTransaction(async (client) => {
+      // Validate balance inside transaction (race-safe)
+      const totalDebit = lines.reduce((sum: number, l: any) => sum + (Number(l.debit) || 0), 0);
+      const totalCredit = lines.reduce((sum: number, l: any) => sum + (Number(l.credit) || 0), 0);
+      if (Math.abs(totalDebit - totalCredit) > 0.01) {
+        throw new Error("Jurnal tidak seimbang. Total debit harus sama dengan total kredit.");
+      }
+      // Insert journal entry header
+      const entryRes = await client.query(
+        `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, source_id, created_by)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [tenantId, branchId, description, refNo || null, sourceType || null, sourceId || null, userId],
+      );
+      const entryId = entryRes.rows[0].id;
+
+      // Insert journal lines
+      for (const line of lines) {
+        await client.query(
+          `INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit, description)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [entryId, line.accountId, Number(line.debit) || 0, Number(line.credit) || 0, line.description || null],
+        );
+      }
+
+      // Return full entry with lines
+      const fullEntry = await client.query(
+        `SELECT je.id, je.entry_date as "entryDate", je.description, je.reference_no as "refNo",
+                je.source_type as "sourceType", je.is_posted as "isPosted", je.created_at as "createdAt"
+         FROM journal_entries je WHERE je.id = $1`,
+        [entryId],
+      );
+      const entryLines = await client.query(
+        `SELECT jl.id, jl.account_id as "accountId", jl.debit, jl.credit, jl.description,
+                ca.code as "accountCode", ca.name as "accountName"
+         FROM journal_lines jl
+         JOIN coa_accounts ca ON ca.id = jl.account_id
+         WHERE jl.journal_entry_id = $1
+         ORDER BY jl.id`,
+        [entryId],
+      );
+
+      return { entry: { ...fullEntry.rows[0], lines: entryLines.rows }, totalDebit, totalCredit };
+    });
+
+    // Audit log (uses result from transaction)
+    const auditDesc = `Jurnal: ${description} — Debit Rp${result.totalDebit.toLocaleString("id-ID")}`;
+    await dbQuery(
+      `INSERT INTO audit_logs (id, tenant_id, user_id, action, details)
+       VALUES (gen_random_uuid(), $1, $2, 'JOURNAL_CREATE', $3)`,
+      [tenantId, userId, auditDesc],
     );
-    const entryLines = await client.query(
-      `SELECT jl.id, jl.account_id as "accountId", jl.debit, jl.credit, jl.description,
-              ca.code as "accountCode", ca.name as "accountName"
-       FROM journal_lines jl JOIN coa_accounts ca ON ca.id = jl.account_id
-       WHERE jl.journal_entry_id = $1`,
-      [entryId],
-    );
 
-    return { ...fullEntry.rows[0], lines: entryLines.rows, totalDebit, totalCredit };
-  });
-
-  // Audit log
-  await dbQuery(
-    `INSERT INTO audit_logs (id, tenant_id, user_id, action, details)
-     VALUES (gen_random_uuid(), $1, $2, 'JOURNAL_CREATE', $3)`,
-    [tenantId, userId, `Jurnal: ${description} — Debit Rp${totalDebit.toLocaleString("id-ID")}`],
-  );
-
-  res.status(201).json({ data: result, message: "Entri jurnal berhasil dibuat." });
+    res.status(201).json({ success: true, data: result.entry });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // ──────────────────────────────────────────
@@ -257,23 +262,23 @@ export const getJournalEntries = async (req: any, res: any) => {
   try {
     const conditions: string[] = ["je.tenant_id = $1"];
     const params: any[] = [tenantId];
+    let joinClause = "";
     let idx = 2;
+
+    if (accountId) {
+      joinClause = "JOIN journal_lines jl ON jl.journal_entry_id = je.id AND jl.account_id = $2";
+      params.push(accountId);
+      idx = 3;
+    }
 
     if (from) { conditions.push(`je.entry_date >= $${idx++}`); params.push(from); }
     if (to) { conditions.push(`je.entry_date <= $${idx++}`); params.push(to); }
     if (sourceType) { conditions.push(`je.source_type = $${idx++}`); params.push(sourceType); }
 
-    let joinClause = "";
-    if (accountId) {
-      joinClause = "JOIN journal_lines jl ON jl.journal_entry_id = je.id AND jl.account_id = $2";
-      params.splice(1, 0, accountId); // insert at position 1
-      idx++;
-    }
-
     const where = conditions.join(" AND ");
 
-    const result = await dbQuery(
-      `SELECT DISTINCT je.id, je.entry_date as "entryDate", je.description, je.ref_no as "refNo",
+    const entries = await dbQuery(
+      `SELECT DISTINCT je.id, je.entry_date as "entryDate", je.description, je.reference_no as "refNo",
               je.source_type as "sourceType", je.is_posted as "isPosted", je.created_at as "createdAt"
        FROM journal_entries je ${joinClause}
        WHERE ${where}
@@ -281,7 +286,30 @@ export const getJournalEntries = async (req: any, res: any) => {
       params,
     );
 
-    res.json({ data: result.rows });
+    // Attach lines to each entry for chart rendering
+    const entryIds = entries.rows.map((e: any) => e.id);
+    const linesMap: Record<string, any[]> = {};
+    if (entryIds.length > 0) {
+      const lines = await dbQuery(
+        `SELECT jl.journal_entry_id as "entryId", jl.id, jl.account_id as "accountId",
+                jl.debit, jl.credit, jl.description,
+                ca.code as "accountCode", ca.name as "accountName"
+         FROM journal_lines jl
+         JOIN coa_accounts ca ON ca.id = jl.account_id
+         WHERE jl.journal_entry_id = ANY($1::uuid[])
+         ORDER BY jl.id`,
+        [entryIds],
+      );
+      for (const line of lines.rows) {
+        if (!linesMap[line.entryId]) linesMap[line.entryId] = [];
+        linesMap[line.entryId].push(line);
+      }
+    }
+    for (const entry of entries.rows) {
+      (entry as any).lines = linesMap[entry.id] || [];
+    }
+
+    res.json({ data: entries.rows });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -298,7 +326,7 @@ export const getJournalEntryById = async (req: any, res: any) => {
   try {
     const entryRes = await dbQuery(
       `SELECT id, tenant_id as "tenantId", entry_date as "entryDate", description,
-              ref_no as "refNo", source_type as "sourceType", is_posted as "isPosted"
+              reference_no as "refNo", source_type as "sourceType", is_posted as "isPosted"
        FROM journal_entries WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -328,8 +356,12 @@ export const getTrialBalance = async (req: any, res: any) => {
   try {
     const result = await dbQuery(
       `SELECT ca.id, ca.code, ca.name, ca.type,
-              COALESCE(SUM(CASE WHEN je.is_posted = TRUE THEN jl.debit ELSE 0 END)
-                - SUM(CASE WHEN je.is_posted = TRUE THEN jl.credit ELSE 0 END), 0)::numeric AS balance
+              CASE WHEN ca.type IN ('ASSET','EXPENSE')
+                THEN COALESCE(SUM(CASE WHEN je.is_posted = TRUE THEN jl.debit ELSE 0 END)
+                  - SUM(CASE WHEN je.is_posted = TRUE THEN jl.credit ELSE 0 END), 0)::numeric
+                ELSE COALESCE(SUM(CASE WHEN je.is_posted = TRUE THEN jl.credit ELSE 0 END)
+                  - SUM(CASE WHEN je.is_posted = TRUE THEN jl.debit ELSE 0 END), 0)::numeric
+              END AS balance
        FROM coa_accounts ca
        LEFT JOIN journal_lines jl ON jl.account_id = ca.id
        LEFT JOIN journal_entries je ON je.id = jl.journal_entry_id AND je.tenant_id = ca.tenant_id
@@ -364,7 +396,63 @@ export const getTrialBalance = async (req: any, res: any) => {
 };
 
 // ──────────────────────────────────────────
-// 8. PROFIT & LOSS REPORT
+// 8. BALANCE SHEET (Neraca)
+// ──────────────────────────────────────────
+
+export const getBalanceSheet = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+
+  try {
+    // Sum posted journal lines per account with correct sign
+    const result = await dbQuery(
+      `SELECT ca.id, ca.code, ca.name, ca.type,
+              CASE WHEN ca.type IN ('ASSET','EXPENSE')
+                THEN COALESCE(SUM(CASE WHEN je.is_posted = TRUE THEN jl.debit ELSE 0 END)
+                  - SUM(CASE WHEN je.is_posted = TRUE THEN jl.credit ELSE 0 END), 0)::numeric
+                ELSE COALESCE(SUM(CASE WHEN je.is_posted = TRUE THEN jl.credit ELSE 0 END)
+                  - SUM(CASE WHEN je.is_posted = TRUE THEN jl.debit ELSE 0 END), 0)::numeric
+              END AS balance
+       FROM coa_accounts ca
+       LEFT JOIN journal_lines jl ON jl.account_id = ca.id
+       LEFT JOIN journal_entries je ON je.id = jl.journal_entry_id AND je.tenant_id = ca.tenant_id
+       WHERE ca.tenant_id = $1 AND ca.is_group = FALSE
+       GROUP BY ca.id, ca.code, ca.name, ca.type
+       ORDER BY ca.code ASC`,
+      [tenantId],
+    );
+
+    const allAccounts = result.rows;
+    const assets = allAccounts.filter((a: any) => a.type === "ASSET").map((a: any) => ({ ...a, balance: Math.max(0, Number(a.balance)) }));
+    const liabilities = allAccounts.filter((a: any) => a.type === "LIABILITY").map((a: any) => ({ ...a, balance: Math.max(0, Number(a.balance)) }));
+    const equity = allAccounts.filter((a: any) => a.type === "EQUITY").map((a: any) => ({ ...a, balance: Math.max(0, Number(a.balance)) }));
+    // Include retained earnings from P&L
+    const revenue = allAccounts.filter((a: any) => a.type === "REVENUE").reduce((s: number, a: any) => s + Math.max(0, Number(a.balance)), 0);
+    const expense = allAccounts.filter((a: any) => a.type === "EXPENSE").reduce((s: number, a: any) => s + Math.max(0, Number(a.balance)), 0);
+    const retainedEarnings = revenue - expense;
+
+    const totalAssets = assets.reduce((s: number, a: any) => s + a.balance, 0);
+    const totalLiabilities = liabilities.reduce((s: number, a: any) => s + a.balance, 0);
+    const totalEquity = equity.reduce((s: number, a: any) => s + a.balance, 0) + retainedEarnings;
+
+    res.json({
+      data: {
+        assets,
+        liabilities,
+        equity,
+        retainedEarnings,
+        totalAssets,
+        totalLiabilities,
+        totalEquity,
+        isBalanced: Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ──────────────────────────────────────────
+// 9. PROFIT & LOSS REPORT
 // ──────────────────────────────────────────
 
 export const getProfitAndLoss = async (req: any, res: any) => {
@@ -426,16 +514,29 @@ export const getProfitAndLoss = async (req: any, res: any) => {
 
 export const createCashTransaction = async (req: any, res: any) => {
   const tenantId = req.tenantId;
+  const branchId = req.branchId;
   const userId = req.authActor?.userId;
   const parsed = req.validatedBody;
 
-  const result = await dbTransaction(async (client) => {
-    // Find cash account (10100) and target account
+  if (!branchId) {
+    return res.status(422).json({ error: "branchId wajib diisi untuk transaksi akuntansi." });
+  }
+
+  try {
+    const result = await dbTransaction(async (client) => {
+    // Find cash account: prefer code starting with 101, fallback to first ASSET
     const cashAcct = await client.query(
-      `SELECT id FROM coa_accounts WHERE tenant_id = $1 AND code = '10100' LIMIT 1`,
+      `SELECT id FROM coa_accounts WHERE tenant_id = $1 AND (code LIKE '101%' OR name ILIKE '%kas%') AND type = 'ASSET' LIMIT 1`,
       [tenantId],
     );
-    if (!cashAcct.rows[0]) throw new Error("Akun kas utama (10100) tidak ditemukan.");
+    if (!cashAcct.rows[0]) {
+      const fallback = await client.query(
+        `SELECT id FROM coa_accounts WHERE tenant_id = $1 AND type = 'ASSET' LIMIT 1`,
+        [tenantId],
+      );
+      if (!fallback.rows[0]) throw new Error("Tidak ada akun aset (kas) untuk transaksi. Buat akun kas terlebih dahulu.");
+      cashAcct.rows = fallback.rows;
+    }
 
     const targetAcctId = parsed.type === "CASH_IN" ? parsed.toAccountId : parsed.fromAccountId;
     if (!targetAcctId) throw new Error("Akun lawan transaksi wajib diisi.");
@@ -449,9 +550,9 @@ export const createCashTransaction = async (req: any, res: any) => {
 
     // Create journal entry
     const entryRes = await client.query(
-      `INSERT INTO journal_entries (tenant_id, description, ref_no, source_type, created_by)
-       VALUES ($1, $2, $3, 'CASH_TX', $4) RETURNING id`,
-      [tenantId, parsed.description, parsed.refNo || null, userId],
+      `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
+      VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6) RETURNING id`,
+      [tenantId, branchId, parsed.description, parsed.refNo || null, parsed.sourceType || "CASH_TX", userId],
     );
     const entryId = entryRes.rows[0].id;
 
@@ -482,4 +583,7 @@ export const createCashTransaction = async (req: any, res: any) => {
   );
 
   res.status(201).json({ data: result, message: "Transaksi kas berhasil dicatat." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 };

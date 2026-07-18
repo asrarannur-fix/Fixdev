@@ -62,7 +62,7 @@ export const hasComplaintTemplatePermission = (
 // Middleware: Require specific permission
 export const requireComplaintTemplatePermission = (permission: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const userRole = (req as any).user?.role || (req as any).supabaseUser?.role || "ANONYMOUS";
+    const userRole = (req as any).authActor?.role || (req as any).supabaseUser?.role || "ANONYMOUS";
     
     if (!hasComplaintTemplatePermission(userRole, permission)) {
       return res.status(403).json({
@@ -81,7 +81,7 @@ export const canEditDefaultTemplates = (
   res: Response,
   next: NextFunction
 ) => {
-  const userRole = (req as any).user?.role || (req as any).supabaseUser?.role || "ANONYMOUS";
+  const userRole = (req as any).authActor?.role || (req as any).supabaseUser?.role || "ANONYMOUS";
   
   if (!["SUPER_ADMIN", "OWNER"].includes(userRole)) {
     return res.status(403).json({

@@ -78,8 +78,15 @@ const diagnosisSchema = z.object({
 const approvalSchema = z.object({ approved: z.boolean(), signatureName: z.string().trim().optional(), signature: z.string().optional() });
 const qcSchema = z.object({
   passed: z.boolean(), score: z.number().min(0).max(100), notes: z.string().trim().min(2),
-  checklist: z.array(z.object({ criteria: z.string(), passed: z.boolean() })).default([]),
+  checklist: z.array(z.object({ criteria: z.string().trim().min(1), passed: z.boolean() })).min(1),
   photos: z.array(z.string()).default([]),
+}).superRefine((data, ctx) => {
+  if (data.passed && data.score < 80) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["score"], message: "Skor minimal untuk lulus QC adalah 80." });
+  }
+  if (data.passed && data.checklist.some((item) => !item.passed)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["checklist"], message: "Semua pemeriksaan harus lulus sebelum QC diselesaikan." });
+  }
 });
 const handoverSchema = z.object({
   paymentMethod: z.string().min(1),
@@ -186,6 +193,13 @@ async function getTenantWaTemplate(client: any, tenantId: string, category: stri
 }
 
 async function queueNotification(client: any, tenantId: string, ticket: any, eventId: string, message: string, templateCategory = "SERVICE_UPDATE", extraContext: any = {}) {
+  const tenantSettings = await client.query(`SELECT settings FROM tenants WHERE id=$1`, [tenantId]);
+  const waConfig = tenantSettings.rows[0]?.settings?.waConfig;
+  if (waConfig?.sendingMethod === "MANUAL") {
+    // If sending method is manual, do not queue system notifications
+    return;
+  }
+
   const customer = await client.query("SELECT name,phone FROM customers WHERE id=$1 AND tenant_id=$2", [ticket.customerId, tenantId]);
   if (!customer.rows[0]?.phone) return;
 
@@ -246,7 +260,17 @@ export async function transitionServiceTicket(req: Request, res: Response) {
   try {
     const ticket = await dbTransaction(async client => {
       const current = await lockedTicket(client, req);
-      await appendEvent(client, req, current, parsed.data.status, parsed.data.note);
+      const to = parsed.data.status;
+      if (to === "SELESAI" && current.qcStatus !== "PASSED") {
+        const error: any = new Error("Tiket harus lulus QC (qcStatus=PASSED) sebelum dapat diselesaikan."); error.status = 409; throw error;
+      }
+      if (to === "SEDANG_DIKERJAKAN" && !["DIAGNOSA", "REWORK", "MENUGGU_SPAREPART", "APPROVAL_DITOLAK", "DIKIRIM_KE_VENDOR"].includes(current.status)) {
+        const error: any = new Error("Pengerjaan hanya dapat dimulai setelah diagnosis/approval atau dari REWORK/MENUGGU_SPAREPART."); error.status = 409; throw error;
+      }
+      if (to === "MENUGGU_APPROVAL" && !current.techDiagnosis) {
+        const error: any = new Error("Diagnosis harus diisi sebelum menunggu persetujuan pelanggan."); error.status = 409; throw error;
+      }
+      await appendEvent(client, req, current, to, parsed.data.note);
       return finalTicket(client, req);
     });
     res.json({ data: ticket });
@@ -275,7 +299,9 @@ export async function diagnoseServiceTicket(req: Request, res: Response) {
          WHERE id=$4 AND tenant_id=$5`,
         [parsed.data.diagnosis, parsed.data.estimatedCost, JSON.stringify(parsed.data.parts), current.id, req.tenantId],
       );
-      if (current.status !== "DIAGNOSA") {
+      // A rejected estimate may be revised directly into a new approval request;
+      // APPROVAL_DITOLAK -> DIAGNOSA is not a legal transition in the state machine.
+      if (!["DIAGNOSA", "APPROVAL_DITOLAK"].includes(current.status)) {
         await appendEvent(client, req, current, "DIAGNOSA", "Teknisi memulai dan menyelesaikan pemeriksaan unit.");
       }
       await appendEvent(client, req, current, "MENUGGU_APPROVAL", "Diagnosis selesai dan estimasi menunggu persetujuan pelanggan.", { estimatedCost: parsed.data.estimatedCost });
@@ -314,10 +340,9 @@ export async function completeServiceQc(req: Request, res: Response) {
   try {
     const ticket = await dbTransaction(async client => {
       const current = await lockedTicket(client, req);
-      if (!["SEDANG_DIKERJAKAN", "QC", "REWORK"].includes(current.status)) {
-        const error: any = new Error(`QC tidak dapat dilakukan pada status ${current.status}.`); error.status = 409; throw error;
+      if (current.status !== "QC") {
+        const error: any = new Error(`Hasil QC hanya dapat dicatat saat tiket berada di tahap QC (status saat ini: ${current.status}).`); error.status = 409; throw error;
       }
-      if (current.status !== "QC") await appendEvent(client, req, current, "QC", "Unit masuk tahap quality control.");
       await client.query(
         `UPDATE service_tickets SET qc_score=$1,qc_notes=$2,qc_checklist=$3::jsonb,qc_photos=$4::jsonb,qc_status=$5,updated_at=NOW()
          WHERE id=$6 AND tenant_id=$7`,
@@ -338,7 +363,12 @@ export async function createServicePartOrder(req: Request, res: Response) {
   try {
     const result = await dbTransaction(async client => {
       const duplicate = await client.query("SELECT * FROM service_part_orders WHERE tenant_id=$1 AND idempotency_key=$2", [req.tenantId, parsed.data.idempotencyKey]);
-      if (duplicate.rows[0]) return { ticket: await finalTicket(client, req), order: duplicate.rows[0], idempotent: true };
+      if (duplicate.rows[0]) {
+        if (duplicate.rows[0].ticket_id !== req.params.id) {
+          const error: any = new Error("Idempotency key sudah digunakan untuk tiket lain."); error.status = 409; throw error;
+        }
+        return { ticket: await finalTicket(client, req), order: duplicate.rows[0], idempotent: true };
+      }
       const ticket = await lockedTicket(client, req);
       if (!["DIAGNOSA", "SEDANG_DIKERJAKAN", "REWORK"].includes(ticket.status)) {
         const error: any = new Error(`Permintaan spare part tidak dapat dibuat pada status ${ticket.status}.`); error.status = 409; throw error;
@@ -434,7 +464,12 @@ export async function addApprovedAdditionalCost(req: Request, res: Response) {
         "SELECT * FROM service_cost_adjustments WHERE tenant_id=$1 AND idempotency_key=$2 LIMIT 1",
         [req.tenantId, parsed.data.idempotencyKey],
       );
-      if (duplicate.rows[0]) return { ticket: await finalTicket(client, req), adjustment: duplicate.rows[0], idempotent: true };
+      if (duplicate.rows[0]) {
+        if (duplicate.rows[0].ticket_id !== req.params.id) {
+          const error: any = new Error("Idempotency key sudah digunakan untuk tiket lain."); error.status = 409; throw error;
+        }
+        return { ticket: await finalTicket(client, req), adjustment: duplicate.rows[0], idempotent: true };
+      }
 
       const ticket = await lockedTicket(client, req);
       if (!["SEDANG_DIKERJAKAN", "REWORK"].includes(ticket.status)) {
@@ -540,6 +575,9 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
   try {
     const ticket = await dbTransaction(async client => {
       const current = await lockedTicket(client, req);
+      if (current.status === "DIAMBIL") {
+        const error: any = new Error("Metadata pekerjaan tidak dapat diubah setelah unit diambil."); error.status = 409; throw error;
+      }
       const discussions = parsed.data.internalDiscussion
         ? [...(current.internalDiscussions || []), parsed.data.internalDiscussion]
         : current.internalDiscussions || [];
@@ -568,11 +606,19 @@ export async function handoverServiceTicket(req: Request, res: Response) {
   }
   try {
     const result = await dbTransaction(async client => {
-      const duplicate = await client.query("SELECT id FROM service_payments WHERE tenant_id=$1 AND idempotency_key=$2", [req.tenantId, parsed.data.idempotencyKey]);
-      if (duplicate.rows[0]) return { ticket: await finalTicket(client, req), idempotent: true };
+      const duplicate = await client.query("SELECT id,ticket_id FROM service_payments WHERE tenant_id=$1 AND idempotency_key=$2", [req.tenantId, parsed.data.idempotencyKey]);
+      if (duplicate.rows[0]) {
+        if (duplicate.rows[0].ticket_id !== req.params.id) {
+          const error: any = new Error("Idempotency key sudah digunakan untuk tiket lain."); error.status = 409; throw error;
+        }
+        return { ticket: await finalTicket(client, req), idempotent: true };
+      }
       const ticket = await lockedTicket(client, req);
       if (!["SELESAI", "MENUGGU_PEMBAYARAN", "SIAP_DIAMBIL"].includes(ticket.status)) {
         const error: any = new Error(`Handover tidak dapat dilakukan pada status ${ticket.status}.`); error.status = 409; throw error;
+      }
+      if (ticket.qcStatus !== "PASSED") {
+        const error: any = new Error("Tiket harus lulus QC sebelum dapat diserahkan."); error.status = 409; throw error;
       }
       const invoice = calculateServiceInvoice(ticket.estimatedCost, ticket.downPayment, parsed.data.taxRate);
       const parts = await client.query("SELECT * FROM service_parts WHERE tenant_id=$1 AND ticket_id=$2 AND status IN ('REQUESTED','RESERVED') FOR UPDATE", [req.tenantId, ticket.id]);
@@ -584,8 +630,10 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         }
         await client.query("UPDATE product_stock SET quantity=quantity-$1 WHERE product_id=$2 AND warehouse_id=$3", [part.quantity, part.product_id, part.warehouse_id]);
         await client.query(
-          `INSERT INTO service_stock_movements (tenant_id,ticket_id,product_id,warehouse_id,quantity,reference_no)
-           VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (ticket_id,product_id,warehouse_id,movement_type) DO NOTHING`,
+          `INSERT INTO service_stock_movements (tenant_id,ticket_id,product_id,warehouse_id,quantity,movement_type,reference_no)
+           VALUES ($1,$2,$3,$4,$5,'SERVICE_OUT',$6)
+           ON CONFLICT (ticket_id,product_id,warehouse_id,movement_type)
+           DO UPDATE SET quantity=service_stock_movements.quantity + EXCLUDED.quantity`,
           [req.tenantId, ticket.id, part.product_id, part.warehouse_id, -Number(part.quantity), ticket.ticketNo],
         );
         await client.query("UPDATE service_parts SET status='USED',consumed_at=NOW(),updated_at=NOW() WHERE id=$1", [part.id]);
@@ -600,15 +648,19 @@ export async function handoverServiceTicket(req: Request, res: Response) {
           parsed.data.proofName || null, parsed.data.tempoDays || 0, dueAt,
           parsed.data.paymentMethod === "TEMPO" ? "RECEIVABLE" : "PAID", req.authActor?.userId],
       );
+      const debitAccountCode = parsed.data.paymentMethod === "TEMPO" ? "10300" : (["CASH", "DEPOSIT"].includes(parsed.data.paymentMethod) ? "10100" : "10200");
       const debitAccount = await client.query(
         `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code=$2 LIMIT 1`,
-        [req.tenantId, parsed.data.paymentMethod === "TEMPO" ? "10300" : "10100"],
+        [req.tenantId, debitAccountCode],
       );
       const revenueAccount = await client.query("SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='40100' LIMIT 1", [req.tenantId]);
-      if (debitAccount.rows[0] && revenueAccount.rows[0] && invoice.amountDue > 0) {
+      if (invoice.amountDue > 0 && (!debitAccount.rows[0] || !revenueAccount.rows[0])) {
+        const error: any = new Error(`Akun jurnal pembayaran servis belum dikonfigurasi (40100 dan ${parsed.data.paymentMethod === "TEMPO" ? "10300" : (["CASH", "DEPOSIT"].includes(parsed.data.paymentMethod) ? "10100" : "10200")}).`); error.status = 422; throw error;
+      }
+      if (invoice.amountDue > 0) {
         const journal = await client.query(
-          `INSERT INTO journal_entries (id,tenant_id,description,ref_no) VALUES (gen_random_uuid(),$1,$2,$3) RETURNING id`,
-          [req.tenantId, `Pembayaran servis ${ticket.ticketNo}`, ticket.ticketNo],
+          `INSERT INTO journal_entries (id,tenant_id,branch_id,description,reference_no,source_type,source_id,created_by) VALUES (gen_random_uuid(),$1,$2,$3,$4,'SERVICE_PAYMENT',$5,$6) RETURNING id`,
+          [req.tenantId, ticket.branchId, `Pembayaran servis ${ticket.ticketNo}`, ticket.ticketNo, payment.rows[0].id, req.authActor?.userId],
         );
         await client.query(
           `INSERT INTO journal_lines (id,journal_entry_id,account_id,debit,credit) VALUES

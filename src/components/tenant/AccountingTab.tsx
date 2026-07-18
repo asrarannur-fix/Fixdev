@@ -35,6 +35,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
     createCashTransaction,
     fetchTrialBalance,
     fetchProfitAndLoss,
+    fetchBalanceSheet,
   } = useAccounting({ currentTenantId, currentBranchId });
 
   // State for COA
@@ -49,6 +50,10 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
 
   // State for Trial Balance
   const [trialBalance, setTrialBalance] = useState<any>(null);
+
+  // State for Balance Sheet
+  const [balanceSheet, setBalanceSheet] = useState<any>(null);
+  const [balanceSheetLoading, setBalanceSheetLoading] = useState(false);
   const [trialBalanceLoading, setTrialBalanceLoading] = useState(true);
 
   // State for P&L
@@ -110,10 +115,19 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
       } finally {
         setProfitLossLoading(false);
       }
+
+      try {
+        const bs = await fetchBalanceSheet();
+        setBalanceSheet(bs);
+      } catch (e: any) {
+        console.error("Balance sheet error:", e);
+      } finally {
+        setBalanceSheetLoading(false);
+      }
     };
 
     loadAll();
-  }, [currentTenantId, currentBranchId, fetchAccounts, fetchJournalEntries, fetchTrialBalance, fetchProfitAndLoss]);
+  }, [currentTenantId, currentBranchId, fetchAccounts, fetchJournalEntries, fetchTrialBalance, fetchProfitAndLoss, fetchBalanceSheet]);
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,7 +283,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-800">
-                        Rp {(acc.balance ?? 0).toLocaleString()}
+                        Rp {(acc.balance ?? 0).toLocaleString("id-ID")}
                       </td>
                     </tr>
                   ))}
@@ -340,8 +354,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                                   className="border-t border-slate-100"
                                 >
                                   <td className="px-3 py-1.5">
-                                    {accName} ({line.accountId.split("-").pop()
-                                    })
+                                    {accName}
                                   </td>
                                   <td className="px-3 py-1.5 text-right font-mono text-slate-600">
                                     {line.debit > 0
@@ -992,181 +1005,76 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                 <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                   <div>
                     <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
-                      Laporan Neraca Dinamis (Balance Sheet)
+                      Laporan Neraca (Balance Sheet)
                     </h3>
                     <p className="text-[10px] text-slate-400 mt-0.5">
-                      Posisi keuangan terverifikasi langsung dari laci buku
-                      besar kas
+                      Posisi keuangan real-time dari jurnal
                     </p>
                   </div>
                   <span className="text-[10px] font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-bold">
-                    Per{" "}
-                    {new Date().toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    Per {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                   </span>
                 </div>
-                <div className="p-5 space-y-4 text-xs text-slate-700">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Aset */}
-                    <div className="space-y-3">
-                      <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">
-                        Aset (Assets)
-                      </p>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          10100 - Kas Utama & Laci
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "10100")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
+                {balanceSheetLoading ? (
+                  <div className="p-10 text-center text-slate-400">Memuat neraca...</div>
+                ) : balanceSheet ? (
+                  <div className="p-5 space-y-4 text-xs text-slate-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Aset */}
+                      <div className="space-y-3">
+                        <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">Aset (Assets)</p>
+                        {balanceSheet.assets.map((a: any) => (
+                          <div key={a.id} className="flex justify-between text-[11px] pl-2">
+                            <span className="text-slate-600">{a.code} - {a.name}</span>
+                            <span className="font-mono font-semibold text-slate-800">Rp {Number(a.balance).toLocaleString("id-ID")}</span>
+                          </div>
+                        ))}
+                        <div className="border-t border-dashed border-slate-200 pt-2.5 flex justify-between font-bold text-slate-800 text-xs">
+                          <span>TOTAL AKTIVA (ASET)</span>
+                          <span className="font-mono text-slate-900">Rp {balanceSheet.totalAssets.toLocaleString("id-ID")}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          10200 - Bank Mandiri Tenant
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "10200")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          10300 - Piutang Usaha
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "10300")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          10400 - Persediaan Suku Cadang
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "10400")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="border-t border-dashed border-slate-200 pt-2.5 flex justify-between font-bold text-slate-800 text-xs">
-                        <span>TOTAL AKTIVA (ASET)</span>
-                        <span className="font-mono text-slate-900">
-                          Rp{" "}
-                          {(
-                            (accounts.find((a) => a.code === "10100")
-                              ?.balance || 0) +
-                            (accounts.find((a) => a.code === "10200")
-                              ?.balance || 0) +
-                            (accounts.find((a) => a.code === "10300")
-                              ?.balance || 0) +
-                            (accounts.find((a) => a.code === "10400")
-                              ?.balance || 0)
-                          ).toLocaleString("id-ID")}
-                        </span>
+                      {/* Kewajiban & Ekuitas */}
+                      <div className="space-y-3 md:border-l md:border-slate-100 md:pl-6">
+                        <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">Kewajiban & Ekuitas (Pasiva)</p>
+                        {balanceSheet.liabilities.map((a: any) => (
+                          <div key={a.id} className="flex justify-between text-[11px] pl-2">
+                            <span className="text-slate-600">{a.code} - {a.name}</span>
+                            <span className="font-mono font-semibold text-slate-800">Rp {Number(a.balance).toLocaleString("id-ID")}</span>
+                          </div>
+                        ))}
+                        {balanceSheet.equity.map((a: any) => (
+                          <div key={a.id} className="flex justify-between text-[11px] pl-2">
+                            <span className="text-slate-600">{a.code} - {a.name}</span>
+                            <span className="font-mono font-semibold text-slate-800">Rp {Number(a.balance).toLocaleString("id-ID")}</span>
+                          </div>
+                        ))}
+                        {balanceSheet.retainedEarnings !== 0 && (
+                          <div className="flex justify-between text-[11px] pl-2">
+                            <span className="text-slate-600">Laba Ditahan (Retained Earnings)</span>
+                            <span className="font-mono font-semibold text-emerald-700">Rp {Math.max(0, balanceSheet.retainedEarnings).toLocaleString("id-ID")}</span>
+                          </div>
+                        )}
+                        <div className="border-t border-dashed border-slate-200 pt-2.5 flex justify-between font-bold text-slate-800 text-xs">
+                          <span>TOTAL PASIVA</span>
+                          <span className="font-mono text-slate-900">Rp {balanceSheet.totalEquity.toLocaleString("id-ID")}</span>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Kewajiban & Ekuitas */}
-                    <div className="space-y-3 md:border-l md:border-slate-100 md:pl-6">
-                      <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">
-                        Kewajiban & Ekuitas (Pasiva)
-                      </p>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          20100 - Hutang Suku Cadang Vendor
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "20100")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
+                    {balanceSheet.isBalanced && (
+                      <div className="text-center text-emerald-600 text-[10px] font-semibold pt-3 border-t border-slate-100">
+                        ✓ Neraca Seimbang (Aset = Pasiva: Rp {balanceSheet.totalAssets.toLocaleString("id-ID")})
                       </div>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          20200 - DP Diterima di Muka (Uang Muka)
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "20200")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
+                    )}
+                    {!balanceSheet.isBalanced && (
+                      <div className="text-center text-amber-600 text-[10px] font-semibold pt-3 border-t border-slate-100">
+                        ⚠ Selisih: Rp {Math.abs(balanceSheet.totalAssets - balanceSheet.totalEquity).toLocaleString("id-ID")}
                       </div>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          20300 - Kewajiban Pajak PPN
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "20300")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[11px] pl-2">
-                        <span className="text-slate-600">
-                          30100 - Modal Pemilik
-                        </span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          Rp{" "}
-                          {(
-                            accounts.find((a) => a.code === "30100")
-                              ?.balance || 0
-                          ).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="border-t border-dashed border-slate-200 pt-2.5 flex justify-between font-bold text-slate-800 text-xs">
-                        <span>TOTAL PASIVA (KEWAJIBAN & MODAL)</span>
-                        <span className="font-mono text-slate-900">
-                          Rp{" "}
-                          {(
-                            (accounts.find((a) => a.code === "20100")
-                              ?.balance || 0) +
-                            (accounts.find((a) => a.code === "20200")
-                              ?.balance || 0) +
-                            (accounts.find((a) => a.code === "20300")
-                              ?.balance || 0) +
-                            (accounts.find((a) => a.code === "30100")
-                              ?.balance || 0)
-                          ).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                    </div>
+                    )}
                   </div>
-
-                  <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-1.5 text-[10px] text-emerald-800 mt-4">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-emerald-900 uppercase">
-                        Neraca Seimbang (Verified Ledger Synchronized)
-                      </p>
-                      <p className="text-slate-500 mt-0.5 leading-relaxed">
-                        Persamaan akuntansi dasar Aset = Kewajiban + Ekuitas
-                        telah dihitung secara real-time dan terverifikasi
-                        balance sempurna.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                ) : (
+                  <div className="p-10 text-center text-slate-400">Gagal memuat neraca. Periksa data jurnal.</div>
+                )}
               </div>
             )}
           </div>

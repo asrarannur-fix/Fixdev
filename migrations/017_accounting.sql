@@ -41,10 +41,12 @@ CREATE TABLE IF NOT EXISTS coa_accounts (
 CREATE TABLE IF NOT EXISTS journal_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
+    branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
     entry_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     description TEXT NOT NULL,
+    -- Legacy compatibility only; new code must use reference_no.
     ref_no TEXT,
+    reference_no TEXT NOT NULL,
     source_type TEXT, -- e.g. 'POS_SALE', 'SERVICE_PAYMENT', 'PURCHASE', 'MANUAL'
     source_id UUID,
     is_posted BOOLEAN NOT NULL DEFAULT TRUE,
@@ -72,7 +74,7 @@ CREATE TABLE IF NOT EXISTS journal_lines (
 CREATE INDEX IF NOT EXISTS idx_coa_accounts_tenant ON coa_accounts(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_coa_accounts_tenant_type ON coa_accounts(tenant_id, type);
 CREATE INDEX IF NOT EXISTS idx_journal_entries_tenant_date ON journal_entries(tenant_id, entry_date);
-CREATE INDEX IF NOT EXISTS idx_journal_entries_tenant_ref ON journal_entries(tenant_id, ref_no);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_tenant_ref ON journal_entries(tenant_id, reference_no);
 CREATE INDEX IF NOT EXISTS idx_journal_entries_source ON journal_entries(source_type, source_id);
 CREATE INDEX IF NOT EXISTS idx_journal_lines_entry ON journal_lines(journal_entry_id);
 CREATE INDEX IF NOT EXISTS idx_journal_lines_account ON journal_lines(account_id);

@@ -1418,7 +1418,7 @@ export const HRAttendancePanel: React.FC<any> = (props) => {
                                                   : ca.status === "APPROVED"
                                                     ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400"
                                                     : ca.status === "PAID"
-                                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-450"
+                                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400"
                                                       : "bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-slate-400"
                                               }`}
                                             >

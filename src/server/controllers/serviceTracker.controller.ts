@@ -23,7 +23,17 @@ function publicTicketRow(row: any) {
 }
 
 export const getPublicTicketStatus = async (req: any, res: any) => {
-  const ticketNo = String(req.params.ticketNo || "").trim();
+  // Ticket numbers contain slashes (e.g. TKT/2607/000029) which Express
+  // can't capture fully via :ticketNo param in a sub-router.
+  // Use originalUrl to extract the full ticket number.
+  const url = req.originalUrl || "";
+  const statusIdx = url.indexOf("/status/");
+  let ticketNo = "";
+  if (statusIdx !== -1) {
+    ticketNo = url.substring(statusIdx + 8); // length of "/status/"
+  }
+  ticketNo = ticketNo.split("?")[0]; // remove query params
+  if (!ticketNo) ticketNo = String(req.params.ticketNo || "").trim();
   if (!ticketNo) return res.status(400).json({ error: "Missing ticket number." });
   try {
     const result = await dbQuery(
@@ -44,6 +54,12 @@ export const getPublicTicketStatus = async (req: any, res: any) => {
 };
 
 export const getPublicTicketByToken = async (req: any, res: any) => {
+  const token = req.params.token;
+  // public_tracking_token is a UUID; reject obviously-invalid formats early
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!token || !uuidPattern.test(token)) {
+    return res.status(404).json({ error: "Service ticket not found" });
+  }
   try {
     const result = await dbQuery(
       `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
@@ -53,11 +69,16 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
         s.created_at AS "createdAt",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
        WHERE s.public_tracking_token=$1 LIMIT 1`,
-      [req.params.token],
+      [token],
     );
     if (!result.rows[0]) return res.status(404).json({ error: "Service ticket not found" });
     res.json(publicTicketRow(result.rows[0]));
-  } catch (error: any) { res.status(500).json({ error: error.message }); }
+  } catch (error: any) {
+    if (error.message?.includes("does not exist") || error.message?.includes("relation")) {
+      return res.status(404).json({ error: "Service ticket not found" });
+    }
+    res.status(500).json({ error: error.message });
+  }
 };
 
 export const verifyWarrantyQr = async (req: any, res: any) => {

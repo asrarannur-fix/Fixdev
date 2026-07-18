@@ -82,7 +82,7 @@ export function deterministicUUID(str: string): string {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash;
+    hash = hash & 0x7FFFFFFF;
   }
 
   let hex = Math.abs(hash).toString(16).padEnd(32, "0");
@@ -91,7 +91,7 @@ export function deterministicUUID(str: string): string {
     for (let i = str.length - 1; i >= 0; i--) {
       const char = str.charCodeAt(i);
       extraHash = (extraHash << 7) - extraHash + char;
-      extraHash = extraHash & extraHash;
+      extraHash = extraHash & 0x7FFFFFFF;
     }
     hex += Math.abs(extraHash).toString(16).padEnd(32, "a");
   }

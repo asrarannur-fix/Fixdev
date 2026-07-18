@@ -7,6 +7,66 @@ import { buildServiceReceptionPreview } from "../../utils/serviceReceptionUtils"
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from "../../types";
 import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus, Sparkles, ListChecks } from "lucide-react";
 
+const SERVICE_TRANSITIONS: Record<string, string[]> = {
+  DITERIMA: ["ANTRIAN", "DIAGNOSA", "DIBATALKAN"],
+  ANTRIAN: ["DIAGNOSA", "DIBATALKAN"],
+  DIAGNOSA: ["MENUGGU_APPROVAL", "TIDAK_BISA_DIPERBAIKI", "DIBATALKAN"],
+  MENUGGU_APPROVAL: ["SEDANG_DIKERJAKAN", "APPROVAL_DITOLAK", "DIBATALKAN"],
+  ESTIMATE_PENDING: ["SEDANG_DIKERJAKAN", "APPROVAL_DITOLAK"],
+  APPROVAL_DITOLAK: ["MENUGGU_APPROVAL", "DIBATALKAN"],
+  MENUGGU_SPAREPART: ["SEDANG_DIKERJAKAN", "DIBATALKAN"],
+  SEDANG_DIKERJAKAN: ["QC", "MENUGGU_SPAREPART", "TIDAK_BISA_DIPERBAIKI", "DIKIRIM_KE_VENDOR"],
+  DIKIRIM_KE_VENDOR: ["SEDANG_DIKERJAKAN", "QC"],
+  TIDAK_BISA_DIPERBAIKI: ["SELESAI", "DIBATALKAN", "KLAIM_GARANSI"],
+  REWORK: ["SEDANG_DIKERJAKAN", "QC"],
+  QC: ["SELESAI", "REWORK"],
+  SELESAI: ["MENUGGU_PEMBAYARAN", "SIAP_DIAMBIL", "DIAMBIL", "KLAIM_GARANSI"],
+  KLAIM_GARANSI: ["SELESAI", "DIBATALKAN"],
+  MENUGGU_PEMBAYARAN: ["SIAP_DIAMBIL", "DIAMBIL"],
+  SIAP_DIAMBIL: ["DIAMBIL"],
+};
+const canTransition = (from: ServiceStatus, to: ServiceStatus): boolean =>
+  from === to || (SERVICE_TRANSITIONS[from] || []).includes(to);
+
+const INTAKE_STATUSES: ServiceStatus[] = [
+  ServiceStatus.DITERIMA,
+  ServiceStatus.ANTRIAN,
+  ServiceStatus.DIAGNOSA,
+];
+const WORK_STATUSES: ServiceStatus[] = [
+  ServiceStatus.SEDANG_DIKERJAKAN,
+  ServiceStatus.REWORK,
+];
+const PART_STATUSES: ServiceStatus[] = [
+  ServiceStatus.DIAGNOSA,
+  ServiceStatus.MENUGGU_APPROVAL,
+  ServiceStatus.SEDANG_DIKERJAKAN,
+  ServiceStatus.MENUGGU_SPAREPART,
+  ServiceStatus.REWORK,
+];
+const LOCKED_STATUSES: ServiceStatus[] = [
+  ServiceStatus.SELESAI,
+  ServiceStatus.MENUGGU_PEMBAYARAN,
+  ServiceStatus.SIAP_DIAMBIL,
+  ServiceStatus.DIAMBIL,
+  ServiceStatus.DIBATALKAN,
+  ServiceStatus.TIDAK_BISA_DIPERBAIKI,
+];
+
+const hasAnyPermission = (permissions: string[], keys: string[]) =>
+  keys.some((key) => permissions.includes(key));
+
+const sanitizeWhatsAppPhone = (phone?: string): string => {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("62")) return digits;
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  if (digits.startsWith("8")) return `62${digits}`;
+  return digits;
+};
+
+const buildPublicTicketLink = (ticketNo: string): string =>
+  `${window.location.origin}/?ticket=${encodeURIComponent(ticketNo)}`;
 
 export const ServiceDetailModal: React.FC<any> = (props) => {
   const { activeTenantId, addServiceDiagnostic, approveServiceEstimate, cameraActive, cancelServicePart, completeServiceQC, currentTenantId, currentUser, customWaMessageText, customers, employees, handoverChecklist, handoverPaymentMethod, handoverProofName, handoverRefNo, handoverServiceDevice, handoverTempoDays, internalCommentText, liveTimerSeconds, manualDiagCost, manualDiagNotes, openManualEstimateWhatsApp, openMicroComponentModal, products, qcNotes, qcScore, renderTenantWaTemplate, requestPartMode, requestServicePart, requestedPartId, requestedPartQty, selectedSparepartId, setAdditionalCostApprovedBy, setAdditionalCostTicket, setCustomWaMessageText, setHandoverChecklist, setHandoverPaymentMethod, setHandoverProofName, setHandoverRefNo, setHandoverTempoDays, setInternalCommentText, setManualDiagCost, setManualDiagNotes, setPartOrderTicket, setQcNotes, setQcScore, setRequestPartMode, setRequestedPartId, setRequestedPartQty, setSelectedSparepartId, setShowInvoicePrintout, setShowProvisionalQuote, setShowSpkPrintout, setShowWarrantyPrintout, setSparepartQty, setSparepartSN, setViewingServiceTicketId, showToast, sparepartQty, sparepartSN, startCamera, stopCamera, tenantObj, tenantServices, updateServiceStatus, updateServiceTicket, videoRef, viewingServiceTicketId } = props;
@@ -15,6 +75,25 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     (s) => s.id === viewingServiceTicketId,
   );
   if (!ticket) return null;
+  const currentUserPermissions: string[] = Array.isArray(props.currentUserPermissions)
+    ? props.currentUserPermissions
+    : Array.isArray(currentUser?.permissions)
+      ? currentUser.permissions
+      : [];
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
+  const canDiagnose =
+    isSuperAdmin ||
+    ["OWNER", "ADMIN", "MANAGER", "TEKNISI"].includes(currentUser?.role || "") ||
+    hasAnyPermission(currentUserPermissions, ["service", "service_diagnose", "service_repair"]);
+  const canRepair =
+    isSuperAdmin ||
+    ["OWNER", "ADMIN", "MANAGER", "TEKNISI"].includes(currentUser?.role || "") ||
+    hasAnyPermission(currentUserPermissions, ["service", "service_repair"]);
+  const isTicketLocked = LOCKED_STATUSES.includes(ticket.status);
+  const editableIntake = INTAKE_STATUSES.includes(ticket.status) && canDiagnose;
+  const canRequestParts = PART_STATUSES.includes(ticket.status) && canRepair;
+  const isWorkPhase = WORK_STATUSES.includes(ticket.status);
+  const isQcPhase = ticket.status === ServiceStatus.QC;
   const customer = customers.find(
     (c) => c.id === ticket.customerId,
   );
@@ -193,16 +272,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         </strong>
                       </p>
                     )}
-                    {ticket.screenLockPin && (
-                      <p>
-                        <span className="text-slate-400 font-mono text-[10px]">
-                          PIN KUNCI LAYAR:
-                        </span>{" "}
-                        <span className="font-mono bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded font-bold border border-amber-100">
-                          {ticket.screenLockPin}
-                        </span>
-                      </p>
-                    )}
+
                     {ticket.estimatedCompletionDate && (
                       <p>
                         <span className="text-slate-400 font-mono text-[10px]">
@@ -307,6 +377,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       </label>
                       <select
                         value={ticket.assignedTechId || ""}
+                        disabled={([ServiceStatus.SELESAI, ServiceStatus.SIAP_DIAMBIL, ServiceStatus.DIAMBIL] as ServiceStatus[]).includes(ticket.status)}
+                        title={([ServiceStatus.SELESAI, ServiceStatus.SIAP_DIAMBIL, ServiceStatus.DIAMBIL] as ServiceStatus[]).includes(ticket.status) ? "Teknisi dikunci setelah tiket selesai atau diserahkan" : undefined}
                         onChange={(e) => {
                           const selectedId = e.target.value;
                           const techName =
@@ -352,13 +424,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           <label className="block text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Lokasi Rak Penyimpanan</label>
                           <select
                             value={ticket.storageLocationId || ""}
+                            disabled={([ServiceStatus.SELESAI, ServiceStatus.SIAP_DIAMBIL, ServiceStatus.DIAMBIL] as ServiceStatus[]).includes(ticket.status)}
+                            title={([ServiceStatus.SELESAI, ServiceStatus.SIAP_DIAMBIL, ServiceStatus.DIAMBIL] as ServiceStatus[]).includes(ticket.status) ? "Lokasi penyimpanan dikunci setelah tiket selesai atau diserahkan" : undefined}
                             onChange={(e) => {
                               updateServiceTicket(ticket.id, {
                                 storageLocationId: e.target.value || undefined,
                               });
                               showToast("Lokasi penyimpanan diperbarui.", "success");
                             }}
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-semibold cursor-pointer text-slate-700"
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-semibold cursor-pointer text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <option value="">— Belum Ditentukan —</option>
                             {storageLocs.map(loc => (
@@ -801,7 +875,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             >
                               <button
                                 type="button"
+                                disabled={!canTransition(ticket.status, step.status)}
                                 onClick={() => {
+                                  if (!canTransition(ticket.status, step.status)) return;
                                   const note = `Status diperbarui via Visual Workflow ke: ${step.label}`;
                                   updateServiceStatus(
                                     ticket.id,
@@ -809,7 +885,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     note,
                                   );
                                 }}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all border-2 cursor-pointer outline-none ${
+                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all border-2 outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
                                   isCompleted
                                     ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20"
                                     : isActive
@@ -845,8 +921,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   {/* Technician Tools Center */}
                   {(currentUser.role === "TEKNISI" ||
                     currentUser.role === "ADMIN" ||
-                    currentUser.role === "MANAGER" ||
-                    true) && (
+                    currentUser.role === "MANAGER") && (
                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
                       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-3">
                         <div className="flex items-center gap-2">
@@ -898,7 +973,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   {(liveTimerSeconds % 60).toString().padStart(2, "0")}
                                 </span>
                                 {isBreached && <span className="text-[8px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-full animate-pulse">SLA BREACH</span>}
-                                {!ticket.repairStartTime ? (
+                                {!([ServiceStatus.SEDANG_DIKERJAKAN, ServiceStatus.REWORK] as ServiceStatus[]).includes(ticket.status) ? (
+                                  <span className="text-[9px] font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded" title="Timer hanya tersedia saat pengerjaan atau rework">Belum Tahap Pengerjaan</span>
+                                ) : !ticket.repairStartTime ? (
                                   <button onClick={() => updateServiceTicket(ticket.id, { repairStartTime: new Date().toISOString() })} className="text-[9px] font-bold bg-emerald-600 text-white px-2 py-1 rounded shadow-xs cursor-pointer hover:bg-emerald-700">Mulai Servis</button>
                                 ) : !ticket.repairEndTime ? (
                                   <button onClick={() => updateServiceTicket(ticket.id, { repairEndTime: new Date().toISOString() })} className="text-[9px] font-bold bg-rose-600 text-white px-2 py-1 rounded shadow-xs cursor-pointer hover:bg-rose-700">Hentikan Waktu</button>
@@ -950,10 +1027,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               </span>
                             </button>
                             <button
-                              onClick={() =>
-                                setRequestPartMode(!requestPartMode)
-                              }
-                              className="flex-1 flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer group"
+                              onClick={() => setRequestPartMode(!requestPartMode)}
+                              disabled={!([ServiceStatus.DIAGNOSA, ServiceStatus.SEDANG_DIKERJAKAN, ServiceStatus.REWORK] as ServiceStatus[]).includes(ticket.status)}
+                              title={!([ServiceStatus.DIAGNOSA, ServiceStatus.SEDANG_DIKERJAKAN, ServiceStatus.REWORK] as ServiceStatus[]).includes(ticket.status) ? "Sparepart hanya dapat diminta saat diagnosis atau pengerjaan" : undefined}
+                              className="flex-1 flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer group disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <PackagePlus className="w-5 h-5 text-emerald-500 group-hover:scale-110 transition-transform mb-1" />
                               <span className="text-[10px] font-bold text-slate-700">
@@ -1142,17 +1219,19 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 return (
                                   <label
                                     key={idx}
-                                    className={`flex items-center justify-between text-xs p-2 rounded-lg border cursor-pointer select-none transition-all duration-200 ${
+                                    className={`flex items-center justify-between text-xs p-2 rounded-lg border select-none transition-all duration-200 ${
                                       item.checked
                                         ? "bg-emerald-50/40 border-emerald-100 text-emerald-800 font-medium"
-                                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"
-                                    }`}
+                                        : "bg-white border-slate-200 text-slate-500"
+                                    } ${editableIntake ? "cursor-pointer hover:bg-slate-100" : "cursor-not-allowed opacity-70"}`}
                                   >
                                     <div className="flex items-center gap-2 truncate">
                                       <input
                                         type="checkbox"
                                         checked={item.checked}
+                                        disabled={!editableIntake}
                                         onChange={() => {
+                                          if (!editableIntake) return;
                                           const updatedList =
                                             ticket.initialChecklist.map(
                                               (c, i) =>
@@ -1185,7 +1264,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                           : "bg-rose-100 text-rose-800"
                                       }`}
                                     >
-                                      {item.checked ? "OK" : "REJECT"}
+                                      {item.checked ? "OK" : "BELUM DIPERIKSA"}
                                     </span>
                                   </label>
                                 );
@@ -1195,46 +1274,49 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             <div className="text-center py-6 text-slate-400 italic text-[11px] bg-white rounded-lg border border-dashed border-slate-200">
                               <p>Checklist pre-service kosong.</p>
                               <button
+                                disabled={!editableIntake}
+                                title={!editableIntake ? "Checklist penerimaan dikunci setelah tahap diagnosis" : undefined}
                                 onClick={() => {
+                                  if (!editableIntake) return;
                                   const defaultList = [
                                     {
                                       name: "Unit Menyala (Power On)",
-                                      checked: true,
+                                      checked: false,
                                     },
                                     {
                                       name: "Fisik Mulus (No Dents/Scratch)",
-                                      checked: true,
+                                      checked: false,
                                     },
                                     {
                                       name: "LCD / Layar Normal",
-                                      checked: true,
+                                      checked: false,
                                     },
                                     {
                                       name: "Touch Screen / Touchpad Normal",
-                                      checked: true,
+                                      checked: false,
                                     },
                                     {
                                       name: "Speaker & Audio Output",
-                                      checked: true,
+                                      checked: false,
                                     },
                                     {
                                       name: "Kamera Depan & Belakang",
-                                      checked: true,
+                                      checked: false,
                                     },
                                     {
                                       name: "Wi-Fi & Bluetooth Sinyal",
-                                      checked: true,
+                                      checked: false,
                                     },
                                     {
                                       name: "Charger & Port Pengisian",
-                                      checked: true,
+                                      checked: false,
                                     },
                                   ];
                                   updateServiceTicket(ticket.id, {
                                     initialChecklist: defaultList,
                                   });
                                 }}
-                                className="mt-2 px-2.5 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700 cursor-pointer transition-all"
+                                className="mt-2 px-2.5 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700 cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 Inisialisasi Checklist
                               </button>
@@ -1243,7 +1325,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         </div>
                       </div>
 
-                      {/* COLUMN 2: POST-SERVICE (QC) TESTING CHECKLIST */}
+                      {/* QC is available only after the repair enters QC or returns for rework. */}
+                      {ticket.status === "QC" && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
@@ -1275,52 +1358,52 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     {
                                       criteria:
                                         "Pengujian Pengisian Daya (Charging Test)",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Uji Ketahanan Baterai (Battery Burn Test)",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Kalibrasi Layar / Warna (Display Quality)",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Uji Sensitivitas Sentuh (Touch Response)",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Uji Suara & Mikrofon (Audio & Mic Test)",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Uji Suhu & Kipas (Thermal Stress Test)",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Uji Sinyal Wi-Fi / Seluler",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Pengecekan Baut & Casing Rapat",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Sistem Bersih dari Debu",
-                                      passed: true,
+                                      passed: false,
                                     },
                                     {
                                       criteria:
                                         "Uji Port Input/Output (I/O Ports)",
-                                      passed: true,
+                                      passed: false,
                                     },
                                   ];
 
@@ -1414,10 +1497,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                           {
                                             qcChecklist:
                                               currentQcList,
-                                            qcScore: 100,
+                                            qcScore: 0,
                                           },
                                         );
-                                        setQcScore(100);
+                                        setQcScore(0);
                                       }}
                                       className="w-full bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg py-1.5 text-[10px] font-bold hover:bg-indigo-100/50 cursor-pointer transition-all"
                                     >
@@ -1431,9 +1514,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           })()}
                         </div>
                       </div>
+                      )}
                     </div>
 
                     {/* Consolidated QC Summary and Scoring Integration */}
+                    {ticket.status === "QC" && (
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs flex flex-col md:flex-row items-center justify-between gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 font-bold text-slate-800">
@@ -1453,32 +1538,34 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           </p>
                           <p
                             className={`text-2xl font-black font-mono tracking-tight ${
-                              (ticket.qcScore ?? 100) >= 80
+                              (ticket.qcScore ?? 0) >= 80
                                 ? "text-emerald-600"
                                 : "text-rose-600"
                             }`}
                           >
-                            {ticket.qcScore ?? 100}
+                            {ticket.qcScore ?? 0}
                           </p>
                         </div>
                         <div className="space-y-1">
                           <span
                             className={`inline-block px-2.5 py-1 text-[10px] font-bold rounded-lg border font-mono ${
-                              (ticket.qcScore ?? 100) >= 80
+                              (ticket.qcScore ?? 0) >= 80
                                 ? "bg-emerald-50 border-emerald-200 text-emerald-700"
                                 : "bg-rose-50 border-rose-200 text-rose-700"
                             }`}
                           >
-                            {(ticket.qcScore ?? 100) >= 80
+                            {(ticket.qcScore ?? 0) >= 80
                               ? "✓ AMAN / LOLOS QC"
                               : "✕ PERLU REWORK"}
                           </span>
                         </div>
                       </div>
                     </div>
+                    )}
                   </div>
 
                   {/* QC Inline Form — inside ticket detail modal */}
+                  {ticket.status === "QC" && (
                   <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                       <h4 className="font-bold text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -1499,9 +1586,17 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => completeServiceQC(ticket.id, qcScore, qcNotes, false)} className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs py-2 rounded-lg cursor-pointer border border-rose-200">Rework (Gagal QC)</button>
-                      <button onClick={() => completeServiceQC(ticket.id, qcScore, qcNotes, true)} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer">Lolos QC (Selesai)</button>
+                      <button
+                        disabled={qcScore < 80 || qcNotes.trim().length < 2 || !ticket.qcChecklist?.length || ticket.qcChecklist.some((item) => !item.passed)}
+                        title={qcScore < 80 ? "Skor QC minimal 80." : qcNotes.trim().length < 2 ? "Catatan pemeriksaan wajib diisi." : !ticket.qcChecklist?.length ? "Simpan checklist QC terlebih dahulu." : ticket.qcChecklist.some((item) => !item.passed) ? "Semua pemeriksaan QC harus lulus." : ""}
+                        onClick={() => completeServiceQC(ticket.id, qcScore, qcNotes, true)}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs py-2 rounded-lg cursor-pointer"
+                      >
+                        Lolos QC (Selesai)
+                      </button>
                     </div>
                   </div>
+                  )}
 
                   {/* Grid 1: Diagnostic and Parts Selection */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1887,7 +1982,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         <button
                           onClick={() => {
                             setViewingServiceTicketId(ticket.id);
-                            setQcScore(ticket.qcScore ?? 100);
+                            setQcScore(ticket.qcScore ?? 0);
                             setQcNotes(ticket.qcNotes ?? "");
                           }}
                           className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1.5"

@@ -10,7 +10,7 @@ import { requireRoles, requireSupabaseJwt, requireTenantScope } from "../../midd
 import {
   createAccountSchema, updateAccountSchema, createJournalEntrySchema, createCashTxSchema, validateBody,
   getAccounts, createAccount, updateAccount, createJournalEntry, createCashTransaction,
-  getJournalEntries, getJournalEntryById, getTrialBalance, getProfitAndLoss,
+  getJournalEntries, getJournalEntryById, getTrialBalance, getBalanceSheet, getProfitAndLoss,
 } from "../controllers/accounting.controller.js";
 
 const router = express.Router();
@@ -27,6 +27,7 @@ router.get("/journal/:id", auth, scope, accViewer, getJournalEntryById);
 router.post("/journal", auth, scope, accWriter, validateBody(createJournalEntrySchema), createJournalEntry);
 router.post("/cash", auth, scope, accWriter, validateBody(createCashTxSchema), createCashTransaction);
 router.get("/trial-balance", auth, scope, accViewer, getTrialBalance);
+router.get("/balance-sheet", auth, scope, accViewer, getBalanceSheet);
 router.get("/profit-and-loss", auth, scope, accViewer, getProfitAndLoss);
 
 export default router;

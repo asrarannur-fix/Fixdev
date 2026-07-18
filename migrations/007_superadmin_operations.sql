@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS tenant_invitations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_tenant_invitations_tenant ON tenant_invitations(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tenant_invitations_created_by ON tenant_invitations(created_by) WHERE created_by IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_active_owner_invite
   ON tenant_invitations(tenant_id, lower(email))
   WHERE accepted_at IS NULL AND revoked_at IS NULL;
@@ -107,7 +108,7 @@ CREATE TABLE IF NOT EXISTS superadmin_audit_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_user_id UUID REFERENCES users(id),
   actor_role TEXT,
-  effective_tenant_id UUID REFERENCES tenants(id),
+  effective_tenant_id UUID NOT NULL REFERENCES tenants(id),
   impersonation_session_id UUID REFERENCES impersonation_sessions(id),
   correlation_id UUID NOT NULL DEFAULT gen_random_uuid(),
   action TEXT NOT NULL,
@@ -122,6 +123,10 @@ CREATE TABLE IF NOT EXISTS superadmin_audit_events (
 );
 CREATE INDEX IF NOT EXISTS idx_superadmin_audit_filter
   ON superadmin_audit_events(created_at DESC, effective_tenant_id, actor_user_id, outcome);
+CREATE INDEX IF NOT EXISTS idx_superadmin_audit_actor
+  ON superadmin_audit_events(actor_user_id) WHERE actor_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_superadmin_audit_impersonation
+  ON superadmin_audit_events(impersonation_session_id) WHERE impersonation_session_id IS NOT NULL;
 
 ALTER TABLE tenant_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_status_history ENABLE ROW LEVEL SECURITY;

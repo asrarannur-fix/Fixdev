@@ -201,18 +201,22 @@ export const TenantDashboard = ({
       const phone = waCfg?.adminPhone || "6281245762330"; // fallback owner
       if (!phone) return;
       const msg = `⚠️ *PERINGATAN STOK KRITIS* ⚠️\n\n${detail.message || ""}\n\nCabang: ${branches.find((b: any) => b.id === currentBranchId)?.name || "N/A"}\n\n_Mohon segera lakukan restock._`;
-      // Use WhatsApp Cloud API via gateway
-      fetch(`${window.location.origin}/api/v1/webhooks/whatsapp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: phone,
-          type: "text",
-          text: { body: msg },
-          waApiKey: waCfg?.whatsappKey || "",
-        }),
-      }).catch(() => {}); // silent fail
+      const sendingMethod = waCfg?.sendingMethod || "MANUAL";
+      if (sendingMethod === "MANUAL") {
+        const digits = String(phone).replace(/\D/g, "");
+        const waPhone = digits.startsWith("62")
+          ? digits
+          : digits.startsWith("0")
+            ? `62${digits.slice(1)}`
+            : digits.startsWith("8")
+              ? `62${digits}`
+              : digits;
+        if (waPhone) window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+        return;
+      }
+
+      // API mode is intentionally not simulated through a nonexistent webhook.
+      // The configured API connector owns automatic delivery and its own credentials.
     };
     window.addEventListener("live_notification", handler);
     return () => window.removeEventListener("live_notification", handler);

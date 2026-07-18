@@ -572,7 +572,7 @@ export const notifyDueReminders = async (req: any, res: any) => {
       sent++;
     }
 
-    res.json({ success: true, sent, message: `${sent} pengingat jatuh tempoant dibuat.` });
+    res.json({ success: true, sent, message: `${sent} pengingat jatuh tempo dibuat.` });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] notifyDueReminders failed");
     res.status(500).json({ error: err.message });
@@ -601,7 +601,7 @@ export const notifyOverdueAlerts = async (req: any, res: any) => {
         amount: inv.amount,
         tier: inv.tier,
         daysOverdue: Math.floor((Date.now() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)),
-        message: `Peringatan: Invoice ${inv.id} untuk paket ${inv.tier} sebesar Rp ${Number(inv.amount).toLocaleString()} sudahLewat jatuh tempo (${inv.due_date}). Segera lakukan pembayaran.`,
+        message: `Peringatan: Invoice ${inv.id} untuk paket ${inv.tier} sebesar Rp ${Number(inv.amount).toLocaleString()} sudah lewat jatuh tempo (${inv.due_date}). Segera lakukan pembayaran.`,
       };
 
       await queueNotification({

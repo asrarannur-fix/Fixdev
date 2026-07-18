@@ -4,7 +4,7 @@
  */
 
 import express from "express";
-import { requireRoles, requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware";
+import { requireRoles, requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 import {
   sanctumAuthMiddleware,
   checkAbilities,
@@ -38,7 +38,7 @@ import {
   getSales,
   getSaleById,
   createSale,
-} from "../controllers/apiV1.controller";
+} from "../controllers/apiV1.controller.js";
 
 const router = express.Router();
 

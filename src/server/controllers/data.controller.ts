@@ -131,6 +131,35 @@ async function ensureServiceTicketColumns() {
   });
 }
 
+async function syncProductWarehouseStock(tenantId: string, productId: string, warehouseStock: Record<string, unknown>) {
+  const entries = Object.entries(warehouseStock || {});
+  if (!entries.length) return;
+
+  await withDb(async (client) => {
+    for (const [warehouseId, rawQuantity] of entries) {
+      const quantity = Number(rawQuantity);
+      if (!warehouseId || !Number.isFinite(quantity) || quantity < 0) {
+        throw Object.assign(new Error("Stok gudang harus berupa angka non-negatif."), { status: 422 });
+      }
+      const result = await client.query(
+        `INSERT INTO product_stock (product_id, warehouse_id, quantity)
+         SELECT $1, $2, $3
+         WHERE EXISTS (
+           SELECT 1
+           FROM products p
+           JOIN warehouses w ON w.tenant_id = p.tenant_id
+           WHERE p.id = $1 AND p.tenant_id = $4 AND w.id = $2
+         )
+         ON CONFLICT (product_id, warehouse_id) DO UPDATE SET quantity = EXCLUDED.quantity`,
+        [productId, warehouseId, quantity, tenantId],
+      );
+      if (result.rowCount !== 1) {
+        throw Object.assign(new Error("Produk atau gudang tidak ditemukan pada tenant aktif."), { status: 422 });
+      }
+    }
+  });
+}
+
 export async function moduleRecordsGetHandler(req: Request, res: Response) {
   const tenantId = String(req.tenantId || "");
   if (!tenantId) return res.status(400).json({ error: "tenantId is required" });
@@ -168,6 +197,7 @@ export async function moduleRecordsPostHandler(req: Request, res: Response) {
 }
 
 const ALLOWED_TABLES = new Set([
+  "tenants",
   "branches", "warehouses", "customers", "products", "service_tickets",
   "pos_shifts", "pos_transactions", "coa_accounts", "journal_entries",
   "module_records",
@@ -181,6 +211,14 @@ export async function dataSyncHandler(req: Request, res: Response) {
   // to act on a different tenant than their own (e.g. from the billing admin panel).
   const tenantId = (req as any).tenantId || "";
   if (!tenantId) return res.status(403).json({ error: "Tenant not resolved" });
+  if (table === "tenants") {
+    if (action !== "update") {
+      return res.status(403).json({ error: "Tenant creation/deletion is not allowed through direct sync" });
+    }
+    if (String(data.id || "") !== String(tenantId)) {
+      return res.status(403).json({ error: "Cross-tenant update is forbidden" });
+    }
+  }
 
   try {
     if (table === "service_tickets") {
@@ -191,8 +229,20 @@ export async function dataSyncHandler(req: Request, res: Response) {
       ? SERVICE_TICKET_ALLOWED_COLUMNS
       : await getTableColumns(table);
 
-    const safePayload = sanitizePayloadForTable(table, data, allowedColumns);
-    const payload = { ...safePayload, tenant_id: tenantId };
+    const sanitizedPayload = sanitizePayloadForTable(table, data, allowedColumns);
+    const safePayload = table === "tenants"
+      ? {
+          id: tenantId,
+          ...(sanitizedPayload.settings !== undefined ? { settings: sanitizedPayload.settings } : {}),
+          ...(sanitizedPayload.branding !== undefined ? { branding: sanitizedPayload.branding } : {}),
+        }
+      : sanitizedPayload;
+    // `tenants` is the scope root and deliberately has no tenant_id column.
+    // All other tables are tenant-owned and must be forced to the authenticated
+    // request scope rather than trusting a client-supplied tenant_id.
+    const payload = table === "tenants"
+      ? safePayload
+      : { ...safePayload, tenant_id: tenantId };
     const idCol = "id";
 
     if (action === "insert") {
@@ -209,38 +259,33 @@ export async function dataSyncHandler(req: Request, res: Response) {
           await withDb(c => c.query(`INSERT INTO journal_lines (${lCols.join(",")}) VALUES (${lVals.join(",")}) ON CONFLICT (id) DO NOTHING`, Object.values(ln)));
         }
       }
-      if (table === "products" && data.warehouseStock) {
-        for (const sr of Object.entries(data.warehouseStock).filter(([wid]) => Boolean(wid)).map(([warehouseId, qty]) => ({ product_id: data.id, warehouse_id: warehouseId, quantity: Number(qty || 0) }))) {
-          const sCols = Object.keys(sr);
-          const sVals = sCols.map((_, i) => `$${i + 1}`);
-          await withDb(c => c.query(`INSERT INTO product_stock (${sCols.join(",")}) VALUES (${sVals.join(",")}) ON CONFLICT (product_id, warehouse_id) DO UPDATE SET quantity = EXCLUDED.quantity`, Object.values(sr)));
-        }
-      }
+      if (table === "products" && data.warehouseStock) await syncProductWarehouseStock(tenantId, String(data.id), data.warehouseStock);
       res.json({ success: true, id: insertedId });
     } else if (action === "update") {
       const idVal = payload[idCol];
       delete payload[idCol];
-      delete payload.tenant_id;
+      if (table !== "tenants") delete payload.tenant_id;
       const cols = Object.keys(payload);
       if (cols.length === 0) return res.status(422).json({ error: "No updatable fields in payload" });
       const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(",");
-      const params = [...Object.values(payload), idVal, tenantId];
-      const query = `UPDATE ${table} SET ${setClause} WHERE id = $${cols.length + 1} AND tenant_id = $${cols.length + 2} RETURNING id`;
+      const params = table === "tenants"
+        ? [...Object.values(payload), idVal]
+        : [...Object.values(payload), idVal, tenantId];
+      const scopeClause = table === "tenants"
+        ? `id = $${cols.length + 1}`
+        : `id = $${cols.length + 1} AND tenant_id = $${cols.length + 2}`;
+      const query = `UPDATE ${table} SET ${setClause} WHERE ${scopeClause} RETURNING id`;
       const result = await withDb(c => c.query(query, params));
-      if (table === "products" && data.warehouseStock) {
-        for (const sr of Object.entries(data.warehouseStock).filter(([wid]) => Boolean(wid)).map(([warehouseId, qty]) => ({ product_id: data.id, warehouse_id: warehouseId, quantity: Number(qty || 0) }))) {
-          const sCols = Object.keys(sr);
-          const sVals = sCols.map((_, i) => `$${i + 1}`);
-          await withDb(c => c.query(`INSERT INTO product_stock (${sCols.join(",")}) VALUES (${sVals.join(",")}) ON CONFLICT (product_id, warehouse_id) DO UPDATE SET quantity = EXCLUDED.quantity`, Object.values(sr)));
-        }
-      }
       if (!(result as any).rows[0]) return res.status(404).json({ error: "Record not found" });
+      if (table === "products" && data.warehouseStock) await syncProductWarehouseStock(tenantId, String(idVal), data.warehouseStock);
       res.json({ success: true, id: (result as any).rows[0].id });
     } else if (action === "delete") {
       const idVal = payload[idCol];
       const result = await withDb(async (c) => c.query(
-        `DELETE FROM ${table} WHERE id = $1 AND tenant_id = $2 RETURNING id`,
-        [idVal, tenantId],
+        table === "tenants"
+          ? `DELETE FROM ${table} WHERE id = $1 RETURNING id`
+          : `DELETE FROM ${table} WHERE id = $1 AND tenant_id = $2 RETURNING id`,
+        table === "tenants" ? [idVal] : [idVal, tenantId],
       ));
       if (!(result as any).rows[0]) return res.status(404).json({ error: "Record not found" });
       res.json({ success: true, id: (result as any).rows[0].id });

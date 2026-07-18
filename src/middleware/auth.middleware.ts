@@ -215,6 +215,7 @@ export const requireTenantScope = async (
   }
 
   req.tenantId = req.authActor.tenantId;
+  req.branchId = (req.headers["x-branch-id"] as string) || (req.query.branchId as string) || undefined;
   next();
 };
 

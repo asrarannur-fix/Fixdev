@@ -18,7 +18,7 @@ const vars = ["SUPABASE_SERVICE_ROLE_KEY", "VITE_SUPABASE_URL", "VITE_SUPABASE_A
 let missing = [];
 
 for (const v of vars) {
-  if (!new RegExp(`^${v}=`).test(env)) {
+  if (!new RegExp(`^${v}=`, "m").test(env)) {
     missing.push(v);
   }
 }

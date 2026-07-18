@@ -304,7 +304,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       assignedTechId: newSrvTechId || undefined,
       partsUsed: [],
       warrantyMonths:
-        newSrvWarranty || Math.round((tenantObj?.settings?.warrantyDays ?? 90) / 30),
+        newSrvWarranty ?? Math.round((tenantObj?.settings?.warrantyDays ?? 90) / 30),
       isOutsourced: newSrvIsOutsourced,
       outsourcedVendorId: newSrvOutsourcedVendor,
       outsourcingCost: Number(newSrvOutsourcingCost) || 0,

@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS service_status_events (
 );
 CREATE INDEX IF NOT EXISTS service_status_events_ticket_idx
   ON service_status_events(tenant_id, ticket_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_service_status_events_actor
+  ON service_status_events(actor_user_id) WHERE actor_user_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS service_parts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -61,6 +63,8 @@ CREATE TABLE IF NOT EXISTS service_parts (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS service_parts_ticket_idx ON service_parts(tenant_id, ticket_id, status);
+CREATE INDEX IF NOT EXISTS idx_service_parts_product ON service_parts(product_id);
+CREATE INDEX IF NOT EXISTS idx_service_parts_warehouse ON service_parts(warehouse_id) WHERE warehouse_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS service_stock_movements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -74,6 +78,11 @@ CREATE TABLE IF NOT EXISTS service_stock_movements (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   UNIQUE (ticket_id, product_id, warehouse_id, movement_type)
 );
+
+CREATE INDEX IF NOT EXISTS idx_service_stock_movements_product
+  ON service_stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_service_stock_movements_warehouse
+  ON service_stock_movements(warehouse_id);
 
 CREATE TABLE IF NOT EXISTS service_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -96,6 +105,9 @@ CREATE TABLE IF NOT EXISTS service_payments (
   UNIQUE (tenant_id, idempotency_key),
   UNIQUE (ticket_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_service_payments_branch ON service_payments(branch_id);
+CREATE INDEX IF NOT EXISTS idx_service_payments_tenant_method ON service_payments(tenant_id, method);
 
 ALTER TABLE whatsapp_queue
   ADD COLUMN IF NOT EXISTS ticket_id UUID REFERENCES service_tickets(id) ON DELETE SET NULL,

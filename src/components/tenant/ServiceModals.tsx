@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Badge } from "../ui/Badge";
 import { DocumentPrintouts } from "./services/DocumentPrintouts";
 import { getStorageLocations } from "./StorageLocationManager";
-import { buildServiceReceptionPreview } from "../../utils/serviceReceptionUtils";
+import { buildServiceReceptionPreview, sanitizeWhatsAppPhone, isValidIndonesianPhone } from "../../utils/serviceReceptionUtils";
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from "../../types";
 import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus, Sparkles, ListChecks } from "lucide-react";
 
@@ -32,6 +32,8 @@ export const ServiceModals: React.FC<any> = (props) => {
     consumeMicroComponentForService, addServiceDiagnostic, requestServicePart, cancelServicePart,
     addApprovedAdditionalCost, justCreatedTicket, microQty, microTicket, partOrderTicket, previewReceptionTicket, savingAdditionalCost, savingMicroUsage, savingPartOrder, selectedMicro, setAdditionalCostTicket, setMicroSearch, setSavingAdditionalCost, setSavingMicroUsage, setSavingPartOrder, setSelectedMicroId,
   } = props;
+  const sanitizedRecipientPhone = sanitizeWhatsAppPhone(String(activeWaModal?.phone || ""));
+  const canSendWhatsApp = isValidIndonesianPhone(sanitizedRecipientPhone);
 
   return <>
   {justCreatedTicket &&
@@ -356,8 +358,7 @@ export const ServiceModals: React.FC<any> = (props) => {
                 Kirim Pesan WhatsApp (Manual)
               </h3>
               <p className="text-[10px] text-emerald-100 font-mono">
-                Penerima: {activeWaModal.customerName} (
-                {activeWaModal.phone})
+                Penerima: {activeWaModal.customerName} ({activeWaModal.phone || "nomor belum tersedia"})
               </p>
             </div>
           </div>
@@ -453,10 +454,15 @@ export const ServiceModals: React.FC<any> = (props) => {
               Tutup
             </button>
             <a
-              href={`https://wa.me/${activeWaModal.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(activeWaModal.message)}`}
+              href={`https://wa.me/${sanitizedRecipientPhone}?text=${encodeURIComponent(activeWaModal.message)}`}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => {
+              onClick={(event) => {
+                if (!canSendWhatsApp) {
+                  event.preventDefault();
+                  showToast("Nomor WhatsApp pelanggan belum valid atau belum tersedia.", "error");
+                  return;
+                }
                 // Log manual action as WhatsApp Web
                 const savedLogs = localStorage.getItem(`saas_wa_logs_${currentTenantId}`);
                 const currentLogs = savedLogs
@@ -479,7 +485,7 @@ export const ServiceModals: React.FC<any> = (props) => {
                 );
                 setActiveWaModal(null);
               }}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all"
+              className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all ${!canSendWhatsApp ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Share2 className="w-3.5 h-3.5" /> Buka WhatsApp Web
             </a>

@@ -24,6 +24,9 @@ export function normalizeIndonesianPhone(value: string): string {
   return digits;
 }
 
+// Keep a stable alias for WhatsApp-specific usages (de-duplicate inline replacers).
+export const sanitizeWhatsAppPhone = normalizeIndonesianPhone;
+
 export function isValidIndonesianPhone(value: string): boolean {
   return /^628\d{7,12}$/.test(normalizeIndonesianPhone(value));
 }

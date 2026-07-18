@@ -66,8 +66,8 @@ export async function createMicroComponent(req: Request, res: Response) {
           JSON.stringify(d.compatModels),d.purchaseCost,d.sellPrice,d.avgWeeklyConsumption,d.leadTimeDays,d.supplierName||null]);
       await client.query("INSERT INTO product_stock(product_id,warehouse_id,quantity) VALUES($1,$2,$3)", [productId,d.warehouseId,d.stockQty]);
       if (d.stockQty > 0) await client.query(
-        "INSERT INTO stock_movements(tenant_id,product_id,warehouse_id,type,quantity,reference_no,note) VALUES($1,$2,$3,'IN',$4,$5,'Saldo awal komponen mikro')",
-        [req.tenantId,productId,d.warehouseId,d.stockQty,`OPEN-${d.sku.toUpperCase()}`]);
+        "INSERT INTO stock_movements(tenant_id,warehouse_id,product_id,type,quantity_change,reference_id,notes) VALUES($1,$2,$3,'IN',$4,$5,'Saldo awal komponen mikro')",
+        [req.tenantId,d.warehouseId,productId,d.stockQty,`OPEN-${d.sku.toUpperCase()}`]);
       return component.rows[0].id;
     });
     const row = await dbQuery(`SELECT ${componentSelect} ${componentJoin} WHERE mc.id=$1 AND mc.tenant_id=$2`, [result, req.tenantId]);
@@ -109,7 +109,7 @@ export async function adjustMicroComponentStock(req: Request,res: Response){
       if(after<0)throw httpError("Stok tidak mencukupi.",409);
       await client.query("UPDATE product_stock SET quantity=$1 WHERE product_id=$2 AND warehouse_id=$3",[after,comp.rows[0].product_id,d.warehouseId]);
       const movementQty=after-before; const ref=d.referenceNo||d.idempotencyKey;
-      await client.query("INSERT INTO stock_movements(tenant_id,product_id,warehouse_id,type,quantity,reference_no,note) VALUES($1,$2,$3,$4,$5,$6,$7)",[req.tenantId,comp.rows[0].product_id,d.warehouseId,d.mode==="SET"?"ADJUSTMENT":d.mode,movementQty,ref,d.reason]);
+      await client.query("INSERT INTO stock_movements(tenant_id,warehouse_id,product_id,type,quantity_change,reference_id,notes) VALUES($1,$2,$3,$4,$5,$6,$7)",[req.tenantId,d.warehouseId,comp.rows[0].product_id,d.mode==="SET"?"ADJUSTMENT":d.mode,movementQty,ref,d.reason]);
       await client.query("INSERT INTO micro_component_movements(tenant_id,component_id,product_id,warehouse_id,movement_type,quantity,reference_no,balance_before,balance_after,actor_id,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",[req.tenantId,comp.rows[0].id,comp.rows[0].product_id,d.warehouseId,d.mode,movementQty,d.idempotencyKey,before,after,req.authActor?.userId,d.reason]);
       return{idempotent:false};
     });
@@ -136,7 +136,7 @@ export async function consumeMicroComponent(req: Request, res: Response) {
       const after=before-d.quantity; const unitPrice=d.unitPrice??Number(comp.product_price); const hpp=Number(comp.product_cost)*d.quantity; const charge=d.chargeable?unitPrice*d.quantity:0;
       const usage=await client.query(`INSERT INTO micro_component_usages(tenant_id,ticket_id,component_id,warehouse_id,idempotency_key,quantity,unit_cost,hpp_total,chargeable,unit_price,charge_total,note,consumed_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,[req.tenantId,d.ticketId,comp.id,warehouseId,d.idempotencyKey,d.quantity,comp.product_cost,hpp,d.chargeable,unitPrice,charge,d.note||null,req.authActor?.userId]);
       await client.query("UPDATE product_stock SET quantity=$1 WHERE product_id=$2 AND warehouse_id=$3",[after,comp.product_id,warehouseId]);
-      await client.query("INSERT INTO stock_movements(tenant_id,product_id,warehouse_id,type,quantity,reference_no,note) VALUES($1,$2,$3,'OUT',$4,$5,$6)",[req.tenantId,comp.product_id,warehouseId,-d.quantity,ticket.rows[0].ticket_no,d.note||"Pemakaian tiket servis"]);
+      await client.query("INSERT INTO stock_movements(tenant_id,warehouse_id,product_id,type,quantity_change,reference_id,notes) VALUES($1,$2,$3,'OUT',$4,$5,$6)",[req.tenantId,warehouseId,comp.product_id,-d.quantity,ticket.rows[0].ticket_no,d.note||"Pemakaian tiket servis"]);
       await client.query("INSERT INTO micro_component_movements(tenant_id,component_id,product_id,warehouse_id,ticket_id,movement_type,quantity,reference_no,balance_before,balance_after,actor_id,note) VALUES($1,$2,$3,$4,$5,'SERVICE_CONSUME',$6,$7,$8,$9,$10,$11)",[req.tenantId,comp.id,comp.product_id,warehouseId,d.ticketId,-d.quantity,d.idempotencyKey,before,after,req.authActor?.userId,d.note||null]);
       const usages=await client.query(`SELECT u.id,u.component_id AS "componentId",p.name,u.quantity::float,u.unit_cost::float AS "unitCost",u.hpp_total::float AS "hppTotal",u.chargeable,u.unit_price::float AS "unitPrice",u.charge_total::float AS "chargeTotal",u.consumed_at AS "consumedAt" FROM micro_component_usages u JOIN micro_components mc ON mc.id=u.component_id JOIN products p ON p.id=mc.product_id WHERE u.tenant_id=$1 AND u.ticket_id=$2 ORDER BY u.consumed_at`,[req.tenantId,d.ticketId]);
       await client.query("UPDATE service_tickets SET micro_component_usages=$1::jsonb,estimated_cost=estimated_cost+$2,timeline=COALESCE(timeline,'[]'::jsonb)||$3::jsonb,updated_at=NOW() WHERE id=$4 AND tenant_id=$5",[JSON.stringify(usages.rows),charge,JSON.stringify([{status:ticket.rows[0].status,note:`Komponen mikro ${comp.product_name} × ${d.quantity} digunakan${d.chargeable?" dan ditagihkan":" sebagai bahan internal"}.`,timestamp:new Date().toISOString(),operator:"Sistem"}]),d.ticketId,req.tenantId]);

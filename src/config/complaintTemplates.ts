@@ -194,10 +194,17 @@ export const getTemplatesForDevice = (deviceType: string): ComplaintTemplate[] =
   const normalizedType = deviceType.toLowerCase();
   let templates: ComplaintTemplate[] = [];
   
-  // Get templates specific to this device type
+  // Get templates specific to this device type (deduplicate by label)
+  const seen = new Set<string>();
   Object.entries(DEFAULT_COMPLAINT_TEMPLATES).forEach(([type, deviceTemplates]) => {
     if (type === normalizedType || deviceTemplates.some(t => t.deviceType?.includes(normalizedType))) {
-      templates = [...templates, ...deviceTemplates];
+      deviceTemplates.forEach(t => {
+        const key = t.label + t.category;
+        if (!seen.has(key)) {
+          seen.add(key);
+          templates.push(t);
+        }
+      });
     }
   });
   

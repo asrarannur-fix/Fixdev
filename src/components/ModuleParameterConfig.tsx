@@ -39,6 +39,19 @@ export const ModuleParameterConfig: React.FC = () => {
   const [enableKnowledgeBase, setEnableKnowledgeBase] = useState(activeTenant?.settings?.enableKnowledgeBase ?? true);
   const [taxRate, setTaxRate] = useState(activeTenant?.settings?.taxSettings?.taxRate ?? 11);
 
+  useEffect(() => {
+    const settings = activeTenant?.settings;
+    setTicketPrefix(settings?.documentConfig?.ticketPrefix || "TKT");
+    setInvoicePrefix(settings?.documentConfig?.invoicePrefix || "INV");
+    setPosPrefix(settings?.documentConfig?.posInvoicePrefix || "POS");
+    setWarrantyDays(settings?.warrantyDays ?? 30);
+    setAutoReminderDays(settings?.autoReminderDays ?? 7);
+    setStockLowThreshold(settings?.stockLowThreshold ?? 5);
+    setEnableTechnicianCommission(settings?.enableTechnicianCommission ?? true);
+    setEnableKnowledgeBase(settings?.enableKnowledgeBase ?? true);
+    setTaxRate(settings?.taxSettings?.taxRate ?? 11);
+  }, [currentTenantId, activeTenant]);
+
   const handleSave = () => {
     if (!updateTenant || !currentTenantId) return;
 

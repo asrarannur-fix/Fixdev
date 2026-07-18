@@ -4,14 +4,14 @@ export type PrintConfig = NonNullable<TenantSettings["printConfig"]>;
 
 export const getPrintPageSize = (pc?: PrintConfig): string => {
   const size = pc?.paperSize || "thermal_80";
-  if (size === "a4") return "A4";
+  if (size === "a4" || size === "hvs_a4" || size === "hvs_letter") return "A4";
   if (size === "thermal_58") return "58mm auto";
   return "80mm auto";
 };
 
 export const getPrintFontSizePx = (pc?: PrintConfig): number => {
-  if (pc?.printFontSize === "small") return 10;
-  if (pc?.printFontSize === "large") return 13;
+  if (pc?.printFontSize === "small" || pc?.printFontSize === "sm") return 10;
+  if (pc?.printFontSize === "large" || pc?.printFontSize === "lg") return 13;
   return 11;
 };
 
@@ -22,7 +22,7 @@ export const getPrintMargin = (pc?: PrintConfig): number => {
 
 export const getPaperWidthStyle = (pc?: PrintConfig): string => {
   const size = pc?.paperSize || "thermal_80";
-  if (size === "a4") return "180mm";
+  if (size === "a4" || size === "hvs_a4" || size === "hvs_letter") return "180mm";
   if (size === "thermal_58") return "54mm";
   return "76mm";
 };

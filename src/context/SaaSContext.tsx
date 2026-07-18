@@ -1111,10 +1111,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         const data = authResult.data;
 
         if (data?.user) {
-          const { data: sessionData } = await client.auth.getSession();
-          const profileRes = await fetch("/api/auth/profile", {
-            headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
-          });
+            const { data: sessionData } = await client.auth.getSession();
+            const profileRes = await fetch("/api/auth/profile", {
+              headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+            });
           const dbUser = profileRes.ok ? await profileRes.json() : null;
 
           if (dbUser) {
@@ -2120,9 +2120,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         if (keyToUse) {
           const testUrl = `${cleanUrl}/rest/v1/`;
           const headers: Record<string, string> = {
-            apikey: keyToUse,
-            Authorization: `Bearer ${keyToUse}`,
-          };
+                apikey: keyToUse,
+                Authorization: `Bearer ${keyToUse}`,
+              };
 
           const res = await fetch(testUrl, { method: "GET", headers });
           if (res.ok) {
@@ -3985,8 +3985,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       id,
       tenantId: currentTenantId,
       branchId: currentBranchId,
-      date: new Date().toISOString().split("T")[0],
-      referenceNo: refNo,
+      entryDate: new Date().toISOString().split("T")[0],
+      refNo: refNo,
       description: desc,
       lines,
       isPosted: true,

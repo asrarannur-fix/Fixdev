@@ -42,10 +42,12 @@ import aiRoutes from "./src/server/routes/ai.routes.js";
 import tenantRoutes from "./src/server/routes/tenant.routes.js";
 import serviceTrackerRoutes from "./src/server/routes/serviceTracker.routes.js";
 import serviceReceptionRoutes from "./src/server/routes/serviceReception.routes.js";
+import serviceWorkflowRoutes from "./src/server/routes/serviceWorkflow.routes.js";
 import microComponentsRoutes from "./src/server/routes/microComponents.routes.js";
 import apiV1Routes from "./src/server/routes/apiV1.routes.js";
 import posRoutes from "./src/server/routes/pos.routes.js";
 import accountingRoutes from "./src/server/routes/accounting.routes.js";
+import complaintTemplateRoutes from "./src/server/routes/complaintTemplate.routes.js";
 import monitoringRoutes from "./src/server/routes/monitoring.routes.js";
 import superadminRoutes from "./src/server/routes/superadmin.routes.js";
 import { platformHealthHandler } from "./src/server/controllers/monitoring.controller.js";
@@ -57,7 +59,31 @@ const app = express();
 // Cloudflare Tunnel is the only public proxy hop. Trust its forwarded client IP
 // so express-rate-limit keys requests by visitor instead of rejecting X-Forwarded-For.
 app.set("trust proxy", 1);
-app.use(express.json());
+
+// Security headers (helmet-light equivalent)
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "0");  // Deprecated; modern browsers ignore it.
+  res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+
+// Body parser with size & error handling
+app.use(express.json({ limit: "10mb" }));
+app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof SyntaxError && "body" in err) {
+    logger.warn({ err: err.message }, "Invalid JSON body");
+    return res.status(400).json({ error: "Invalid JSON in request body" });
+  }
+  if (err.type === "entity.too.large") {
+    logger.warn({ err: err.message }, "Request body too large");
+    return res.status(413).json({ error: "Request body too large" });
+  }
+  next(err);
+});
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -133,7 +159,7 @@ app.get("/api/supabase/env-status", (req, res) => {
   // Never expose server credential or database topology metadata.
   const url = process.env.VITE_SUPABASE_URL || "";
   const isConfigured = Boolean(url && process.env.VITE_SUPABASE_ANON_KEY);
-  res.json({ url, hasAnonKey: isConfigured, hasDbUrl: isConfigured });
+  res.json({ url, hasAnonKey: isConfigured, hasDbUrl: Boolean(url && process.env.SUPABASE_SERVICE_ROLE_KEY) });
 });
 
 const requireSupabaseAdmin = requireAdminToken;
@@ -168,9 +194,11 @@ app.use("/api/superadmin", superadminRoutes);
 app.use("/api/ai", requireSupabaseJwt, requireTenantScope, aiRoutes);
 app.use("/api/tenant", requireSupabaseJwt, requireTenantScope, tenantRoutes);
 app.use("/api/service-receptions", serviceReceptionRoutes);
+app.use("/api/services", serviceWorkflowRoutes);
 app.use("/api/micro-components", microComponentsRoutes);
 app.use("/api/pos", posRoutes);
 app.use("/api/accounting", accountingRoutes);
+app.use("/api/complaint-templates", requireSupabaseJwt, requireTenantScope, complaintTemplateRoutes);
 
 // Public / Service routes
 app.use("/api/service-tracking", serviceTrackerRoutes);
@@ -191,16 +219,60 @@ app.use("/api", (req, res) => {
 // ==========================================
 
 async function startServer() {
-    // Production only: Serve built static files
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+  // Production only: Serve built static files
+  const distPath = path.join(process.cwd(), "dist");
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    // Only serve index.html for non-API routes
+    if (!req.path.startsWith("/api/")) {
       res.sendFile(path.join(distPath, "index.html"));
+    } else {
+      res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
+    }
+  });
+
+  // Global uncaught exception / rejection handlers
+  process.on("uncaughtException", (err) => {
+    logger.error({ err: err.message, stack: err.stack }, "Uncaught exception");
+    process.exit(1);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    logger.error({ err: reason }, "Unhandled rejection");
+  });
+
+  function listenWithRetry(attempt = 1) {
+    const server = app.listen(PORT, "0.0.0.0");
+
+    // Graceful shutdown handler - defined after server variable
+    process.on("SIGTERM", () => {
+      logger.info("SIGTERM received, shutting down gracefully...");
+      server.close(() => {
+        logger.info("Server closed.");
+        process.exit(0);
+      });
+      setTimeout(() => {
+        logger.error("Forced shutdown after timeout");
+        process.exit(1);
+      }, 10000);
     });
 
-  app.listen(PORT, "0.0.0.0", () => {
-    logger.info({ port: PORT, env: "production" }, "[ERP SaaS Server] Started");
-  });
+    server.on("error", (err: any) => {
+      if (err.code === "EADDRINUSE" && attempt < 5) {
+        logger.warn({ port: PORT, attempt }, "Port in use, retrying in 2s…");
+        server.close();
+        setTimeout(() => listenWithRetry(attempt + 1), 2000);
+      } else {
+        logger.error({ err: err.message }, "Fatal server error");
+        process.exit(1); // Let PM2 restart us
+      }
+    });
+    server.on("listening", () => {
+      logger.info({ port: PORT, env: "production" }, "[ERP SaaS Server] Started");
+    });
+  }
+
+  listenWithRetry();
 }
 
 startServer();

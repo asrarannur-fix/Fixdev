@@ -210,7 +210,7 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
   try {
     // 1. Validate tenant exists and is in TRIAL status
     const tenantResult = await client.query(
-      `SELECT id, name, subdomain, status, tier, trial_ends_at, limits 
+      `SELECT id, name, subdomain, status, tier, trial_ends_at, settings->>'limits' as limits
        FROM tenants WHERE id = $1`,
       [tenantId]
     );
@@ -345,7 +345,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
   try {
     // 1. Validate tenant exists and is in TRIAL status
     const tenantResult = await client.query(
-      `SELECT id, name, subdomain, status, trial_ends_at, email 
+      `SELECT id, name, subdomain, status, trial_ends_at
        FROM tenants WHERE id = $1`,
       [tenantId]
     );
@@ -387,8 +387,12 @@ export async function extendTrialHandler(req: Request, res: Response) {
 
     await client.query("COMMIT");
 
-    // 4. Send email notification
-    const ownerEmail = tenant.email;
+    // 4. Send email notification to owner
+    const ownerEmailResult = await client.query(
+      `SELECT email FROM users WHERE tenant_id = $1 AND role = 'OWNER' LIMIT 1`,
+      [tenantId]
+    );
+    const ownerEmail = ownerEmailResult.rows[0]?.email;
     if (ownerEmail) {
       await sendEmail(
         ownerEmail,

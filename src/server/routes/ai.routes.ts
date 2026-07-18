@@ -3,12 +3,13 @@ import {
   aiDiagnose,
   aiChat,
   aiAnalyzeSales,
-} from "../controllers/ai.controller";
+} from "../controllers/ai.controller.js";
+import { requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/diagnose", aiDiagnose);
-router.post("/chat", aiChat);
-router.post("/analyze-sales", aiAnalyzeSales);
+router.post("/diagnose", requireSupabaseJwt, requireTenantScope, aiDiagnose);
+router.post("/chat", requireSupabaseJwt, requireTenantScope, aiChat);
+router.post("/analyze-sales", requireSupabaseJwt, requireTenantScope, aiAnalyzeSales);
 
 export default router;

@@ -110,7 +110,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_invoice_settlement
 
 CREATE TABLE IF NOT EXISTS billing_internal_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   audience_role TEXT,
   event_type TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS billing_internal_notifications (
 CREATE TABLE IF NOT EXISTS billing_notification_outbox (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_key TEXT NOT NULL,
-  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   channel TEXT NOT NULL CHECK (channel IN ('WHATSAPP', 'INTERNAL')),
   recipient TEXT,
   payload JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS billing_audit_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_user_id UUID REFERENCES users(id),
   actor_role TEXT,
-  effective_tenant_id UUID REFERENCES tenants(id),
+  effective_tenant_id UUID NOT NULL REFERENCES tenants(id),
   action TEXT NOT NULL,
   resource_type TEXT NOT NULL,
   resource_id TEXT,

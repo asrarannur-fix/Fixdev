@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Building2,
   Sliders,
@@ -100,6 +100,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     addWorkflow,
     updateWorkflow,
     deleteWorkflow,
+    executeWorkflow,
     currentUser,
     switchBranch,
     currentBranchId,
@@ -150,11 +151,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   });
 
   const verifyDomain = (domain: string) => {
-    setIsVerifyingDomain(true);
-    setTimeout(() => {
-      setIsVerifyingDomain(false);
-      setDomainVerified(true);
-    }, 1500);
+    setDomainVerified(false);
+    if (!domain.trim()) {
+      showToast("Masukkan custom domain terlebih dahulu.", "error");
+      return;
+    }
+    showToast(
+      "Verifikasi DNS otomatis belum tersedia. Domain belum dianggap aktif; arahkan CNAME lalu verifikasi dari infrastruktur hosting.",
+      "warning",
+    );
   };
 
   const [printPaperSize, setPrintPaperSize] = useState(
@@ -234,9 +239,56 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   >("WHATSAPP");
   const [wfActionPayload, setWfActionPayload] = useState("");
 
-  const executeWorkflow = (wf: any) => {};
-  const handleDirectPrintLabel = (ticket: any) => {};
-  const savePrinterSettings = (options?: any) => {
+  const handleDirectPrintLabel = (ticket: any) => {
+    const printConfig = tenantObj?.settings?.printConfig || {};
+    const width = Math.min(600, Math.max(200, Number(printConfig.labelWidth) || 320));
+    const height = Math.min(400, Math.max(100, Number(printConfig.labelHeight) || 180));
+    const frameId = "settings-label-print-frame";
+    let frame = document.getElementById(frameId) as HTMLIFrameElement | null;
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.id = frameId;
+      frame.style.cssText = "position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none";
+      document.body.appendChild(frame);
+    }
+    const doc = frame.contentDocument;
+    if (!doc) {
+      showToast("Modul cetak label tidak dapat diinisialisasi.", "error");
+      return;
+    }
+    const title = printConfig.customHeaderTitle?.trim() || tenantObj?.name || "FIXDEV ERP";
+    const trackingUrl = `${window.location.origin}/?ticket=${encodeURIComponent(ticket.ticketNo || "")}`;
+    doc.open();
+    doc.write(`<!doctype html><html><head><title>Label Uji</title><style>@page{size:${width}px ${height}px;margin:0}body{font-family:Arial,sans-serif;margin:0;padding:8px;color:#0f172a;font-size:11px}.title{font-weight:800;text-align:center;border-bottom:1px solid #0f172a;padding-bottom:4px}.line{margin-top:4px;word-break:break-word}.ticket{font-weight:800}.qr{margin-top:8px;font-size:9px;text-align:center;word-break:break-all}.foot{margin-top:6px;border-top:1px dashed #64748b;padding-top:4px;font-size:8px;text-align:center}</style></head><body></body></html>`);
+    doc.close();
+    const root = doc.createElement("main");
+    if (printConfig.labelShowLogo !== false) {
+      const heading = doc.createElement("div");
+      heading.className = "title";
+      heading.textContent = title;
+      root.appendChild(heading);
+    }
+    [["Tiket", ticket.ticketNo], ["Perangkat", ticket.deviceName], ["Model", ticket.deviceBrandModel], ["Serial", ticket.deviceSerial]].forEach(([label, value], index) => {
+      const row = doc.createElement("div");
+      row.className = `line${index === 0 ? " ticket" : ""}`;
+      row.textContent = `${label}: ${value || "-"}`;
+      root.appendChild(row);
+    });
+    if (printConfig.labelShowQr !== false) {
+      const tracking = doc.createElement("div");
+      tracking.className = "qr";
+      tracking.textContent = trackingUrl;
+      root.appendChild(tracking);
+    }
+    const footer = doc.createElement("div");
+    footer.className = "foot";
+    footer.textContent = printConfig.labelCustomText?.trim() || "PINDAI UNTUK LACAK STATUS SERVIS";
+    root.appendChild(footer);
+    doc.body.appendChild(root);
+    frame.contentWindow?.focus();
+    frame.contentWindow?.print();
+  };
+  const savePrinterSettings = async (options?: any) => {
     if (!options) return;
     // Bangun printConfig baru berdasarkan nilai yang berubah
     const current = tenantObj?.settings?.printConfig || {};
@@ -320,14 +372,58 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     }
 
     // Simpan ke tenant.settings.printConfig → updateTenant → sync DB
-    updateTenant(currentTenantId, {
-      settings: {
-        ...(tenantObj?.settings || {}),
-        printConfig: updated,
-      },
-    });
-    showToast("Pengaturan cetak berhasil disimpan!", "success");
+    try {
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...(tenantObj?.settings || {}),
+          printConfig: updated,
+        },
+      });
+      showToast("Pengaturan cetak berhasil disimpan!", "success");
+    } catch (error: any) {
+      showToast(error.message || "Gagal menyimpan pengaturan cetak.", "error");
+    }
   };
+
+  useEffect(() => {
+    if (!tenantObj) return;
+    setBranding({
+      primaryColor: tenantObj.branding?.primaryColor || BRANDING_PRESETS.blue.primaryColor,
+      secondaryColor: tenantObj.branding?.secondaryColor || BRANDING_PRESETS.blue.secondaryColor,
+      logoUrl: tenantObj.branding?.logoUrl || "",
+      slogan: tenantObj.branding?.slogan || "",
+      fontFamily: tenantObj.branding?.fontFamily || BRANDING_PRESETS.blue.fontFamily,
+      portalHelpTitle: tenantObj.branding?.portalHelpTitle || "Pusat Bantuan & Garansi",
+      portalContactText: tenantObj.branding?.portalContactText || "0812-3456-7890 | support@fixdev.com",
+      customDomain: tenantObj.branding?.customDomain || "repair.fixdev.com",
+      accentColor: tenantObj.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
+      whiteLabelEnabled: tenantObj.branding?.whiteLabelEnabled || false,
+      logo: tenantObj.branding?.logo || "",
+    });
+    const pc = tenantObj.settings?.printConfig || {};
+    setPrintPaperSize(pc.paperSize || "thermal_80");
+    setPaperSize(pc.paperSize || "thermal_80");
+    setLabelWidth(pc.labelWidth ?? 58);
+    setLabelHeight(pc.labelHeight ?? 40);
+    setLabelFontSize(pc.labelFontSize || "sm");
+    setLabelShowQr(pc.labelShowQr ?? true);
+    setLabelShowLogo(pc.labelShowLogo ?? true);
+    setLabelCustomText(pc.labelCustomText || "");
+    setCustomHeaderTitle(pc.customHeaderTitle || "");
+    setCustomFooterText(pc.customFooterText || "");
+    setPrintFontSize(pc.printFontSize || "normal");
+    setPrintMargin(pc.printMargin ?? 12);
+    setPrintHeaderLogo(pc.printHeaderLogo ?? true);
+    setPrintQrCode(pc.printQrCode ?? true);
+    setPrintCustomerNotes(pc.printCustomerNotes ?? true);
+    setPrintTermsAndConditions(pc.printTermsAndConditions ?? true);
+    setShowTermsInTracking(pc.showTermsInTracking ?? true);
+    setTermsSalesText(pc.termsSalesText || "");
+    setTermsRentalText(pc.termsRentalText || "");
+    setTermsAndConditionsText(pc.termsAndConditionsText || "");
+    setDomainVerified(false);
+    setIsVerifyingDomain(false);
+  }, [tenantObj]);
 
   const settingsTabs = useMemo(
     () => getSettingsTabs(isSuperAdmin),
@@ -471,12 +567,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </div>
 
             <div className="p-6 space-y-6">
-        {effectiveActiveSubTab === "maintenance-contract" && (
-          <div className="animate-fadeIn">
-            <MaintenanceContractManager />
-          </div>
-        )}
-
         {effectiveActiveSubTab === "storage" && (
           <div className="animate-fadeIn">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">

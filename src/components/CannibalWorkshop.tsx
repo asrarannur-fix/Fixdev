@@ -408,12 +408,12 @@ export const CannibalWorkshop: React.FC = () => {
                 <Coins className="w-4 h-4 text-indigo-600" /> Jurnal
                 Double-Entry Otomatis:
               </p>
-              <div className="font-mono text-[9px] text-slate-500 dark:text-slate-450 space-y-1 bg-white dark:bg-zinc-950 border border-indigo-100/40 dark:border-indigo-900/30 p-2.5 rounded-xl">
-                <p className="text-emerald-700 dark:text-emerald-450 font-bold">
+              <div className="font-mono text-[9px] text-slate-500 dark:text-slate-400 space-y-1 bg-white dark:bg-zinc-950 border border-indigo-100/40 dark:border-indigo-900/30 p-2.5 rounded-xl">
+                <p className="text-emerald-700 dark:text-emerald-400 font-bold">
                   &bull; DEBIT: Persediaan Suku Cadang (Asset) <br />
                   &rArr; Rp {totalSalvageValue.toLocaleString()}
                 </p>
-                <p className="text-indigo-700 dark:text-indigo-450 font-bold">
+                <p className="text-indigo-700 dark:text-indigo-400 font-bold">
                   &bull; KREDIT: Pendapatan Operasional Lain (Revenue) <br />
                   &rArr; Rp {totalSalvageValue.toLocaleString()}
                 </p>
@@ -495,7 +495,7 @@ export const CannibalWorkshop: React.FC = () => {
                             {p.sku}
                           </td>
                           <td className="px-3 py-2.5 text-center">
-                            <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-350 rounded font-mono text-[9px] font-bold">
+                            <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-400 rounded font-mono text-[9px] font-bold">
                               {p.grade ? p.grade.replace("_", " ") : "B"}
                             </span>
                           </td>
@@ -547,7 +547,7 @@ export const CannibalWorkshop: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-450 uppercase mb-0.5">
+                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-400 uppercase mb-0.5">
                       Nama Suku Cadang
                     </label>
                     <input
@@ -558,7 +558,7 @@ export const CannibalWorkshop: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-450 uppercase mb-0.5">
+                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-400 uppercase mb-0.5">
                       Grade Barang
                     </label>
                     <input
@@ -573,7 +573,7 @@ export const CannibalWorkshop: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-450 uppercase mb-0.5">
+                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-400 uppercase mb-0.5">
                       Nama Pembeli (Customer)
                     </label>
                     <input
@@ -585,7 +585,7 @@ export const CannibalWorkshop: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-450 uppercase mb-0.5">
+                    <label className="block text-[9px] font-mono text-emerald-800 dark:text-emerald-400 uppercase mb-0.5">
                       Harga Jual Disepakati (Rp)
                     </label>
                     <input
@@ -675,7 +675,7 @@ export const CannibalWorkshop: React.FC = () => {
                     <p className="font-bold text-slate-800 dark:text-zinc-200 leading-tight">
                       {log.donorDevice}
                     </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-450">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
                       Komponen dipanen:{" "}
                       <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
                         {log.partsExtracted.join(", ")}
@@ -686,10 +686,10 @@ export const CannibalWorkshop: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-emerald-600 dark:text-emerald-450 font-black">
+                    <p className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
                       Rp {(log.totalValue ?? 0).toLocaleString()}
                     </p>
-                    <span className="inline-flex items-center gap-1 text-[8.5px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-450 border border-emerald-100 dark:border-emerald-900/30 font-bold px-1.5 py-0.5 rounded-md mt-1">
+                    <span className="inline-flex items-center gap-1 text-[8.5px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 font-bold px-1.5 py-0.5 rounded-md mt-1">
                       <FileSpreadsheet className="w-3 h-3" /> Ledger Posted
                     </span>
                   </div>

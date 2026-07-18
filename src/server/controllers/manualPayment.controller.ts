@@ -237,17 +237,17 @@ export async function listManualPayments(req: Request, res: Response) {
   try {
     const params: unknown[] = [];
     const clauses: string[] = [];
-  if (req.authActor?.role !== "SUPER_ADMIN") {
-    params.push(req.tenantId);
-    clauses.push(`m.tenant_id = $${params.length}`);
-  } else if (req.query.tenantId) {
-    params.push(req.query.tenantId);
-    clauses.push(`m.tenant_id = $${params.length}`);
-  }
-  if (req.query.status) {
-    params.push(req.query.status);
-    clauses.push(`m.status = $${params.length}`);
-  }
+    if (req.authActor?.role !== "SUPER_ADMIN") {
+      params.push(req.tenantId);
+      clauses.push(`m.tenant_id = $${params.length}`);
+    } else if (req.query.tenantId) {
+      params.push(req.query.tenantId);
+      clauses.push(`m.tenant_id = $${params.length}`);
+    }
+    if (req.query.status) {
+      params.push(req.query.status);
+      clauses.push(`m.status = $${params.length}`);
+    }
     const result = await dbQuery(
       `SELECT m.*, i.tier, i.billing_cycle, t.name AS tenant_name
        FROM manual_payment_requests m

@@ -142,8 +142,8 @@ export const AICopilot: React.FC = () => {
             {/* Header */}
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50/50 to-sky-50/50 dark:from-zinc-900 dark:to-zinc-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-600/15 text-blue-600 dark:text-blue-450 flex items-center justify-center font-black">
-                  <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-450" />
+                <div className="w-9 h-9 rounded-xl bg-blue-600/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black">
+                  <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-100">
@@ -170,7 +170,7 @@ export const AICopilot: React.FC = () => {
                   className={`flex gap-2.5 max-w-[85%] ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}
                 >
                   {msg.role !== "user" && (
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-zinc-800 flex items-center justify-center text-blue-600 dark:text-blue-450 shrink-0 font-bold text-[10px] uppercase font-mono">
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-zinc-800 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 font-bold text-[10px] uppercase font-mono">
                       AI
                     </div>
                   )}
@@ -187,7 +187,7 @@ export const AICopilot: React.FC = () => {
               ))}
               {loading && (
                 <div className="flex gap-2.5 max-w-[85%] mr-auto items-center">
-                  <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-zinc-800 flex items-center justify-center text-blue-600 dark:text-blue-450 animate-pulse shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-zinc-800 flex items-center justify-center text-blue-600 dark:text-blue-400 animate-pulse shrink-0">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                   <div className="bg-white dark:bg-slate-850 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 font-semibold animate-pulse rounded-tl-none">
@@ -230,7 +230,7 @@ export const AICopilot: React.FC = () => {
                 placeholder="Tanyakan operasional, POS, kasir, reparasi..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="flex-1 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs outline-none focus:border-blue-500 dark:focus:border-blue-450 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+                className="flex-1 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
               />
               <button
                 type="submit"

@@ -743,6 +743,7 @@ export interface COAAccount {
   code: string; // e.g. "10100" (Kas), "40100" (Pendapatan Jasa)
   name: string;
   type: AccountType;
+  isGroup?: boolean;
   balance: number;
 }
 
@@ -756,12 +757,15 @@ export interface JournalEntry {
   id: string;
   tenantId: string;
   branchId: string;
-  date: string;
-  referenceNo: string; // Ticket No, Invoice No, Cash Voucher No
+  entryDate: string;
+  refNo: string; // Ticket No, Invoice No, Cash Voucher No
   description: string;
   lines: JournalLine[];
   isPosted: boolean;
   postedBy: string;
+  sourceType?: string;
+  sourceId?: string;
+  createdAt?: string;
   isReversalOf?: string; // links to reversed entry id
 }
 
