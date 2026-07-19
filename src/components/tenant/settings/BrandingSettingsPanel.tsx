@@ -35,9 +35,13 @@ export const BrandingSettingsPanel: React.FC<BrandingSettingsPanelProps> = ({
     setBranding((prev) => ({ ...prev, ...patch }));
   };
 
-  const save = () => {
-    updateTenant(currentTenantId, { branding });
-    showToast("Branding berhasil disimpan.", "success");
+  const save = async () => {
+    try {
+      await updateTenant(currentTenantId, { branding });
+      showToast("Branding berhasil disimpan.", "success");
+    } catch (error: any) {
+      showToast(error.message || "Branding gagal disimpan.", "error");
+    }
   };
 
   return (

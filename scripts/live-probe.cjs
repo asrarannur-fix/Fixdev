@@ -1,0 +1,2 @@
+const { chromium } = require('playwright');
+(async()=>{const b=await chromium.launch({headless:true,args:['--no-sandbox','--ignore-certificate-errors']});const p=await b.newPage();for(const url of ['https://fixdev.web.id/','http://fixdev.web.id/']){try{await p.goto(url,{waitUntil:'commit',timeout:15000})}catch(e){console.log(url,'ERR',e.message)} await p.waitForTimeout(5000);console.log(url,'URL',p.url(),'TITLE',await p.title(),'HTML',(await p.content()).slice(0,300));}await b.close()})().catch(e=>{console.error(e);process.exit(1)})

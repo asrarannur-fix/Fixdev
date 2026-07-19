@@ -5,7 +5,7 @@
  */
 "use strict";
 const http = require("http");
-const BASE = process.env.TEST_BASE_URL || "http://localhost:3000";
+const BASE = process.env.TEST_BASE_URL || "https://fixdev.web.id";
 let passed = 0, failed = 0;
 
 function req(method, path, body, extraHeaders = {}) {

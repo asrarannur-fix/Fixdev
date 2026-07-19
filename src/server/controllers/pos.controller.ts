@@ -468,6 +468,8 @@ export const createSale = async (req: any, res: any) => {
 
       // ── 5e. Generate invoice number ──
       const year = new Date().getFullYear();
+      // Serialize per-tenant numbering. COUNT(*) alone collides under concurrent checkout.
+      await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [tenantId]);
       const seqRes = await client.query(
         `SELECT COUNT(*)::int AS cnt FROM pos_transactions WHERE EXTRACT(YEAR FROM created_at)=$1`,
         [year],
@@ -480,7 +482,7 @@ export const createSale = async (req: any, res: any) => {
          (tenant_id, branch_id, shift_id, invoice_no, customer_id, items, subtotal,
           discount_amount, tax_amount, grand_total, payment_method, amount_paid,
           change_amount, deposit_used, payment_details, notes, is_refunded, posted_to_ledger, status)
-       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,FALSE,TRUE,'COMPLETED')
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,FALSE,FALSE,'COMPLETED')
        RETURNING id, invoice_no as "invoiceNo", grand_total as "grandTotal", created_at as "timestamp"`,
         [
           tenantId,
@@ -508,14 +510,15 @@ export const createSale = async (req: any, res: any) => {
         if (item.productId && warehouseId) {
           const stockUpdate = await client.query(
             `UPDATE product_stock SET quantity = quantity - $1
-           WHERE product_id=$2 AND warehouse_id=$3 AND quantity >= $1`,
-            [item.quantity, item.productId, warehouseId, tenantId],
+           WHERE product_id=$2 AND warehouse_id=$3 AND quantity >= $1
+           -- pos_sale_deduct`,
+            [item.quantity, item.productId, warehouseId],
           );
           if (stockUpdate.rowCount !== 1) {
-            throw new Error(`Stok ${item.name} tidak cukup di gudang aktif.`);
+            throw new Error("Stok tidak mencukupi atau produk tidak ditemukan di gudang.");
           }
           await client.query(
-            `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity_change, reference_id, notes)
+            `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
            VALUES (gen_random_uuid(), $1, $2, $3, 'POS_SALE', -$4, $5, $6)`,
             [
               tenantId,
@@ -552,6 +555,9 @@ export const createSale = async (req: any, res: any) => {
         [tenantId],
       );
 
+      if (!cashAcct.rows[0] || !salesAcct.rows[0]) {
+        throw new Error("Akun kas (10100) dan penjualan (40100) wajib tersedia sebelum transaksi POS.");
+      }
       if (cashAcct.rows[0] && salesAcct.rows[0]) {
         const journalRes = await client.query(
           `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
@@ -628,6 +634,7 @@ export const createSale = async (req: any, res: any) => {
       };
     });
   } catch (err: any) {
+    logger.error({ err: err.message, stack: err.stack, tenantId, branchId }, "[pos.createSale] Error");
     return res.status(500).json({ error: err.message });
   }
 
@@ -695,7 +702,7 @@ export const voidSale = async (req: any, res: any) => {
             [item.quantity, item.productId, restoreWarehouseId],
           );
           await client.query(
-            `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity_change, reference_id, notes)
+            `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
              VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
             [
               tenantId,

@@ -49,7 +49,7 @@ export const OperationalSettingsPanel: React.FC<Props> = ({ currentTenantId, ten
   const [enableOvertime, setEnableOvertime] = useState(s.hrSettings?.enableOvertime ?? true);
   const [overtimeRate, setOvertimeRate] = useState(s.hrSettings?.overtimeRate ?? 1.5);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!updateTenant || !currentTenantId) return;
 
     const clamp = (value: number, min: number, max: number) =>
@@ -63,18 +63,24 @@ export const OperationalSettingsPanel: React.FC<Props> = ({ currentTenantId, ten
     const safeOvertimeRate = Math.min(10, Math.max(1, Number.isFinite(overtimeRate) ? overtimeRate : 1));
 
     setIsSaving(true);
-    updateTenant(currentTenantId, {
-      settings: {
-        ...s,
-        serviceSettings: { defaultDiagnosisFee: safeDiagFee, requireEstimateApproval: requireEstApprove, allowProceedWithoutApproval: allowProceedNoApprove, slaHours: safeSlaHours, autoAssignTechnician: autoAssign },
-        posSettings: { maxDiscount: safeMaxDiscount, allowNegativeStock: allowNegStock, requireVoidApproval: voidApprove, requireCloseCash: closeCash },
-        purchaseSettings: { hppMethod, requireAdjustmentApproval: adjustApprove },
-        inventorySettings: { enableStockAlert: stockAlert },
-        accountingSettings: { autoJournalEnabled: autoJournal },
-        hrSettings: { defaultWorkHours: safeWorkHours, graceLateMinutes: safeGraceLate, enableOvertime, overtimeRate: safeOvertimeRate },
-      },
-    });
-    setTimeout(() => { showToast("Pengaturan operasional berhasil disimpan!", "success"); setIsSaving(false); }, 300);
+    try {
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...s,
+          serviceSettings: { defaultDiagnosisFee: safeDiagFee, requireEstimateApproval: requireEstApprove, allowProceedWithoutApproval: allowProceedNoApprove, slaHours: safeSlaHours, autoAssignTechnician: autoAssign },
+          posSettings: { maxDiscount: safeMaxDiscount, allowNegativeStock: allowNegStock, requireVoidApproval: voidApprove, requireCloseCash: closeCash },
+          purchaseSettings: { hppMethod, requireAdjustmentApproval: adjustApprove },
+          inventorySettings: { enableStockAlert: stockAlert },
+          accountingSettings: { autoJournalEnabled: autoJournal },
+          hrSettings: { defaultWorkHours: safeWorkHours, graceLateMinutes: safeGraceLate, enableOvertime, overtimeRate: safeOvertimeRate },
+        },
+      });
+      showToast("Pengaturan operasional berhasil disimpan!", "success");
+    } catch (error: any) {
+      showToast(error.message || "Pengaturan operasional gagal disimpan.", "error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggle = (val: boolean, setter: (v: boolean) => void) => setter(!val);

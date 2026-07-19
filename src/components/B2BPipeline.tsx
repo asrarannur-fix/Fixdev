@@ -115,7 +115,15 @@ export const B2BPipeline: React.FC = () => {
 
   const [convertedDeals, setConvertedDeals] = useState<string[]>(() => {
     const saved = localStorage.getItem(`zk_converted_deals_${currentTenantId}`);
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) && parsed.every((id): id is string => typeof id === "string")
+        ? parsed
+        : [];
+    } catch {
+      return [];
+    }
   });
 
   React.useEffect(() => {

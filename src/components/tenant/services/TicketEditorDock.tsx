@@ -125,7 +125,8 @@ export const TicketEditorDock: React.FC<{
   onDeleteRepair?: (id: string) => Promise<void>;
   technicians?: any[];
   branches?: any[];
-}> = ({ repairs = [], selectedTicketIdForEdit, setSelectedTicketIdForEdit, onModifyRepair, technicians = [] }) => {
+  apiFetch?: (url: string, init?: RequestInit) => Promise<Response>;
+}> = ({ repairs = [], selectedTicketIdForEdit, setSelectedTicketIdForEdit, onModifyRepair, onDeleteRepair, technicians = [], apiFetch }) => {
   const ticket = repairs.find(r => r.id === selectedTicketIdForEdit);
 
   const [tab,       setTab      ] = useState<TabKey>('info');
@@ -178,10 +179,17 @@ export const TicketEditorDock: React.FC<{
   const hasWarranty = ticket.warrantyExpiry && new Date(ticket.warrantyExpiry) > new Date();
 
   const handleRunAI = async () => {
+    if (!apiFetch) { setAiResult([]); return; }
     setAiLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setAiResult(runAI(ticket.customerComplaints ?? '', ticket.deviceBrandModel ?? ''));
-    setAiLoading(false);
+    try {
+      const response = await apiFetch("/api/ai/diagnose", { method: "POST", body: JSON.stringify({ complaint: ticket.customerComplaints ?? "", device: ticket.deviceBrandModel ?? "" }) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || `AI HTTP ${response.status}`);
+      setAiResult(body.diagnoses || body.result || []);
+    } catch (error: any) {
+      setAiResult([]);
+      setMsg({ ok: false, text: error?.message || "AI diagnosis gagal." });
+    } finally { setAiLoading(false); }
   };
 
   const addPart = () => {

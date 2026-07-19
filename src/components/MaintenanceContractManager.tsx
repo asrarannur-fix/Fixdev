@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { useConfirm } from "./ui/ConfirmDialog";
@@ -37,16 +37,33 @@ interface MaintenanceContract {
 }
 
 export const MaintenanceContractManager: React.FC = () => {
-  const { currentTenantId, customers, addLog } = useSaaS();
+  const { currentTenantId, customers, addLog, apiFetch } = useSaaS();
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
 
-  const [contracts, setContracts] = useState<MaintenanceContract[]>(() => {
-    try {
-      const saved = localStorage.getItem(`saas_maint_contracts_${currentTenantId}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [contracts, setContracts] = useState<MaintenanceContract[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/module-records?module=maintenance_contracts")
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Contract load HTTP ${response.status}`);
+        const body = await response.json();
+        const rows = Array.isArray(body) ? body : body.data || body.items || [];
+        const loaded = rows.map((row: any) => row.payload || row).filter((c: MaintenanceContract) => c.tenantId === currentTenantId);
+        if (!cancelled) setContracts(loaded);
+      })
+      .catch((error: any) => showToast(error?.message || "Kontrak gagal dimuat.", "error"));
+    return () => { cancelled = true; };
+  }, [apiFetch, currentTenantId, showToast]);
+
+  const persistRecord = async (contract: MaintenanceContract, action: "insert" | "update" | "delete") => {
+    const response = await apiFetch("/api/module-records", {
+      method: "POST",
+      body: JSON.stringify({ module: "maintenance_contracts", recordId: contract.id, payload: contract, action }),
+    });
+    if (!response.ok) throw new Error(`Contract sync HTTP ${response.status}`);
+  };
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -62,22 +79,18 @@ export const MaintenanceContractManager: React.FC = () => {
   const [totalCost, setTotalCost] = useState(0);
   const [notes, setNotes] = useState("");
 
-  // Persist
-  const persist = (updated: MaintenanceContract[]) => {
-    setContracts(updated);
-    localStorage.setItem(`saas_maint_contracts_${currentTenantId}`, JSON.stringify(updated));
-  };
+  const persist = (updated: MaintenanceContract[]) => setContracts(updated);
 
   const filtered = contracts.filter(
     (c) =>
       c.tenantId === currentTenantId && (
-        c.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        c.deviceType.toLowerCase().includes(search.toLowerCase()) ||
-        c.contractType.toLowerCase().includes(search.toLowerCase())
+        (c.customerName || "").toLowerCase().includes(search.toLowerCase()) ||
+        (c.deviceType || "").toLowerCase().includes(search.toLowerCase()) ||
+        (c.contractType || "").toLowerCase().includes(search.toLowerCase())
       ),
   );
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!custId || !deviceType.trim() || !deviceBrand.trim() || !startDate || !endDate) {
       showToast("Pelanggan, tipe device, brand, dan periode wajib diisi.", "error");
       return;
@@ -110,7 +123,13 @@ export const MaintenanceContractManager: React.FC = () => {
       createdAt: new Date().toISOString(),
     };
 
-    persist([newC, ...contracts]);
+    try {
+      await persistRecord(newC, "insert");
+      persist([newC, ...contracts]);
+    } catch (error: any) {
+      showToast(error?.message || "Kontrak gagal disimpan.", "error");
+      return;
+    }
     setShowForm(false);
     resetForm();
     showToast(`Kontrak maintenance ${newC.contractType} untuk ${cust.name} berhasil dibuat!`, "success");
@@ -123,15 +142,30 @@ export const MaintenanceContractManager: React.FC = () => {
     setTotalCost(0); setNotes("");
   };
 
-  const updateStatus = (id: string, status: MaintenanceContract["status"]) => {
-    persist(contracts.map((c) => (c.id === id && c.tenantId === currentTenantId ? { ...c, status } : c)));
-    showToast(`Status kontrak: ${status}`, "info");
+  const updateStatus = async (id: string, status: MaintenanceContract["status"]) => {
+    const current = contracts.find((c) => c.id === id && c.tenantId === currentTenantId);
+    if (!current) return;
+    const updated = { ...current, status };
+    try {
+      await persistRecord(updated, "update");
+      persist(contracts.map((c) => (c.id === id ? updated : c)));
+      showToast(`Status kontrak: ${status}`, "info");
+    } catch (error: any) {
+      showToast(error?.message || "Status kontrak gagal disimpan.", "error");
+    }
   };
 
   const handleDelete = async (id: string, name: string) => {
     if (await showConfirm({ title: "Hapus Kontrak", message: `Hapus kontrak maintenance ${name}?`, confirmLabel: "Ya, Hapus", type: "danger" })) {
-      persist(contracts.filter((c) => !(c.id === id && c.tenantId === currentTenantId)));
-      showToast("Kontrak berhasil dihapus.", "warning");
+      const current = contracts.find((c) => c.id === id && c.tenantId === currentTenantId);
+      if (!current) return;
+      try {
+        await persistRecord(current, "delete");
+        persist(contracts.filter((c) => c.id !== id));
+        showToast("Kontrak berhasil dihapus.", "warning");
+      } catch (error: any) {
+        showToast(error?.message || "Kontrak gagal dihapus.", "error");
+      }
     }
   };
 
@@ -278,7 +312,7 @@ export const MaintenanceContractManager: React.FC = () => {
                     <Calendar className="w-3 h-3 inline mr-1" />
                     {c.startDate} — {c.endDate}
                   </td>
-                  <td className="px-4 py-3 font-mono font-bold text-slate-700">Rp {c.totalCost.toLocaleString()}</td>
+                  <td className="px-4 py-3 font-mono font-bold text-slate-700">Rp {Number(c.totalCost || 0).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <select
                       value={c.status}

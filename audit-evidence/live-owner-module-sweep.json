@@ -1,0 +1,120 @@
+{
+  "out": [
+    {
+      "m": "Servis",
+      "visible": true,
+      "buttons": [
+        "Menu",
+        "Detail lainnya (opsional)",
+        "Tampilkan PIN",
+        "Spesifikasi Teknis (Smartphone)",
+        " Auto-Assign Pintar",
+        "✓ Pilih Semua",
+        "✕ Kosongkan Semua",
+        "Foto Kondisi Unit0 foto tersimpan",
+        "Batal",
+        " Daftarkan Unit & Buat SPK",
+        "",
+        "AI Copilot"
+      ],
+      "fields": 37
+    },
+    {
+      "m": "POS",
+      "visible": true,
+      "buttons": [
+        "Buka",
+        "",
+        "Buka",
+        "",
+        "Buka",
+        "",
+        "Buka",
+        "",
+        "Buka",
+        "",
+        "",
+        "AI Copilot"
+      ],
+      "fields": 4
+    },
+    {
+      "m": "Inventory",
+      "visible": true,
+      "buttons": [
+        "▼ Stok Lain",
+        " Edit Harga/Stok",
+        "▼ Stok Lain",
+        " Edit Harga/Stok",
+        "▼ Stok Lain",
+        " Edit Harga/Stok",
+        "▼ Stok Lain",
+        " Edit Harga/Stok",
+        "▼ Stok Lain",
+        " Edit Harga/Stok",
+        "",
+        "AI Copilot"
+      ],
+      "fields": 3
+    },
+    {
+      "m": "Keuangan",
+      "visible": true,
+      "buttons": [
+        "Side",
+        "Top",
+        "",
+        "",
+        "asrarOwner",
+        "Beranda",
+        "Servis",
+        "POS",
+        "Stok",
+        "Menu",
+        "",
+        "AI Copilot"
+      ],
+      "fields": 3
+    },
+    {
+      "m": "CRM",
+      "visible": true,
+      "buttons": [
+        "",
+        "",
+        "Lost",
+        "",
+        "",
+        "",
+        "Lost",
+        "",
+        "",
+        " Buat Tiket",
+        "",
+        "AI Copilot"
+      ],
+      "fields": 3
+    },
+    {
+      "m": "HR",
+      "visible": true,
+      "buttons": [
+        "Beranda",
+        "Servis",
+        "POS",
+        "Stok",
+        "Menu",
+        "📋 Log Presensi",
+        "📅 Pengajuan Cuti (Leaves)",
+        "👤 Registrasi Staff",
+        "⚡ Presensi Cepat Seluruh Staff",
+        "Simpan",
+        "",
+        "AI Copilot"
+      ],
+      "fields": 8
+    }
+  ],
+  "e": [],
+  "f": []
+}

@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS pos_transactions (
     change_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
     payment_details TEXT,
     deposit_used NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    -- Kept for compatibility with older void/refund queries.
+    is_refunded BOOLEAN NOT NULL DEFAULT FALSE,
     posted_to_ledger BOOLEAN NOT NULL DEFAULT FALSE,
     status pos_transaction_status NOT NULL DEFAULT 'COMPLETED',
     notes TEXT,
@@ -89,6 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_pos_shifts_tenant_branch_status ON pos_shifts(ten
 CREATE INDEX IF NOT EXISTS idx_pos_transactions_tenant_branch_created ON pos_transactions(tenant_id, branch_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pos_transactions_shift_id ON pos_transactions(shift_id);
 CREATE INDEX IF NOT EXISTS idx_pos_transactions_customer_id ON pos_transactions(customer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_pos_transactions_invoice_no ON pos_transactions(tenant_id, invoice_no);
 CREATE INDEX IF NOT EXISTS idx_stock_movements_tenant_product ON stock_movements(tenant_id, product_id);
 CREATE INDEX IF NOT EXISTS idx_stock_movements_reference_id ON stock_movements(reference_id);
 CREATE INDEX IF NOT EXISTS idx_stock_movements_warehouse ON stock_movements(warehouse_id);

@@ -13,8 +13,8 @@ if (!connectionString) {
   process.exit(1);
 }
 if (!endpoint || !token) {
-  console.error("WHATSAPP_OUTBOX_ENDPOINT and WHATSAPP_OUTBOX_TOKEN are required; messages were not sent.");
-  process.exit(1);
+  console.log(JSON.stringify({ skipped: "manual_or_unconfigured_gateway" }));
+  process.exit(0);
 }
 
 const pool = new Pool({ connectionString });
@@ -45,16 +45,38 @@ async function claimBatch(client) {
 }
 
 async function send(row) {
-  const message = [row.payload?.title, row.payload?.message].filter(Boolean).join("\n");
+  const message = row.message || [row.payload?.title, row.payload?.message].filter(Boolean).join("\n");
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ recipient: row.recipient, message }),
+    body: JSON.stringify({ recipient: row.recipient || row.recipient_phone, message }),
   });
   if (!response.ok) throw new Error(`Gateway HTTP ${response.status}`);
+}
+
+async function claimWhatsAppQueue(client) {
+  await client.query("BEGIN");
+  const result = await client.query(`
+    SELECT id, recipient_phone, message
+    FROM whatsapp_queue
+    WHERE status IN ('PENDING', 'FAILED')
+      AND scheduled_time <= now()
+      AND attempts < 5
+    ORDER BY scheduled_time, created_at
+    FOR UPDATE SKIP LOCKED
+    LIMIT 20
+  `);
+  if (result.rows.length) {
+    await client.query(
+      `UPDATE whatsapp_queue SET status='PROCESSING', attempts=attempts+1, updated_at=now() WHERE id=ANY($1::uuid[])`,
+      [result.rows.map((row) => row.id)],
+    );
+  }
+  await client.query("COMMIT");
+  return result.rows;
 }
 
 async function enqueueScheduledAlerts(client) {
@@ -89,6 +111,7 @@ async function main() {
   try {
     await enqueueScheduledAlerts(client);
     const rows = await claimBatch(client);
+    const whatsappRows = await claimWhatsAppQueue(client);
     let sent = 0;
     let failed = 0;
     for (const row of rows) {
@@ -112,7 +135,20 @@ async function main() {
         failed++;
       }
     }
-    console.log(JSON.stringify({ claimed: rows.length, sent, failed }));
+    for (const row of whatsappRows) {
+      try {
+        await send(row);
+        await client.query(`UPDATE whatsapp_queue SET status='SENT', last_error=NULL, updated_at=now() WHERE id=$1`, [row.id]);
+        sent++;
+      } catch (error) {
+        await client.query(
+          `UPDATE whatsapp_queue SET status='FAILED', last_error=$2, scheduled_time=now()+make_interval(mins => LEAST(60, attempts * attempts)), updated_at=now() WHERE id=$1`,
+          [row.id, String(error.message || error).slice(0, 500)],
+        );
+        failed++;
+      }
+    }
+    console.log(JSON.stringify({ claimed: rows.length + whatsappRows.length, sent, failed }));
   } finally {
     client.release();
     await pool.end();

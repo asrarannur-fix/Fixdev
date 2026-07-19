@@ -436,9 +436,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         ? settingsTabs.filter((t) => {
             const groupLabel = GROUP_ORDER.find((g) => g.key === t.group)?.label || "";
             return (
-              t.label.toLowerCase().includes(normalizedSearchQuery) ||
-              t.desc.toLowerCase().includes(normalizedSearchQuery) ||
-              t.id.toLowerCase().includes(normalizedSearchQuery) ||
+              (t.label || "").toLowerCase().includes(normalizedSearchQuery) ||
+              (t.desc || "").toLowerCase().includes(normalizedSearchQuery) ||
+              (t.id || "").toLowerCase().includes(normalizedSearchQuery) ||
               groupLabel.toLowerCase().includes(normalizedSearchQuery)
             );
           })
@@ -446,7 +446,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     [normalizedSearchQuery, settingsTabs],
   );
   const effectiveActiveSubTab = useMemo<string | null>(() => {
-    if (!normalizedSearchQuery) return activeSubTab;
+    if (!normalizedSearchQuery) {
+      return settingsTabs.some((t) => t.id === activeSubTab)
+        ? activeSubTab
+        : settingsTabs[0]?.id || null;
+    }
     if (filtered.some((t) => t.id === activeSubTab)) {
       return activeSubTab;
     }
@@ -506,6 +510,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   return (
                     <button
                       key={g.key}
+                      id={`settings-group-${g.key}`}
+                      aria-label={`Grup pengaturan ${g.label}`}
                       onClick={() => setActiveSubTab?.(groupTabs[0].id)}
                       className={`w-full text-left px-3 py-2 rounded-full text-[11px] font-semibold border transition ${
                         isActiveGroup
@@ -554,6 +560,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 .map((t) => (
                   <button
                     key={t.id}
+                    id={`settings-tab-${t.id}`}
+                    aria-label={`Pengaturan ${t.label}`}
                     onClick={() => setActiveSubTab?.(t.id)}
                     className={`text-[11px] font-semibold rounded-full px-3 py-2 border transition ${
                       effectiveActiveSubTab === t.id

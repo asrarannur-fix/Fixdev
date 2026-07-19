@@ -55,7 +55,7 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
     showToast("Pengaturan keamanan telah dikembalikan ke nilai default tenant.", "success");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!updateTenant || !currentTenantId) return;
     const current = tenantObj?.settings || {};
     const safeSecuritySettings = {
@@ -69,17 +69,21 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
       enableMFA,
       allowPasswordReuse,
     };
-    updateTenant(currentTenantId, {
-      settings: {
-        ...current,
-        authSettings: {
-          ...(current.authSettings || {}),
-          requireMfa: enableMFA,
+    try {
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...current,
+          authSettings: {
+            ...(current.authSettings || {}),
+            requireMfa: enableMFA,
+          },
+          securitySettings: safeSecuritySettings,
         },
-        securitySettings: safeSecuritySettings,
-      },
-    });
-    showToast("Pengaturan keamanan berhasil disimpan!", "success");
+      });
+      showToast("Pengaturan keamanan berhasil disimpan!", "success");
+    } catch (error: any) {
+      showToast(error.message || "Pengaturan keamanan gagal disimpan.", "error");
+    }
   };
 
   return (

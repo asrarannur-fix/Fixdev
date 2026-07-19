@@ -1,19 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Plus, X, Search, MapPin, Package, Wrench, Layers, Edit } from "lucide-react";
 import { StorageLocation } from "../../types";
-
-const LS_KEY = "zk_storage_locations";
-
-const loadLocations = (tenantId: string): StorageLocation[] => {
-  try {
-    const raw = localStorage.getItem(`${LS_KEY}_${tenantId}`);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-};
-
-const saveLocations = (tenantId: string, locs: StorageLocation[]) => {
-  localStorage.setItem(`${LS_KEY}_${tenantId}`, JSON.stringify(locs));
-};
+import { useSaaS } from "../../context/SaaSContext";
 
 interface Props {
   tenantId: string;
@@ -22,7 +10,8 @@ interface Props {
 }
 
 export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, showToast }) => {
-  const [locations, setLocations] = useState<StorageLocation[]>(() => loadLocations(tenantId));
+  const { apiFetch } = useSaaS();
+  const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editLoc, setEditLoc] = useState<StorageLocation | null>(null);
   const [locName, setLocName] = useState("");
@@ -31,11 +20,23 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
   const [locDesc, setLocDesc] = useState("");
   const [searchQ, setSearchQ] = useState("");
 
-  useEffect(() => { saveLocations(tenantId, locations); }, [tenantId, locations]);
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/module-records?module=storage_locations")
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Storage locations HTTP ${r.status}`);
+        const body = await r.json();
+        const rows = Array.isArray(body) ? body : body.data || body.items || [];
+        const loaded = rows.map((row: any) => row.payload || row).filter((x: StorageLocation) => x.tenantId === tenantId);
+        if (!cancelled) setLocations(loaded);
+      })
+      .catch((e: any) => showToast(e.message || "Lokasi gagal dimuat.", "error"));
+    return () => { cancelled = true; };
+  }, [apiFetch, tenantId, showToast]);
 
   const branchLocs = useMemo(() => locations.filter(l => l.branchId === branchId), [locations, branchId]);
   const filtered = useMemo(() =>
-    branchLocs.filter(l => !searchQ || l.name.toLowerCase().includes(searchQ.toLowerCase()) || l.code.toLowerCase().includes(searchQ.toLowerCase())),
+    branchLocs.filter(l => !searchQ || (l.name || "").toLowerCase().includes(searchQ.toLowerCase()) || (l.code || "").toLowerCase().includes(searchQ.toLowerCase())),
     [branchLocs, searchQ]
   );
 
@@ -47,7 +48,12 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
     setEditLoc(loc); setLocName(loc.name); setLocCode(loc.code); setLocType(loc.type); setLocDesc(loc.description || ""); setShowForm(true);
   };
 
-  const handleSave = () => {
+  const persist = async (location: StorageLocation, action: "insert" | "update") => {
+    const r = await apiFetch("/api/module-records", { method: "POST", body: JSON.stringify({ module: "storage_locations", recordId: location.id, payload: location, action }) });
+    if (!r.ok) throw new Error(`Storage location sync HTTP ${r.status}`);
+  };
+
+  const handleSave = async () => {
     const name = locName.trim();
     const code = locCode.trim().toUpperCase();
     const description = locDesc.trim();
@@ -55,10 +61,14 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
     const duplicate = locations.find(l => l.branchId === branchId && l.code.trim().toUpperCase() === code && l.id !== editLoc?.id);
     if (duplicate) { showToast(`Kode "${code}" sudah ada!`, "error"); return; }
     if (editLoc) {
-      setLocations(prev => prev.map(l => l.id === editLoc.id ? { ...l, name, code, type: locType, description } : l));
+      const updated = { ...editLoc, name, code, type: locType, description };
+      try { await persist(updated, "update"); } catch (e: any) { showToast(e.message || "Rak gagal disimpan.", "error"); return; }
+      setLocations(prev => prev.map(l => l.id === editLoc.id ? updated : l));
       showToast("Rak diperbarui!", "success");
     } else {
-      setLocations(prev => [...prev, { id: `loc-${Date.now()}`, tenantId, branchId, name, code, type: locType, description }]);
+      const created = { id: `loc-${Date.now()}`, tenantId, branchId, name, code, type: locType, description } as StorageLocation;
+      try { await persist(created, "insert"); } catch (e: any) { showToast(e.message || "Rak gagal disimpan.", "error"); return; }
+      setLocations(prev => [...prev, created]);
       showToast("Rak baru ditambahkan!", "success");
     }
     resetForm();
@@ -142,9 +152,4 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
   );
 };
 
-export const getStorageLocations = (tenantId: string): StorageLocation[] => {
-  try {
-    const raw = localStorage.getItem(`${LS_KEY}_${tenantId}`);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-};
+export const getStorageLocations = (_tenantId: string): StorageLocation[] => [];

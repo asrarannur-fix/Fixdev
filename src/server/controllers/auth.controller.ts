@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { createHash, randomUUID } from "node:crypto";
 import { getPool } from "../../lib/db.js";
 import { createClient } from "@supabase/supabase-js";
 import { logger } from "../../lib/logger.js";
@@ -131,8 +132,8 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     });
     if (authErr) throw new Error(`Auth creation failed: ${authErr.message}`);
     const authId = authData.user.id;
-    const tenantId = (await import("crypto")).randomUUID();
-    const branchId = (await import("crypto")).randomUUID();
+    const tenantId = randomUUID();
+    const branchId = randomUUID();
     await client.query("BEGIN");
     await client.query(
       `INSERT INTO tenants (id, name, subdomain, status, tier, trial_ends_at, settings, branding, created_at)
@@ -149,7 +150,7 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     await client.query(
       `INSERT INTO warehouses (id, tenant_id, branch_id, name, location, created_at)
        VALUES ($1, $2, $3, 'Gudang Utama', 'Lt. 1', now())`,
-      [(await import("crypto")).randomUUID(), tenantId, branchId]
+      [randomUUID(), tenantId, branchId]
     );
     const coaDefaults = [
       ["10100", "Kas Utama", "ASSET", 0], ["10200", "Bank Utama", "ASSET", 0],
@@ -160,10 +161,10 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     for (const [code, name, type, balance] of coaDefaults) {
       await client.query(
         `INSERT INTO coa_accounts (id, tenant_id, code, name, type, balance) VALUES ($1,$2,$3,$4,$5,$6)`,
-        [(await import("crypto")).randomUUID(), tenantId, code, name, type, balance]
+        [randomUUID(), tenantId, code, name, type, balance]
       );
     }
-    const userId = (await import("crypto")).randomUUID();
+    const userId = randomUUID();
     await client.query(
       `INSERT INTO users (id, tenant_id, email, name, role, permissions, mfa_enabled, auth_id, created_at)
        VALUES ($1, $2, $3, $4, 'OWNER', ARRAY[$5]::text[], false, $6, now())`,
@@ -171,9 +172,9 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     );
     await client.query(`INSERT INTO user_branches (user_id, branch_id) VALUES ($1, $2)`, [userId, branchId]);
     await client.query(
-      `INSERT INTO api_tokens (id, token, name, abilities, tenant_id, branch_id, created_at)
-       VALUES ($1, $2, 'Owner Sync Key', $3::jsonb, $4, $5, now())`,
-      [(await import("crypto")).randomUUID(), `token_${(await import("crypto")).randomUUID()}`, '["*"]', tenantId, branchId]
+      `INSERT INTO api_tokens (id, token, token_hash, token_prefix, name, abilities, tenant_id, branch_id, created_at)
+       VALUES ($1, NULL, $2, $3, 'Owner Sync Key', $4::jsonb, $5, $6, now())`,
+      (() => { const value = `token_${randomUUID()}`; return [randomUUID(), createHash("sha256").update(value).digest("hex"), value.slice(0, 16), '["*"]', tenantId, branchId]; })()
     );
     await client.query("COMMIT");
     return res.status(201).json({

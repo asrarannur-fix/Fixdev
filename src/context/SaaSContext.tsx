@@ -191,7 +191,7 @@ interface SaaSContextType {
   impersonateTenant: (tenantId: string) => void;
   exitImpersonate: () => void;
   isImpersonating: boolean;
-  updateTenant: (id: string, updates: Partial<Tenant>) => void;
+  updateTenant: (id: string, updates: Partial<Tenant>) => Promise<void>;
 
   addServiceTicket: (
     ticket: Omit<ServiceTicket, "id" | "ticketNo" | "timeline" | "status"> & {
@@ -404,10 +404,10 @@ interface SaaSContextType {
     workflow: Omit<ERPWorkflow, "id" | "executionCount"> & {
       executionCount?: number;
     },
-  ) => void;
-  updateWorkflow: (id: string, updates: Partial<ERPWorkflow>) => void;
-  deleteWorkflow: (id: string) => void;
-  executeWorkflow: (id: string) => void;
+  ) => Promise<void>;
+  updateWorkflow: (id: string, updates: Partial<ERPWorkflow>) => Promise<void>;
+  deleteWorkflow: (id: string) => Promise<void>;
+  executeWorkflow: (id: string) => Promise<void>;
   updateUserRole: (userId: string, role: UserRole) => void;
   updateUserPermissions: (userId: string, permissions: string[]) => void;
   addUser: (
@@ -827,7 +827,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
             ? "/api/platform/bootstrap"
             : `/api/bootstrap?tenantId=${encodeURIComponent(currentTenantId)}`;
           const requestBootstrap = (token: string) => {
-            const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+            const headers: Record<string, string> = token ? { Authorization: "Bearer " + token } : {};
             if (!isSuperAdminProfile) {
               try {
                 const impersonation = JSON.parse(localStorage.getItem("saas_impersonation_session") || "null");
@@ -1038,7 +1038,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       if (session?.user) {
         try {
           const profileRes = await fetch("/api/auth/profile", {
-            headers: { Authorization: `Bearer ${session.access_token}` },
+            headers: { Authorization: "Bearer " + session.access_token },
           });
           const dbUser = profileRes.ok ? await profileRes.json() : null;
 
@@ -1113,7 +1113,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         if (data?.user) {
             const { data: sessionData } = await client.auth.getSession();
             const profileRes = await fetch("/api/auth/profile", {
-              headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+              headers: { Authorization: "Bearer " + (sessionData.session?.access_token || "") },
             });
           const dbUser = profileRes.ok ? await profileRes.json() : null;
 
@@ -1865,21 +1865,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     payload: Record<string, any>,
     action: "insert" | "update" | "delete" = "insert",
   ) => {
-    try {
-      if (!isSupabaseConfigured()) return;
-      await apiFetch("/api/module-records", {
-        method: "POST",
-        body: JSON.stringify({
-          tenantId: currentTenantId,
-          module,
-          recordId,
-          payload,
-          action,
-        }),
-      });
-    } catch (err) {
-      console.error(`[Module Records Sync] ${module}/${recordId}:`, err);
-    }
+    if (!isSupabaseConfigured()) throw new Error("Supabase belum terkonfigurasi; perubahan tidak disimpan.");
+    const response = await apiFetch("/api/module-records", {
+      method: "POST",
+      body: JSON.stringify({ tenantId: currentTenantId, module, recordId, payload, action }),
+    });
+    if (!response.ok) throw new Error(`Module record sync HTTP ${response.status}`);
   };
 
   const syncToSupabase = async (
@@ -1889,15 +1880,18 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     idField: string = "id",
   ) => {
     try {
-      if (!isSupabaseConfigured()) return;
+      if (!isSupabaseConfigured()) {
+        throw new Error("Supabase belum terkonfigurasi; perubahan tidak disimpan.");
+      }
 
+      if (["users", "auditLogs"].includes(tableKey)) return;
       const tableName = STATE_TO_TABLE_MAP[tableKey];
-      if (!tableName) return;
+      if (!tableName) throw new Error(`Tabel sinkronisasi tidak dikenal: ${tableKey}`);
 
       let payload = toSnakeCase(data);
       payload = deepUUIDify(payload);
 
-      await apiFetch("/api/data/sync", {
+      const response = await apiFetch("/api/data/sync", {
         method: "POST",
         body: JSON.stringify({
           table: tableName,
@@ -1906,6 +1900,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
           idField,
         }),
       });
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        throw new Error(`Database sync HTTP ${response.status}${detail ? `: ${detail.slice(0, 200)}` : ""}`);
+      }
     } catch (err: any) {
       console.error(`Supabase sync execution failed for ${tableKey}:`, err);
       addLog(
@@ -1914,6 +1912,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         "SYSTEM",
         "HIGH",
       );
+      throw err;
     }
   };
 
@@ -2361,13 +2360,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const updateTenant = (id: string, updates: Partial<Tenant>) => {
-    setTenants((prev) => {
-      const next = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
-      const updated = next.find((t) => t.id === id);
-      if (updated) syncToSupabase("tenants", "update", updated);
-      return next;
-    });
+  const updateTenant = async (id: string, updates: Partial<Tenant>) => {
+    const current = tenants.find((tenant) => tenant.id === id);
+    if (!current) throw new Error("Tenant tidak ditemukan.");
+    const updated = { ...current, ...updates };
+    await syncToSupabase("tenants", "update", updated);
+    setTenants((prev) => prev.map((tenant) => (tenant.id === id ? updated : tenant)));
     addLog(
       "Update Tenant Settings",
       `Memperbarui konfigurasi tenant ID: ${id}`,
@@ -4633,7 +4631,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem("saas_offline_queue", JSON.stringify(nextQueue));
   };
 
-  const addWorkflow = (
+  const addWorkflow = async (
     wf: Omit<ERPWorkflow, "id" | "executionCount"> & {
       executionCount?: number;
     },
@@ -4643,8 +4641,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       id: "wf-" + Math.random().toString(36).substr(2, 9),
       executionCount: wf.executionCount ?? 0,
     };
+    await syncModuleRecordToSupabase("workflows", newWf.id, newWf, "insert");
     setWorkflows((prev) => [...prev, newWf]);
-    syncModuleRecordToSupabase("workflows", newWf.id, newWf, "insert");
     addLog(
       "Add Workflow",
       `Menambahkan alur kerja otomatisasi baru: ${wf.name}`,
@@ -4652,15 +4650,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const updateWorkflow = (id: string, updates: Partial<ERPWorkflow>) => {
-    setWorkflows((prev) =>
-      prev.map((w) => {
-        if (w.id !== id) return w;
-        const updated = { ...w, ...updates };
-        syncModuleRecordToSupabase("workflows", id, updated, "update");
-        return updated;
-      }),
-    );
+  const updateWorkflow = async (id: string, updates: Partial<ERPWorkflow>) => {
+    const current = workflows.find((w) => w.id === id);
+    if (!current) throw new Error("Workflow tidak ditemukan.");
+    const updated = { ...current, ...updates };
+    await syncModuleRecordToSupabase("workflows", id, updated, "update");
+    setWorkflows((prev) => prev.map((w) => (w.id === id ? updated : w)));
     addLog(
       "Update Workflow",
       `Memperbarui alur kerja otomatisasi ID ${id}`,
@@ -4668,9 +4663,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const deleteWorkflow = (id: string) => {
+  const deleteWorkflow = async (id: string) => {
+    await syncModuleRecordToSupabase("workflows", id, { id }, "delete");
     setWorkflows((prev) => prev.filter((w) => w.id !== id));
-    syncModuleRecordToSupabase("workflows", id, { id }, "delete");
     addLog(
       "Delete Workflow",
       `Menghapus alur kerja otomatisasi ID ${id}`,
@@ -4678,21 +4673,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const executeWorkflow = (id: string) => {
-    setWorkflows((prev) =>
-      prev.map((w) => {
-        if (w.id === id) {
-          const updated = {
-            ...w,
-            executionCount: w.executionCount + 1,
-            lastTriggeredAt: new Date().toISOString(),
-          };
-          syncModuleRecordToSupabase("workflows", id, updated, "update");
-          return updated;
-        }
-        return w;
-      }),
-    );
+  const executeWorkflow = async (id: string) => {
+    const current = workflows.find((w) => w.id === id);
+    if (!current) throw new Error("Workflow tidak ditemukan.");
+    const updated = { ...current, executionCount: current.executionCount + 1, lastTriggeredAt: new Date().toISOString() };
+    await syncModuleRecordToSupabase("workflows", id, updated, "update");
+    setWorkflows((prev) => prev.map((w) => (w.id === id ? updated : w)));
     // We can fetch the name for the audit log
     const targetWf = workflows.find((w) => w.id === id);
     if (targetWf) {

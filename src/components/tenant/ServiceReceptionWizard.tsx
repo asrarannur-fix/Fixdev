@@ -4,7 +4,7 @@ import { isValidIndonesianPhone, normalizeIndonesianPhone } from "../../utils/se
 import { Save, CheckCircle2, SearchIcon, PlusCircle, RefreshCw, Camera, X, MapPin, Sparkles, AlertCircle, Lock, CheckSquare, ChevronRight, ChevronLeft, Wrench, Package, Upload, Eye, ShieldCheck, Timer, FileText, MessageSquare, Sliders, Receipt, Building2, Zap, HelpCircle, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, Paintbrush, Fingerprint, Search, Activity, Maximize, Check, Calendar, ArrowRight, Printer, Minus, Edit, MoreVertical, CheckCircle, Send, Filter, QrCode, Cpu, Share2, Barcode, PackagePlus, ListChecks } from "lucide-react";
 
 export const ServiceReceptionWizard: React.FC<any> = (props) => {
-  const { receptionProgress, receptionFormRef, handleCreateService, receptionErrors, selectedReceptionCustomer, setNewSrvCustomer, setCustQuery, setShowNewSrvCustForm, custQuery, setCustOpen, custOpen, customers, setNewSrvCustName, setNewSrvCustPhone, newSrvCustomer, showNewSrvCustForm, newSrvCustName, newSrvCustPhone, newSrvCustEmail, setNewSrvCustEmail, newSrvCustAddress, setNewSrvCustAddress, newSrvCategory, setNewSrvCategory, newSrvEstCompletion, setNewSrvEstCompletion, newSrvDevice, setNewSrvDevice, newSrvBrand, setNewSrvBrand, setShowMoreDetails, showMoreDetails, newSrvSerial, setNewSrvSerial, newSrvWarranty, setNewSrvWarranty, newSrvDownPayment, setNewSrvDownPayment, newSrvIsCheckOnly, setNewSrvIsCheckOnly, newSrvPhysicalCondition, setNewSrvPhysicalCondition, showScreenLock, newSrvScreenLock, setNewSrvScreenLock, setShowScreenLock, newSrvComplaint, setNewSrvComplaint, setShowAdvancedSpecs, showAdvancedSpecs, newSrvDynamicSpecs, setNewSrvDynamicSpecs, runAutoAssign, newSrvTechId, setNewSrvTechId, setAutoAssignReason, employees, autoAssignReason, newSrvStorageLocId, setNewSrvStorageLocId, getStorageLocations, activeTenantId, currentBranchId, newSrvChecklist, setNewSrvChecklist, newSrvAccessories, setNewSrvAccessories, newSrvCustomAccessories, setNewSrvCustomAccessories, setShowDocumentation, newSrvCapturedConditions, showDocumentation, selectedCaptureCategory, setSelectedCaptureCategory, cameraActive, videoRef, capturePhoto, setNewSrvCapturedConditions, stopCamera, startCamera, newSrvIsOutsourced, setNewSrvIsOutsourced, newSrvOutsourcedVendor, setNewSrvOutsourcedVendor, newSrvOutsourcingCost, setNewSrvOutsourcingCost, setActiveSubTab, isSubmittingReception } = props;
+  const { receptionProgress, receptionFormRef, handleCreateService, receptionErrors, selectedReceptionCustomer, setNewSrvCustomer, setCustQuery, setShowNewSrvCustForm, custQuery, setCustOpen, custOpen, customers, setNewSrvCustName, setNewSrvCustPhone, newSrvCustomer, showNewSrvCustForm, newSrvCustName, newSrvCustPhone, newSrvCustEmail, setNewSrvCustEmail, newSrvCustAddress, setNewSrvCustAddress, newSrvCategory, setNewSrvCategory, newSrvEstCompletion, setNewSrvEstCompletion, newSrvDevice, setNewSrvDevice, newSrvBrand, setNewSrvBrand, setShowMoreDetails, showMoreDetails, newSrvSerial, setNewSrvSerial, newSrvWarranty, setNewSrvWarranty, newSrvDownPayment, setNewSrvDownPayment, newSrvIsCheckOnly, setNewSrvIsCheckOnly, newSrvPhysicalCondition, setNewSrvPhysicalCondition, showScreenLock, newSrvScreenLock, setNewSrvScreenLock, setShowScreenLock, newSrvComplaint, setNewSrvComplaint, setShowAdvancedSpecs, showAdvancedSpecs, newSrvDynamicSpecs, setNewSrvDynamicSpecs, runAutoAssign, newSrvTechId, setNewSrvTechId, setAutoAssignReason, employees, autoAssignReason, newSrvStorageLocId, setNewSrvStorageLocId, getStorageLocations, activeTenantId, currentBranchId, newSrvChecklist, setNewSrvChecklist, newSrvAccessories, setNewSrvAccessories, newSrvCustomAccessories, setNewSrvCustomAccessories, setShowDocumentation, newSrvCapturedConditions, showDocumentation, selectedCaptureCategory, setSelectedCaptureCategory, cameraActive, videoRef, capturePhoto, setNewSrvCapturedConditions, stopCamera, startCamera, newSrvIsOutsourced, setNewSrvIsOutsourced, newSrvOutsourcedVendor, setNewSrvOutsourcedVendor, newSrvOutsourcingCost, setNewSrvOutsourcingCost, setActiveSubTab, isSubmittingReception, showToast } = props;
   return (
 <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
   <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/70 backdrop-blur">
@@ -885,38 +885,11 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    // Fallback simulation
-                    const simulationImages = [
-                      "https://images.unsplash.com/photo-1601524909162-be87252be298?auto=format&fit=crop&w=400&q=80",
-                      "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=400&q=80",
-                      "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80",
-                      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80",
-                    ];
-                    const randomImg =
-                      simulationImages[
-                        Math.floor(
-                          Math.random() * simulationImages.length,
-                        )
-                      ];
-                    const newCap = {
-                      id: "sim-" + Date.now().toString(36),
-                      photoUrl: randomImg,
-                      category: selectedCaptureCategory,
-                      timestamp: new Date().toLocaleTimeString(
-                        "id-ID",
-                        { hour: "2-digit", minute: "2-digit" },
-                      ),
-                    };
-                    setNewSrvCapturedConditions((prev) => [
-                      ...prev,
-                      newCap,
-                    ]);
-                  }}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm"
-                  title="Gunakan preset demo jika tidak ada kamera"
+                  onClick={() => showToast("Kamera tidak tersedia; gunakan upload foto nyata.", "error")}
+                  className="bg-slate-500 hover:bg-slate-600 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                  title="Demo dinonaktifkan di produksi"
                 >
-                  <Sparkles className="w-3.5 h-3.5" /> Demo
+                  <AlertCircle className="w-3.5 h-3.5" /> Demo dinonaktifkan
                 </button>
                 <button
                   type="button"

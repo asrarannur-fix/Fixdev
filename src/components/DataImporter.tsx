@@ -154,8 +154,8 @@ export const DataImporter: React.FC = () => {
             success++;
           }
         } else {
-          // Dummy mock success for suppliers / opening balance
-          success++;
+          failed++;
+          errors.push(`Baris ${i + 1}: Target ${activeTarget} belum memiliki persistence backend; data tidak disimpan.`);
         }
       } catch (err: any) {
         failed++;

@@ -256,7 +256,7 @@ export async function dataSyncHandler(req: Request, res: Response) {
         for (const ln of data.lines.map((line: any) => ({ id: line.id || `fallback-${Date.now()}-${Date.now().toString(36)}`, journal_entry_id: data.id, account_id: line.accountId, debit: line.debit || 0, credit: line.credit || 0 }))) {
           const lCols = Object.keys(ln);
           const lVals = lCols.map((_, i) => `$${i + 1}`);
-          await withDb(c => c.query(`INSERT INTO journal_lines (${lCols.join(",")}) VALUES (${lVals.join(",")}) ON CONFLICT (id) DO NOTHING`, Object.values(ln)));
+          await withDb(c => c.query(`INSERT INTO journal_lines (${lCols.join(",")}) SELECT ${lVals.join(",")} WHERE EXISTS (SELECT 1 FROM journal_entries WHERE id = $${lCols.length + 1} AND tenant_id = $${lCols.length + 2}) ON CONFLICT (id) DO NOTHING`, [...Object.values(ln), data.id, tenantId]));
         }
       }
       if (table === "products" && data.warehouseStock) await syncProductWarehouseStock(tenantId, String(data.id), data.warehouseStock);

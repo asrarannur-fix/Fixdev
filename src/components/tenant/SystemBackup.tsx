@@ -27,32 +27,7 @@ export const SystemBackup: React.FC = () => {
   const { showToast: toast } = useToast();
   const [isPerformingBackup, setIsPerformingBackup] = useState(false);
 
-  const backupHistory = useMemo(() => [
-    {
-      id: "bk-2026-07-05-0900",
-      timestamp: "2026-07-05T09:00:00Z",
-      duration: 45,
-      size: 1250,
-      status: "success",
-      fileCount: 24,
-    },
-    {
-      id: "bk-2026-07-04-0900",
-      timestamp: "2026-07-04T09:00:00Z",
-      duration: 42,
-      size: 1180,
-      status: "success",
-      fileCount: 23,
-    },
-    {
-      id: "bk-2026-07-03-0900",
-      timestamp: "2026-07-03T09:00:00Z",
-      duration: 38,
-      size: 1320,
-      status: "success",
-      fileCount: 25,
-    },
-  ], []);
+  const backupHistory: Array<{ id: string; timestamp: string; duration: number; size: number; status: string; fileCount: number }> = [];
 
   const formatSize = (mb: number) => `${mb} MB`;
 
@@ -63,8 +38,6 @@ export const SystemBackup: React.FC = () => {
     }
     setIsPerformingBackup(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
       const tenantData = {
         backupVersion: "1.0",
         timestamp: new Date().toISOString(),

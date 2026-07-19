@@ -73,8 +73,8 @@ export const RBACManager: React.FC = () => {
     (u) =>
       u.tenantId === currentTenantId &&
       u.role !== UserRole.OWNER &&
-      (u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())),
+      ((u.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.email || "").toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
   // Per-staff permission editor

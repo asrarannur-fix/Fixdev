@@ -75,7 +75,7 @@ import { HandoverPanel } from "./services/HandoverPanel";
 import { ServiceCostCalculator } from "./ServiceCostCalculator";
 import { ServiceList } from "./ServiceList";
 import { ServiceReceptionWizard } from "./ServiceReceptionWizard";
-import { getStorageLocations } from "./StorageLocationManager";
+import { StorageLocation } from "../../types";
 import { renderTenantWaTemplate } from "../../utils/waTemplate";
 import { useServiceReception } from "../../hooks/useServiceReception";
 import {
@@ -121,6 +121,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     currentUser,
     switchBranch,
     currentBranchId,
+    apiFetch,
     services,
     microComponents,
     microComponentsLoading,
@@ -279,19 +280,16 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     setAiLoading(true);
     setAiResult(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const category = ticket.deviceCategory || ticket.category || "General";
       const complaint =
         ticket.customerComplaints || ticket.complaint || "Unit bermasalah";
-      let res = {
-        difficulty: "MEDIUM",
-        coreIssue: `Kerusakan pada jalur sirkuit utama atau komponen terkait ${complaint}.`,
-        diagnosticNotes:
-          "Lakukan pengukuran tegangan kapasitor input sebelum melakukan penggantian suku cadang utama. Bersihkan sisa korosi jika ada.",
-        estimatedCostMin: 150000,
-        estimatedCostMax: 450000,
-      };
-      setAiResult(res);
+      const response = await apiFetch("/api/ai/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceName: ticket.deviceName, deviceBrandModel: ticket.deviceBrandModel, customerComplaints: complaint }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `Diagnosis HTTP ${response.status}`);
+      setAiResult(payload.data || payload);
     } catch (error: any) {
       showToast(error?.message || "Gagal menganalisis kerusakan.", "error");
     }
@@ -352,6 +350,17 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   // Technician assignment
   const [autoAssignReason, setAutoAssignReason] = useState<string | null>(null);
   const [custOpen, setCustOpen] = useState<boolean>(false);
+  const [storageLocations, setStorageLocations] = useState<StorageLocation[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/module-records?module=storage_locations").then(async (r) => {
+      if (!r.ok) throw new Error(`Storage locations HTTP ${r.status}`);
+      const body = await r.json();
+      const rows = Array.isArray(body) ? body : body.data || body.items || [];
+      if (!cancelled) setStorageLocations(rows.map((row: any) => row.payload || row).filter((x: StorageLocation) => x.tenantId === activeTenantId));
+    }).catch((e: any) => showToast(e.message || "Lokasi penyimpanan gagal dimuat.", "error"));
+    return () => { cancelled = true; };
+  }, [apiFetch, activeTenantId, showToast]);
   const [localSubTab, setLocalSubTab] = useState<string>(() =>
     localStorage.getItem("fixdev_srv_subtab") || activeSubTab || "list",
   );
@@ -386,112 +395,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     setReceptionErrors, setIsSubmittingReception, setJustCreatedTicket,
     setPreviewReceptionTicket, setActiveSubTab, setAutoAssignReason,
   });
-  // === AUTO-SAVE DRAFT FORM PENERIMAAN (persist saat pindah tab) ===
-  const SRV_DRAFT = "fixdev_srv_draft_v1";
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SRV_DRAFT);
-      if (!raw) return;
-      const d = JSON.parse(raw);
-      setShowNewSrvCustForm(d.showNewSrvCustForm ?? false);
-      setNewSrvCustName(d.newSrvCustName ?? "");
-      setNewSrvCustPhone(d.newSrvCustPhone ?? "");
-      setNewSrvCustEmail(d.newSrvCustEmail ?? "");
-      setNewSrvCustAddress(d.newSrvCustAddress ?? "");
-      setNewSrvCustomer(d.newSrvCustomer ?? "");
-      setNewSrvEstCompletion(d.newSrvEstCompletion ?? "");
-      setNewSrvDevice(d.newSrvDevice ?? "");
-      setNewSrvBrand(d.newSrvBrand ?? "");
-      setNewSrvSerial(d.newSrvSerial ?? "");
-      setNewSrvWarranty(d.newSrvWarranty ?? 3);
-      setNewSrvDownPayment(d.newSrvDownPayment ?? "0");
-      setNewSrvIsCheckOnly(d.newSrvIsCheckOnly ?? false);
-      setNewSrvPhysicalCondition(d.newSrvPhysicalCondition ?? "Mulus / Normal Wear");
-      setNewSrvScreenLock(d.newSrvScreenLock ?? "");
-      setNewSrvComplaint(d.newSrvComplaint ?? "");
-      setNewSrvCategory(d.newSrvCategory ?? "Smartphone");
-      setNewSrvDynamicSpecs(d.newSrvDynamicSpecs ?? {});
-      setNewSrvAccessories(d.newSrvAccessories ?? []);
-      setNewSrvCustomAccessories(d.newSrvCustomAccessories ?? "");
-      setNewSrvStorageLocId(d.newSrvStorageLocId ?? "");
-      setNewSrvCapturedConditions(d.newSrvCapturedConditions ?? []);
-      setNewSrvIsOutsourced(d.newSrvIsOutsourced ?? false);
-      setNewSrvOutsourcedVendor(d.newSrvOutsourcedVendor ?? "");
-      setNewSrvOutsourcingCost(d.newSrvOutsourcingCost ?? "");
-      setNewSrvTechId(d.newSrvTechId ?? "");
-      setNewSrvChecklist(d.newSrvChecklist ?? {});
-      setCustQuery(d.custQuery ?? "");
-    } catch {
-      /* abaikan draft rusak */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
-    const d = {
-      showNewSrvCustForm,
-      newSrvCustName,
-      newSrvCustPhone,
-      newSrvCustEmail,
-      newSrvCustAddress,
-      newSrvCustomer,
-      newSrvEstCompletion,
-      newSrvDevice,
-      newSrvBrand,
-      newSrvSerial,
-      newSrvWarranty,
-      newSrvDownPayment,
-      newSrvIsCheckOnly,
-      newSrvPhysicalCondition,
-      newSrvScreenLock,
-      newSrvComplaint,
-      newSrvCategory,
-      newSrvDynamicSpecs,
-      newSrvAccessories,
-      newSrvCustomAccessories,
-      newSrvStorageLocId,
-      newSrvCapturedConditions,
-      newSrvIsOutsourced,
-      newSrvOutsourcedVendor,
-      newSrvOutsourcingCost,
-      newSrvTechId,
-      newSrvChecklist,
-      custQuery,
-    };
-    try {
-      localStorage.setItem(SRV_DRAFT, JSON.stringify(d));
-    } catch {
-      /* abaikan */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    showNewSrvCustForm,
-    newSrvCustName,
-    newSrvCustPhone,
-    newSrvCustEmail,
-    newSrvCustAddress,
-    newSrvCustomer,
-    newSrvEstCompletion,
-    newSrvDevice,
-    newSrvBrand,
-    newSrvSerial,
-    newSrvWarranty,
-    newSrvDownPayment,
-    newSrvIsCheckOnly,
-    newSrvPhysicalCondition,
-    newSrvScreenLock,
-    newSrvComplaint,
-    newSrvCategory,
-    newSrvDynamicSpecs,
-    newSrvAccessories,
-    newSrvCustomAccessories,
-    newSrvStorageLocId,
-    newSrvCapturedConditions,
-    newSrvIsOutsourced,
-    newSrvOutsourcedVendor,
-    newSrvOutsourcingCost,
-    newSrvTechId,
-    newSrvChecklist,
-  ]);
+
   const tenantServices = serviceTickets.filter(
     (s: any) => s.tenantId === activeTenantId,
   );
@@ -706,8 +610,8 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         {/* Subtab: LIST OF SERVICES */}
         {localSubTab === "list" && <ServiceList {...{activeTenantId, activeWaModal, additionalCostAmount, additionalCostApprovedBy, additionalCostDescription, additionalCostMethod, additionalCostNote, additionalCostProof, additionalCostTicket, aiLoading, aiResult, approveServiceEstimate, cameraActive, completeServiceQC, currentUserPermissions, customWaMessageText, filteredMicroComponents, handleApplyAiRecommendation, handlePrintReceptionReceipt, handoverChecklist, handoverPaymentMethod, handoverProofName, handoverRefNo, handoverServiceDevice, handoverTempoDays, internalCommentText, isSubTabAllowed, justCreatedTicket, liveTimerSeconds, manualDiagCost, manualDiagNotes, microChargeable, microNote, microQty, microSearch, microTicket, microUnitPrice, openManualEstimateWhatsApp, openMicroComponentModal, partOrderCost, partOrderCostApproved, partOrderEta, partOrderName, partOrderNote, partOrderQty, partOrderReason, partOrderSupplier, partOrderTicket, previewReceptionTicket, qcNotes, qcScore, requestPartMode, requestedPartId, requestedPartQty, renderTenantWaTemplate, savingAdditionalCost, savingMicroUsage, savingPartOrder, selectedMicro, selectedMicroId, selectedServiceId, selectedServiceIds, selectedSparepartId, setActiveSubTab, setActiveWaModal, setAdditionalCostAmount, setAdditionalCostApprovedBy, setAdditionalCostDescription, setAdditionalCostMethod, setAdditionalCostNote, setAdditionalCostProof, setAdditionalCostTicket, setAiResult, setCustomWaMessageText, setHandoverChecklist, setHandoverPaymentMethod, setHandoverProofName, setHandoverRefNo, setHandoverTempoDays, setInternalCommentText, setJustCreatedTicket, setManualDiagCost, setManualDiagNotes, setMicroChargeable, setMicroNote, setMicroQty, setMicroSearch, setMicroTicket, setMicroUnitPrice, setPartOrderCost, setPartOrderCostApproved, setPartOrderEta, setPartOrderName, setPartOrderNote, setPartOrderQty, setPartOrderReason, setPartOrderSupplier, setPartOrderTicket, setPreviewReceptionTicket, setQcNotes, setQcScore, setRequestPartMode, setRequestedPartId, setRequestedPartQty, setSavingAdditionalCost, setSavingMicroUsage, setSavingPartOrder, setSelectedMicroId, setSelectedServiceId, setSelectedServiceIds, setSelectedSparepartId, setShowInvoicePrintout, setShowProvisionalQuote, setShowSpkPrintout, setShowWarrantyPrintout, setSparepartQty, setSparepartSN, setSrvSearchQuery, setSrvSort, setStatusFilter, setViewingServiceTicketId, showInvoicePrintout, showProvisionalQuote, showSpkPrintout, showWarrantyPrintout, sparepartQty, sparepartSN, srvSearchQuery, srvSort, startCamera, statusFilter, stopCamera, tenantObj, tenantServices, updateServiceStatus, videoRef, viewingServiceTicketId, currentUser, showConfirm, updateServiceTicket, showToast, customers, employees, products, currentTenantId, microComponentsLoading, microComponentsError, loadMicroComponents, consumeMicroComponentForService, addServiceDiagnostic, requestServicePart, cancelServicePart, createServicePartOrder, addApprovedAdditionalCost}} />}
         {/* Subtab: NEW TICKET WIZARD */}
-        {localSubTab === "new-ticket" && <ServiceReceptionWizard {...{receptionProgress, receptionFormRef, handleCreateService, receptionErrors, selectedReceptionCustomer, setNewSrvCustomer, setCustQuery, setShowNewSrvCustForm, custQuery, setCustOpen, custOpen, customers, setNewSrvCustName, setNewSrvCustPhone, newSrvCustomer, showNewSrvCustForm, newSrvCustName, newSrvCustPhone, newSrvCustEmail, setNewSrvCustEmail, newSrvCustAddress, setNewSrvCustAddress, newSrvCategory, setNewSrvCategory, newSrvEstCompletion, setNewSrvEstCompletion, newSrvDevice, setNewSrvDevice, newSrvBrand, setNewSrvBrand, setShowMoreDetails, showMoreDetails, newSrvSerial, setNewSrvSerial, newSrvWarranty, setNewSrvWarranty, newSrvDownPayment, setNewSrvDownPayment, newSrvIsCheckOnly, setNewSrvIsCheckOnly, newSrvPhysicalCondition, setNewSrvPhysicalCondition, showScreenLock, newSrvScreenLock, setNewSrvScreenLock, setShowScreenLock, newSrvComplaint, setNewSrvComplaint, setShowAdvancedSpecs, showAdvancedSpecs, newSrvDynamicSpecs, setNewSrvDynamicSpecs, runAutoAssign, newSrvTechId, setNewSrvTechId, setAutoAssignReason, employees, autoAssignReason, newSrvStorageLocId, setNewSrvStorageLocId, getStorageLocations, activeTenantId, currentBranchId, newSrvChecklist, setNewSrvChecklist, newSrvAccessories, setNewSrvAccessories, newSrvCustomAccessories, setNewSrvCustomAccessories, setShowDocumentation, newSrvCapturedConditions, showDocumentation, selectedCaptureCategory, setSelectedCaptureCategory, cameraActive, videoRef, capturePhoto, setNewSrvCapturedConditions, stopCamera, startCamera, newSrvIsOutsourced, setNewSrvIsOutsourced, newSrvOutsourcedVendor, setNewSrvOutsourcedVendor, newSrvOutsourcingCost, setNewSrvOutsourcingCost, setActiveSubTab, isSubmittingReception}} />}
-        {/* QC sekarang tersedia langsung di modal detail tiket. */}
+        {localSubTab === "new-ticket" && <ServiceReceptionWizard {...{receptionProgress, receptionFormRef, handleCreateService, receptionErrors, selectedReceptionCustomer, setNewSrvCustomer, setCustQuery, setShowNewSrvCustForm, custQuery, setCustOpen, custOpen, customers, setNewSrvCustName, setNewSrvCustPhone, newSrvCustomer, showNewSrvCustForm, newSrvCustName, newSrvCustPhone, newSrvCustEmail, setNewSrvCustEmail, newSrvCustAddress, setNewSrvCustAddress, newSrvCategory, setNewSrvCategory, newSrvEstCompletion, setNewSrvEstCompletion, newSrvDevice, setNewSrvDevice, newSrvBrand, setNewSrvBrand, setShowMoreDetails, showMoreDetails, newSrvSerial, setNewSrvSerial, newSrvWarranty, setNewSrvWarranty, newSrvDownPayment, setNewSrvDownPayment, newSrvIsCheckOnly, setNewSrvIsCheckOnly, newSrvPhysicalCondition, setNewSrvPhysicalCondition, showScreenLock, newSrvScreenLock, setNewSrvScreenLock, setShowScreenLock, newSrvComplaint, setNewSrvComplaint, setShowAdvancedSpecs, showAdvancedSpecs, newSrvDynamicSpecs, setNewSrvDynamicSpecs, runAutoAssign, newSrvTechId, setNewSrvTechId, setAutoAssignReason, employees, autoAssignReason, newSrvStorageLocId, setNewSrvStorageLocId, getStorageLocations: () => storageLocations, activeTenantId, currentBranchId, newSrvChecklist, setNewSrvChecklist, newSrvAccessories, setNewSrvAccessories, newSrvCustomAccessories, setNewSrvCustomAccessories, setShowDocumentation, newSrvCapturedConditions, showDocumentation, selectedCaptureCategory, setSelectedCaptureCategory, cameraActive, videoRef, capturePhoto, setNewSrvCapturedConditions, stopCamera, startCamera, newSrvIsOutsourced, setNewSrvIsOutsourced, newSrvOutsourcedVendor, setNewSrvOutsourcedVendor, newSrvOutsourcingCost, setNewSrvOutsourcingCost, setActiveSubTab, isSubmittingReception, showToast}} />}
+         {/* QC sekarang tersedia langsung di modal detail tiket. */}
         {/* Subtab: KNOWLEDGE BASE */}
         {localSubTab === "knowledge-base" && (
           <div className="h-[calc(100vh-140px)]">

@@ -227,6 +227,7 @@ export const WhatsAppConnector: React.FC = () => {
     tenants,
     updateTenant,
     addLog,
+    apiFetch,
   } = useSaaS();
 
   const { showToast } = useToast();
@@ -469,7 +470,7 @@ export const WhatsAppConnector: React.FC = () => {
               null,
               2,
             )}`,
-            `✓ [API Selesai] HTTP 200 OK. Respon berhasil dikirim via WhatsApp API.`,
+            `ℹ️ [Simulasi lokal] Tidak ada request provider, tidak ada status pengiriman yang diklaim.`,
           ]);
           setIsSimulatingWaWebhook(false);
         }, 1000);
@@ -495,20 +496,19 @@ export const WhatsAppConnector: React.FC = () => {
   const [drilldownCustomerId, setDrilldownCustomerId] = useState<string>("");
   const [drilldownSearchQuery, setDrilldownSearchQuery] = useState<string>("");
 
-  // Save WA config to DB via updateTenant
+  // Save WA config to DB via updateTenant; errors stay visible, never fake success.
   useEffect(() => {
     if (!currentTenantId || !activeTenant) return;
-    const current = activeTenant?.settings?.waConfig || {};
-    updateTenant(currentTenantId, {
+    const current = activeTenant.settings?.waConfig || {};
+    void updateTenant(currentTenantId, {
       settings: {
-        ...(activeTenant?.settings || {}),
-        waConfig: {
-          ...current,
-          ...debouncedWaConfig,
-        },
+        ...(activeTenant.settings || {}),
+        waConfig: { ...current, ...debouncedWaConfig },
       },
+    }).catch((error: any) => {
+      showToast(error?.message || "Konfigurasi WhatsApp gagal disimpan.", "error");
     });
-  }, [debouncedWaConfig, currentTenantId, activeTenant, updateTenant]);
+  }, [debouncedWaConfig, currentTenantId, activeTenant, updateTenant, showToast]);
 
   useEffect(() => {
     if (!currentTenantId) return;
@@ -523,6 +523,10 @@ export const WhatsAppConnector: React.FC = () => {
 
   // Handler to simulate QR Code scan
   const startQRScan = () => {
+    if (waSendingMethod === "MANUAL") {
+      showToast("Mode Manual Link aktif; QR scan tidak diperlukan.", "info");
+      return;
+    }
     if (isConnected) {
       setIsConnected(false);
       addLog(
@@ -534,35 +538,22 @@ export const WhatsAppConnector: React.FC = () => {
       return;
     }
 
-    setIsScanning(true);
-    setScanStep(1);
-
-    setTimeout(() => {
-      setScanStep(2);
-      setTimeout(() => {
-        setScanStep(3);
-        setTimeout(() => {
-          setIsConnected(true);
-          setIsScanning(false);
-          setScanStep(0);
-          setPhoneNumber("+62 811-445-9921");
-          addLog(
-            "WhatsApp Pairing Success",
-            "Berhasil mengoneksikan WhatsApp API Node menggunakan scan QR Code Web Session.",
-            "ADMIN",
-            "MEDIUM",
-          );
-        }, 1200);
-      }, 1200);
-    }, 1200);
+    showToast("Pairing WhatsApp hanya tersedia melalui gateway resmi. QR simulasi dinonaktifkan.", "error");
   };
 
   // Helper to test connection
-  const testConnection = () => {
-    showToast(
-      "Koneksi WhatsApp Gateway AKTIF!\nPing Response: 18ms\nWhatsApp Web Node Version: v2.24.12\nQuota: 14,821 / 15,000 Pesan.",
-      "success",
-    );
+  const testConnection = async () => {
+    try {
+      const response = await apiFetch("/api/tenant/whatsapp/test", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "WhatsApp gagal diuji.");
+      showToast(payload.message || `WhatsApp ${payload.mode || "API"} terverifikasi.`, "success");
+    } catch (error: any) {
+      showToast(error.message || "WhatsApp gagal diuji.", "error");
+    }
   };
 
   // Toggle dynamic triggers
@@ -710,44 +701,9 @@ export const WhatsAppConnector: React.FC = () => {
       );
       showToast("Link WhatsApp Web dibuka di tab baru.", "success");
     } else {
-      // API Sending Logic (existing)
-      const statuses: Array<"SENT" | "DELIVERED" | "READ" | "FAILED"> = [
-        "READ",
-        "DELIVERED",
-        "READ",
-        "SENT",
-        "FAILED",
-      ];
-      const simulatedStatus =
-        statuses[Math.floor(Math.random() * statuses.length)];
-
-      const newLog: WhatsAppLog = {
-        id: "wa-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-        timestamp: new Date().toISOString(),
-        recipientName: custObj.name,
-        recipientPhone: custObj.phone,
-        type: selectedTemplateId === "custom" ? "MANUAL_CHAT" : "BROADCAST",
-        message: manualMessage,
-        status: simulatedStatus,
-        senderName: `${currentUser.name} (Staf)`,
-        channel:
-          gateway === "meta"
-            ? "Meta Cloud API"
-            : gateway === "wablas"
-              ? "Unofficial Gateway (Wablas)"
-              : "Local Session Node",
-      };
-
-      setLogs((prev) => [newLog, ...prev]);
-      addLog(
-        "WhatsApp Direct Sent",
-        `Mengirim pesan manual via WhatsApp ke ${custObj.name} dengan status ${simulatedStatus}`,
-        "SERVICE",
-      );
-      showToast(
-        `WhatsApp berhasil dikirim ke ${custObj.name}! Status: ${simulatedStatus}.`,
-        "success",
-      );
+      showToast("Pengiriman WhatsApp API belum terhubung ke gateway resmi; pesan tidak diklaim terkirim.", "error");
+      return;
+      // No send endpoint exists here. Never claim API delivery without provider response.
     }
 
     setManualMessage("");
@@ -761,21 +717,14 @@ export const WhatsAppConnector: React.FC = () => {
       return;
     }
 
-    const reLogged: WhatsAppLog = {
-      ...logItem,
-      id: "wa-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-      timestamp: new Date().toISOString(),
-      status: "SENT",
-      senderName: `${currentUser.name} (Resend)`,
-    };
-
-    setLogs((prev) => [reLogged, ...prev]);
-    addLog(
-      "WhatsApp Re-sent",
-      `Mengirim ulang WhatsApp ke ${logItem.recipientName}`,
-      "SERVICE",
-    );
-    showToast("Pesan ditambahkan ke antrean gateway!", "success");
+    if (waSendingMethod === "MANUAL") {
+      const phone = sanitizeWhatsAppPhone(logItem.recipientPhone);
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(logItem.message)}`, "_blank");
+      showToast("Link WhatsApp Web dibuka di tab baru.", "success");
+      return;
+    }
+    showToast("Resend API belum terhubung ke gateway resmi; pesan tidak diklaim terkirim.", "error");
+    return;
   };
 
   // Template Manager: Add or Update Reusable template
@@ -843,39 +792,30 @@ export const WhatsAppConnector: React.FC = () => {
 
   // Queue actions
   const handleTriggerQueueItem = (item: WhatsAppQueueItem) => {
-    if (!isConnected && waSendingMethod === "API") {
-      showToast(
-        "WhatsApp Gateway tidak terhubung! Tidak dapat mengirim.",
-        "error",
-      );
+    if (waSendingMethod === "API") {
+      showToast("Pengiriman API dikerjakan worker WhatsApp; gunakan antrean server, bukan simulasi browser.", "info");
       return;
     }
 
-    // Move to logs
-    const statuses: Array<"SENT" | "DELIVERED" | "READ" | "FAILED"> = [
-      "READ",
-      "DELIVERED",
-      "READ",
-    ];
-    const simStatus = statuses[Math.floor(Math.random() * statuses.length)];
-
+    const phone = sanitizeWhatsAppPhone(item.recipientPhone);
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(item.message)}`, "_blank");
     const newLog: WhatsAppLog = {
-      id: "wa-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+      id: "wa-" + Date.now(),
       timestamp: new Date().toISOString(),
       recipientName: item.recipientName,
       recipientPhone: item.recipientPhone,
       type: item.type as any,
       message: item.message,
-      status: simStatus,
-      senderName: "Sistem Otomatis (Queue Trigger)",
-      channel: gateway === "meta" ? "Meta Cloud API" : "Local Session Node",
+      status: "SENT",
+      senderName: "Manual Link (browser)",
+      channel: "Manual Link",
     };
 
     setLogs((prev) => [newLog, ...prev]);
     setQueue((prev) => prev.filter((q) => q.id !== item.id));
     addLog(
       "WhatsApp Queue Dispatched",
-      `Mengirim pesan otomatis terjadwal ke ${item.recipientName}. Status: ${simStatus}`,
+      `Membuat log Manual Link untuk ${item.recipientName}. Status: SENT`,
       "SERVICE",
     );
     showToast(

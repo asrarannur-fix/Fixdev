@@ -35,6 +35,7 @@ import {
   Gift,
   ClipboardCheck,
   QrCode,
+  Database,
 } from "lucide-react";
 
 export interface NavSubTab {
@@ -188,6 +189,11 @@ export const SETTINGS_MODULES: { id: string; label: string; icon: any; iconColor
   { id: "import-export", label: "Impor / Ekspor Data Massal", icon: FileSpreadsheet, iconColor: "text-cyan-600" },
   { id: "loyalty", label: "Voucher & Poin Loyalitas", icon: Gift, iconColor: "text-rose-600" },
   { id: "maintenance-contract", label: "Kontrak Maintenance Berkala", icon: ClipboardCheck, iconColor: "text-orange-600" },
+  { id: "storage", label: "Cloud Storage", icon: Database, iconColor: "text-indigo-600" },
+  { id: "operational-config", label: "Operasional ERP", icon: Wrench, iconColor: "text-amber-600" },
+  { id: "app-config", label: "Aplikasi & Tampilan", icon: Sliders, iconColor: "text-violet-600" },
+  { id: "security", label: "Keamanan & Login", icon: ShieldCheck, iconColor: "text-red-600" },
+  { id: "backup", label: "Backup & Audit", icon: Database, iconColor: "text-slate-600" },
 ];
 
 export function getModuleById(id: string): NavModule | undefined {
@@ -211,6 +217,6 @@ export function getAvailableModules(
 
   return OPERATIONAL_MODULES.filter((mod) => {
     const requiredPerms = moduleMap[mod.id] || [];
-    return requiredPerms.some((p) => userPermissions.includes(p));
+    return requiredPerms.length === 0 || requiredPerms.some((p) => userPermissions.includes(p));
   }).map((mod) => mod.id);
 }

@@ -80,12 +80,12 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
                 <button
                   type="button"
                   disabled={!editingBranchId && isBranchLimitReached}
-                  onClick={() => {
+                  onClick={async () => {
                     if (!brName.trim()) { showToast("Nama cabang wajib diisi!", "error"); return; }
                     const safeBranch = { name: brName.trim(), address: brAddress.trim(), phone: brPhone.trim(), isActive: brIsActive };
                     try {
-                      if (editingBranchId) { updateBranch(editingBranchId, safeBranch); showToast("Cabang berhasil diperbarui!", "success"); }
-                      else { addBranch(safeBranch); showToast("Cabang baru berhasil dibuat!", "success"); }
+                      if (editingBranchId) { await updateBranch(editingBranchId, safeBranch); showToast("Cabang berhasil diperbarui!", "success"); }
+                      else { await addBranch(safeBranch); showToast("Cabang baru berhasil dibuat!", "success"); }
                       setShowAddBranchModal(false);
                     } catch (e: any) {
                       showToast(e.message || "Gagal menyimpan cabang.", "error");
@@ -120,7 +120,7 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
                     </button>
                     <div className="flex items-center gap-1">
                       <button onClick={() => { setEditingBranchId(branch.id); setBrName(branch.name); setBrAddress(branch.address); setBrPhone(branch.phone); setBrIsActive(branch.isActive); setShowAddBranchModal(true); }} className="p-1.5 rounded-lg border border-slate-200"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={async () => { if (isSelected) { showToast("Tidak dapat menonaktifkan cabang aktif!", "error"); return; } if (await showConfirm({ title: "Nonaktifkan Cabang", message: `Cabang "${branch.name}" akan dinonaktifkan. Data tetap aman.`, confirmLabel: "Nonaktifkan", type: "danger" })) { try { deleteBranch(branch.id); showToast("Cabang berhasil dinonaktifkan.", "success"); } catch (e: any) { showToast(e.message || "Gagal menonaktifkan cabang.", "error"); } } }} className="p-1.5 rounded-lg border border-slate-200" title="Nonaktifkan Cabang"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={async () => { if (isSelected) { showToast("Tidak dapat menonaktifkan cabang aktif!", "error"); return; } if (await showConfirm({ title: "Nonaktifkan Cabang", message: `Cabang "${branch.name}" akan dinonaktifkan. Data tetap aman.`, confirmLabel: "Nonaktifkan", type: "danger" })) { try { await deleteBranch(branch.id); showToast("Cabang berhasil dinonaktifkan.", "success"); } catch (e: any) { showToast(e.message || "Gagal menonaktifkan cabang.", "error"); } } }} className="p-1.5 rounded-lg border border-slate-200" title="Nonaktifkan Cabang"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                 </div>

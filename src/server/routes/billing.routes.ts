@@ -5,6 +5,7 @@ import {
   requireSuperAdminPermission,
   requireTenantOrSuperAdminPermission,
   requireSupabaseJwt,
+  requireTenantScope,
 } from "../../middleware/auth.middleware.js";
 import {
   approveManualPayment,
@@ -43,7 +44,7 @@ router.use(requireSupabaseJwt);
 
 router.get("/plans", requireTenantOrSuperAdminPermission("billing:view_plans"), getBillingPlans);
 router.post("/plans", requireSuperAdminPermission("billing:manage_plans"), requireSuperAdminConsoleSession, updateBillingPlans);
-router.get("/subscription", requireTenantOrSuperAdminPermission("billing:view_subscription"), getSubscription);
+router.get("/subscription", requireTenantScope, requireTenantOrSuperAdminPermission("billing:view_subscription"), getSubscription);
 router.post("/create-invoice", requireTenantOrSuperAdminPermission("billing:manage_invoices"), requireRoles("OWNER", "ADMIN", "SUPER_ADMIN"), createInvoice);
 router.post("/pay-invoice", (_req, res) => res.status(410).json({
   error: "Direct payment confirmation has been removed. Use a verified Midtrans payment or manual payment review.",

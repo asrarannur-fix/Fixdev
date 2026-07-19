@@ -5,6 +5,7 @@ import {
   isValidIndonesianPhone,
 } from "../utils/serviceReceptionUtils";
 import { CATEGORY_CONFIGS } from "../config/categoryConfigs";
+import { sanitizeServiceReceptionDraft } from "../utils/serviceReceptionDraft";
 
 interface UseServiceReceptionDeps {
   customers: any[];
@@ -123,7 +124,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       setNewSrvPhysicalCondition(
         d.newSrvPhysicalCondition ?? "Mulus / Normal Wear",
       );
-      setNewSrvScreenLock(d.newSrvScreenLock ?? "");
+      setNewSrvScreenLock("");
       setNewSrvComplaint(d.newSrvComplaint ?? "");
       setNewSrvCategory(d.newSrvCategory ?? "Smartphone");
       setNewSrvDynamicSpecs(d.newSrvDynamicSpecs ?? {});
@@ -159,7 +160,6 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       newSrvDownPayment,
       newSrvIsCheckOnly,
       newSrvPhysicalCondition,
-      newSrvScreenLock,
       newSrvComplaint,
       newSrvCategory,
       newSrvDynamicSpecs,
@@ -175,7 +175,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       custQuery,
     };
     try {
-      localStorage.setItem(SRV_DRAFT, JSON.stringify(d));
+      localStorage.setItem(SRV_DRAFT, JSON.stringify(sanitizeServiceReceptionDraft(d)));
     } catch {
       /* abaikan */
     }

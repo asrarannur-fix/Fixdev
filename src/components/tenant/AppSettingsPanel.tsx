@@ -60,7 +60,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
   const [sidebarMode, setSidebarMode] = useState(s.themeSettings?.sidebarMode || "collapsed");
   const [layoutDensity, setLayoutDensity] = useState(s.themeSettings?.layoutDensity || "comfortable");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!updateTenant || !currentTenantId) return;
     const cleanFromEmail = defaultFrom.trim();
     if (cleanFromEmail && !cleanFromEmail.includes("@")) {
@@ -77,17 +77,23 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
     const clamp = (value: number, min: number, max: number) =>
       Math.min(max, Math.max(min, Number.isFinite(value) ? Math.trunc(value) : min));
     setIsSaving(true);
-    updateTenant(currentTenantId, {
-      settings: {
-        ...s,
-        generalSettings: { appName: appName.trim() || "FIXDEV ERP", timezone, dateFormat, language, maintenanceMode },
-        customerPortalSettings: { enableStatusCheck, enableEstimateApproval: enableEstApprove, enableInvoiceView, enableWarrantyView, enableTicketTracking, hideInternalNotes, hideProfit },
-        emailSettings: { smtpHost: smtpHost.trim(), smtpPort: clamp(smtpPort, 1, 65535), smtpUser: smtpUser.trim(), smtpPass, defaultFromEmail: cleanFromEmail, enablePushNotifications: enablePush, enableRealtimeNotifications: enableRealtime },
-        fileUploadSettings: { maxUploadSizeMb: clamp(maxUploadMb, 1, 100), allowedFileTypes: allowedTypes.trim(), retentionDays: clamp(retentionDays, 30, 3650), fileVisibility },
-        themeSettings: { primaryColor: cleanPrimary, secondaryColor: cleanSecondary, darkMode, sidebarMode, layoutDensity },
-      },
-    });
-    setTimeout(() => { showToast("Pengaturan aplikasi berhasil disimpan!", "success"); setIsSaving(false); }, 300);
+    try {
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...s,
+          generalSettings: { appName: appName.trim() || "FIXDEV ERP", timezone, dateFormat, language, maintenanceMode },
+          customerPortalSettings: { enableStatusCheck, enableEstimateApproval: enableEstApprove, enableInvoiceView, enableWarrantyView, enableTicketTracking, hideInternalNotes, hideProfit },
+          emailSettings: { smtpHost: smtpHost.trim(), smtpPort: clamp(smtpPort, 1, 65535), smtpUser: smtpUser.trim(), smtpPass, defaultFromEmail: cleanFromEmail, enablePushNotifications: enablePush, enableRealtimeNotifications: enableRealtime },
+          fileUploadSettings: { maxUploadSizeMb: clamp(maxUploadMb, 1, 100), allowedFileTypes: allowedTypes.trim(), retentionDays: clamp(retentionDays, 30, 3650), fileVisibility },
+          themeSettings: { primaryColor: cleanPrimary, secondaryColor: cleanSecondary, darkMode, sidebarMode, layoutDensity },
+        },
+      });
+      showToast("Pengaturan aplikasi berhasil disimpan!", "success");
+    } catch (error: any) {
+      showToast(error.message || "Pengaturan aplikasi gagal disimpan.", "error");
+    } finally {
+      setIsSaving(false);
+    };
   };
 
   const toggle = (val: boolean, setter: (v: boolean) => void) => setter(!val);

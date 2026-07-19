@@ -538,7 +538,7 @@ async function queueNotification(params: {
 export const notifyDueReminders = async (req: any, res: any) => {
   try {
     const rows = await dbQuery(
-      `SELECT i.*, t.name as tenant_name, t.email as tenant_email
+      `SELECT i.*, t.name as tenant_name
        FROM saas_invoices i
        JOIN tenants t ON t.id = i.tenant_id
        WHERE i.status = 'UNPAID'

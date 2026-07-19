@@ -281,8 +281,8 @@ export const createToken = async (req: any, res: any) => {
     await dbQuery(
       `INSERT INTO api_tokens
          (id, token, token_hash, token_prefix, name, abilities, tenant_id, branch_id, created_by, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, now())`,
-      [tokenId, tokenString, tokenHash, tokenString.slice(0, 16), resolvedName, JSON.stringify(tokenAbilities), tenantId, branchId, req.authActor.userId],
+       VALUES ($1, NULL, $2, $3, $4, $5::jsonb, $6, $7, $8, now())`,
+       [tokenId, tokenHash, tokenString.slice(0, 16), resolvedName, JSON.stringify(tokenAbilities), tenantId, branchId, req.authActor.userId],
     );
   } catch (err: any) {
     return res.status(500).json({ message: "Token could not be persisted.", error: err.message });

@@ -169,16 +169,17 @@ export const SettingsBranding: React.FC<any> = (props) => {
 
       <div className="flex justify-end">
         <button
-          onClick={() => {
-            if (activeTenant) {
-              updateTenant(activeTenant.id, {
-                branding: branding,
-              });
+          onClick={async () => {
+            if (!activeTenant) return;
+            try {
+              await updateTenant(activeTenant.id, { branding });
               showToast(
                 "Kustomisasi branding dan template berhasil disimpan untuk tenant " +
                   activeTenant.name,
                 "success",
               );
+            } catch (error: any) {
+              showToast(error?.message || "Kustomisasi branding gagal disimpan.", "error");
             }
           }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-sm"

@@ -48,20 +48,7 @@ export const aiDiagnose = async (req: any, res: any) => {
     res.json(data);
   } catch (error: any) {
     logger.error({ err: error.message }, "[ai] aiDiagnose error");
-    // Graceful simulation fallback if API Key is missing or invalid
-    res.json({
-      coreIssue: `[Simulasi] Masalah pada sistem kelistrikan / komponen utama pada ${deviceName}`,
-      estimatedCostMin: 150000,
-      estimatedCostMax: 450000,
-      requiredParts: [
-        { partName: "IC Regulator / Kapasitor Filter", estPrice: 75000 },
-        { partName: "Jasa Perbaikan Standard", estPrice: 100000 },
-      ],
-      difficulty: "Medium",
-      diagnosticNotes: `Analisis simulasi (kunci API tidak aktif): Terindikasi terjadi instabilitas tegangan listrik atau kegagalan fungsi internal pada sirkuit utama ${deviceName}. Disarankan untuk melakukan pengecekan visual pada motherboard terlebih dahulu.`,
-      isSimulated: true,
-      errorMsg: error.message,
-    });
+    return res.status(502).json({ error: "Layanan diagnosis AI tidak tersedia." });
   }
 };
 

@@ -53,6 +53,8 @@ import monitoringRoutes from "./src/server/routes/monitoring.routes.js";
 import superadminRoutes from "./src/server/routes/superadmin.routes.js";
 import { platformHealthHandler } from "./src/server/controllers/monitoring.controller.js";
 import { acceptInvitation, validateInvitation } from "./src/server/controllers/invitation.controller.js";
+import { telegramTestHandler } from "./src/server/controllers/telegram.controller.js";
+import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.controller.js";
 
 dotenv.config();
 
@@ -94,7 +96,7 @@ const PORT = Number(process.env.PORT || 3000);
 app.use((req, res, next) => {
   const allowedOrigins = process.env.ALLOWED_ORIGINS 
     ? process.env.ALLOWED_ORIGINS.split(",") 
-    : [process.env.APP_URL || "http://localhost:3000"];
+    : [process.env.APP_URL || "https://fixdev.web.id"];
   
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
@@ -194,6 +196,8 @@ app.use("/api/billing", billingRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use("/api/ai", requireSupabaseJwt, requireTenantScope, requireFeature("AI_DIAGNOSE"), aiRoutes);
 app.use("/api/tenant", requireSupabaseJwt, requireTenantScope, tenantRoutes);
+app.post("/api/tenant/telegram/test", requireSupabaseJwt, requireTenantScope, telegramTestHandler);
+app.post("/api/tenant/whatsapp/test", requireSupabaseJwt, requireTenantScope, whatsappTestHandler);
 app.use("/api/service-receptions", serviceReceptionRoutes);
 app.use("/api/services", serviceWorkflowRoutes);
 app.use("/api/micro-components", microComponentsRoutes);

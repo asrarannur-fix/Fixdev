@@ -89,7 +89,7 @@ export const GeneralSettingsPanel: React.FC<GeneralSettingsPanelProps> = ({
 
   const handleDirectPrintLabel = (_ticket: any) => {};
 
-  const savePrinterSettings = (options?: any) => {
+  const savePrinterSettings = async (options?: any) => {
     if (!options) return;
     const current = tenantObj?.settings?.printConfig || {};
     const updated: Record<string, any> = { ...current };
@@ -171,13 +171,17 @@ export const GeneralSettingsPanel: React.FC<GeneralSettingsPanelProps> = ({
       updated.termsRentalText = options.termsRentalText;
     }
 
-    updateTenant(currentTenantId, {
-      settings: {
-        ...(tenantObj?.settings || {}),
-        printConfig: updated,
-      },
-    });
-    showToast("Pengaturan cetak berhasil disimpan!", "success");
+    try {
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...(tenantObj?.settings || {}),
+          printConfig: updated,
+        },
+      });
+      showToast("Pengaturan cetak berhasil disimpan!", "success");
+    } catch (error: any) {
+      showToast(error?.message || "Pengaturan cetak gagal disimpan.", "error");
+    }
   };
 
   return (

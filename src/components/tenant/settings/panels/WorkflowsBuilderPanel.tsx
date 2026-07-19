@@ -9,7 +9,7 @@ interface WorkflowsBuilderPanelProps {
 }
 
 export const WorkflowsBuilderPanel: React.FC<WorkflowsBuilderPanelProps> = ({ currentTenantId }) => {
-  const { workflows, addWorkflow, updateWorkflow, deleteWorkflow } = useSaaS();
+  const { workflows, addWorkflow, updateWorkflow, deleteWorkflow, executeWorkflow } = useSaaS();
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
 
@@ -20,7 +20,6 @@ export const WorkflowsBuilderPanel: React.FC<WorkflowsBuilderPanelProps> = ({ cu
   const [wfActionType, setWfActionType] = useState<"WHATSAPP" | "EMAIL" | "JOURNAL_ENTRY" | "FRAUD_ALERT">("WHATSAPP");
   const [wfActionPayload, setWfActionPayload] = useState("");
 
-  const executeWorkflow = (_wf: any) => {};
 
   return (
     <div className="w-full max-w-6xl animate-fadeIn space-y-6">
@@ -91,12 +90,12 @@ export const WorkflowsBuilderPanel: React.FC<WorkflowsBuilderPanelProps> = ({ cu
             <button type="button" onClick={() => setShowAddWorkflowModal(false)} className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-600 font-bold border border-slate-200 rounded-xl transition-all cursor-pointer text-xs">Kembali</button>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (!wfName.trim() || !wfActionPayload.trim()) {
                   showToast("Mohon isi seluruh bidang nama alur kerja dan parameter aksi!", "error");
                   return;
                 }
-                addWorkflow({
+                await addWorkflow({
                   tenantId: currentTenantId,
                   name: wfName,
                   triggerType: wfTriggerType,
@@ -133,7 +132,7 @@ export const WorkflowsBuilderPanel: React.FC<WorkflowsBuilderPanelProps> = ({ cu
                         <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[9px] font-mono font-bold">kondisi: {w.triggerCondition}</span>
                       </div>
                     </div>
-                    <button type="button" onClick={() => updateWorkflow(w.id, { isActive: !w.isActive })} className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-black border transition-all cursor-pointer ${isWfActive ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"}`}>{isWfActive ? "● AKTIF" : "○ NONAKTIF"}</button>
+                    <button type="button" onClick={async () => { try { await updateWorkflow(w.id, { isActive: !w.isActive }); } catch (error: any) { showToast(error?.message || "Gagal mengubah status alur.", "error"); } }} className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-black border transition-all cursor-pointer ${isWfActive ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"}`}>{isWfActive ? "● AKTIF" : "○ NONAKTIF"}</button>
                   </div>
                   <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-3 space-y-1.5 text-xs">
                     <div className="flex items-center gap-1 text-[10px] font-mono text-indigo-700 uppercase font-black">
@@ -148,10 +147,10 @@ export const WorkflowsBuilderPanel: React.FC<WorkflowsBuilderPanelProps> = ({ cu
                     {w.lastTriggeredAt && <span>Last: <strong className="text-slate-800">{new Date(w.lastTriggeredAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong></span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => { executeWorkflow(w.id); showToast(`Uji Pemicu Berhasil! Alur otomatisasi "${w.name}" dieksekusi.`, "success"); }} disabled={!isWfActive} className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition-all text-[11px] cursor-pointer ${isWfActive ? "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}>
+                    <button type="button" onClick={async () => { try { await executeWorkflow(w.id); showToast(`Pemicu alur "${w.name}" tersimpan.`, "success"); } catch (error: any) { showToast(error?.message || "Gagal menjalankan alur.", "error"); } }} disabled={!isWfActive} className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition-all text-[11px] cursor-pointer ${isWfActive ? "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}>
                       <Play className="w-3 h-3 text-indigo-600 fill-indigo-600" /> Uji Alur
                     </button>
-                    <button type="button" onClick={async () => { if (await showConfirm({ title: "Hapus Otomatisasi", message: "Apakah Anda yakin ingin menghapus alur kerja otomatisasi ini?", confirmLabel: "Ya, Hapus", type: "danger" })) { deleteWorkflow(w.id); } }} className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all cursor-pointer" title="Hapus Alur Kerja">
+                    <button type="button" onClick={async () => { if (await showConfirm({ title: "Hapus Otomatisasi", message: "Apakah Anda yakin ingin menghapus alur kerja otomatisasi ini?", confirmLabel: "Ya, Hapus", type: "danger" })) { try { await deleteWorkflow(w.id); } catch (error: any) { showToast(error?.message || "Gagal menghapus alur.", "error"); } } }} className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all cursor-pointer" title="Hapus Alur Kerja">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

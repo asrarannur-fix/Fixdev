@@ -79,7 +79,7 @@ export async function loginTenant(page: Page, opts: { timeout?: number } = {}): 
     { key: `sb-${projectRef}-auth-token`, value: JSON.stringify(session) },
   );
 
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "commit", timeout: 120000 });
   await page.waitForSelector("#root", { timeout: 15000 });
   return page.locator("#main-app-container").isVisible({ timeout }).catch(() => false);
 }

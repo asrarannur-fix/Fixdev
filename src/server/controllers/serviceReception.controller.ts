@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { dbTransaction } from "../../lib/db.js";
+import { encryptScreenLockPin, redactScreenLockPin } from "../lib/screenLockPin.js";
 
 const optionalText = z.string().trim().optional().default("");
 
@@ -124,6 +125,9 @@ export async function createServiceReception(req: Request, res: Response) {
         }
       }
 
+      const encryptedScreenLockPin = input.device.screenLockPin
+        ? encryptScreenLockPin(input.device.screenLockPin)
+        : null;
       const sequence = await client.query("SELECT nextval('service_ticket_number_seq') AS value");
       const sequenceValue = Number(sequence.rows[0].value);
       const now = new Date();
@@ -162,9 +166,15 @@ export async function createServiceReception(req: Request, res: Response) {
           input.outsourcing.vendorId || null, input.outsourcing.cost, input.service.downPayment,
           input.service.isCheckOnly, input.device.category || null, JSON.stringify(input.reception.accessories),
           input.reception.customAccessories || null, input.reception.physicalCondition || null,
-          input.device.screenLockPin || null, input.service.estimatedCompletionDate || null,
+          encryptedScreenLockPin, input.service.estimatedCompletionDate || null,
           JSON.stringify(input.reception.capturedConditions), JSON.stringify(input.device.dynamicFields),
           input.reception.storageLocationId || null, JSON.stringify(timeline)],
+      );
+
+      await client.query(
+        `INSERT INTO service_status_events (tenant_id, ticket_id, from_status, to_status, note, actor_user_id, metadata)
+         VALUES ($1, $2, NULL, 'DITERIMA', $3, $4, '{}'::jsonb)`,
+        [tenantId, insertedTicket.rows[0].id, timeline[0].note, actor.userId],
       );
 
       await client.query(
@@ -173,7 +183,7 @@ export async function createServiceReception(req: Request, res: Response) {
         [tenantId, actor.userId, `Membuat penerimaan ${ticketNo} untuk ${input.device.name}`],
       );
 
-      return { customer, ticket: insertedTicket.rows[0] };
+      return { customer, ticket: redactScreenLockPin(insertedTicket.rows[0]) };
     });
 
     return res.status(201).json({ data: result, message: "Penerimaan unit berhasil disimpan." });

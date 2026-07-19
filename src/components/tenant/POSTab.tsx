@@ -93,7 +93,7 @@ export const POSTab: React.FC<POSTabProps> = ({
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [voidLoading, setVoidLoading] = useState(false);
   const { showToast } = useToast();
-  const { currentTenantId: contextTenantId, currentUser: contextCurrentUser, products: ctxProducts, tenants } = useSaaS();
+  const { currentTenantId: contextTenantId, currentUser: contextCurrentUser, products: ctxProducts, tenants, apiFetch } = useSaaS();
   const canViewInvoice = currentUser?.role === UserRole.OWNER || currentUserPermissions?.includes("action-pos-invoice-view");
   const canVoidTransaction = currentUser?.role === UserRole.OWNER || currentUserPermissions?.includes("action-pos-void-approve");
 
@@ -141,30 +141,34 @@ export const POSTab: React.FC<POSTabProps> = ({
     (sum, item) => sum + (item.product.sellPrice || 0) * item.qty,
     0,
   );
-  const discountAmount = effectiveCart.reduce((sum, item) => sum + item.discount, 0);
+  const discountAmount = effectiveCart.reduce((sum, item) => sum + (item.discount ?? 0), 0);
   const activePOS = tenants.find((t: any) => t.id === (currentTenantId || contextTenantId));
   const taxRatePct = activePOS?.settings?.taxRate ?? 11;
-  const [heldCarts, setHeldCarts] = useState<any[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(`saas_held_carts_${contextTenantId}`) || "[]");
-    } catch {
-      return [];
-    }
-  });
-
+  const [heldCarts, setHeldCarts] = useState<any[]>([]);
   React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`saas_held_carts_${contextTenantId}`);
-      setHeldCarts(saved ? JSON.parse(saved) : []);
-    } catch {
-      setHeldCarts([]);
-    }
-  }, [contextTenantId]);
+    let cancelled = false;
+    apiFetch("/api/module-records?module=pos_held_carts")
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Held carts HTTP ${r.status}`);
+        const body = await r.json();
+        const rows = Array.isArray(body) ? body : body.data || body.items || [];
+        const loaded = rows.map((row: any) => row.payload || row).filter((x: any) => x.tenantId === contextTenantId);
+        if (!cancelled) setHeldCarts(loaded);
+      })
+      .catch((e: any) => showToast(e.message || "Held cart gagal dimuat.", "error"));
+    return () => { cancelled = true; };
+  }, [apiFetch, contextTenantId, showToast]);
+
+  const persistHeldCart = async (cart: any, action: "insert" | "update" | "delete") => {
+    const r = await apiFetch("/api/module-records", { method: "POST", body: JSON.stringify({ module: "pos_held_carts", recordId: cart.id, payload: cart, action }) });
+    if (!r.ok) throw new Error(`Held cart sync HTTP ${r.status}`);
+  };
+
 
   const taxAmount = Math.max(0, (subtotal - discountAmount) * (taxRatePct / 100));
   const grandTotal = Math.max(0, subtotal - discountAmount + taxAmount - effectiveDeposit);
 
-  const handleHoldSale = () => {
+  const handleHoldSale = async () => {
     if (effectiveCart.length === 0) {
       showToast("Tidak ada item di keranjang untuk ditahan.", "warning");
       return;
@@ -176,9 +180,9 @@ export const POSTab: React.FC<POSTabProps> = ({
         deposit: effectiveDeposit,
         timestamp: new Date().toISOString(),
       };
+      await persistHeldCart(newHeld, "insert");
       const updated = [...heldCarts, newHeld];
       setHeldCarts(updated);
-      localStorage.setItem(`saas_held_carts_${contextTenantId}`, JSON.stringify(updated));
       // Clear current cart/deposit
       if (posCart) {
         // Parent cart: rely on parent handler to clear (or clear local state if fallback)
@@ -194,24 +198,29 @@ export const POSTab: React.FC<POSTabProps> = ({
     }
   };
 
-  const handleRecallSale = (heldId: string) => {
+  const handleRecallSale = async (heldId: string) => {
     const target = heldCarts.find((h) => h.id === heldId);
     if (!target) return;
     // Restore cart
     setInternalCart(target.cart);
     setInternalDeposit(target.deposit);
     // Remove from held
+    await persistHeldCart(target, "delete");
     const updated = heldCarts.filter((h) => h.id !== heldId);
     setHeldCarts(updated);
-    localStorage.setItem(`saas_held_carts_${contextTenantId}`, JSON.stringify(updated));
     showToast("Pesanan berhasil dipulihkan ke keranjang!", "success");
   };
 
-  const handleRemoveHeldSale = (heldId: string) => {
-    const updated = heldCarts.filter((h) => h.id !== heldId);
-    setHeldCarts(updated);
-    localStorage.setItem(`saas_held_carts_${contextTenantId}`, JSON.stringify(updated));
-    showToast("Pesanan ditahan berhasil dihapus.", "success");
+  const handleRemoveHeldSale = async (heldId: string) => {
+    const target = heldCarts.find((h) => h.id === heldId);
+    if (!target) return;
+    try {
+      await persistHeldCart(target, "delete");
+      setHeldCarts(heldCarts.filter((h) => h.id !== heldId));
+      showToast("Pesanan ditahan berhasil dihapus.", "success");
+    } catch (error: any) {
+      showToast(error?.message || "Held cart gagal dihapus.", "error");
+    }
   };
 
   return (
@@ -320,7 +329,7 @@ export const POSTab: React.FC<POSTabProps> = ({
                   <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider">Daftar Antrian Ditahan:</p>
                   <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
                     {heldCarts.map((hc) => {
-                      const totalCartItems = hc.cart.reduce((sum: number, item: any) => sum + item.qty, 0);
+                      const totalCartItems = (Array.isArray(hc.cart) ? hc.cart : []).reduce((sum: number, item: any) => sum + (item.qty ?? 0), 0);
                       return (
                         <div key={hc.id} className="flex justify-between items-center text-[10px] bg-white p-2 border border-slate-150 rounded-lg shadow-2xs">
                           <div>

@@ -139,7 +139,7 @@ export const SettingsWorkflows: React.FC<any> = (props) => {
             Kembali
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (!wfName.trim() || !wfActionPayload.trim()) {
                 showToast(
                   "Mohon isi seluruh bidang nama alur kerja dan parameter aksi!",
@@ -147,7 +147,8 @@ export const SettingsWorkflows: React.FC<any> = (props) => {
                 );
                 return;
               }
-              addWorkflow({
+              try {
+                await addWorkflow({
                 tenantId: currentTenantId,
                 name: wfName,
                 triggerType: wfTriggerType,
@@ -155,13 +156,16 @@ export const SettingsWorkflows: React.FC<any> = (props) => {
                 actionType: wfActionType,
                 actionPayload: wfActionPayload,
                 isActive: true,
-                executionCount: 0,
-              });
-              setShowAddWorkflowModal(false);
-              showToast(
-                "Alur kerja otomatisasi berhasil dibuat & diaktifkan!",
-                "success",
-              );
+                  executionCount: 0,
+                });
+                setShowAddWorkflowModal(false);
+                showToast(
+                  "Alur kerja otomatisasi berhasil dibuat & diaktifkan!",
+                  "success",
+                );
+              } catch (error: any) {
+                showToast(error?.message || "Workflow gagal disimpan.", "error");
+              }
             }}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl transition-all cursor-pointer text-xs shadow-sm"
           >
@@ -203,9 +207,13 @@ export const SettingsWorkflows: React.FC<any> = (props) => {
                   </div>
 
                   <button
-                    onClick={() =>
-                      updateWorkflow(w.id, { isActive: !w.isActive })
-                    }
+                    onClick={async () => {
+                      try {
+                        await updateWorkflow(w.id, { isActive: !w.isActive });
+                      } catch (error: any) {
+                        showToast(error?.message || "Workflow gagal diperbarui.", "error");
+                      }
+                    }}
                     className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-black border transition-all cursor-pointer ${
                       isWfActive
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
@@ -250,12 +258,13 @@ export const SettingsWorkflows: React.FC<any> = (props) => {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {
-                      executeWorkflow(w.id);
-                      showToast(
-                        `Uji Pemicu Berhasil! Alur otomatisasi '${w.name}' dieksekusi.`,
-                        "success",
-                      );
+                    onClick={async () => {
+                      try {
+                        await executeWorkflow(w.id);
+                        showToast(`Uji Pemicu Berhasil! Alur otomatisasi '${w.name}' dieksekusi.`, "success");
+                      } catch (error: any) {
+                        showToast(error?.message || "Workflow gagal dieksekusi.", "error");
+                      }
                     }}
                     disabled={!isWfActive}
                     className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition-all text-[11px] cursor-pointer ${
@@ -278,7 +287,11 @@ export const SettingsWorkflows: React.FC<any> = (props) => {
                           type: "danger",
                         })
                       ) {
-                        deleteWorkflow(w.id);
+                        try {
+                          await deleteWorkflow(w.id);
+                        } catch (error: any) {
+                          showToast(error?.message || "Workflow gagal dihapus.", "error");
+                        }
                       }
                     }}
                     className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all cursor-pointer"

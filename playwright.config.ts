@@ -8,9 +8,10 @@ export default defineConfig({
   workers: 1,
   reporter: "line",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: process.env.TEST_BASE_URL || "https://fixdev.web.id",
     trace: "on-first-retry",
     headless: true,
+    launchOptions: { args: ["--no-sandbox", "--disable-http2"] },
     viewport: { width: 1280, height: 720 },
   },
   projects: [

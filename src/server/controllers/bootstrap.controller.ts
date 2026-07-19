@@ -5,6 +5,11 @@
 import { Request, Response } from "express";
 import { getPool } from "../../lib/db.js";
 import { toApiResponse } from "../utils/responseTransform.js";
+import { redactScreenLockPin } from "../lib/screenLockPin.js";
+
+export function sanitizeServiceTicketsForBootstrap(tickets: Record<string, any>[]) {
+  return tickets.map(redactScreenLockPin);
+}
 
 export async function platformBootstrapHandler(req: Request, res: Response) {
   if (req.authActor?.role !== "SUPER_ADMIN") {
@@ -54,7 +59,7 @@ export async function bootstrapHandler(req: Request, res: Response) {
       customers: results[5].status === 'fulfilled' ? results[5].value.rows : [],
       products: results[6].status === 'fulfilled' ? results[6].value.rows : [],
       productStock: results[7].status === 'fulfilled' ? results[7].value.rows : [],
-      serviceTickets: results[8].status === 'fulfilled' ? results[8].value.rows : [],
+      serviceTickets: results[8].status === 'fulfilled' ? sanitizeServiceTicketsForBootstrap(results[8].value.rows) : [],
       posTransactions: results[9].status === 'fulfilled' ? results[9].value.rows : [],
       posShifts: results[10].status === 'fulfilled' ? results[10].value.rows : [],
       coaAccounts: results[11].status === 'fulfilled' ? results[11].value.rows : [],

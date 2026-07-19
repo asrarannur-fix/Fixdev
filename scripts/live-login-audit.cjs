@@ -1,7 +1,7 @@
 const { chromium } = require("playwright");
 
-const EMAIL = process.env.TEST_USER_EMAIL || "";
-const PASS = process.env.TEST_USER_PASSWORD || "";
+const EMAIL = process.env.TEST_USER_EMAIL || process.env.TEST_TENANT_EMAIL || "";
+const PASS = process.env.TEST_USER_PASSWORD || process.env.TEST_TENANT_PASSWORD || "";
 const BASE = process.env.TEST_BASE_URL || "https://fixdev.web.id";
 const OUT = "/home/ubuntu/barufix/screenshots-bukti";
 
@@ -20,7 +20,7 @@ async function shot(page, name) {
 }
 
 async function login(page) {
-  await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+  await page.goto(BASE + "/", { waitUntil: "commit", timeout: 30000 }).catch(() => {});
   await page.evaluate(() => localStorage.clear());
   await page.getByRole("button", { name: "Masuk", exact: true }).first().click();
   await page.waitForSelector("#login-page", { timeout: 10000 });

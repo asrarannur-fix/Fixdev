@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "./ui/Toast";
 import { useConfirm } from "./ui/ConfirmDialog";
+import { useSaaS } from "../context/SaaSContext";
 import {
   Code,
   Terminal,
@@ -44,6 +45,7 @@ interface Token {
 export function DeveloperApiManager() {
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
+  const { apiFetch } = useSaaS();
   const [activeTab, setActiveTab] = useState<"tokens" | "docs" | "playground">(
     "tokens",
   );
@@ -102,10 +104,8 @@ export function DeveloperApiManager() {
     setLoadingTokens(true);
     try {
       // Use the master seeded token to access token list administrative API
-      const res = await fetch("/api/v1/auth/tokens", {
-        headers: {
-          Authorization: `Bearer km_sanctum_token_owner`,
-        },
+      const res = await apiFetch("/api/v1/auth/tokens", {
+        headers: { Authorization: "Bearer km_sanctum_token_owner" },
       });
       if (res.ok) {
         const data = await res.json();
@@ -183,7 +183,7 @@ export function DeveloperApiManager() {
       const res = await fetch(`/api/v1/auth/tokens/${tokenId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer km_sanctum_token_owner`,
+          Authorization: "Bearer km_sanctum_token_owner",
         },
       });
 

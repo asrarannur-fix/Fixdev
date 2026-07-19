@@ -516,7 +516,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   };
 
   // Initiate Warranty Claim
-  const handleInitiateWarranty = (e: React.FormEvent) => {
+  const handleInitiateWarranty = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanComplaint = warrantyComplaint.trim().slice(0, 500);
     if (
@@ -530,8 +530,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
     setIsSubmittingWarranty(true);
 
-    setTimeout(() => {
-      claimWarranty(selectedWarrantyTicketId, cleanComplaint);
+    try {
+      await claimWarranty(selectedWarrantyTicketId, cleanComplaint);
       setIsSubmittingWarranty(false);
       setWarrantyComplaint("");
       setSelectedWarrantyTicketId("");
@@ -547,7 +547,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         "SERVICE",
         "MEDIUM",
       );
-    }, 1200);
+    } catch (error) {
+      console.error("Warranty claim failed:", error);
+      setIsSubmittingWarranty(false);
+      triggerToast("Klaim garansi gagal disimpan. Coba lagi.", "error");
+    }
   };
 
   // Generate and Download Invoice offline representation (TXT file)
@@ -693,45 +697,14 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
 
       setChatMessages((prev) => [...prev, replyMsg]);
     } catch (err: any) {
-      // Offline fallback simulations if Gemini API not set up
-      setTimeout(() => {
-        let replyText = `Halo Kak ${activeCustomer?.name || "Pelanggan"}! Terima kasih atas pertanyaannya. Pesan Anda tentang "${currentInput}" telah diterima oleh sistem antrian kami. Teknisi sedang merespon segera.`;
-
-        if (selectedChatTopic !== "general") {
-          const matchingTicket = services.find(
-            (s) => s.ticketNo === selectedChatTopic,
-          );
-          if (matchingTicket) {
-            replyText = `Halo Kak! Terkait pengerjaan unit *${matchingTicket.deviceName}* (#${matchingTicket.ticketNo}) dengan status *${matchingTicket.status}*, teknisi kami sedang melakukan pengetesan kestabilan suhu (SLA/QC). Rata-rata memakan waktu beberapa jam sebelum siap diserahterimakan. Silakan cek berkala, kami akan kabari jika status berubah!`;
-          }
-        } else {
-          if (
-            currentInput.toLowerCase().includes("biaya") ||
-            currentInput.toLowerCase().includes("harga") ||
-            currentInput.toLowerCase().includes("ongkos")
-          ) {
-            replyText =
-              "Terkait estimasi biaya perbaikan, kami akan melakukan pembongkaran awal terlebih dahulu. Anda akan menerima surat penawaran digital di tab 'Lacak Nota' portal ini untuk disetujui sebelum pengerjaan dimulai.";
-          } else if (
-            currentInput.toLowerCase().includes("garansi") ||
-            currentInput.toLowerCase().includes("rusak") ||
-            currentInput.toLowerCase().includes("klaim")
-          ) {
-            replyText =
-              "Tentu! Seluruh unit pengerjaan yang diselesaikan di outlet kami bergaransi resmi toko selama 30-90 hari tergantung item part. Klaim garansi dapat diajukan secara instan di tab 'Klaim Garansi' portal ini.";
-          }
-        }
-
-        const replyMsg = {
-          id: "ai-sim-" + Date.now().toString(36),
-          sender:
-            selectedChatTopic === "general" ? "Support CS" : "Teknisi Lab",
-          role: "model" as const,
-          text: replyText,
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, replyMsg]);
-      }, 1000);
+      const replyMsg = {
+        id: "ai-error-" + Date.now().toString(36),
+        sender: "Support CS",
+        role: "model" as const,
+        text: "Layanan chat sedang tidak tersedia. Silakan coba lagi beberapa saat atau hubungi outlet langsung.",
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages((prev) => [...prev, replyMsg]);
     } finally {
       setIsChatLoading(false);
     }

@@ -52,7 +52,7 @@ export const ModuleParameterConfig: React.FC = () => {
     setTaxRate(settings?.taxSettings?.taxRate ?? 11);
   }, [currentTenantId, activeTenant]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!updateTenant || !currentTenantId) return;
 
     const clamp = (value: number, min: number, max: number) =>
@@ -76,22 +76,25 @@ export const ModuleParameterConfig: React.FC = () => {
     const safeTaxRate = clamp(taxRate, 0, 100);
 
     setIsSaving(true);
-    updateTenant(currentTenantId, {
-      settings: {
-        ...activeTenant?.settings,
-        taxSettings: { ...activeTenant?.settings?.taxSettings, taxRate: safeTaxRate },
-        documentConfig: { ticketPrefix: safeTicketPrefix, invoicePrefix: safeInvoicePrefix, posInvoicePrefix: safePosPrefix },
-        warrantyDays: safeWarrantyDays,
-        autoReminderDays: safeAutoReminderDays,
-        stockLowThreshold: safeStockLowThreshold,
-        enableTechnicianCommission,
-        enableKnowledgeBase,
-      },
-    });
-    setTimeout(() => {
+    try {
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...activeTenant?.settings,
+          taxSettings: { ...activeTenant?.settings?.taxSettings, taxRate: safeTaxRate },
+          documentConfig: { ticketPrefix: safeTicketPrefix, invoicePrefix: safeInvoicePrefix, posInvoicePrefix: safePosPrefix },
+          warrantyDays: safeWarrantyDays,
+          autoReminderDays: safeAutoReminderDays,
+          stockLowThreshold: safeStockLowThreshold,
+          enableTechnicianCommission,
+          enableKnowledgeBase,
+        },
+      });
       showToast("Parameter modul berhasil disimpan!", "success");
+    } catch (error: any) {
+      showToast(error.message || "Parameter modul gagal disimpan.", "error");
+    } finally {
       setIsSaving(false);
-    }, 300);
+    }
   };
 
   return (

@@ -30,10 +30,16 @@ export const ServiceModals: React.FC<any> = (props) => {
     updateServiceTicket, renderTenantWaTemplate, createServicePartOrder, saveProofName,
     setSaveProofName, saveProofFileBase64, setSaveProofFileBase64, saving, setSaving,
     consumeMicroComponentForService, addServiceDiagnostic, requestServicePart, cancelServicePart,
-    addApprovedAdditionalCost, justCreatedTicket, microQty, microTicket, partOrderTicket, previewReceptionTicket, savingAdditionalCost, savingMicroUsage, savingPartOrder, selectedMicro, setAdditionalCostTicket, setMicroSearch, setSavingAdditionalCost, setSavingMicroUsage, setSavingPartOrder, setSelectedMicroId,
+    addApprovedAdditionalCost, justCreatedTicket, microQty, microTicket, partOrderTicket, previewReceptionTicket, savingAdditionalCost, savingMicroUsage, savingPartOrder, selectedMicro, setAdditionalCostTicket, setMicroSearch, setSavingAdditionalCost, setSavingMicroUsage, setSavingPartOrder, setSelectedMicroId, apiFetch,
   } = props;
   const sanitizedRecipientPhone = sanitizeWhatsAppPhone(String(activeWaModal?.phone || ""));
   const canSendWhatsApp = isValidIndonesianPhone(sanitizedRecipientPhone);
+  const logManualWhatsApp = async (channel: string) => {
+    if (!apiFetch || !activeWaModal) return;
+    const log = { id: `wa-${Date.now().toString(36)}`, tenantId: currentTenantId, timestamp: new Date().toISOString(), recipientName: activeWaModal.customerName, recipientPhone: activeWaModal.phone, type: "SERVICE_UPDATE", message: activeWaModal.message, status: "MANUAL_OPENED", senderName: "Operator (Manual)", channel };
+    const response = await apiFetch("/api/module-records", { method: "POST", body: JSON.stringify({ module: "whatsapp_manual_logs", recordId: log.id, payload: log, action: "insert" }) });
+    if (!response.ok) throw new Error(`WhatsApp log HTTP ${response.status}`);
+  };
 
   return <>
   {justCreatedTicket &&
@@ -420,26 +426,7 @@ export const ServiceModals: React.FC<any> = (props) => {
                 "Pesan berhasil disalin ke clipboard!",
                 "success",
               );
-              // Log manual action as Copied to Clipboard
-              const savedLogs = localStorage.getItem(`saas_wa_logs_${currentTenantId}`);
-              const currentLogs = savedLogs
-                ? JSON.parse(savedLogs)
-                : [];
-              const newLog = {
-                id: "wa-" + Date.now().toString(36),
-                timestamp: new Date().toISOString(),
-                recipientName: activeWaModal.customerName,
-                recipientPhone: activeWaModal.phone,
-                type: "SERVICE_UPDATE",
-                message: activeWaModal.message,
-                status: "DELIVERED",
-                senderName: "Operator (Manual)",
-                channel: "Copied to Clipboard",
-              };
-              localStorage.setItem(
-                `saas_wa_logs_${currentTenantId}`,
-                JSON.stringify([newLog, ...currentLogs]),
-              );
+              void logManualWhatsApp("Copied to Clipboard").catch((error: any) => showToast(error?.message || "Log WhatsApp gagal disimpan.", "error"));
             }}
             className="px-4 py-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 cursor-pointer flex items-center gap-1.5 transition-all"
           >
@@ -463,26 +450,7 @@ export const ServiceModals: React.FC<any> = (props) => {
                   showToast("Nomor WhatsApp pelanggan belum valid atau belum tersedia.", "error");
                   return;
                 }
-                // Log manual action as WhatsApp Web
-                const savedLogs = localStorage.getItem(`saas_wa_logs_${currentTenantId}`);
-                const currentLogs = savedLogs
-                  ? JSON.parse(savedLogs)
-                  : [];
-                const newLog = {
-                  id: "wa-" + Date.now().toString(36),
-                  timestamp: new Date().toISOString(),
-                  recipientName: activeWaModal.customerName,
-                  recipientPhone: activeWaModal.phone,
-                  type: "SERVICE_UPDATE",
-                  message: activeWaModal.message,
-                  status: "DELIVERED",
-                  senderName: "Operator (Manual)",
-                  channel: "WhatsApp Web (wa.me)",
-                };
-                localStorage.setItem(
-                  `saas_wa_logs_${currentTenantId}`,
-                  JSON.stringify([newLog, ...currentLogs]),
-                );
+                void logManualWhatsApp("WhatsApp Web (wa.me)").catch((error: any) => showToast(error?.message || "Log WhatsApp gagal disimpan.", "error"));
                 setActiveWaModal(null);
               }}
               className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all ${!canSendWhatsApp ? "opacity-50 cursor-not-allowed" : ""}`}

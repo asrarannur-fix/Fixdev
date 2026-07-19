@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { useConfirm } from "./ui/ConfirmDialog";
@@ -19,7 +19,7 @@ import { Voucher } from "../types";
 const generateUUID = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export const VoucherManager: React.FC = () => {
-  const { vouchers, setVouchers, currentTenantId, addLog } = useSaaS();
+  const { vouchers, setVouchers, currentTenantId, addLog, apiFetch } = useSaaS();
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
 
@@ -35,6 +35,28 @@ export const VoucherManager: React.FC = () => {
 
   const [search, setSearch] = useState("");
 
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/module-records?module=vouchers")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const body = await response.json();
+        const rows = Array.isArray(body) ? body : body.data || body.items || [];
+        const loaded = rows.map((row: any) => row.payload || row).filter((voucher: any) => voucher.tenantId === currentTenantId);
+        if (!cancelled && loaded.length) setVouchers((prev) => [...loaded, ...prev.filter((voucher) => !loaded.some((item: any) => item.id === voucher.id))]);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [apiFetch, currentTenantId, setVouchers]);
+
+  const persistVoucher = async (voucher: Voucher, action: "insert" | "update" | "delete") => {
+    const response = await apiFetch("/api/module-records", {
+      method: "POST",
+      body: JSON.stringify({ module: "vouchers", recordId: voucher.id, payload: voucher, action }),
+    });
+    if (!response.ok) throw new Error(`Voucher sync HTTP ${response.status}`);
+  };
+
   const filtered = vouchers.filter(
     (v) =>
       v.tenantId === currentTenantId &&
@@ -42,7 +64,7 @@ export const VoucherManager: React.FC = () => {
         v.type.toLowerCase().includes(search.toLowerCase())),
   );
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const cleanCode = code.trim().toUpperCase();
     const safeValue = discountType === "PERCENTAGE" && vType === "DISCOUNT"
       ? Math.min(100, Math.max(0, Number(value) || 0))
@@ -71,19 +93,31 @@ export const VoucherManager: React.FC = () => {
       usageCount: 0,
       isActive: true,
     };
-    setVouchers((prev) => [newV, ...prev]);
-    setShowAdd(false);
-    setCode("");
-    setValue(0);
-    showToast(`Voucher ${newV.code} berhasil dibuat!`, "success");
+    try {
+      await persistVoucher(newV, "insert");
+      setVouchers((prev) => [newV, ...prev]);
+      setShowAdd(false);
+      setCode("");
+      setValue(0);
+      showToast(`Voucher ${newV.code} berhasil dibuat!`, "success");
+    } catch (error: any) {
+      showToast(error.message || "Voucher gagal disimpan.", "error");
+      return;
+    }
     if (addLog) addLog("Buat Voucher", `Kode: ${newV.code} (${vType} ${safeValue})`, "INVENTORY");
   };
 
-  const handleToggle = (id: string) => {
-    setVouchers((prev) =>
-      prev.map((v) => (v.id === id && v.tenantId === currentTenantId ? { ...v, isActive: !v.isActive } : v)),
-    );
-    showToast("Status voucher berhasil diubah.", "info");
+  const handleToggle = async (id: string) => {
+    const current = vouchers.find((v) => v.id === id && v.tenantId === currentTenantId);
+    if (!current) return;
+    const updated = { ...current, isActive: !current.isActive };
+    try {
+      await persistVoucher(updated, "update");
+      setVouchers((prev) => prev.map((v) => (v.id === id ? updated : v)));
+      showToast("Status voucher berhasil diubah.", "info");
+    } catch (error: any) {
+      showToast(error?.message || "Status voucher gagal disimpan.", "error");
+    }
   };
 
   const handleDelete = async (id: string, code: string) => {
@@ -95,8 +129,15 @@ export const VoucherManager: React.FC = () => {
         type: "danger",
       })
     ) {
-      setVouchers((prev) => prev.filter((v) => !(v.id === id && v.tenantId === currentTenantId)));
-      showToast("Voucher berhasil dihapus.", "warning");
+      const current = vouchers.find((v) => v.id === id && v.tenantId === currentTenantId);
+      if (!current) return;
+      try {
+        await persistVoucher(current, "delete");
+        setVouchers((prev) => prev.filter((v) => v.id !== id));
+        showToast("Voucher berhasil dihapus.", "warning");
+      } catch (error: any) {
+        showToast(error?.message || "Voucher gagal dihapus.", "error");
+      }
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import {
@@ -19,6 +19,7 @@ export const TelegramBotManager: React.FC = () => {
     tenants,
     updateTenant,
     addLog,
+    apiFetch,
   } = useSaaS();
   const { showToast } = useToast();
 
@@ -39,50 +40,62 @@ export const TelegramBotManager: React.FC = () => {
   const [isEnabled, setIsEnabled] = useState(tgSettings.enabled);
   const [testResult, setTestResult] = useState<string | null>(null);
 
-  // Mock Telegram Logs
-  const [eventLogs] = useState([
-    { timestamp: "2026-07-05 14:23:10", event: "TICKET_CREATED", recipient: "Group Teknisi", status: "SENT" },
-    { timestamp: "2026-07-05 11:05:00", event: "SHIFT_CLOSED", recipient: "Owner Group", status: "SENT" },
-    { timestamp: "2026-07-04 09:30:00", event: "INVOICE_UNPAID", recipient: "Admin Group", status: "FAILED" },
-  ]);
+  useEffect(() => {
+    setBotToken(tgSettings.botToken);
+    setChatId(tgSettings.chatId);
+    setIsEnabled(tgSettings.enabled);
+    setTestResult(null);
+  }, [currentTenantId, tgSettings.botToken, tgSettings.chatId, tgSettings.enabled]);
 
-  const handleSave = () => {
+  const [eventLogs] = useState<Array<{ timestamp: string; event: string; recipient: string; status: string }>>([]);
+
+  const handleSave = async () => {
     if (!updateTenant) return;
     const current = activeTenant?.settings || {};
     const cleanToken = botToken.trim();
     const cleanChatId = chatId.trim();
-    updateTenant(currentTenantId, {
-      settings: {
-        ...current,
-        notificationSettings: {
-          ...current.notificationSettings,
-          telegramEnabled: isEnabled,
-          telegramBotToken: cleanToken,
-          telegramChatId: cleanChatId,
+    try {
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...current,
+          notificationSettings: {
+            ...current.notificationSettings,
+            telegramEnabled: isEnabled,
+            telegramBotToken: cleanToken,
+            telegramChatId: cleanChatId,
+          },
         },
-      },
-    });
-    showToast("Konfigurasi Bot Telegram berhasil disimpan!", "success");
-
-    if (addLog) {
-      addLog(
+      });
+      showToast("Konfigurasi Bot Telegram berhasil disimpan!", "success");
+      addLog?.(
         "Update Telegram Bot Config",
-        `Telegram ${isEnabled ? "Enabled" : "Disabled"}, Chat ID: ${chatId || "-"}`,
+        `Telegram ${isEnabled ? "Enabled" : "Disabled"}, Chat ID: ${cleanChatId || "-"}`,
         "SYSTEM",
       );
+    } catch (error: any) {
+      showToast(error.message || "Konfigurasi Telegram gagal disimpan.", "error");
     }
   };
 
-  const handleTest = () => {
-    if (!botToken.trim()) {
-      showToast("Masukkan Bot Token Telegram terlebih dahulu!", "error");
+  const handleTest = async () => {
+    if (!botToken.trim() || !chatId.trim()) {
+      showToast("Bot Token dan Chat ID Telegram wajib diisi.", "error");
       return;
     }
     setTestResult("sending");
-    setTimeout(() => {
+    try {
+      const response = await apiFetch("/api/tenant/telegram/test", {
+        method: "POST",
+        body: JSON.stringify({ message: "Tes integrasi FIXDEV ERP berhasil dikirim." }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Telegram gagal mengirim pesan.");
       setTestResult("success");
       showToast("Pesan uji coba Telegram berhasil terkirim!", "success");
-    }, 1500);
+    } catch (error: any) {
+      setTestResult("error");
+      showToast(error.message || "Telegram gagal mengirim pesan.", "error");
+    }
   };
 
   return (
@@ -200,16 +213,16 @@ export const TelegramBotManager: React.FC = () => {
           <div className="space-y-3">
             <div className="p-3 bg-sky-50 rounded-lg flex justify-between items-center text-xs">
               <span className="text-sky-600 font-bold">Total Terkirim (Hari Ini)</span>
-              <span className="font-mono font-black text-sky-800">47</span>
+              <span className="font-mono font-black text-sky-800">{eventLogs.filter((log) => log.status === "SENT").length}</span>
             </div>
             <div className="p-3 bg-rose-50 rounded-lg flex justify-between items-center text-xs">
               <span className="text-rose-600 font-bold">Total Gagal</span>
-              <span className="font-mono font-black text-rose-800">3</span>
+              <span className="font-mono font-black text-rose-800">{eventLogs.filter((log) => log.status === "FAILED").length}</span>
             </div>
             <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center text-xs">
               <span className="text-slate-500">Long Polling Status</span>
               <span className="font-mono text-emerald-600 font-bold">
-                {isEnabled ? "Connected" : "Disconnected"}
+                {testResult === "success" ? "Connected" : "Not tested"}
               </span>
             </div>
           </div>
