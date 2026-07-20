@@ -2267,7 +2267,7 @@ export const WhatsAppConnector: React.FC = () => {
                   {waSendingMethod === "API" && (
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-xl p-4 space-y-3.5 animate-fadeIn">
                       <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-300 font-bold">
-                        <Settings2 className="w-4 h-4 text-indigo-600" />
+                        <Settings2 className="w-4 h-4 text-accent" />
                         <span>Kredensial Meta WhatsApp Business Cloud API</span>
                       </div>
                       <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -2276,7 +2276,7 @@ export const WhatsAppConnector: React.FC = () => {
                           href="https://developers.facebook.com"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-indigo-600 underline font-mono"
+                          className="text-accent underline font-mono"
                         >
                           developers.facebook.com
                         </a>{" "}
@@ -2384,12 +2384,12 @@ export const WhatsAppConnector: React.FC = () => {
                       value={simWaIncomingText}
                       onChange={(e) => setSimWaIncomingText(e.target.value)}
                       placeholder="Contoh: status TKT/2606/0001"
-                      className="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-xs focus:border-indigo-500 outline-none"
+                      className="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-xs focus:border-accent outline-none"
                     />
                     <button
                       onClick={handleSimulateWaWebhook}
                       disabled={isSimulatingWaWebhook || !simWaIncomingText}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-800 text-white font-black rounded-xl transition-all flex items-center gap-1 cursor-pointer text-xs"
+                      className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:bg-slate-800 text-white font-black rounded-xl transition-all flex items-center gap-1 cursor-pointer text-xs"
                     >
                       {isSimulatingWaWebhook ? (
                         <>

@@ -234,7 +234,7 @@ export const RBACManager: React.FC = () => {
       case UserRole.SUPER_ADMIN:
         return { label: "Super Admin", icon: <Crown className="h-3 w-3" />, badge: "bg-purple-50 text-purple-700 border-purple-200", accent: "border-l-purple-500", dot: "bg-purple-500" };
       case UserRole.OWNER:
-        return { label: "Owner", icon: <Building2 className="h-3 w-3" />, badge: "bg-indigo-50 text-indigo-700 border-indigo-200", accent: "border-l-indigo-500", dot: "bg-indigo-500" };
+        return { label: "Owner", icon: <Building2 className="h-3 w-3" />, badge: "bg-accent-lighter text-accent border-indigo-200", accent: "border-l-indigo-500", dot: "bg-indigo-500" };
       case UserRole.ADMIN:
         return { label: "Admin", icon: <Shield className="h-3 w-3" />, badge: "bg-slate-100 text-slate-700 border-slate-300", accent: "border-l-slate-400", dot: "bg-slate-500" };
       case UserRole.MANAGER:
@@ -252,7 +252,7 @@ export const RBACManager: React.FC = () => {
     }
   };
 
-  const ringColor = pct >= 100 ? "#ef4444" : pct >= 80 ? "#f59e0b" : "#6366f1";
+  const ringColor = pct >= 100 ? "#ef4444" : pct >= 80 ? "#f59e0b" : "var(--accent, #4f46e5)";
   const R = 15.5;
   const C = 2 * Math.PI * R;
   const offset = C * (1 - pct / 100);
@@ -263,14 +263,14 @@ export const RBACManager: React.FC = () => {
           <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
             <div className="space-y-1">
               <p className="flex items-center gap-2 text-xs font-black text-slate-800">
-                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent-lighter text-accent">
                   <Users className="h-3.5 w-3.5" />
                 </span>
                 Kuota Akun Staff
               </p>
               <p className="text-[11px] text-slate-500">
                 Maksimal staf untuk paket{" "}
-                <span className="font-bold uppercase text-indigo-600">
+                <span className="font-bold uppercase text-accent">
                   {activeTenant?.tier || "BASIC"}
                 </span>
               </p>
@@ -320,7 +320,7 @@ export const RBACManager: React.FC = () => {
           <input
             type="text"
             placeholder="Cari nama atau email staff..."
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-4 text-xs outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-4 text-xs outline-none transition-all focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -331,7 +331,7 @@ export const RBACManager: React.FC = () => {
           </span>
           <button
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-accent-hover active:scale-95"
           >
             <UserPlus className="h-3.5 w-3.5" />
             Tambah Staff Baru
@@ -354,7 +354,7 @@ export const RBACManager: React.FC = () => {
                   <div
                     key={user.id}
                     className={`group relative overflow-hidden rounded-2xl border border-l-[3px] border-slate-200/70 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md ${rs.accent} ${
-                      isCurrentOwner ? "bg-indigo-50/20" : ""
+                      isCurrentOwner ? "bg-accent-lighter/20" : ""
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -400,7 +400,7 @@ export const RBACManager: React.FC = () => {
                           if (user.tenantId !== currentTenantId) return;
                           updateUserRole(user.id, e.target.value as UserRole);
                         }}
-                        className="block w-auto max-w-[130px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-600 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="block w-auto max-w-[130px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-600 outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={(user.id === currentUser.id && user.role === UserRole.OWNER) || user.tenantId !== currentTenantId}
                         aria-label="Ganti peran staff"
                       >
@@ -431,13 +431,13 @@ export const RBACManager: React.FC = () => {
                             </span>
                           ))}
                           {branchNames.length > 3 && (
-                            <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
+                            <span className="rounded-md bg-accent-lighter px-2 py-0.5 text-[10px] font-bold text-accent">
                               +{branchNames.length - 3} lainnya
                             </span>
                           )}
                         </>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-accent-lighter px-2 py-0.5 text-[10px] font-bold text-accent">
                           <Store className="h-2.5 w-2.5" />
                           Semua Cabang
                         </span>
@@ -451,7 +451,7 @@ export const RBACManager: React.FC = () => {
                       </span>
                       <button
                         onClick={() => openEdit(user)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-all hover:border-indigo-200 hover:bg-accent-lighter hover:text-accent"
                         title="Edit hak akses staff"
                       >
                         <Sliders className="h-3 w-3" />
@@ -512,7 +512,7 @@ export const RBACManager: React.FC = () => {
                     type="text"
                     required
                     placeholder="Contoh: Andi Wijaya"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-xs outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-xs outline-none transition-all focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/10"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                   />
@@ -525,7 +525,7 @@ export const RBACManager: React.FC = () => {
                     type="email"
                     required
                     placeholder="andi@toko.com"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-xs outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-xs outline-none transition-all focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/10"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                   />
@@ -543,7 +543,7 @@ export const RBACManager: React.FC = () => {
                     </label>
                     <div className="relative">
                       <select
-                        className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 pr-8 text-xs outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10"
+                        className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 pr-8 text-xs outline-none transition-all focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/10"
                         value={newRole}
                         onChange={(e) => setNewRole(e.target.value as UserRole)}
                       >
@@ -573,7 +573,7 @@ export const RBACManager: React.FC = () => {
                           >
                             <input
                               type="checkbox"
-                              className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              className="h-3.5 w-3.5 rounded border-slate-300 text-accent focus:ring-accent"
                               checked={newBranchIds.includes(branch.id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
@@ -616,7 +616,7 @@ export const RBACManager: React.FC = () => {
                   className={`flex-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
                     isLimitReached
                       ? "cursor-not-allowed bg-slate-100 text-slate-400"
-                      : "bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 active:scale-[0.98]"
+                      : "bg-accent text-white shadow-sm hover:bg-accent-hover active:scale-[0.98]"
                   }`}
                 >
                   Simpan Staff
@@ -642,14 +642,14 @@ export const RBACManager: React.FC = () => {
                   <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">
                     Edit Hak Akses
                   </h3>
-                  <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+                  <span className="rounded-full bg-accent-lighter px-2 py-0.5 text-[10px] font-bold text-accent">
                     {editPerms.length} / {DEFAULT_ROLE_PERMISSIONS.SUPER_ADMIN?.length || 40} Aktif
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-slate-500">
                   <span className="font-semibold">{editingUser.name}</span>
                   <span>·</span>
-                  <span className="font-bold uppercase text-indigo-600">{editingUser.role.replace("_", " ")}</span>
+                  <span className="font-bold uppercase text-accent">{editingUser.role.replace("_", " ")}</span>
                 </div>
               </div>
               <button
@@ -678,7 +678,7 @@ export const RBACManager: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => toggleCatPermsForEdit(g.perms)}
-                        className="text-[9px] font-bold uppercase text-indigo-600 hover:text-indigo-800 hover:underline"
+                        className="text-[9px] font-bold uppercase text-accent hover:text-indigo-800 hover:underline"
                       >
                         {allSelected ? "Kosongkan" : "Pilih Semua"}
                       </button>
@@ -693,7 +693,7 @@ export const RBACManager: React.FC = () => {
                             onClick={() => toggleEditPerm(perm)}
                             className={`flex items-start justify-between gap-3 rounded-lg border p-2 text-left transition-all ${
                               on
-                                ? "border-indigo-200 bg-indigo-50/60 shadow-sm"
+                                ? "border-indigo-200 bg-accent-lighter/60 shadow-sm"
                                 : "border-slate-200 bg-white hover:border-slate-300"
                             }`}
                           >
@@ -708,7 +708,7 @@ export const RBACManager: React.FC = () => {
                             <span
                               className={`h-4 w-4 shrink-0 rounded-md border flex items-center justify-center transition-all ${
                                 on
-                                  ? "border-indigo-600 bg-indigo-600 text-white"
+                                  ? "border-accent bg-accent text-white"
                                   : "border-slate-300 bg-white"
                               }`}
                             >
@@ -733,7 +733,7 @@ export const RBACManager: React.FC = () => {
               </button>
               <button
                 onClick={saveEditPerms}
-                className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-[0.98]"
+                className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-accent-hover active:scale-[0.98]"
               >
                 Simpan Perubahan
               </button>

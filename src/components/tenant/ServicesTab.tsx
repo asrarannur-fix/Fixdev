@@ -155,7 +155,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const tenantObj = tenants.find((t: Tenant) => t.id === activeTenantId);
   const serviceTickets = services;
   const triggers = [] as any[];
-  const showTermsInTracking = true;
+
   const currentUserPermissions = useMemo(() => {
     if (currentUser?.role === UserRole.SUPER_ADMIN) {
       return ["admin_access"];

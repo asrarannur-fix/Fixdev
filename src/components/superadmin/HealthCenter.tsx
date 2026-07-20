@@ -34,7 +34,7 @@ export default function HealthCenter() {
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="health-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300"><Activity className="h-5 w-5" /></div>
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent-lighter text-accent dark:bg-indigo-950/30 dark:text-indigo-300"><Activity className="h-5 w-5" /></div>
           <div>
             <h3 id="health-heading" className="text-base font-extrabold text-slate-900 dark:text-white">Kesehatan Platform</h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400">Status berasal dari pemeriksaan runtime, bukan nilai statis.</p>

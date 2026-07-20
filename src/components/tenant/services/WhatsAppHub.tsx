@@ -78,7 +78,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3.5">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="font-bold text-[10px] text-indigo-700 uppercase font-mono tracking-wider flex items-center gap-1.5">
+        <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider flex items-center gap-1.5">
           <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Customer Communication Hub
         </h4>
         <span className="shrink-0 text-[9px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full">
@@ -89,7 +89,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
           <label className="block text-[10px] font-mono text-slate-400 uppercase">Pilih Template Pesan</label>
-          <select onChange={(event) => selectTemplate(event.target.value)} className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-indigo-500 font-medium">
+          <select onChange={(event) => selectTemplate(event.target.value)} className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent font-medium">
             <option value="intake">Tanda Terima Unit Baru</option>
             <option value="diagnose">Diagnosa & Estimasi Biaya</option>
             <option value="completed">Perbaikan Selesai</option>
@@ -98,7 +98,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
         </div>
         <div className="md:col-span-2 space-y-1">
           <label className="block text-[10px] font-mono text-slate-400 uppercase">Isi Pesan WhatsApp (Dapat Diedit Manual)</label>
-          <textarea rows={4} value={customWaMessageText || getDefaultMessage()} onChange={(event) => setCustomWaMessageText(event.target.value)} className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 font-medium leading-relaxed font-mono" />
+          <textarea rows={4} value={customWaMessageText || getDefaultMessage()} onChange={(event) => setCustomWaMessageText(event.target.value)} className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-accent font-medium leading-relaxed font-mono" />
         </div>
       </div>
 

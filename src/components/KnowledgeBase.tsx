@@ -256,7 +256,7 @@ export const KnowledgeBase: React.FC = () => {
           <BookOpen className="w-96 h-96" />
         </div>
         <div className="relative z-10 max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 border border-accent/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5 animate-pulse" />
             Pusat Pengetahuan & Asisten Diagnosis AI
           </div>
@@ -276,7 +276,7 @@ export const KnowledgeBase: React.FC = () => {
         <div className="xl:col-span-5 space-y-6">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+              <div className="p-2 bg-accent-lighter text-accent rounded-xl">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
@@ -299,7 +299,7 @@ export const KnowledgeBase: React.FC = () => {
                   value={deviceModel}
                   onChange={(e) => setDeviceModel(e.target.value)}
                   placeholder="Misal: iPhone 11 Pro, ASUS TUF FX506"
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 text-slate-800 placeholder-slate-400"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-accent text-slate-800 placeholder-slate-400"
                   required
                 />
               </div>
@@ -313,7 +313,7 @@ export const KnowledgeBase: React.FC = () => {
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
                   placeholder="Deskripsikan masalah (Contoh: Tidak bisa ngecas, arus di ammeter cuma 0.05A tidak naik, atau layar kedip-kedip hijau)"
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 text-slate-800 placeholder-slate-400 resize-none leading-relaxed"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-accent text-slate-800 placeholder-slate-400 resize-none leading-relaxed"
                   required
                 />
               </div>
@@ -321,7 +321,7 @@ export const KnowledgeBase: React.FC = () => {
               <button
                 type="submit"
                 disabled={isAnalyzing}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-100 cursor-pointer disabled:opacity-75"
+                className="w-full py-3 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-accent/10 cursor-pointer disabled:opacity-75"
               >
                 {isAnalyzing ? (
                   <>
@@ -426,7 +426,7 @@ export const KnowledgeBase: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
               <div>
                 <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-600" />
+                  <FileText className="w-5 h-5 text-accent" />
                   Perpustakaan Diagram Skema & Boardview
                 </h3>
                 <p className="text-[10px] text-slate-500 mt-0.5">
@@ -461,7 +461,7 @@ export const KnowledgeBase: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Cari berdasarkan model (misal: iPhone, MacBook, PS5...)"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs outline-none focus:border-indigo-500 text-slate-800 placeholder-slate-400"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs outline-none focus:border-accent text-slate-800 placeholder-slate-400"
               />
             </div>
 
@@ -471,7 +471,7 @@ export const KnowledgeBase: React.FC = () => {
                 filteredGuides.map((guide) => (
                   <div
                     key={guide.id}
-                    className="p-4 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-indigo-300 hover:shadow-sm transition-all"
+                    className="p-4 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-accent/50 hover:shadow-sm transition-all"
                   >
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
@@ -534,7 +534,7 @@ export const KnowledgeBase: React.FC = () => {
           {/* TIPS & TRIK TROUBLESHOOTING TERPOPULER */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
             <h4 className="font-extrabold text-sm text-slate-800 uppercase tracking-tight flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-              <HelpCircle className="w-5 h-5 text-indigo-600" />
+              <HelpCircle className="w-5 h-5 text-accent" />
               Prosedur Kerja & Tips Troubleshooting Cepat
             </h4>
 
@@ -542,19 +542,19 @@ export const KnowledgeBase: React.FC = () => {
               {TROUBLESHOOT_TIPS.map((tip, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 space-y-3 flex flex-col justify-between"
+                  className="p-4 rounded-2xl bg-accent-lighter/40 border border-indigo-100/50 space-y-3 flex flex-col justify-between"
                 >
                   <div className="space-y-1.5">
                     <h5 className="font-black text-xs text-indigo-950 leading-snug">
                       {tip.title}
                     </h5>
-                    <p className="text-[10px] text-slate-600 leading-relaxed italic border-l border-indigo-300 pl-2">
+                    <p className="text-[10px] text-slate-600 leading-relaxed italic border-l border-accent/50 pl-2">
                       {tip.cause}
                     </p>
                   </div>
 
                   <div className="pt-2 border-t border-indigo-100/50 space-y-1">
-                    <span className="text-[8px] font-black uppercase text-indigo-700 tracking-wider block">
+                    <span className="text-[8px] font-black uppercase text-accent tracking-wider block">
                       Langkah Penting:
                     </span>
                     <ul className="space-y-1">

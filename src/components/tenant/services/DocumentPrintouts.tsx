@@ -10,7 +10,8 @@ import {
   Share2,
 } from "lucide-react";
 import { ServiceTicket, Customer, Employee, User, TenantSettings } from "../../../types";
-import { getPaperWidthStyle } from "../../../utils/print";
+import { escapeHtml, getPaperWidthStyle } from "../../../utils/print";
+import { printJob, printJobAsync } from "../../../utils/printJob";
 
 type PrintConfig = NonNullable<TenantSettings["printConfig"]>;
 
@@ -90,32 +91,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
       showToast("Nota penerimaan belum siap dicetak.", "error");
       return;
     }
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    iframe.setAttribute("aria-hidden", "true");
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument;
-    if (!doc) {
-      iframe.remove();
-      showToast("Gagal menyiapkan dokumen cetak.", "error");
-      return;
-    }
-    doc.open();
-    doc.write(`<!doctype html><html><head><title>Nota Penerimaan</title><style>
-      ${getPrintCss(printConfig)}
-      body { margin: 0; }
-      .reception-print { width: ${getPaperWidthStyle(printConfig)}; max-width: 100%; margin: 0 auto; }
-      button { display: none !important; }
-    </style></head><body><main class="reception-print">${source.innerHTML}</main></body></html>`);
-    doc.close();
-    window.setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      window.setTimeout(() => iframe.remove(), 1000);
-    }, 100);
+    void printJob({ title: "Nota Penerimaan", html: source.innerHTML, printConfig }).then((result) => {
+      if (!result.ok) showToast(result.error || "Gagal menyiapkan dokumen cetak.", "error");
+    });
   };
 
   return (
@@ -139,7 +117,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     {/* Close button */}
                     <button
                       onClick={() => setShowSpkPrintout(null)}
-                      className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer no-print"
+                      className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer no-print"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -147,7 +125,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     {/* Print button */}
                     <button
                       onClick={() => printReceptionTicket(ticket.id)}
-                      className="absolute top-4 right-12 p-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full cursor-pointer no-print"
+                      className="absolute top-4 right-12 p-2 bg-accent hover:bg-accent-hover text-white rounded-full cursor-pointer no-print"
                     >
                       <Printer className="w-5 h-5" />
                     </button>
@@ -177,7 +155,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       <p className="text-slate-400 uppercase">
                         NOMOR SPK / TIKET:
                       </p>
-                      <p className="font-bold text-indigo-600">
+                      <p className="font-bold text-accent">
                         {ticket.ticketNo}
                       </p>
                     </div>
@@ -222,7 +200,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         <strong className="font-semibold text-slate-500">
                           Kunci Layar:
                         </strong>{" "}
-                        <span className="font-mono font-bold text-indigo-700">
+                        <span className="font-mono font-bold text-accent">
                           {ticket.screenLockPin ? "••••••" : "Tidak Ada"}
                         </span>
                       </p>
@@ -248,7 +226,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       <strong className="font-semibold text-slate-500">
                         Tipe Perangkat:
                       </strong>{" "}
-                      <span className="font-bold text-indigo-700">
+                      <span className="font-bold text-accent">
                         {ticket.deviceName}
                       </span>
                     </p>
@@ -304,14 +282,16 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       </p>
                     )}
 
-                    <p>
-                      <strong className="font-semibold text-slate-500">
-                        Keluhan / Kerusakan:
-                      </strong>{" "}
-                      <span className="text-slate-700 italic border border-slate-200 bg-slate-50 px-2 py-1 rounded font-medium block mt-1 leading-relaxed">
-                        {ticket.customerComplaints || "-"}
-                      </span>
-                    </p>
+                    {printConfig?.printCustomerNotes !== false && (
+                      <p>
+                        <strong className="font-semibold text-slate-500">
+                          Keluhan / Kerusakan:
+                        </strong>{" "}
+                        <span className="text-slate-700 italic border border-slate-200 bg-slate-50 px-2 py-1 rounded font-medium block mt-1 leading-relaxed">
+                          {ticket.customerComplaints || "-"}
+                        </span>
+                      </p>
+                    )}
                   </div>
 
                   {/* Barcode Block */}
@@ -390,7 +370,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                 {/* Close button */}
                 <button
                   onClick={() => setShowInvoicePrintout(null)}
-                  className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -398,7 +378,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                 {/* Receipt Layout */}
                 <div className="border border-dashed border-slate-300 p-4 rounded-xl space-y-3.5 bg-slate-50/50">
                   {/* Warranty Period details */}
-                  <div className="bg-indigo-50 border border-indigo-100 p-2.5 rounded-lg text-[8.5px] text-indigo-700 text-center">
+                  <div className="bg-accent-lighter border border-indigo-100 p-2.5 rounded-lg text-[8.5px] text-accent text-center">
                     <p className="font-bold">
                       GARANSI PROTEKSI REPAIR HUB TERJAMIN
                     </p>
@@ -473,7 +453,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         <body>
                           <div class="header">
                              ${printConfig?.printHeaderLogo ? '<img src="/logo.png" alt="logo" style="height: 40px; margin-bottom: 10px;"/>' : ""}
-                            <h4>${printConfig?.customHeaderTitle || "NOTA PELUNASAN / INVOICE SERVIS"}</h4>
+                            <h4>${escapeHtml(printConfig?.customHeaderTitle || "NOTA PELUNASAN / INVOICE SERVIS")}</h4>
                             <p>REPAIR SHOP SYSTEM - COMPLETED WORK ORDER</p>
                           </div>
                           <div class="meta">
@@ -520,8 +500,8 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                 }
                                 ${chargeableMicroUsages.map((usage) => `
                                   <tr>
-                                    <td style="color: #4f46e5; padding-left: 8px;">- ${usage.name} (x${usage.quantity})</td>
-                                    <td style="text-align: right; font-family: monospace; color: #4f46e5;">Rp ${usage.chargeTotal.toLocaleString()}</td>
+                                    <td style="color: var(--accent); padding-left: 8px;">- ${usage.name} (x${usage.quantity})</td>
+                                    <td style="text-align: right; font-family: monospace; color: var(--accent);">Rp ${usage.chargeTotal.toLocaleString()}</td>
                                   </tr>
                                 `).join("")}
                               </tbody>
@@ -569,17 +549,16 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       </html>
                     `);
                       printDoc.close();
-                      setTimeout(() => {
-                        const pIframe = document.getElementById(
-                          "hidden-print-iframe",
-                        ) as HTMLIFrameElement;
-                        if (pIframe && pIframe.contentWindow) {
-                          pIframe.contentWindow.focus();
-                          pIframe.contentWindow.print();
-                        }
-                      }, 500);
+                      window.setTimeout(async () => {
+                        const result = await printJobAsync({
+                          title: "Service Document",
+                          html: printDoc.body?.innerHTML || "",
+                          printConfig,
+                        });
+                        if (!result.ok) showToast(result.error || "Gagal mencetak dokumen.", "error");
+                      }, 100);
                     }}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 rounded-xl cursor-pointer text-center shadow-md shadow-indigo-500/10 flex items-center justify-center gap-1"
+                    className="flex-1 bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-xl cursor-pointer text-center shadow-md shadow-accent/10 flex items-center justify-center gap-1"
                   >
                     <Printer className="w-4 h-4" /> Cetak Struk Nota
                   </button>
@@ -613,7 +592,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                 {/* Close button */}
                 <button
                   onClick={() => setShowProvisionalQuote(null)}
-                  className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -800,7 +779,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         <body>
                           <div class="header">
                             ${printConfig?.printHeaderLogo ? '<img src="/logo.png" alt="logo" style="height: 40px; margin-bottom: 10px;"/>' : ""}
-                            <h4>${printConfig?.customHeaderTitle || "SURAT PENAWARAN BIAYA REPARASI"}</h4>
+                            <h4>${escapeHtml(printConfig?.customHeaderTitle || "SURAT PENAWARAN BIAYA REPARASI")}</h4>
                             <p>ESTIMASI BIAYA SEMENTARA / QUOTE REQUEST</p>
                           </div>
                           <div class="meta">
@@ -902,15 +881,14 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       </html>
                     `);
                       printDoc.close();
-                      setTimeout(() => {
-                        const pIframe = document.getElementById(
-                          "hidden-print-iframe",
-                        ) as HTMLIFrameElement;
-                        if (pIframe && pIframe.contentWindow) {
-                          pIframe.contentWindow.focus();
-                          pIframe.contentWindow.print();
-                        }
-                      }, 500);
+                      window.setTimeout(async () => {
+                        const result = await printJobAsync({
+                          title: "Service Document",
+                          html: printDoc.body?.innerHTML || "",
+                          printConfig,
+                        });
+                        if (!result.ok) showToast(result.error || "Gagal mencetak dokumen.", "error");
+                      }, 100);
                     }}
                     className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded-xl cursor-pointer text-center shadow-md flex items-center justify-center gap-1"
                   >
@@ -925,7 +903,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         "success",
                       );
                     }}
-                    className="flex-1 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs py-2 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1"
+                    className="flex-1 border border-indigo-200 bg-accent-lighter hover:bg-indigo-100 text-accent font-bold text-xs py-2 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1"
                   >
                     <Share2 className="w-4 h-4" /> Salin Link Portal
                   </button>
@@ -960,20 +938,20 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                 {/* Close button */}
                 <button
                   onClick={() => setShowWarrantyPrintout(null)}
-                  className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
 
                 {/* Header with Shield Icon */}
                 <div className="text-center space-y-1.5">
-                  <div className="mx-auto w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 border border-indigo-100 shadow-xs">
+                  <div className="mx-auto w-12 h-12 bg-accent-lighter rounded-full flex items-center justify-center text-accent border border-indigo-100 shadow-xs">
                     <ShieldCheck className="w-6 h-6" />
                   </div>
                   <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">
                     KARTU GARANSI DIGITAL
                   </h4>
-                  <p className="text-[9px] text-indigo-600 font-mono font-bold uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full inline-block">
+                  <p className="text-[9px] text-accent font-mono font-bold uppercase tracking-widest bg-accent-lighter px-2 py-0.5 rounded-full inline-block">
                     REPAIR HUB VERIFIED
                   </p>
                 </div>
@@ -1123,7 +1101,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                               ${getPrintCss(printConfig)}
                               .header { text-align: center; margin-bottom: 20px; }
                               .header h4 { margin: 0; font-size: 15px; font-weight: 800; color: #000; letter-spacing: 1px; }
-                              .header p { margin: 3px 0; color: #4f46e5; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+                              .header p { margin: 3px 0; color: var(--accent); font-size: 10px; font-weight: bold; letter-spacing: 1px; }
                               .card { background: linear-gradient(135deg, #1e1b4b, #0f172a); color: #ffffff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid #312e81; }
                               .card-title { font-size: 9px; font-family: monospace; color: #a5b4fc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
                               .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
@@ -1138,7 +1116,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                           <body>
                             <div class="header">
                               ${printConfig?.printHeaderLogo ? '<img src="/logo.png" alt="logo" style="height: 40px; margin-bottom: 10px;"/>' : ""}
-                              <h4>${printConfig?.customHeaderTitle || "KARTU GARANSI DIGITAL"}</h4>
+                              <h4>${escapeHtml(printConfig?.customHeaderTitle || "KARTU GARANSI DIGITAL")}</h4>
                               <p>REPAIR HUB VERIFIED WARRANTY</p>
                             </div>
                              <div class="card">
@@ -1178,7 +1156,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                   printConfig.termsAndConditionsText
                                     ? printConfig.termsAndConditionsText
                                         .split("\n")
-                                        .map((line: string) => `<li>${line}</li>`)
+                                        .map((line: string) => `<li>${escapeHtml(line)}</li>`)
                                         .join("")
                                     : `<li>Segel garansi fisik pada perangkat <strong>wajib utuh</strong> (tidak rusak/robek).</li>
                                 <li>Garansi hanya mencakup suku cadang yang diganti pada pengerjaan ini.</li>
@@ -1203,17 +1181,16 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         </html>
                       `);
                         printDoc.close();
-                        setTimeout(() => {
-                          const pIframe = document.getElementById(
-                            "hidden-print-iframe",
-                          ) as HTMLIFrameElement;
-                          if (pIframe && pIframe.contentWindow) {
-                            pIframe.contentWindow.focus();
-                            pIframe.contentWindow.print();
-                          }
-                        }, 500);
+                        window.setTimeout(async () => {
+                          const result = await printJobAsync({
+                            title: "Warranty Card",
+                            html: printDoc.body?.innerHTML || "",
+                            printConfig,
+                          });
+                          if (!result.ok) showToast(result.error || "Gagal mencetak kartu garansi.", "error");
+                        }, 100);
                       }}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-2 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1 flex-1"
+                      className="bg-accent hover:bg-accent-hover text-white font-semibold text-xs py-2 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1 flex-1"
                     >
                       <Printer className="w-3.5 h-3.5" /> Cetak Kartu
                     </button>

@@ -137,7 +137,7 @@ export const AttendanceLogPanel: React.FC<any> = (props) => {
                                             );
                                           }
                                         }}
-                                        className="text-indigo-600 hover:text-indigo-800 p-1 hover:bg-indigo-50 rounded-md transition-all cursor-pointer"
+                                        className="text-accent hover:text-indigo-800 p-1 hover:bg-accent-lighter rounded-md transition-all cursor-pointer"
                                         title="Ubah Gaji Pokok"
                                       >
                                         ✏️

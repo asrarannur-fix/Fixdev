@@ -41,8 +41,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center">
-            <Keyboard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-10 h-10 rounded-2xl bg-accent-lighter dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center">
+            <Keyboard className="w-5 h-5 text-accent dark:text-accent" />
           </div>
           <h4 className="text-sm font-black text-slate-900 dark:text-white">
             Pintasan Keyboard

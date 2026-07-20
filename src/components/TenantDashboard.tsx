@@ -5,6 +5,7 @@ import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { PaymentMethod } from "../types";
 import { usePrintConfig } from "../hooks/usePrintConfig";
+import { printFrame } from "../utils/printJob";
 import {
   getPrintBaseCss,
   getPrintHeaderHtml,
@@ -63,7 +64,7 @@ interface TenantDashboardProps {
 
 const LoadingFallback = () => (
   <div className="flex flex-col items-center justify-center p-12 space-y-3">
-    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
     <p className="text-xs font-mono text-slate-400">Memuat Modul ERP...</p>
   </div>
 );
@@ -189,8 +190,8 @@ export const TenantDashboard = ({
       </body></html>
     `);
     win.document.close();
-    win.print();
-  }, [branches, currentBranchId, customers, showToast]);
+    printFrame({ contentWindow: win } as unknown as HTMLIFrameElement, printConfig, "POS Receipt");
+  }, [branches, currentBranchId, customers, printConfig, showToast]);
 
   // Auto-send WhatsApp notification on stock shortage events
   React.useEffect(() => {
@@ -357,7 +358,7 @@ export const TenantDashboard = ({
       {/* Floating Technician Button */}
       <button
         onClick={() => setShowTechnicianModal(true)}
-        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer"
+        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 bg-accent hover:bg-accent-hover text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer"
         title="Dashboard Teknisi"
       >
         <Wrench className="w-5 h-5" />

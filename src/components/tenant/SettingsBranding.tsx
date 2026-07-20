@@ -18,7 +18,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
     <div className="xl:col-span-6 space-y-6">
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+          <div className="p-1.5 bg-accent-lighter text-accent rounded-lg">
             <Sparkles className="w-4 h-4 animate-pulse" />
           </div>
           <div>
@@ -33,7 +33,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
       {/* 4. Portal Branding & Custom Domain */}
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+          <div className="p-1.5 bg-accent-lighter text-accent rounded-lg">
             <Globe className="w-4 h-4" />
           </div>
           <div>
@@ -158,7 +158,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
                 <span className="block text-[8px] text-slate-400 font-sans font-bold uppercase">
                   Nilai / Target Tujuan
                 </span>
-                <span className="font-bold text-indigo-700">
+                <span className="font-bold text-accent">
                   lb.fixdev.my.id
                 </span>
               </div>
@@ -182,7 +182,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
               showToast(error?.message || "Kustomisasi branding gagal disimpan.", "error");
             }
           }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-sm"
+          className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-sm"
         >
           <CheckSquare className="w-4 h-4" />
           Terapkan & Simpan Seluruh Identitas
@@ -224,7 +224,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
                   onClick={() => setBrandingPreviewTab(tab.id)}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
                     brandingPreviewTab === tab.id
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-accent text-white"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -300,7 +300,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
 
               <div className="border-t border-slate-100 pt-3 text-[8px] text-slate-400">
                 Domain Terverifikasi:{" "}
-                <span className="font-mono text-indigo-600 font-bold underline">
+                <span className="font-mono text-accent font-bold underline">
                   {branding.customDomain}
                 </span>
               </div>

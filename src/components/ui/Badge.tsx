@@ -17,7 +17,7 @@ export const Badge: React.FC<BadgeProps> = ({
 
   const variants = {
     primary:
-      "bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/40",
+      "bg-accent-lighter text-accent border-indigo-100 dark:bg-indigo-950/40 dark:text-accent dark:border-indigo-900/40",
     secondary:
       "bg-slate-100 text-slate-700 border-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
     danger:

@@ -164,8 +164,8 @@ export const OPERATIONAL_MODULES: NavModule[] = [
     label: "Keamanan",
     desc: "Audit & Proteksi",
     icon: ShieldCheck,
-    iconColor: "text-indigo-500",
-    activeBg: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    iconColor: "text-violet-500",
+    activeBg: "bg-violet-50 text-violet-600 border-violet-100",
     subtabs: [
       { id: "audit-log", label: "Audit", icon: ShieldCheck },
       { id: "fraud-alert", label: "Proteksi", icon: AlertTriangle },

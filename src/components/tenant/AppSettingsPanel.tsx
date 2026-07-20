@@ -210,18 +210,18 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
         <div className="space-y-4">
           <Section title="Pengaturan Umum" icon={Settings}>
             <div className="space-y-1"><Label text="Nama Aplikasi" />
-              <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+              <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1"><Label text="Zona Waktu" />
-                <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-white">
+                <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent bg-white">
                   <option value="Asia/Jakarta">WIB (GMT+7)</option>
                   <option value="Asia/Makassar">WITA (GMT+8)</option>
                   <option value="Asia/Jayapura">WIT (GMT+9)</option>
                 </select>
               </div>
               <div className="space-y-1"><Label text="Format Tanggal" />
-                <select value={dateFormat} onChange={(e) => setDateFormat(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-white">
+                <select value={dateFormat} onChange={(e) => setDateFormat(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent bg-white">
                   <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                   <option value="YYYY-MM-DD">YYYY-MM-DD</option>
@@ -229,7 +229,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
               </div>
             </div>
             <div className="space-y-1"><Label text="Bahasa UI" />
-              <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-white">
+              <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent bg-white">
                 <option value="id">Bahasa Indonesia</option>
                 <option value="en">English</option>
               </select>
@@ -264,21 +264,21 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
         <Section title="Email & Push Notification" icon={Mail}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1"><Label text="SMTP Host" />
-              <input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+              <input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1"><Label text="SMTP Port" />
-              <input type="number" value={smtpPort} onChange={(e) => setSmtpPort(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+              <input type="number" value={smtpPort} onChange={(e) => setSmtpPort(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1"><Label text="SMTP User" />
-              <input type="text" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+              <input type="text" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1"><Label text="SMTP Password" />
-              <input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+              <input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
               <p className="text-[9px] text-slate-400">Password disembunyikan demi keamanan.</p>
             </div>
           </div>
           <div className="space-y-1"><Label text="Default From Email" />
-            <input type="email" value={defaultFrom} onChange={(e) => setDefaultFrom(e.target.value)} placeholder="noreply@fixdev.com" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+            <input type="email" value={defaultFrom} onChange={(e) => setDefaultFrom(e.target.value)} placeholder="noreply@fixdev.com" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
           </div>
           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] font-bold text-slate-600 uppercase">Push Notification Aktif</span><Toggle val={enablePush} onToggle={() => toggle(enablePush, setEnablePush)} /></div>
           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] font-bold text-slate-600 uppercase">Realtime Notification</span><Toggle val={enableRealtime} onToggle={() => toggle(enableRealtime, setEnableRealtime)} /></div>
@@ -288,18 +288,18 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
         <Section title="Storage & File Upload" icon={Upload}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1"><Label text="Ukuran Upload Maks (MB)" />
-              <input type="number" min={1} max={100} value={maxUploadMb} onChange={(e) => setMaxUploadMb(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+              <input type="number" min={1} max={100} value={maxUploadMb} onChange={(e) => setMaxUploadMb(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1"><Label text="Retensi File (Hari)" />
-              <input type="number" min={30} max={3650} value={retentionDays} onChange={(e) => setRetentionDays(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+              <input type="number" min={30} max={3650} value={retentionDays} onChange={(e) => setRetentionDays(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
             </div>
           </div>
           <div className="space-y-1"><Label text="File Types yang Diizinkan" />
-            <input type="text" value={allowedTypes} onChange={(e) => setAllowedTypes(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500" />
+            <input type="text" value={allowedTypes} onChange={(e) => setAllowedTypes(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
             <p className="text-[9px] text-slate-400">Pisahkan dengan koma. Contoh: .jpg,.png,.pdf,.xlsx</p>
           </div>
           <div className="space-y-1"><Label text="Visibilitas File" />
-            <select value={fileVisibility} onChange={(e) => setFileVisibility(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-white">
+            <select value={fileVisibility} onChange={(e) => setFileVisibility(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent bg-white">
               <option value="private">Private (Hanya Akses Authorized)</option>
               <option value="public">Public (Bisa Diakses Semua)</option>
             </select>
@@ -344,7 +344,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <Settings className="w-4 h-4 text-indigo-600" /> Pengaturan Aplikasi & Tampilan
+            <Settings className="w-4 h-4 text-accent" /> Pengaturan Aplikasi & Tampilan
           </h3>
           <p className="text-[10px] text-slate-500 mt-1">Umum, Customer Portal, Email, Storage, dan Tema tampilan.</p>
         </div>
@@ -381,7 +381,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
                   onClick={() => setActiveSection(sec.id)}
                   className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all border ${
                     activeSection === sec.id
-                      ? "border-indigo-300 bg-indigo-500/10 text-indigo-900"
+                      ? "border-accent/50 bg-indigo-500/10 text-indigo-900"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-100"
                   }`}
                 >

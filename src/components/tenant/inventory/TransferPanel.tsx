@@ -311,7 +311,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                       <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-850 dark:border-slate-800 flex items-center justify-between">
                         <div>
                           <h3 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                            <Truck className="w-4 h-4 text-indigo-600" />{" "}
+                            <Truck className="w-4 h-4 text-accent" />{" "}
                             Permintaan Transfer Multi-Barang Antar Cabang
                           </h3>
                           <p className="text-[10px] text-slate-400 mt-0.5">
@@ -402,7 +402,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                     ]);
                                   }
                                 }}
-                                className="px-2.5 py-1.5 border border-indigo-200 text-indigo-600 rounded-lg font-bold hover:bg-indigo-50 transition flex items-center gap-1 cursor-pointer dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
+                                className="px-2.5 py-1.5 border border-indigo-200 text-accent rounded-lg font-bold hover:bg-accent-lighter transition flex items-center gap-1 cursor-pointer dark:border-indigo-800 dark:text-accent dark:hover:bg-indigo-950/30"
                               >
                                 <Plus className="w-3.5 h-3.5" /> Tambah Baris
                                 Manual
@@ -606,7 +606,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                               bulkTrfItems.length === 0 ||
                               !isAllStockValid
                                 ? "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed"
-                                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                : "bg-accent hover:bg-accent-hover text-white"
                             }`}
                           >
                             <Truck className="w-4 h-4" /> Kirim Pengajuan
@@ -645,7 +645,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                         </label>
                         <textarea
                           rows={6}
-                          className="w-full p-3 font-mono text-[11px] bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                          className="w-full p-3 font-mono text-[11px] bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-accent/50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                           placeholder={`prod-lcd, 2\nprod-ssd, 4`}
                           value={bulkInputText}
                           onChange={(e) => setBulkInputText(e.target.value)}
@@ -746,7 +746,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                           <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition z-15 ${
                               activeTransfer.status === "REQUEST_CREATED"
-                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md ring-4 ring-indigo-100 dark:ring-indigo-950"
+                                ? "bg-accent border-accent text-white shadow-md ring-4 ring-indigo-100 dark:ring-indigo-950"
                                 : "bg-emerald-500 border-emerald-500 text-white"
                             }`}
                           >
@@ -771,7 +771,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                           <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition z-15 ${
                               activeTransfer.status === "PACKED"
-                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md ring-4 ring-indigo-100 dark:ring-indigo-950"
+                                ? "bg-accent border-accent text-white shadow-md ring-4 ring-indigo-100 dark:ring-indigo-950"
                                 : ["SHIPPED", "RECEIVED"].includes(
                                       activeTransfer.status,
                                     )
@@ -806,7 +806,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                           <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition z-15 ${
                               activeTransfer.status === "SHIPPED"
-                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md ring-4 ring-indigo-100 dark:ring-indigo-950"
+                                ? "bg-accent border-accent text-white shadow-md ring-4 ring-indigo-100 dark:ring-indigo-950"
                                 : activeTransfer.status === "RECEIVED"
                                   ? "bg-emerald-500 border-emerald-500 text-white"
                                   : "bg-white border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800"
@@ -920,7 +920,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                     );
                                     setTrfStatusNote("");
                                   }}
-                                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase rounded-lg cursor-pointer transition shadow-xs"
+                                  className="px-3.5 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-[10px] uppercase rounded-lg cursor-pointer transition shadow-xs"
                                 >
                                   Kemas (Mark Packed)
                                 </button>
@@ -952,7 +952,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                   );
                                   setTrfStatusNote("");
                                 }}
-                                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase rounded-lg cursor-pointer transition shadow-xs"
+                                className="px-3.5 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-[10px] uppercase rounded-lg cursor-pointer transition shadow-xs"
                               >
                                 Berangkatkan Driver (Ship)
                               </button>
@@ -994,7 +994,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                   <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-850 dark:border-slate-800 flex items-center justify-between">
                     <div>
                       <h3 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                        <History className="w-4 h-4 text-indigo-600" /> Buku
+                        <History className="w-4 h-4 text-accent" /> Buku
                         Besar & Ledger Mutasi Antar Cabang
                       </h3>
                       <p className="text-[10px] text-slate-400 mt-0.5">
@@ -1047,7 +1047,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                 key={t.id}
                                 className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/20 cursor-pointer ${
                                   selectedTrfIdForStepper === t.id
-                                    ? "bg-indigo-50/30 dark:bg-indigo-950/10"
+                                    ? "bg-accent-lighter/30 dark:bg-indigo-950/10"
                                     : ""
                                 }`}
                                 onClick={() => {
@@ -1098,7 +1098,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                     onClick={() => {
                                       setSelectedTrfIdForStepper(t.id);
                                     }}
-                                    className="px-2 py-1 text-[10px] uppercase tracking-wide bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg cursor-pointer transition border border-indigo-150 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900"
+                                    className="px-2 py-1 text-[10px] uppercase tracking-wide bg-accent-lighter hover:bg-indigo-100 text-accent font-bold rounded-lg cursor-pointer transition border border-indigo-150 dark:bg-indigo-950/40 dark:text-accent dark:border-indigo-900"
                                   >
                                     Lacak / Atur
                                   </button>
@@ -1183,7 +1183,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                       </div>
                                       <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden dark:bg-slate-800">
                                         <div
-                                          className="bg-indigo-500 h-full rounded-full transition-all duration-300"
+                                          className="bg-accent h-full rounded-full transition-all duration-300"
                                           style={{ width: `${pct}%` }}
                                         ></div>
                                       </div>
@@ -1199,7 +1199,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
 
                   <div className="bg-white border border-slate-200 rounded-xl shadow-xs p-5 space-y-4 dark:bg-slate-900 dark:border-slate-800">
                     <h4 className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider flex items-center gap-1">
-                      <Truck className="w-4 h-4 text-indigo-600" /> Catatan Alur
+                      <Truck className="w-4 h-4 text-accent" /> Catatan Alur
                       & Kebijakan Transfer
                     </h4>
                     <div className="space-y-3.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">

@@ -100,14 +100,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               onClick={() => onSetTab(modId)}
               className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 rounded-xl transition-all cursor-pointer ${
                 isActive
-                  ? "text-indigo-600 dark:text-indigo-400"
+                  ? "text-accent dark:text-accent"
                   : "text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300"
               }`}
             >
               <div
                 className={`p-1.5 rounded-lg transition-all ${
                   isActive
-                    ? "bg-indigo-50 dark:bg-indigo-950/40"
+                    ? "bg-accent-lighter dark:bg-indigo-950/40"
                     : ""
                 }`}
               >

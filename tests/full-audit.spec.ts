@@ -1,15 +1,17 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loginTenant, TEST_TENANT_EMAIL, TEST_TENANT_PASSWORD } from "./tenant-login-helper";
+import { loginAsOwner } from "./new-login-helper"; // Menggunakan helper baru
 
 const TID = "4e94a9c7-7670-4303-8dc8-e3a2b45accb6";
 
-async function login(page: Page) {
-  return loginTenant(page);
-}
+// Fungsi login ini tidak diperlukan lagi, kita langsung panggil loginAsOwner
+// async function login(page: Page) {
+//   return loginTenant(page);
+// }
 
 test.describe("Full System E2E", () => {
   test("Edit Stock per Warehouse + POS Flow", async ({ page }) => {
-    const ok = await login(page);
+    // Memanggil fungsi login baru
+    const ok = await loginAsOwner(page);
     expect(ok, "Dashboard must load").toBe(true);
 
     // 1. Navigate to inventory

@@ -218,7 +218,7 @@ export const TradeInCalculator: React.FC = () => {
               <select
                 value={selectedCustId}
                 onChange={(e) => setSelectedCustId(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-semibold text-slate-700 dark:text-zinc-300"
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-semibold text-slate-700 dark:text-zinc-300"
               >
                 {scopedCustomers.length === 0 ? (
                   <option value="">-- Belum ada pelanggan --</option>
@@ -243,7 +243,7 @@ export const TradeInCalculator: React.FC = () => {
                   placeholder="Cth: iPhone 13 Pro Max 256GB"
                   value={deviceModel}
                   onChange={(e) => setDeviceModel(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-semibold bg-white dark:bg-zinc-950 dark:text-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-semibold bg-white dark:bg-zinc-950 dark:text-white"
                 />
               </div>
               <div>
@@ -255,7 +255,7 @@ export const TradeInCalculator: React.FC = () => {
                   placeholder="Cth: Apple"
                   value={deviceBrand}
                   onChange={(e) => setDeviceBrand(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-medium bg-white dark:bg-zinc-950 dark:text-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-medium bg-white dark:bg-zinc-950 dark:text-white"
                 />
               </div>
               <div>
@@ -267,7 +267,7 @@ export const TradeInCalculator: React.FC = () => {
                   placeholder="Cth: IMEI-938210392"
                   value={deviceSerial}
                   onChange={(e) => setDeviceSerial(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-mono text-[10px] bg-white dark:bg-zinc-950 dark:text-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-mono text-[10px] bg-white dark:bg-zinc-950 dark:text-white"
                 />
               </div>
             </div>
@@ -285,7 +285,7 @@ export const TradeInCalculator: React.FC = () => {
                   placeholder="6500000"
                   value={baseValue}
                   onChange={(e) => setBaseValue(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-mono font-bold text-slate-800 dark:text-zinc-200 bg-white dark:bg-zinc-950"
+                  className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-mono font-bold text-slate-800 dark:text-zinc-200 bg-white dark:bg-zinc-950"
                 />
               </div>
               <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1">

@@ -109,7 +109,7 @@ export const InfrastructureConfigModal: React.FC<
                 type="text"
                 value={configName}
                 onChange={(e) => setConfigName(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-blue-500 font-bold"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-accent font-bold"
                 placeholder="Nama Perusahaan"
               />
             </div>
@@ -190,7 +190,7 @@ export const InfrastructureConfigModal: React.FC<
                   type="text"
                   value={configSubdomain}
                   onChange={(e) => setConfigSubdomain(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none font-mono text-xs focus:border-blue-500"
+                  className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none font-mono text-xs focus:border-accent"
                   placeholder="slug-identitas"
                 />
               </div>
@@ -207,7 +207,7 @@ export const InfrastructureConfigModal: React.FC<
                     type="text"
                     value={configCustomDomain}
                     onChange={(e) => setConfigCustomDomain(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-blue-500 font-mono"
+                    className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-accent font-mono"
                     placeholder="cth: repair.tokosaya.id"
                   />
                 </div>
@@ -297,7 +297,7 @@ export const InfrastructureConfigModal: React.FC<
                   onChange={(e) =>
                     setConfigStorageLimitMb(parseInt(e.target.value) || 0)
                   }
-                  className="flex-1 px-3 py-2 border border-r-0 border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-l-xl outline-none text-xs focus:border-blue-500 font-mono"
+                  className="flex-1 px-3 py-2 border border-r-0 border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-l-xl outline-none text-xs focus:border-accent font-mono"
                 />
                 <span className="px-3 py-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-slate-400 rounded-r-xl font-mono text-xs">
                   MB
@@ -322,7 +322,7 @@ export const InfrastructureConfigModal: React.FC<
                   onChange={(e) =>
                     setConfigUserLimit(parseInt(e.target.value) || 1)
                   }
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-blue-500 font-mono"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-accent font-mono"
                   min="1"
                 />
                 <p className="text-[9px] text-slate-400 mt-0.5">
@@ -339,7 +339,7 @@ export const InfrastructureConfigModal: React.FC<
                   onChange={(e) =>
                     setConfigBranchLimit(parseInt(e.target.value) || 1)
                   }
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-blue-500 font-mono"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-accent font-mono"
                   min="1"
                 />
                 <p className="text-[9px] text-slate-400 mt-0.5">

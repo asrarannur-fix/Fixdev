@@ -927,7 +927,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                               type="button"
                               onClick={handleGetCoordinates}
                               disabled={gpsLoading}
-                              className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-zinc-800 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-100 dark:border-zinc-750 shrink-0 cursor-pointer"
+                              className="px-2.5 py-1.5 bg-accent-lighter text-accent hover:bg-indigo-100 dark:bg-zinc-800 dark:text-accent text-xs font-bold rounded-lg border border-indigo-100 dark:border-zinc-750 shrink-0 cursor-pointer"
                             >
                               {gpsLoading ? "Mencari..." : "Dapatkan GPS"}
                             </button>
@@ -1069,7 +1069,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                           className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 p-3 rounded-xl space-y-1.5"
                         >
                           <div className="flex justify-between items-center">
-                            <span className="font-mono text-[9px] font-extrabold text-indigo-600 truncate max-w-[120px]">
+                            <span className="font-mono text-[9px] font-extrabold text-accent truncate max-w-[120px]">
                               {store.name}
                             </span>
                             <span className="bg-slate-100 dark:bg-zinc-800 text-[9px] px-1.5 rounded font-mono font-bold">
@@ -1222,7 +1222,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                             "success",
                           )
                         }
-                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] rounded-lg cursor-pointer"
+                        className="px-3 py-1 bg-accent hover:bg-accent-hover text-white font-extrabold text-[10px] rounded-lg cursor-pointer"
                       >
                         Paksa Update SW
                       </button>

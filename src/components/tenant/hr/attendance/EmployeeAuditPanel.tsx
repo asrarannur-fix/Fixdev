@@ -141,7 +141,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                       {/* Header Section */}
                       <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl">
+                          <div className="h-12 w-12 rounded-2xl bg-accent-lighter dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-center text-accent dark:text-accent font-black text-xl">
                             {targetEmp.name.charAt(0)}
                           </div>
                           <div>
@@ -198,7 +198,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                             onClick={() => setEmployeeAuditTab(t.id as any)}
                             className={`px-4 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer ${
                               employeeAuditTab === t.id
-                                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 border-indigo-550"
+                                ? "border-accent text-accent dark:text-accent border-indigo-550"
                                 : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
                             }`}
                           >
@@ -323,7 +323,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   </div>
                                   <div className="w-full bg-slate-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                                     <div
-                                      className="bg-indigo-500 h-full rounded-full transition-all"
+                                      className="bg-accent h-full rounded-full transition-all"
                                       style={{ width: `${punctualityRate}%` }}
                                     />
                                   </div>
@@ -332,7 +332,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                             </div>
 
                             {/* Audit Notes & Warnings */}
-                            <div className="p-4 bg-indigo-50/30 dark:bg-indigo-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 text-xs leading-relaxed text-indigo-800 dark:text-indigo-400">
+                            <div className="p-4 bg-accent-lighter/30 dark:bg-indigo-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 text-xs leading-relaxed text-indigo-800 dark:text-indigo-400">
                               <p className="font-bold mb-1">
                                 💡 Rekomendasi Audit Karyawan:
                               </p>
@@ -468,7 +468,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                                 onClick={() =>
                                                   handleRepayKasbon(ca.id)
                                                 }
-                                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/35 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/30 text-[10px] font-bold px-2 py-1 rounded-lg cursor-pointer transition-all"
+                                                className="bg-accent-lighter hover:bg-indigo-100 text-accent dark:bg-indigo-950/35 dark:text-accent border border-indigo-200 dark:border-indigo-900/30 text-[10px] font-bold px-2 py-1 rounded-lg cursor-pointer transition-all"
                                               >
                                                 Selesaikan Lunaskan 💸
                                               </button>
@@ -677,7 +677,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   onChange={(e) =>
                                     setEditEmpName(e.target.value)
                                   }
-                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-accent transition-colors font-medium"
                                 />
                               </div>
 
@@ -691,7 +691,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   onChange={(e) =>
                                     setEditEmpPos(e.target.value)
                                   }
-                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-accent transition-colors font-medium"
                                 />
                               </div>
 
@@ -704,7 +704,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   onChange={(e) =>
                                     setEditEmpDiv(e.target.value)
                                   }
-                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-accent transition-colors font-medium"
                                 >
                                   <option value="Technical Repair">
                                     Technical Repair (Suku Cadang & Service)
@@ -730,7 +730,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   onChange={(e) =>
                                     setEditEmpContract(e.target.value as any)
                                   }
-                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-accent transition-colors font-medium"
                                 >
                                   <option value="PERMANENT">
                                     KARYAWAN TETAP (PERMANENT)
@@ -754,7 +754,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   onChange={(e) =>
                                     setEditEmpSalary(e.target.value)
                                   }
-                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-accent transition-colors font-medium"
                                 />
                               </div>
 
@@ -768,7 +768,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   onChange={(e) =>
                                     setEditEmpEmail(e.target.value)
                                   }
-                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-accent transition-colors font-medium"
                                 />
                               </div>
 
@@ -782,7 +782,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   onChange={(e) =>
                                     setEditEmpPhone(e.target.value)
                                   }
-                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-accent transition-colors font-medium"
                                 />
                               </div>
                             </div>
@@ -790,7 +790,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                             <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-zinc-800 font-bold">
                               <button
                                 type="submit"
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer shadow-sm transition-all"
+                                className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer shadow-sm transition-all"
                               >
                                 ✓ Simpan Perubahan Profil & Gaji
                               </button>

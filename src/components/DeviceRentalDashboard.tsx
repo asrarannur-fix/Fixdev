@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { usePrintConfig } from "../hooks/usePrintConfig";
+import { printFrame } from "../utils/printJob";
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
@@ -329,8 +330,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     printDoc.close();
     setTimeout(() => {
       if (printIframe.contentWindow) {
-        printIframe.contentWindow.focus();
-        printIframe.contentWindow.print();
+        printFrame(printIframe, printConfig, "Rental Receipt");
       }
     }, 500);
   };
@@ -408,8 +408,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     printDoc.close();
     setTimeout(() => {
       if (printIframe.contentWindow) {
-        printIframe.contentWindow.focus();
-        printIframe.contentWindow.print();
+        printFrame(printIframe, printConfig, "Rental Receipt");
       }
     }, 500);
   };
@@ -588,7 +587,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                   value={selectedCustName}
                   onChange={(e) => setSelectedCustName(e.target.value)}
                   placeholder="Cari atau ketik nama pelanggan..."
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-semibold text-slate-800 dark:text-zinc-200"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-semibold text-slate-800 dark:text-zinc-200"
                   list="rental-customers-list"
                 />
                 <datalist id="rental-customers-list">
@@ -656,7 +655,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                   onChange={(e) =>
                     setRentDays(Math.max(1, Number(e.target.value)))
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-bold font-mono dark:text-white"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-bold font-mono dark:text-white"
                 />
               </div>
               <div>
@@ -668,7 +667,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                   value={customDeposit}
                   onChange={(e) => setCustomDeposit(e.target.value)}
                   placeholder={`Default Rp ${(activeDevice?.deposit ?? 0).toLocaleString()}`}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 font-bold font-mono dark:text-white"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-bold font-mono dark:text-white"
                 />
               </div>
             </div>
@@ -732,7 +731,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                   placeholder="Cari penyewa, unit..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 focus:border-blue-500 rounded-lg outline-none text-[10.5px] dark:text-white"
+                  className="w-full pl-8 pr-3 py-1 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 focus:border-accent rounded-lg outline-none text-[10.5px] dark:text-white"
                 />
               </div>
             </div>

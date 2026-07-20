@@ -164,7 +164,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-4 flex items-center justify-between">
           <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200"><Server className="h-4 w-4 text-indigo-500" /> Docker ENV aktif</h4>
-          <button onClick={fetchEnvStatus} className="flex items-center gap-1 text-[10px] font-bold text-indigo-600"><RefreshCw className={`h-3 w-3 ${envLoading ? "animate-spin" : ""}`} /> Periksa ulang</button>
+          <button onClick={fetchEnvStatus} className="flex items-center gap-1 text-[10px] font-bold text-accent"><RefreshCw className={`h-3 w-3 ${envLoading ? "animate-spin" : ""}`} /> Periksa ulang</button>
         </div>
         {envStatus ? (
           <div className="grid gap-3 md:grid-cols-5">
@@ -184,7 +184,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-zinc-800">
             <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">Kredensial Browser Override</h4>
             <div className="flex gap-2">
-              <button id="sa-supabase-sync-btn" onClick={syncFromEnv} disabled={!envStatus?.url || readOnlyMode} className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold text-indigo-700 disabled:opacity-40"><Copy className="h-3 w-3" /> Sync ENV</button>
+              <button id="sa-supabase-sync-btn" onClick={syncFromEnv} disabled={!envStatus?.url || readOnlyMode} className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-accent-lighter px-3 py-1.5 text-[10px] font-bold text-accent disabled:opacity-40"><Copy className="h-3 w-3" /> Sync ENV</button>
               <button onClick={clearBrowserConfig} disabled={readOnlyMode} className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-[10px] font-bold text-rose-700 disabled:opacity-40"><Trash2 className="h-3 w-3" /> Clear Browser</button>
             </div>
           </div>
@@ -195,7 +195,7 @@ export const SupabaseSettings: React.FC<SupabaseSettingsProps> = ({
           <div className="flex flex-wrap justify-between gap-3 border-t border-slate-100 pt-4 dark:border-zinc-800">
             <button onClick={saveConfig} disabled={readOnlyMode} className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-200">Simpan Lokal</button>
             <div className="flex flex-wrap gap-2">
-              <button id="sa-supabase-migrate-btn" onClick={async () => { const result = await runSupabaseMigration(); showToast(result?.success ? "Migrasi Supabase selesai." : "Migrasi Supabase gagal.", result?.success ? "success" : "error"); }} disabled={readOnlyMode} className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Database className="h-3.5 w-3.5" /> Jalankan Migrasi</button>
+              <button id="sa-supabase-migrate-btn" onClick={async () => { const result = await runSupabaseMigration(); showToast(result?.success ? "Migrasi Supabase selesai." : "Migrasi Supabase gagal.", result?.success ? "success" : "error"); }} disabled={readOnlyMode} className="flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Database className="h-3.5 w-3.5" /> Jalankan Migrasi</button>
               <button id="sa-supabase-test-btn" onClick={testConnection} disabled={isTestingConn || readOnlyMode} className="flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Activity className="h-3.5 w-3.5" /> {isTestingConn ? "Menguji..." : "Simpan & Uji"}</button>
             </div>
           </div>

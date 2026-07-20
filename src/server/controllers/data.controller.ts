@@ -243,6 +243,13 @@ export async function dataSyncHandler(req: Request, res: Response) {
     const payload = table === "tenants"
       ? safePayload
       : { ...safePayload, tenant_id: tenantId };
+    // pg does not serialize nested JS values for JSON/JSONB parameters.
+    // Convert only structured values; scalar columns keep native types.
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] !== null && typeof payload[key] === "object") {
+        payload[key] = JSON.stringify(payload[key]);
+      }
+    });
     const idCol = "id";
 
     if (action === "insert") {

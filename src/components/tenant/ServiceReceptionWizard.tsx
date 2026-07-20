@@ -41,7 +41,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
       {/* Left Column: Device & Customer Info */}
       <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-          <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 text-white text-xs font-extrabold shadow-sm">
+          <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-accent text-white text-xs font-extrabold shadow-sm">
             1
           </span>
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
@@ -49,7 +49,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
+        <div className="rounded-2xl border border-indigo-100 bg-accent-lighter/40 p-4">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div>
               <label className="block text-xs font-bold text-slate-700">
@@ -67,7 +67,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   setCustQuery("");
                   setShowNewSrvCustForm(true);
                 }}
-                className="text-[10px] font-bold text-indigo-700 hover:text-indigo-900"
+                className="text-[10px] font-bold text-accent hover:text-indigo-900"
               >
                 Ganti pelanggan
               </button>
@@ -106,7 +106,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     setCustQuery(e.target.value);
                     setCustOpen(true);
                   }}
-                  className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 transition-all font-semibold"
+                  className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-semibold"
                 />
               </div>
               {custOpen && (
@@ -131,7 +131,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         }}
                         className={`w-full text-left px-3 py-2 text-[11px] hover:bg-slate-50 border-b border-slate-50 flex items-center justify-between gap-2 ${
                           newSrvCustomer === c.id
-                            ? "bg-indigo-50/60"
+                            ? "bg-accent-lighter/60"
                             : ""
                         }`}
                       >
@@ -159,7 +159,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         setShowNewSrvCustForm(true);
                         setCustOpen(false);
                       }}
-                      className="w-full text-left px-3 py-2 text-[11px] font-bold text-indigo-600 hover:bg-indigo-50 border-b border-slate-100 flex items-center gap-1.5"
+                      className="w-full text-left px-3 py-2 text-[11px] font-bold text-accent hover:bg-accent-lighter border-b border-slate-100 flex items-center gap-1.5"
                     >
                       <PlusCircle className="w-3.5 h-3.5" /> Tambah pelanggan baru: "{custQuery.trim()}"
                     </button>
@@ -190,7 +190,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     value={newSrvCustName}
                     onChange={(e) => setNewSrvCustName(e.target.value)}
                     placeholder="Nama lengkap"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
                   />
                 </div>
                 <div>
@@ -205,7 +205,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       setNewSrvCustPhone(normalizeIndonesianPhone(newSrvCustPhone))
                     }
                     placeholder="081234567890"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent font-mono"
                   />
                 </div>
                 <div>
@@ -217,7 +217,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     value={newSrvCustEmail}
                     onChange={(e) => setNewSrvCustEmail(e.target.value)}
                     placeholder="pelanggan@email.com"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
                   />
                 </div>
                 <div>
@@ -229,7 +229,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     value={newSrvCustAddress}
                     onChange={(e) => setNewSrvCustAddress(e.target.value)}
                     placeholder="Alamat pelanggan"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -257,7 +257,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             <select
               value={newSrvCategory}
               onChange={(e) => setNewSrvCategory(e.target.value)}
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 transition-all font-medium"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
             >
               <option value="Smartphone">Smartphone / HP</option>
               <option value="Tablet">Tablet / iPad</option>
@@ -277,7 +277,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               type="date"
               value={newSrvEstCompletion}
               onChange={(e) => setNewSrvEstCompletion(e.target.value)}
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 transition-all font-mono font-medium"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all font-mono font-medium"
             />
           </div>
         </div>
@@ -292,7 +292,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               placeholder="Asus ROG GL503"
               value={newSrvDevice}
               onChange={(e) => setNewSrvDevice(e.target.value)}
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 transition-all"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
               required
             />
           </div>
@@ -305,7 +305,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               placeholder="ASUS ROG GA401"
               value={newSrvBrand}
               onChange={(e) => setNewSrvBrand(e.target.value)}
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 transition-all"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
             />
           </div>
         </div>
@@ -331,7 +331,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               placeholder="M1N0CV02K24"
               value={newSrvSerial}
               onChange={(e) => setNewSrvSerial(e.target.value)}
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 transition-all"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
             />
           </div>
           <div>
@@ -343,7 +343,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               onChange={(e) =>
                 setNewSrvWarranty(Number(e.target.value))
               }
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 transition-all"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent transition-all"
             >
               <option value="0">Tanpa Garansi</option>
               <option value="1">1 Bulan</option>
@@ -367,7 +367,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               placeholder="0"
               value={newSrvDownPayment}
               onChange={(e) => setNewSrvDownPayment(e.target.value)}
-              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-indigo-500 font-mono font-bold"
+              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent font-mono font-bold"
               disabled={newSrvIsCheckOnly}
             />
           </div>
@@ -382,7 +382,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     setNewSrvDownPayment("0");
                   }
                 }}
-                className="accent-indigo-600 h-4 w-4 rounded"
+                className="accent-accent h-4 w-4 rounded"
               />
               <span>Hanya Cek / Estimasi Dulu</span>
             </label>
@@ -402,7 +402,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               onChange={(e) =>
                 setNewSrvPhysicalCondition(e.target.value)
               }
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 transition-all font-medium"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
             >
               <option value="Mulus / Normal Wear">
                 Mulus / Normal Wear
@@ -430,12 +430,12 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               placeholder="PIN / Pola Layar (Opsional)"
               value={newSrvScreenLock}
               onChange={(e) => setNewSrvScreenLock(e.target.value)}
-              className="w-full text-xs px-3 py-2 pr-16 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 transition-all font-mono font-medium"
+              className="w-full text-xs px-3 py-2 pr-16 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all font-mono font-medium"
             />
             <button
               type="button"
               onClick={() => setShowScreenLock((visible) => !visible)}
-              className="mt-1 text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+              className="mt-1 text-[10px] font-semibold text-accent hover:text-indigo-800"
             >
               {showScreenLock ? "Sembunyikan PIN" : "Tampilkan PIN"}
             </button>
@@ -451,7 +451,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             placeholder="cth: Layar bergaris horizontal setelah terjatuh dari meja."
             value={newSrvComplaint}
             onChange={(e) => setNewSrvComplaint(e.target.value)}
-            className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 transition-all"
+            className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
             required
           />
         </div>
@@ -463,8 +463,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             onClick={() => setShowAdvancedSpecs((visible) => !visible)}
             className="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-slate-100/70 transition-colors"
           >
-            <div className="flex items-center gap-2 text-xs font-bold text-indigo-700">
-              <Cpu className="w-4 h-4 text-indigo-600" />
+            <div className="flex items-center gap-2 text-xs font-bold text-accent">
+              <Cpu className="w-4 h-4 text-accent" />
               <span>Spesifikasi Teknis ({newSrvCategory})</span>
             </div>
             <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${showAdvancedSpecs ? "rotate-90" : ""}`} />
@@ -607,7 +607,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         [f.key]: e.target.value,
                       }));
                     }}
-                    className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-indigo-500 font-medium font-mono"
+                    className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent font-medium font-mono"
                   />
                 </div>
               ));
@@ -617,15 +617,15 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           )}
         </div>
 
-        <div className="space-y-2 bg-indigo-50/40 p-3.5 rounded-xl border border-indigo-100">
+        <div className="space-y-2 bg-accent-lighter/40 p-3.5 rounded-xl border border-indigo-100">
           <div className="flex items-center justify-between">
-            <label className="block text-[10px] font-mono text-indigo-700 uppercase">
+            <label className="block text-[10px] font-mono text-accent uppercase">
               Tugaskan Teknisi
             </label>
             <button
               type="button"
               onClick={runAutoAssign}
-              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-bold font-mono uppercase rounded flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+              className="px-2.5 py-1 bg-accent hover:bg-accent-hover text-white text-[9px] font-bold font-mono uppercase rounded flex items-center gap-1 cursor-pointer transition-all shadow-xs"
             >
               <Sparkles className="w-2.5 h-2.5" /> Auto-Assign Pintar
             </button>
@@ -636,7 +636,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               setNewSrvTechId(e.target.value);
               setAutoAssignReason(null);
             }}
-            className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 transition-all font-medium"
+            className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
           >
             <option value="">
               -- Antrian Umum / Belum Ditugaskan --
@@ -659,7 +659,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           <select
             value={newSrvStorageLocId}
             onChange={(e) => setNewSrvStorageLocId(e.target.value)}
-            className="w-full text-xs px-3 py-2 border border-amber-200 rounded-lg bg-white outline-none focus:border-indigo-500 transition-all font-medium"
+            className="w-full text-xs px-3 py-2 border border-amber-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
           >
             <option value="">-- Tentukan setelah penerimaan --</option>
             {getStorageLocations(activeTenantId || "")
@@ -689,7 +689,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             <p className="font-bold text-[10px] text-slate-500 uppercase tracking-wider font-mono">
               Checklist Uji Fungsi & Kondisi Masuk:
             </p>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-accent-lighter text-accent border border-indigo-100">
               {Object.values(newSrvChecklist).filter(Boolean).length}{" "}
               / {Object.keys(newSrvChecklist).length} OK
             </span>
@@ -706,7 +706,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 });
                 setNewSrvChecklist(updated);
               }}
-              className="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-[10px] font-bold text-indigo-600 rounded cursor-pointer transition-all"
+              className="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-[10px] font-bold text-accent rounded cursor-pointer transition-all"
             >
               ✓ Pilih Semua
             </button>
@@ -771,7 +771,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   key={item.id}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border cursor-pointer select-none transition-all duration-200 ${
                     checked
-                      ? "bg-indigo-50/55 border-indigo-200 text-indigo-800 font-medium"
+                      ? "bg-accent-lighter/55 border-indigo-200 text-indigo-800 font-medium"
                       : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
                   }`}
                 >
@@ -790,7 +790,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         ]);
                       }
                     }}
-                    className="accent-indigo-600 h-3.5 w-3.5 rounded"
+                    className="accent-accent h-3.5 w-3.5 rounded"
                   />
                   <span className="truncate">{item.label}</span>
                 </label>
@@ -808,7 +808,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               onChange={(e) =>
                 setNewSrvCustomAccessories(e.target.value)
               }
-              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500"
+              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -821,8 +821,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             className="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-slate-50"
           >
             <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-indigo-700">
-                <Camera className="w-4 h-4 text-indigo-600" />
+              <div className="flex items-center gap-2 text-xs font-bold text-accent">
+                <Camera className="w-4 h-4 text-accent" />
                 <span>Foto Kondisi Unit</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
@@ -847,7 +847,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               onChange={(e) =>
                 setSelectedCaptureCategory(e.target.value)
               }
-              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-indigo-500"
+              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent"
             >
               <option value="Layar tergores">Layar tergores</option>
               <option value="Penyok / Casing lecet">
@@ -904,7 +904,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             <button
               type="button"
               onClick={startCamera}
-              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-indigo-600 text-xs py-3.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 transition-all font-semibold shadow-xs"
+              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-accent text-xs py-3.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 transition-all font-semibold shadow-xs"
             >
               <Camera className="w-4 h-4 text-slate-400" /> Buka
               Kamera Kondisi Fisik
@@ -966,7 +966,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 onChange={() =>
                   setNewSrvIsOutsourced(!newSrvIsOutsourced)
                 }
-                className="accent-indigo-600 rounded"
+                className="accent-accent rounded"
               />
               <span className="text-xs font-bold text-slate-700">
                 Subkontrak ke Pihak Luar (Outsourced)?
@@ -990,7 +990,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   onChange={(e) =>
                     setNewSrvOutsourcedVendor(e.target.value)
                   }
-                  className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500"
+                  className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent"
                   required
                 />
               </div>
@@ -1005,7 +1005,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   onChange={(e) =>
                     setNewSrvOutsourcingCost(e.target.value)
                   }
-                  className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500"
+                  className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent"
                   required
                 />
               </div>
@@ -1031,7 +1031,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
       <button
         type="submit"
         disabled={isSubmittingReception}
-        className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
+        className="bg-gradient-to-r from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer transition-all shadow-lg shadow-accent/25 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
       >
         {isSubmittingReception ? (
           <><RefreshCw className="w-4 h-4 animate-spin" /> Menyimpan...</>

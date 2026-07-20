@@ -29,7 +29,7 @@ export const Input: React.FC<InputProps> = ({
         )}
         <input
           id={id}
-          className={`w-full text-xs py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/10 rounded-xl outline-none shadow-xs transition-all duration-150 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 ${
+          className={`w-full text-xs py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 focus:border-accent dark:focus:border-accent focus:ring-2 focus:ring-accent/10 dark:focus:ring-accent/10 rounded-xl outline-none shadow-xs transition-all duration-150 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 ${
             Icon ? "pl-9" : "px-3"
           } ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/10" : ""} ${className}`}
           {...props}

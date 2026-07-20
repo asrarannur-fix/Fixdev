@@ -101,7 +101,7 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
               max={32}
               value={minPasswordLength}
               onChange={(e) => setMinPasswordLength(Number(e.target.value))}
-              className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500"
+              className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-red"
             />
           </div>
           <div className="space-y-1">
@@ -112,7 +112,7 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
               max={20}
               value={maxLoginAttempts}
               onChange={(e) => setMaxLoginAttempts(Number(e.target.value))}
-              className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500"
+              className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-red"
             />
           </div>
         </div>

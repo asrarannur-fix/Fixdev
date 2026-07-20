@@ -1091,7 +1091,7 @@ export const AssetManager: React.FC = () => {
                       placeholder="Laptop Dell XPS 13 Karyawan"
                       value={newAssetName}
                       onChange={(e) => setNewAssetName(e.target.value)}
-                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -1104,7 +1104,7 @@ export const AssetManager: React.FC = () => {
                         onChange={(e) =>
                           setNewAssetCategory(e.target.value as any)
                         }
-                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       >
                         <option value="LAPTOP">Laptop / Komputer</option>
                         <option value="PRINTER">Printer / Zebra Label</option>
@@ -1124,7 +1124,7 @@ export const AssetManager: React.FC = () => {
                         placeholder="SN-991244"
                         value={newAssetSerial}
                         onChange={(e) => setNewAssetSerial(e.target.value)}
-                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       />
                     </div>
                   </div>
@@ -1138,7 +1138,7 @@ export const AssetManager: React.FC = () => {
                         placeholder="Rp 7.500.000"
                         value={newAssetCost}
                         onChange={(e) => setNewAssetCost(e.target.value)}
-                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       />
                     </div>
                     <div>
@@ -1150,7 +1150,7 @@ export const AssetManager: React.FC = () => {
                         placeholder="Rp 500.000"
                         value={newAssetResidual}
                         onChange={(e) => setNewAssetResidual(e.target.value)}
-                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       />
                     </div>
                   </div>
@@ -1162,7 +1162,7 @@ export const AssetManager: React.FC = () => {
                       <select
                         value={newAssetLife}
                         onChange={(e) => setNewAssetLife(e.target.value)}
-                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       >
                         <option value="3">
                           3 Tahun (Peralatan Elektronik Ringan)
@@ -1181,7 +1181,7 @@ export const AssetManager: React.FC = () => {
                         type="text"
                         value={newAssetLocation}
                         onChange={(e) => setNewAssetLocation(e.target.value)}
-                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                        className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       />
                     </div>
                   </div>
@@ -1211,7 +1211,7 @@ export const AssetManager: React.FC = () => {
                     <select
                       value={asgAssetId}
                       onChange={(e) => setAsgAssetId(e.target.value)}
-                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                     >
                       {assets
                         .filter((a) => !a.custodianId)
@@ -1232,7 +1232,7 @@ export const AssetManager: React.FC = () => {
                     <select
                       value={asgEmployeeId}
                       onChange={(e) => setAsgEmployeeId(e.target.value)}
-                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                     >
                       <option value="">Pilih Karyawan</option>
                       {employees.map((e) => (
@@ -1251,7 +1251,7 @@ export const AssetManager: React.FC = () => {
                       placeholder="Kondisi prima, baterai 100%, lengkap casan"
                       value={asgNotes}
                       onChange={(e) => setAsgNotes(e.target.value)}
-                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                      className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                     />
                   </div>
                   <button
@@ -1413,7 +1413,7 @@ export const AssetManager: React.FC = () => {
                   <select
                     value={mntAssetId}
                     onChange={(e) => setMntAssetId(e.target.value)}
-                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                   >
                     {assets.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -1429,7 +1429,7 @@ export const AssetManager: React.FC = () => {
                   <select
                     value={mntType}
                     onChange={(e) => setMntType(e.target.value as any)}
-                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                   >
                     <option value="ROUTINE">
                       Servis Rutin / Kalibrasi Ringan
@@ -1451,7 +1451,7 @@ export const AssetManager: React.FC = () => {
                     placeholder="Rp 250.000"
                     value={mntCost}
                     onChange={(e) => setMntCost(e.target.value)}
-                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                   />
                 </div>
                 <div>
@@ -1462,7 +1462,7 @@ export const AssetManager: React.FC = () => {
                     type="date"
                     value={mntDate}
                     onChange={(e) => setMntDate(e.target.value)}
-                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                   />
                 </div>
                 <div>
@@ -1473,7 +1473,7 @@ export const AssetManager: React.FC = () => {
                     placeholder="Ganti pasta thermal, ganti karet belt motor, kalibrasi sensor inframerah solder..."
                     value={mntNotes}
                     onChange={(e) => setMntNotes(e.target.value)}
-                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none h-20 resize-none focus:border-blue-500"
+                    className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none h-20 resize-none focus:border-accent"
                   />
                 </div>
                 <button
@@ -1671,7 +1671,7 @@ export const AssetManager: React.FC = () => {
                     <Line
                       type="monotone"
                       dataKey="Total Aset Tetap"
-                      stroke="#6366f1"
+                      stroke="var(--accent, #4f46e5)"
                       strokeWidth={3}
                       strokeDasharray="5 5"
                       name="Total Buku Gabungan"

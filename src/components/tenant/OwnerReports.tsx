@@ -5,12 +5,14 @@ import { ServiceStatus } from "../../types";
 import { WidgetLayout, loadWidgetLayout } from "../dashboard/widgetTypes";
 import { WIDGET_REGISTRY } from "../dashboard/widgetRegistry";
 import { WidgetSettingsPanel } from "../dashboard/WidgetSettingsPanel";
+import { printJobAsync } from "../../utils/printJob";
+import { usePrintConfig } from "../../hooks/usePrintConfig";
 
 type DateRange = "today" | "week" | "month" | "custom";
 
 const DATE_LABELS: Record<DateRange, string> = { today: "Hari Ini", week: "Minggu Ini", month: "Bulan Ini", custom: "Custom" };
 const DATE_TAILWINDS: Record<DateRange, string> = {
-  today: "bg-indigo-600 dark:bg-indigo-500 text-white",
+  today: "bg-accent dark:bg-indigo-500 text-white",
   week: "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700",
   month: "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700",
   custom: "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700",
@@ -34,7 +36,8 @@ export const OwnerReports: React.FC<{ activeSubTab?: string; onSetTab?: (tab: st
     scopedEmployees: employees, scopedCashTransactions: cashTransactions, currentBranchId, currentTenantId, warehouses, tenants } = useSaaS();
 
   const activeTenant = tenants.find((t: any) => t.id === currentTenantId);
-  const accentColor = (activeTenant as any)?.settings?.branding?.accentColor || "#6366f1";
+  const printConfig = usePrintConfig();
+  const accentColor = (activeTenant as any)?.branding?.primaryColor || "#4f46e5";
   const [layout, setLayout] = useState<WidgetLayout>(() => loadWidgetLayout());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>("today");
@@ -113,7 +116,7 @@ export const OwnerReports: React.FC<{ activeSubTab?: string; onSetTab?: (tab: st
               <span className="w-2 h-2 rounded-full bg-pink-500" /> {metrics.activeTickets} tiket aktif
             </span>
           )}
-          <button onClick={() => window.print()} className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all" title="Cetak"><Printer className="w-4 h-4 text-slate-500" /></button>
+          <button onClick={() => void printJobAsync({ title: "Laporan Owner", html: document.getElementById("owner-reports")?.innerHTML || document.body.innerHTML, printConfig })} className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all" title="Cetak"><Printer className="w-4 h-4 text-slate-500" /></button>
           <button onClick={() => setSearchOpen(true)} className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all" title="Cari (Cmd+K)"><Search className="w-4 h-4 text-slate-500" /></button>
           <button onClick={() => setSettingsOpen(true)} className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all" title="Atur Widget"><Settings className="w-4 h-4 text-slate-500" /></button>
         </div>

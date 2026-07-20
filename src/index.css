@@ -7,8 +7,14 @@
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --font-syne: "Plus Jakarta Sans", sans-serif;
-  
+
   --color-blue-600: #2563eb;
+
+  /* Dynamic accent colors (overridden by tenant branding at runtime) */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent-light);
+  --color-accent-lighter: var(--accent-lighter);
 
   /* System-wide Theme Mappings */
   --color-modal-bg: var(--bg-modal);
@@ -30,12 +36,15 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --font-syne: "Plus Jakarta Sans", sans-serif;
 
-  /* Premium Light Mode Palette (Cozy slate with rich contrast) */
+  /* Premium Light Mode Palette */
   --bg: #f1f5f9;
   --surface: #ffffff;
   --ink: #0f172a;
   --ink-muted: #475569;
   --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-light: #eff6ff;
+  --accent-lighter: #dbeafe;
   --border: #cbd5e1;
   --card: #ffffff;
 
@@ -52,6 +61,7 @@
   --bg-dropdown: #ffffff;
   --border-modal: #cbd5e1;
   --border-dropdown: #e2e8f0;
+  --glow-color: rgba(79, 70, 229, 0.3);
 }
 
 .dark {
@@ -61,6 +71,9 @@
   --ink: #fafafa;
   --ink-muted: #a1a1aa;
   --accent: #2563eb;
+  --accent-hover: #3b82f6;
+  --accent-light: #172554;
+  --accent-lighter: #1e3a5f;
   --border: #27272a;
   --card: #18181b;
 
@@ -73,10 +86,11 @@
   --text-contrast-500: #71717a;
   --text-contrast-400: #52525b;
 
-  --bg-modal: #18181b;       /* Sophisticated modernist dark zinc-900 */
-  --bg-dropdown: #121214;    /* Slightly deeper background for dropdown hierarchy */
-  --border-modal: #27272a;   /* Slate-800/Zinc-800 border equivalent */
+  --bg-modal: #18181b;
+  --bg-dropdown: #121214;
+  --border-modal: #27272a;
   --border-dropdown: #27272a;
+  --glow-color: rgba(79, 70, 229, 0.15);
 }
 
 /* ==========================================================================

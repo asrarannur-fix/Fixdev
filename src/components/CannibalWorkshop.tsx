@@ -279,7 +279,7 @@ export const CannibalWorkshop: React.FC = () => {
       <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="font-extrabold text-sm text-indigo-950 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-2">
-            <Hammer className="w-5 h-5 text-indigo-600" /> Kanibalisasi &amp;
+            <Hammer className="w-5 h-5 text-accent" /> Kanibalisasi &amp;
             Bengkel Disassembly
           </h3>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
@@ -299,7 +299,7 @@ export const CannibalWorkshop: React.FC = () => {
         <div className="xl:col-span-5 p-5 border-r border-slate-100 dark:border-zinc-800 space-y-5">
           <div className="border-b border-slate-100 dark:border-zinc-800 pb-2">
             <h4 className="font-bold text-xs uppercase text-slate-700 dark:text-zinc-200 tracking-wider flex items-center gap-1">
-              <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />{" "}
+              <Sparkles className="w-4 h-4 text-accent animate-pulse" />{" "}
               Form Dekonstruksi Suku Cadang
             </h4>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
@@ -319,7 +319,7 @@ export const CannibalWorkshop: React.FC = () => {
                   placeholder="Cth: iPhone 11 Pro Max Mati Total"
                   value={donorName}
                   onChange={(e) => setDonorName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-500 font-semibold dark:text-white"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-semibold dark:text-white"
                 />
               </div>
               <div>
@@ -331,7 +331,7 @@ export const CannibalWorkshop: React.FC = () => {
                   placeholder="Cth: SCRAP-IPHONE11"
                   value={donorSKU}
                   onChange={(e) => setDonorSKU(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-500 font-mono text-[10px] dark:text-white"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-mono text-[10px] dark:text-white"
                 />
               </div>
               <div>
@@ -341,7 +341,7 @@ export const CannibalWorkshop: React.FC = () => {
                 <select
                   value={grade}
                   onChange={(e) => setGrade(e.target.value as ItemGrade)}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-500 font-semibold text-slate-700 dark:text-zinc-200"
+                  className="w-full px-3 py-1.5 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent font-semibold text-slate-700 dark:text-zinc-200"
                 >
                   <option value={ItemGrade.GRADE_A}>
                     Grade A (Sangat Mulus +20%)
@@ -363,7 +363,7 @@ export const CannibalWorkshop: React.FC = () => {
             <div className="space-y-2">
               <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-1 flex justify-between">
                 <span>Daftar Suku Cadang Yang Dipanen</span>
-                <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                <span className="text-accent dark:text-accent font-bold">
                   Pilih Komponen
                 </span>
               </label>
@@ -375,13 +375,13 @@ export const CannibalWorkshop: React.FC = () => {
                     <div
                       key={part.id}
                       onClick={() => togglePartSelection(part.id)}
-                      className="flex items-center justify-between p-2.5 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-800 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition cursor-pointer"
+                      className="flex items-center justify-between p-2.5 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl hover:border-accent/50 dark:hover:border-indigo-800 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <div
                           className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
                             part.selected
-                              ? "bg-indigo-600 border-indigo-600 text-white"
+                              ? "bg-accent border-accent text-white"
                               : "border-slate-300 dark:border-zinc-700"
                           }`}
                         >
@@ -403,9 +403,9 @@ export const CannibalWorkshop: React.FC = () => {
             </div>
 
             {/* Accounting double entry notice */}
-            <div className="p-4 bg-indigo-50/60 dark:bg-indigo-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 space-y-2 text-[10.5px] leading-normal text-slate-600 dark:text-zinc-300">
+            <div className="p-4 bg-accent-lighter/60 dark:bg-indigo-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 space-y-2 text-[10.5px] leading-normal text-slate-600 dark:text-zinc-300">
               <p className="font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-1">
-                <Coins className="w-4 h-4 text-indigo-600" /> Jurnal
+                <Coins className="w-4 h-4 text-accent" /> Jurnal
                 Double-Entry Otomatis:
               </p>
               <div className="font-mono text-[9px] text-slate-500 dark:text-slate-400 space-y-1 bg-white dark:bg-zinc-950 border border-indigo-100/40 dark:border-indigo-900/30 p-2.5 rounded-xl">
@@ -413,7 +413,7 @@ export const CannibalWorkshop: React.FC = () => {
                   &bull; DEBIT: Persediaan Suku Cadang (Asset) <br />
                   &rArr; Rp {totalSalvageValue.toLocaleString()}
                 </p>
-                <p className="text-indigo-700 dark:text-indigo-400 font-bold">
+                <p className="text-accent dark:text-accent font-bold">
                   &bull; KREDIT: Pendapatan Operasional Lain (Revenue) <br />
                   &rArr; Rp {totalSalvageValue.toLocaleString()}
                 </p>
@@ -427,7 +427,7 @@ export const CannibalWorkshop: React.FC = () => {
             {/* Submit trigger */}
             <button
               onClick={handleHarvest}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-2.5 rounded-xl transition shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full bg-accent hover:bg-accent-hover text-white font-black text-xs py-2.5 rounded-xl transition shadow-md cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Hammer className="w-4 h-4" /> Proses Ekstraksi Suku Cadang
             </button>
@@ -440,7 +440,7 @@ export const CannibalWorkshop: React.FC = () => {
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-3.5">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-zinc-800">
               <h4 className="font-bold text-xs uppercase text-slate-700 dark:text-zinc-200 tracking-wider flex items-center gap-1 border-b-0">
-                <ListChecks className="w-4 h-4 text-indigo-600" /> Suku Cadang
+                <ListChecks className="w-4 h-4 text-accent" /> Suku Cadang
                 Bekas Hasil Panen Terdaftar
               </h4>
               <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 text-[9px] font-bold font-mono">
@@ -581,7 +581,7 @@ export const CannibalWorkshop: React.FC = () => {
                       value={buyerName}
                       onChange={(e) => setBuyerName(e.target.value)}
                       placeholder="Cth: Pak Slamet Rongsokan"
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-850 rounded-lg text-slate-800 dark:text-zinc-100 font-semibold outline-none focus:border-emerald-500"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-850 rounded-lg text-slate-800 dark:text-zinc-100 font-semibold outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -593,7 +593,7 @@ export const CannibalWorkshop: React.FC = () => {
                       value={soldPrice}
                       onChange={(e) => setSoldPrice(e.target.value)}
                       placeholder="Cth: 150000"
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-850 rounded-lg text-slate-800 dark:text-zinc-100 font-bold font-mono outline-none focus:border-emerald-500"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-850 rounded-lg text-slate-800 dark:text-zinc-100 font-bold font-mono outline-none focus:border-accent"
                     />
                   </div>
                 </div>
@@ -677,7 +677,7 @@ export const CannibalWorkshop: React.FC = () => {
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400">
                       Komponen dipanen:{" "}
-                      <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
+                      <span className="font-mono text-accent dark:text-accent font-semibold">
                         {log.partsExtracted.join(", ")}
                       </span>
                     </p>

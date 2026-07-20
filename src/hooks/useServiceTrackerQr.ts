@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ServiceTicket } from "../types";
 import { useToast } from "../components/ui/Toast";
 import { usePrintConfig } from "./usePrintConfig";
+import { printFrame } from "../utils/printJob";
 import {
   getPrintPageSize,
   getPrintMargin,
@@ -9,6 +10,7 @@ import {
   getPrintHeaderHtml,
   getPrintFooterHtml,
   getPrintTermsHtml,
+  escapeHtml,
 } from "../utils/print";
 
 export function useServiceTrackerQr(
@@ -273,10 +275,12 @@ export function useServiceTrackerQr(
               <span class="label">Brand & Model:</span>
               <span class="value">${ticket.deviceBrandModel || "-"}</span>
             </div>
-            <div class="row">
-              <span class="label">Keluhan Utama:</span>
-              <span class="value">${ticket.customerComplaints}</span>
-            </div>
+            ${printConfig?.printCustomerNotes !== false ? `
+              <div class="row">
+                <span class="label">Keluhan Utama:</span>
+                <span class="value">${ticket.customerComplaints}</span>
+              </div>
+            ` : ""}
             
             <div class="divider"></div>
 
@@ -293,6 +297,7 @@ export function useServiceTrackerQr(
               <span class="value">${ticket.status}</span>
             </div>
 
+            ${printConfig?.printQrCode !== false ? `
             <div class="qr-section">
               <img src="${qrUrl}" class="qr-code" alt="QR Lacak" />
               <div class="scan-instructions">
@@ -300,10 +305,10 @@ export function useServiceTrackerQr(
                 Scan QR Code di atas menggunakan HP Anda untuk memantau perkembangan servis unit ini secara real-time.
               </div>
               <div class="url-display">${trackingUrl}</div>
-            </div>
+            </div>` : ""}
 
             ${getPrintFooterHtml(printConfig, "Simpan lembaran bukti penerimaan unit ini secara aman.\nTunjukkan QR Code atau sebutkan Nomor Tiket saat pengambilan unit.\nTerima kasih atas kunjungan Anda!")}
-            ${getPrintTermsHtml(printConfig, "general")}
+            ${printConfig?.showTermsInTracking !== false ? getPrintTermsHtml(printConfig, "general") : ""}
           </div>
           <script>
             window.onload = function() {
@@ -319,8 +324,7 @@ export function useServiceTrackerQr(
         "hidden-print-iframe",
       ) as HTMLIFrameElement;
       if (pIframe && pIframe.contentWindow) {
-        pIframe.contentWindow.focus();
-        pIframe.contentWindow.print();
+        printFrame(pIframe, printConfig, "Service Tracker");
       }
     }, 500);
   };
@@ -329,6 +333,15 @@ export function useServiceTrackerQr(
    * Cetak label thermal kecil (58mm) — alamat & customer, tanpa QR besar.
    * Dipanggil dari hover action card di inbox servis.
    */
+const getLabelSizeMm = (pc: any): string => {
+  const w = Math.min(600, Math.max(200, Number(pc?.labelWidth) || 320));
+  const h = Math.min(400, Math.max(100, Number(pc?.labelHeight) || 180));
+  // convert viewport px (~96dpi) to mm
+  const wmm = Math.round(w * 25.4 / 96);
+  const hmm = Math.round(h * 25.4 / 96);
+  return `${Math.max(30, wmm)}mm ${Math.max(20, hmm)}mm`;
+};
+
   const handleDirectPrintLabel = (ticket: ServiceTicket, businessName = "Repair Hub") => {
     const qrUrl = getQrCodeUrl(ticket.ticketNo);
     const dateStr = ticket.createdAt
@@ -351,8 +364,8 @@ export function useServiceTrackerQr(
     printDoc.write(`
       <html><head><title>Label ${ticket.ticketNo}</title>
       <style>
-        @page { size: 58mm auto; margin: 2mm; }
-        body { font-family: 'Inter', sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
+        @page { size: ${getLabelSizeMm(printConfig)}; margin: ${getPrintMargin(printConfig)}mm; }
+        body { font-family: 'Inter', sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: ${printConfig?.labelFontSize === "lg" ? 13 : printConfig?.labelFontSize === "base" ? 11 : printConfig?.labelFontSize === "sm" ? 10 : 8}px; }
         .lbl-head { font-weight: 800; font-size: 13px; text-align: center; }
         .lbl-row { display: flex; justify-content: space-between; margin-top: 4px; }
         .lbl-qr { text-align: center; margin-top: 6px; }
@@ -360,20 +373,20 @@ export function useServiceTrackerQr(
         .lbl-foot { text-align: center; font-size: 8px; color: #64748b; margin-top: 4px; }
       </style></head>
       <body>
-        <div class="lbl-head">${businessName}</div>
+        ${printConfig?.labelShowLogo !== false ? `<div class="lbl-head">${businessName}</div>` : ""}
         <div class="lbl-row"><span>Tiket:</span><strong>${ticket.ticketNo}</strong></div>
         <div class="lbl-row"><span>Device:</span><span>${ticket.deviceName || "-"}</span></div>
         <div class="lbl-row"><span>Masuk:</span><span>${dateStr}</span></div>
-        <div class="lbl-qr"><img src="${qrUrl}" alt="QR" /></div>
-        <div class="lbl-foot">Scan untuk lacak status servis</div>
+        ${printConfig?.printCustomerNotes !== false ? `<div class="lbl-row"><span>Keluhan:</span><span>${ticket.customerComplaints || "-"}</span></div>` : ""}
+        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr"><img src="${qrUrl}" alt="QR" /></div>` : ""}
+        <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || "Scan untuk lacak status servis")}</div>
       </body></html>
     `);
     printDoc.close();
     setTimeout(() => {
       const pIframe = document.getElementById("hidden-print-iframe") as HTMLIFrameElement;
       if (pIframe && pIframe.contentWindow) {
-        pIframe.contentWindow.focus();
-        pIframe.contentWindow.print();
+        printFrame(pIframe, printConfig, "Service Tracker");
       }
     }, 400);
   };

@@ -10,10 +10,10 @@
 export const COLORS = {
   // Brand
   brand: {
-    primary: "indigo",
-    hover: "indigo-600",
-    light: "indigo-50",
-    dark: "indigo-950",
+    primary: "accent",
+    hover: "accent",
+    light: "slate-50",
+    dark: "slate-950",
   },
 
   // Status
@@ -32,7 +32,7 @@ export const COLORS = {
     accounting: { icon: "text-rose-500", bg: "bg-rose-50", border: "border-rose-200" },
     hr: { icon: "text-sky-500", bg: "bg-sky-50", border: "border-sky-200" },
     crm: { icon: "text-purple-500", bg: "bg-purple-50", border: "border-purple-200" },
-    fraud: { icon: "text-indigo-500", bg: "bg-indigo-50", border: "border-indigo-200" },
+    fraud: { icon: "text-violet-500", bg: "bg-violet-50", border: "border-violet-200" },
   },
 } as const;
 
@@ -140,7 +140,7 @@ export const COMPONENTS = {
 
   // Button styles
   button: {
-    primary: "bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold",
+    primary: "bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-bold",
     secondary: "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800",
     danger: "bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold hover:bg-rose-100",
     ghost: "text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-bold",
@@ -149,7 +149,7 @@ export const COMPONENTS = {
 
   // Input styles
   input: {
-    base: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-slate-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500",
+    base: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-slate-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent",
     select: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-slate-700 dark:text-zinc-200",
   },
 

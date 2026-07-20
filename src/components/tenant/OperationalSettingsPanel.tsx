@@ -91,10 +91,10 @@ export const OperationalSettingsPanel: React.FC<Props> = ({ currentTenantId, ten
   );
   const Label = ({ text }: { text: string }) => <label className="text-[10px] font-bold text-slate-500 uppercase">{text}</label>;
   const Select = ({ val, onChange, children }: any) => (
-    <select value={val} onChange={(e) => onChange(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">{children}</select>
+    <select value={val} onChange={(e) => onChange(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent bg-white">{children}</select>
   );
   const NumInput = ({ val, onChange, min, max }: any) => (
-    <input type="number" min={min} max={max} value={val} onChange={(e) => onChange(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+    <input type="number" min={min} max={max} value={val} onChange={(e) => onChange(Number(e.target.value))} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
   );
 
   const sections: Array<{ id: OperationalSectionKey; label: string; icon: any; color: string }> = [
@@ -223,7 +223,7 @@ export const OperationalSettingsPanel: React.FC<Props> = ({ currentTenantId, ten
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-indigo-600" /> Pengaturan Operasional
+            <Wrench className="w-4 h-4 text-accent" /> Pengaturan Operasional
           </h3>
           <p className="text-[10px] text-slate-500 mt-1">Konfigurasi parameter servis, POS, stok, akuntansi, dan HRM.</p>
         </div>
@@ -247,7 +247,7 @@ export const OperationalSettingsPanel: React.FC<Props> = ({ currentTenantId, ten
           {sections.map((sec) => {
             const Icon = sec.icon;
             const colorStyles: Record<string, string> = {
-              indigo: "bg-indigo-50 text-indigo-700 border-indigo-200",
+              indigo: "bg-accent-lighter text-accent border-indigo-200",
               emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
               amber: "bg-amber-50 text-amber-700 border-amber-200",
               blue: "bg-blue-50 text-blue-700 border-blue-200",

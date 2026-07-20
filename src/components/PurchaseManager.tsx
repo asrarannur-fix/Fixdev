@@ -169,12 +169,12 @@ export const PurchaseManager: React.FC = () => {
               placeholder="Cari PO / supplier..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-accent hover:bg-accent-hover rounded-lg cursor-pointer shadow-sm transition-all"
           >
             <PlusCircle className="w-4 h-4" /> Buat PO Baru
           </button>
@@ -184,7 +184,7 @@ export const PurchaseManager: React.FC = () => {
       {showForm && (
         <div className="bg-white border border-indigo-200 rounded-xl p-5 shadow-sm space-y-4 animate-fadeIn">
           <div className="flex justify-between items-center">
-            <h3 className="font-bold text-xs uppercase text-indigo-700 tracking-wider flex items-center gap-1.5">
+            <h3 className="font-bold text-xs uppercase text-accent tracking-wider flex items-center gap-1.5">
               <FileText className="w-4 h-4" /> Form Purchase Order Baru
             </h3>
             <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
@@ -198,7 +198,7 @@ export const PurchaseManager: React.FC = () => {
               placeholder="PT Sparepart Jaya"
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
 
@@ -207,7 +207,7 @@ export const PurchaseManager: React.FC = () => {
               <label className="text-[10px] font-bold text-slate-500 uppercase">Item Barang</label>
               <button
                 onClick={addItemRow}
-                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
+                className="text-[10px] font-bold text-accent hover:text-indigo-800 cursor-pointer flex items-center gap-1"
               >
                 <PlusCircle className="w-3 h-3" /> Tambah Item
               </button>
@@ -218,23 +218,23 @@ export const PurchaseManager: React.FC = () => {
                   placeholder="Nama barang..."
                   value={item.productName}
                   onChange={(e) => updateItem(idx, "productName", e.target.value)}
-                  className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <input
                   type="number"
                   placeholder="Qty"
                   value={item.qty || ""}
                   onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
-                  className="w-16 px-2 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-16 px-2 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <input
                   type="number"
                   placeholder="Harga"
                   value={item.unitPrice || ""}
                   onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))}
-                  className="w-28 px-2 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-28 px-2 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
                 />
-                <span className="text-xs font-bold text-indigo-600 w-20 text-right">
+                <span className="text-xs font-bold text-accent w-20 text-right">
                   Rp {(item.qty * item.unitPrice).toLocaleString()}
                 </span>
                 {poItems.length > 1 && (
@@ -255,13 +255,13 @@ export const PurchaseManager: React.FC = () => {
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
 
           <button
             onClick={handleCreatePO}
-            className="w-full py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer shadow-sm transition-all"
+            className="w-full py-2 text-xs font-bold text-white bg-accent hover:bg-accent-hover rounded-lg cursor-pointer shadow-sm transition-all"
           >
             <CheckCircle2 className="w-4 h-4 inline mr-1.5" /> Buat Purchase Order
           </button>
@@ -299,7 +299,7 @@ export const PurchaseManager: React.FC = () => {
                     <Package className="w-3 h-3 inline mr-1 text-slate-400" />
                     {po.items.length} item
                   </td>
-                  <td className="px-4 py-3 font-mono font-bold text-indigo-700">Rp {po.totalCost.toLocaleString()}</td>
+                  <td className="px-4 py-3 font-mono font-bold text-accent">Rp {po.totalCost.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <select
                       value={po.status}

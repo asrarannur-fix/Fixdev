@@ -17,9 +17,9 @@ interface StatCardProps {
 
 const ACCENT: Record<Accent, { icon: string; value: string; ring: string }> = {
   primary: {
-    icon: "text-indigo-600 dark:text-indigo-400",
+    icon: "text-accent dark:text-accent",
     value: "text-slate-800 dark:text-zinc-100",
-    ring: "bg-indigo-50 dark:bg-indigo-950/40",
+    ring: "bg-accent-lighter dark:bg-indigo-950/40",
   },
   success: {
     icon: "text-emerald-600 dark:text-emerald-400",

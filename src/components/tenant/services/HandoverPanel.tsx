@@ -91,9 +91,9 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
 
   return (
     <div className="space-y-3.5 border border-slate-200/85 p-4 rounded-xl bg-slate-50/70 w-full text-left shadow-sm">
-      <div className="flex justify-between items-center bg-indigo-50/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
+      <div className="flex justify-between items-center bg-accent-lighter/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
         <span className="text-slate-600">Total Tagihan Pelunasan (PPN 11%):</span>
-        <span className="text-indigo-700 font-mono text-sm font-bold">
+        <span className="text-accent font-mono text-sm font-bold">
           Rp {totalAmt.toLocaleString()}
         </span>
       </div>
@@ -109,7 +109,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
             setHandoverRefNo("");
             setHandoverProofName("");
           }}
-          className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-medium text-slate-700 shadow-xs"
+          className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
         >
           <option value={PaymentMethod.CASH}>💵 CASH / TUNAI (Kas Utama)</option>
           <option value={PaymentMethod.BANK_TRANSFER}>
@@ -135,7 +135,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
             <select
               value={handoverTempoDays}
               onChange={(e) => setHandoverTempoDays(e.target.value)}
-              className="block w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-medium text-slate-700 shadow-xs"
+              className="block w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
             >
               <option value="15">15 Hari</option>
               <option value="30">30 Hari (Default)</option>
@@ -165,7 +165,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
               placeholder="Contoh: TRX-1029302 atau No. Rek / Slip"
               value={handoverRefNo}
               onChange={(e) => setHandoverRefNo(e.target.value)}
-              className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-medium text-slate-700 shadow-xs"
+              className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
             />
           </div>
 
@@ -193,7 +193,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
                 onClick={() => {
                   document.getElementById(`proof-upload-${ticket.id}`)?.click();
                 }}
-                className="border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 p-4 rounded-lg text-center cursor-pointer transition-all duration-150"
+                className="border-2 border-dashed border-slate-200 hover:border-accent/60 hover:bg-accent-lighter/30 p-4 rounded-lg text-center cursor-pointer transition-all duration-150"
               >
                 <input
                   type="file"
@@ -264,7 +264,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-200/80 pt-3">
         <div className="bg-white border border-indigo-100 rounded-xl p-3 shadow-xs">
-          <p className="text-[10px] font-black text-indigo-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <p className="text-[10px] font-black text-accent uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Receipt className="w-3.5 h-3.5" /> Preview Jurnal Otomatis
           </p>
           <div className="space-y-1.5 text-[10px] font-mono text-slate-600">
@@ -372,7 +372,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
         className={`w-full font-bold text-xs py-2.5 rounded-lg text-center transition-all duration-150 ${
           (isRefOrProofRequired && !isHandoverValid) || !isChecklistComplete
             ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-            : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+            : "bg-accent hover:bg-accent-hover text-white cursor-pointer"
         }`}
       >
         Konfirmasi Handover & Sinkronkan Accounting
@@ -403,7 +403,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
             </button>
             <button
               onClick={() => setShowWarrantyPrintout(ticket.id)}
-              className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-100 text-accent rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
               <ShieldCheck className="w-3.5 h-3.5" /> Cetak Kartu Garansi
             </button>

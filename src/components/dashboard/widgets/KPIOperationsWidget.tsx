@@ -43,7 +43,7 @@ export const KPIOperationsWidget: React.FC<WidgetProps> = ({ data }) => (
         <div className="w-7 h-7 rounded-xl bg-indigo-500 flex items-center justify-center mb-2 shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30">
           <Banknote className="w-3.5 h-3.5 text-white" />
         </div>
-        <p className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-0.5">Rata-rata Transaksi</p>
+        <p className="text-[9px] font-bold text-accent dark:text-accent uppercase tracking-wider mb-0.5">Rata-rata Transaksi</p>
         <p className="text-lg font-black text-indigo-800 dark:text-indigo-200">{fmtRupiah(data.avgTicketValue)}</p>
       </div>
     </div>

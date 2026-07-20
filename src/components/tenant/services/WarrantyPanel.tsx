@@ -353,7 +353,7 @@ export const WarrantyPanel: React.FC<{
           </p>
           <button
             onClick={() => setActiveTab?.('main-tickets')}
-            className="mt-5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl cursor-pointer transition-colors"
+            className="mt-5 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-bold rounded-xl cursor-pointer transition-colors"
           >
             Lihat Tiket Servis
           </button>

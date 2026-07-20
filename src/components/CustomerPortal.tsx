@@ -802,7 +802,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
               }}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
                 selectedCustomerId === cust.id
-                  ? "bg-indigo-600 text-white border-indigo-500 shadow-md ring-2 ring-indigo-400/30"
+                  ? "bg-accent text-white border-accent shadow-md ring-2 ring-indigo-400/30"
                   : "bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700"
               }`}
             >
@@ -859,7 +859,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                 <p className="text-[9px] font-bold font-mono text-slate-400 dark:text-zinc-500 uppercase">
                   Loyalty Points
                 </p>
-                <p className="text-lg font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
+                <p className="text-lg font-black text-accent dark:text-accent mt-0.5">
                   🌟 {activeCustomer.loyaltyPoints || 0}
                 </p>
               </div>
@@ -1090,7 +1090,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                             placeholder="cth: TKT/2606/0001"
                             value={ticketNo}
                             onChange={(e) => setTicketNo(e.target.value)}
-                            className="w-full text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none focus:border-blue-500 transition"
+                            className="w-full text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none focus:border-accent transition"
                             required
                           />
                           <button
@@ -1126,7 +1126,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           className={`border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer relative ${
                             dragOver
                               ? "border-blue-500 bg-blue-50/40 dark:bg-blue-950/10"
-                              : "border-slate-200 dark:border-zinc-800 hover:border-indigo-400"
+                              : "border-slate-200 dark:border-zinc-800 hover:border-accent/60"
                           }`}
                           onClick={() =>
                             document.getElementById("qr-file-input")?.click()
@@ -1279,7 +1279,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-mono text-[9px] font-bold text-indigo-600 dark:text-indigo-400">
+                              <span className="font-mono text-[9px] font-bold text-accent dark:text-accent">
                                 #{ticket.ticketNo}
                               </span>
                               <span
@@ -1411,7 +1411,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                                 placeholder="cth: Hasanuddin"
                                 value={signerName}
                                 onChange={(e) => setSignerName(e.target.value)}
-                                className="w-full text-xs px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-lg outline-none focus:border-blue-500 font-semibold dark:text-white"
+                                className="w-full text-xs px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-lg outline-none focus:border-accent font-semibold dark:text-white"
                               />
                             </div>
                             <div className="space-y-1">
@@ -1423,7 +1423,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                                 placeholder="cth: /hasan_h/"
                                 value={signerText}
                                 onChange={(e) => setSignerText(e.target.value)}
-                                className="w-full text-xs px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-lg outline-none focus:border-blue-500 font-mono italic text-blue-700 dark:text-blue-400"
+                                className="w-full text-xs px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-lg outline-none focus:border-accent font-mono italic text-blue-700 dark:text-blue-400"
                               />
                             </div>
                           </div>
@@ -1603,7 +1603,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           onChange={(e) =>
                             setSelectedWarrantyTicketId(e.target.value)
                           }
-                          className="w-full text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-blue-500 dark:text-white"
+                          className="w-full text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-accent dark:text-white"
                           required
                         >
                           <option value="">
@@ -1632,7 +1632,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           rows={4}
                           value={warrantyComplaint}
                           onChange={(e) => setWarrantyComplaint(e.target.value)}
-                          className="w-full text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-blue-500 dark:text-white leading-relaxed"
+                          className="w-full text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-accent dark:text-white leading-relaxed"
                           required
                         />
                       </div>
@@ -1744,7 +1744,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
               >
                 <div>
                   <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-indigo-600" /> Riwayat
+                    <FileText className="w-5 h-5 text-accent" /> Riwayat
                     Kuitansi & Unduh Invoice
                   </h3>
                   <p className="text-xs text-slate-500 mt-1 leading-normal">
@@ -1788,7 +1788,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                                 key={tx.id}
                                 className="hover:bg-slate-50/55 dark:hover:bg-zinc-950/40"
                               >
-                                <td className="px-4 py-3 font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                <td className="px-4 py-3 font-mono text-[10px] font-bold text-accent dark:text-accent">
                                   {tx.invoiceNo}
                                 </td>
                                 <td className="px-4 py-3 font-mono text-[9px] text-slate-400">
@@ -2126,7 +2126,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         type="text"
                         value={profileName}
                         onChange={(e) => setProfileName(e.target.value)}
-                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-blue-500 dark:text-white"
+                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-accent dark:text-white"
                         required
                       />
                     </div>
@@ -2140,7 +2140,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         type="email"
                         value={profileEmail}
                         onChange={(e) => setProfileEmail(e.target.value)}
-                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-blue-500 dark:text-white"
+                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-accent dark:text-white"
                         required
                       />
                     </div>
@@ -2154,7 +2154,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         type="text"
                         value={profilePhone}
                         onChange={(e) => setProfilePhone(e.target.value)}
-                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-blue-500 dark:text-white"
+                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-accent dark:text-white"
                         required
                       />
                     </div>
@@ -2168,7 +2168,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         type="text"
                         value={profileAddress}
                         onChange={(e) => setProfileAddress(e.target.value)}
-                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-blue-500 dark:text-white"
+                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl outline-none focus:border-accent dark:text-white"
                         required
                       />
                     </div>
@@ -2346,7 +2346,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     disabled={isChatLoading}
-                    className="w-full text-xs px-3.5 py-3 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none focus:border-blue-500 transition disabled:opacity-55"
+                    className="w-full text-xs px-3.5 py-3 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none focus:border-accent transition disabled:opacity-55"
                     required
                   />
                   <button

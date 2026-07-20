@@ -53,12 +53,12 @@ export const TicketListPanelV2: React.FC<{
           <tbody className="divide-y divide-slate-100 dark:divide-zinc-700">
             {filtered.map((ticket) => (
               <tr key={ticket.id} className="hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer" onClick={() => setSelectedTicketIdForEdit(ticket.id)}>
-                <td className="px-6 py-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">#{ticket.ticketNo}</td>
+                <td className="px-6 py-4 font-mono font-bold text-accent dark:text-accent">#{ticket.ticketNo}</td>
                 <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{ticket.customerName}</td>
                 <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{ticket.deviceName}</td>
                 <td className="px-6 py-4"><Pill tone={(STATUS_TONE[ticket.status] || 'slate') as any}>{ticket.status}</Pill></td>
                 <td className="px-6 py-4 text-right">
-                  <button className="text-slate-400 hover:text-indigo-600"><Eye className="w-4 h-4" /></button>
+                  <button className="text-slate-400 hover:text-accent"><Eye className="w-4 h-4" /></button>
                 </td>
               </tr>
             ))}

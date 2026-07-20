@@ -420,7 +420,7 @@ export const FraudDetector: React.FC = () => {
                 placeholder="&bull; &bull; &bull; &bull;"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
-                className="w-full text-center tracking-[12px] font-black text-lg py-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-750 rounded-xl outline-none focus:border-blue-500 dark:text-white"
+                className="w-full text-center tracking-[12px] font-black text-lg py-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-750 rounded-xl outline-none focus:border-accent dark:text-white"
               />
 
               <div className="flex gap-2 pt-1">

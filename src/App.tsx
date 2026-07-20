@@ -45,7 +45,7 @@ const PageLoader = () => (
     className="flex flex-col items-center justify-center h-64 space-y-3"
     id="lazy-page-loader"
   >
-    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
     <p className="text-xs font-mono text-slate-400">Loading module...</p>
   </div>
 );
@@ -389,12 +389,23 @@ const MainAppContent: React.FC = () => {
           {/* Elegant header for public customers */}
           <header className="h-16 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/40 dark:border-slate-900/60 px-6 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-3">
-              <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-md">
-                <span className="font-bold text-sm font-syne">KM</span>
+              <div className="bg-accent p-2 rounded-xl text-white shadow-md">
+                {activeTenant?.branding?.logoUrl ? (
+                  <img src={activeTenant.branding.logoUrl} alt="Logo" className="h-5 w-5" onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }} />
+                ) : null}
+                <span className={`font-bold text-sm font-syne ${activeTenant?.branding?.logoUrl ? 'hidden' : ''}`}>
+                  {(activeTenant?.name || "KM").substring(0, 2).toUpperCase()}
+                </span>
               </div>
               <div>
                 <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-                  FixDev
+                  {activeTenant?.branding?.whiteLabelEnabled && activeTenant?.branding?.customDomain
+                    ? activeTenant.branding.customDomain
+                    : activeTenant?.name || "KM"}
                 </span>
                 <span className="text-[10px] text-slate-400 block -mt-1 font-mono">
                   Customer Portal
@@ -404,7 +415,7 @@ const MainAppContent: React.FC = () => {
 
             <button
               onClick={() => handleSetTab("overview")}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md transition-all cursor-pointer hover:shadow-indigo-500/10 active:scale-95 animate-pulse"
+              className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md transition-all cursor-pointer hover:shadow-accent/10 active:scale-95 animate-pulse"
             >
               Masuk Sebagai Owner / Staff &rarr;
             </button>
@@ -436,7 +447,7 @@ const MainAppContent: React.FC = () => {
         if (!isTrial) return null;
         return (
           <div
-            className="bg-indigo-600 text-white p-2 text-center text-sm font-medium flex items-center justify-center gap-2 z-[9999] shrink-0 border-b border-indigo-500/30"
+            className="bg-accent text-white p-2 text-center text-sm font-medium flex items-center justify-center gap-2 z-[9999] shrink-0 border-b border-accent/30"
             id="trial-banner-top"
           >
             <Sparkles className="h-4 w-4" />
@@ -520,7 +531,7 @@ const MainAppContent: React.FC = () => {
         {/* Cloud API Loader Status Indicator */}
         {effectiveLoading && (
           <div
-            className="fixed top-4 right-4 z-[9999] flex items-center bg-indigo-600 dark:bg-indigo-500 text-white text-xs font-mono py-2 px-3 rounded-lg shadow-lg border border-indigo-400/30 backdrop-blur-xs transition-all animate-pulse"
+            className="fixed top-4 right-4 z-[9999] flex items-center bg-accent dark:bg-accent text-white text-xs font-mono py-2 px-3 rounded-lg shadow-lg border border-accent/60/30 backdrop-blur-xs transition-all animate-pulse"
             id="api-loading-toast"
           >
             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

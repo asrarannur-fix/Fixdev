@@ -346,14 +346,14 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                   >
                     <td className="px-5 py-4">
                       <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                        <button type="button" onClick={() => openTenantDetail(t)} className="text-left hover:text-indigo-600 hover:underline dark:hover:text-indigo-400">{t.name || "Tenant tanpa nama"}</button>
+                        <button type="button" onClick={() => openTenantDetail(t)} className="text-left hover:text-accent hover:underline dark:hover:text-indigo-400">{t.name || "Tenant tanpa nama"}</button>
                       </p>
                       <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
                         ID Tenant: {t.subdomain || t.id}
                       </p>
                       {t.branding?.customDomain && (
                         <div className="flex flex-col gap-1 mt-1.5">
-                          <span className="inline-flex items-center gap-1 text-[9px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded font-mono font-semibold w-max">
+                          <span className="inline-flex items-center gap-1 text-[9px] bg-accent-lighter dark:bg-indigo-950/30 text-accent dark:text-accent px-1.5 py-0.5 rounded font-mono font-semibold w-max">
                             🔗 {t.branding.customDomain}
                           </span>
                           <div className="flex items-center gap-1.5 mt-0.5">
@@ -519,7 +519,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                             setConfigTier(t.tier);
                             setConfigStatus(t.status);
                           }}
-                          className="flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/30 px-2.5 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all w-full shadow-xs"
+                          className="flex items-center justify-center gap-1.5 bg-accent-lighter hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/40 text-accent dark:text-accent border border-indigo-200/50 dark:border-indigo-900/30 px-2.5 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all w-full shadow-xs"
                           title="Konfigurasi Batasan Kuota & Manajemen Fitur Aktif"
                         >
                           <Settings2 className="w-3.5 h-3.5" /> Limit & Fitur
@@ -566,7 +566,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
               placeholder="cth: Mac Repair Center"
               value={newTenantName}
               onChange={(e) => handleTenantNameChange(e.target.value)}
-              className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
+              className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
               required
             />
           </div>}
@@ -584,7 +584,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                     e.target.value.toLowerCase().replace(/\s+/g, "-"),
                   )
                 }
-                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
                 required
               />
             </div>
@@ -603,7 +603,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                 placeholder="cth: Budi Santoso"
                 value={newOwnerName}
                 onChange={(e) => setNewOwnerName(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
                 required
               />
             </div>
@@ -616,7 +616,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                 placeholder="cth: budi@repaircenter.com"
                 value={newOwnerEmail}
                 onChange={(e) => setNewOwnerEmail(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
+                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
                 required
               />
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -662,14 +662,14 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
         <div className="fixed inset-0 z-[9999] flex justify-end bg-slate-950/40" role="dialog" aria-modal="true" aria-labelledby="tenant-detail-title">
           <section className="h-full w-full max-w-3xl overflow-y-auto bg-white shadow-2xl dark:bg-zinc-900">
             <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"><div><h3 id="tenant-detail-title" className="text-lg font-black text-slate-900 dark:text-white">{detailTenant.name}</h3><p className="text-xs text-slate-500">{detailTenant.subdomain} · {detailTenant.status} · {detailTenant.tier}</p></div><button type="button" onClick={() => setDetailTenant(null)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold dark:border-zinc-700">Tutup</button></header>
-            <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 p-3 dark:border-zinc-800" aria-label="Detail tenant">{[["summary","Ringkasan"],["users","Pengguna"],["billing","Billing"],["usage","Penggunaan"],["infrastructure","Domain & Storage"],["features","Fitur"],["audit","Audit"]].map(([id,label]) => <button key={id} type="button" onClick={() => setDetailTab(id)} className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${detailTab===id?"bg-indigo-600 text-white":"text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-zinc-800"}`}>{label}</button>)}</nav>
+            <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 p-3 dark:border-zinc-800" aria-label="Detail tenant">{[["summary","Ringkasan"],["users","Pengguna"],["billing","Billing"],["usage","Penggunaan"],["infrastructure","Domain & Storage"],["features","Fitur"],["audit","Audit"]].map(([id,label]) => <button key={id} type="button" onClick={() => setDetailTab(id)} className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${detailTab===id?"bg-accent text-white":"text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-zinc-800"}`}>{label}</button>)}</nav>
             <div className="p-5">{detailLoading ? <p className="py-12 text-center text-sm text-slate-500">Memuat detail tenant…</p> : !detailData ? <p className="py-12 text-center text-sm text-slate-500">Detail belum tersedia.</p> : <>
               {detailTab === "summary" && <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[["Status",detailData.tenant.status],["Paket",detailData.tenant.tier],["Pengguna",detailData.users.length],["Invoice",detailData.invoices.length]].map(([label,value])=><div key={String(label)} className="rounded-xl bg-slate-50 p-4 dark:bg-zinc-950"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-900 dark:text-white">{value}</p></div>)}</div>}
-              {detailTab === "users" && <div className="space-y-3">{detailData.users.length ? detailData.users.map((user:any)=><div key={user.id} className="flex justify-between rounded-xl border border-slate-200 p-3 text-xs dark:border-zinc-800"><span><b>{user.name}</b><br/><span className="text-slate-500">{user.email}</span></span><span className="font-bold">{user.role}</span></div>) : <p className="text-sm text-slate-500">Belum ada user aktif.</p>}<div className="border-t border-slate-200 pt-3 dark:border-zinc-800"><h4 className="text-xs font-black">Undangan Owner</h4>{detailData.invitations.length ? detailData.invitations.map((invite:any)=><div key={invite.id} className="mt-2 flex items-center justify-between rounded-xl bg-slate-50 p-3 text-xs dark:bg-zinc-950"><span><b>{invite.name}</b><br/>{invite.email}<br/><span className="text-slate-400">{invite.acceptedAt ? 'Diterima' : invite.revokedAt ? 'Dicabut' : `Aktif sampai ${new Date(invite.expiresAt).toLocaleString('id-ID')}`}</span></span><span className="flex gap-1">{!invite.acceptedAt && !invite.revokedAt && <button type="button" disabled={readOnlyMode} onClick={()=>manageInvitation('revoke',invite)} className="rounded-lg border border-rose-200 px-2 py-1 text-rose-700 disabled:opacity-40">Cabut</button>}<button type="button" disabled={readOnlyMode||Boolean(invite.acceptedAt)} onClick={()=>manageInvitation('resend',invite)} className="rounded-lg bg-indigo-600 px-2 py-1 text-white disabled:opacity-40">Kirim ulang</button></span></div>) : <p className="mt-2 text-xs text-slate-500">Belum ada undangan.</p>}</div></div>}
+              {detailTab === "users" && <div className="space-y-3">{detailData.users.length ? detailData.users.map((user:any)=><div key={user.id} className="flex justify-between rounded-xl border border-slate-200 p-3 text-xs dark:border-zinc-800"><span><b>{user.name}</b><br/><span className="text-slate-500">{user.email}</span></span><span className="font-bold">{user.role}</span></div>) : <p className="text-sm text-slate-500">Belum ada user aktif.</p>}<div className="border-t border-slate-200 pt-3 dark:border-zinc-800"><h4 className="text-xs font-black">Undangan Owner</h4>{detailData.invitations.length ? detailData.invitations.map((invite:any)=><div key={invite.id} className="mt-2 flex items-center justify-between rounded-xl bg-slate-50 p-3 text-xs dark:bg-zinc-950"><span><b>{invite.name}</b><br/>{invite.email}<br/><span className="text-slate-400">{invite.acceptedAt ? 'Diterima' : invite.revokedAt ? 'Dicabut' : `Aktif sampai ${new Date(invite.expiresAt).toLocaleString('id-ID')}`}</span></span><span className="flex gap-1">{!invite.acceptedAt && !invite.revokedAt && <button type="button" disabled={readOnlyMode} onClick={()=>manageInvitation('revoke',invite)} className="rounded-lg border border-rose-200 px-2 py-1 text-rose-700 disabled:opacity-40">Cabut</button>}<button type="button" disabled={readOnlyMode||Boolean(invite.acceptedAt)} onClick={()=>manageInvitation('resend',invite)} className="rounded-lg bg-accent px-2 py-1 text-white disabled:opacity-40">Kirim ulang</button></span></div>) : <p className="mt-2 text-xs text-slate-500">Belum ada undangan.</p>}</div></div>}
               {detailTab === "billing" && <div className="space-y-2">{detailData.invoices.length ? detailData.invoices.map((invoice:any)=><div key={invoice.id} className="flex justify-between rounded-xl border border-slate-200 p-3 text-xs dark:border-zinc-800"><span><b>{invoice.id}</b><br/>{invoice.tier} · {invoice.billingCycle}</span><span className="font-black">{invoice.status}<br/>Rp {Number(invoice.amount).toLocaleString("id-ID")}</span></div>) : <p className="text-sm text-slate-500">Belum ada invoice.</p>}</div>}
               {detailTab === "usage" && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">Penggunaan storage ditampilkan sebagai estimasi sampai backend mengirim `storage_used_bytes`. Data aktivitas: {detailData.users.length} user dan {detailData.invoices.length} invoice.</div>}
               {detailTab === "infrastructure" && <dl className="grid gap-3 text-sm"><div><dt className="text-slate-500">Subdomain</dt><dd className="font-bold">{detailData.tenant.subdomain}</dd></div><div><dt className="text-slate-500">Custom domain</dt><dd className="font-bold">{detailData.tenant.branding?.customDomain || "Belum diatur"}</dd></div><div><dt className="text-slate-500">Storage aktual</dt><dd className="font-bold">{detailData.tenant.storageUsedBytes == null ? "Belum diukur" : `${Math.round(Number(detailData.tenant.storageUsedBytes)/1048576)} MB`}</dd></div></dl>}
-              {detailTab === "features" && <div className="flex flex-wrap gap-2">{(detailData.tenant.settings?.limits?.features || detailTenant.limits?.features || []).map((feature:string)=><span key={feature} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300">{feature}</span>)}</div>}
+              {detailTab === "features" && <div className="flex flex-wrap gap-2">{(detailData.tenant.settings?.limits?.features || detailTenant.limits?.features || []).map((feature:string)=><span key={feature} className="rounded-full bg-accent-lighter px-3 py-1 text-xs font-bold text-accent dark:bg-indigo-950/30 dark:text-indigo-300">{feature}</span>)}</div>}
               {detailTab === "audit" && <div className="space-y-2">{detailData.audit.map((event:any)=><div key={event.id} className="rounded-xl border border-slate-200 p-3 text-xs dark:border-zinc-800"><div className="flex justify-between"><b>{event.action}</b><span>{event.outcome}</span></div><p className="mt-1 text-slate-500">{new Date(event.createdAt).toLocaleString("id-ID")}</p></div>)}</div>}
             </>}</div>
           </section>
@@ -723,7 +723,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
             <h3 id="impersonation-title" className="text-lg font-black text-slate-900 dark:text-white">Akses tenant secara aman</h3>
             <p className="mt-1 text-xs text-slate-500">{impersonationTenant.name} · sesi otomatis berakhir dalam 30 menit.</p>
             <div className="mt-5 grid gap-4"><label className="text-xs font-bold text-slate-600 dark:text-zinc-300">Alasan<input required value={impersonationReason} onChange={(event) => setImpersonationReason(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 dark:border-zinc-700 dark:bg-zinc-950" /></label><label className="text-xs font-bold text-slate-600 dark:text-zinc-300">Ticket ID (opsional)<input value={impersonationTicket} onChange={(event) => setImpersonationTicket(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 dark:border-zinc-700 dark:bg-zinc-950" /></label><label className="text-xs font-bold text-slate-600 dark:text-zinc-300">Mode<select value={impersonationMode} onChange={(event) => setImpersonationMode(event.target.value as "READ_ONLY" | "FULL")} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 dark:border-zinc-700 dark:bg-zinc-950"><option value="READ_ONLY">Hanya-baca (disarankan)</option><option value="FULL">Akses penuh</option></select></label></div>
-            <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setImpersonationTenant(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold dark:border-zinc-700">Batal</button><button type="submit" className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">Mulai sesi</button></div>
+            <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setImpersonationTenant(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold dark:border-zinc-700">Batal</button><button type="submit" className="rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white">Mulai sesi</button></div>
           </form>
         </div>
       )}

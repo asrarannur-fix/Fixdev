@@ -11,6 +11,7 @@ import { OPERATIONAL_MODULES } from "../../config/nav.config";
 import { getEffectiveFeatures, getRequiredTierForModule, isModuleLocked as isFeatureLocked, isTrialActive } from "../../lib/featureUtils";
 import { RoleAvatar } from "../ui";
 import { PasswordChangeModal } from "../ui/PasswordChangeModal";
+import { WhiteLabelGate } from "../ui/WhiteLabelGate";
 import {
   LayoutDashboard,
   Wrench,
@@ -83,7 +84,7 @@ const getModuleColorClass = (modId: string) => {
     case "fraud":
       return "text-slate-500 bg-slate-100 dark:bg-zinc-900/80 dark:text-slate-400";
     case "customer-portal":
-      return "text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400";
+      return "text-accent bg-accent-lighter dark:bg-indigo-950/20 dark:text-accent";
     case "mobile-sim":
       return "text-slate-500 bg-slate-50 dark:bg-slate-900/40 dark:text-slate-400";
     default:
@@ -166,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case "fraud":
         return "Modul Keamanan & Audit (AI Fraud Detector) menggunakan analitik real-time untuk mendeteksi keanehan transaksi void kasir, melacak histori audit trail serta meminimalkan kerugian akibat kebocoran keuangan.";
       default:
-        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium FixDev.";
+        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium.";
     }
   };
 
@@ -419,22 +420,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="p-5 border-b border-slate-200/40 dark:border-zinc-900 flex items-center justify-between bg-white dark:bg-zinc-900/20 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative group shrink-0">
-                <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 to-blue-600 rounded-xl opacity-75 blur-xs group-hover:opacity-100 transition duration-300 animate-pulse" />
+                <WhiteLabelGate>
+                   <div className="absolute -inset-1 rounded-xl opacity-75 blur-xs group-hover:opacity-100 transition duration-300 animate-pulse" style={{ background: activeTenant?.branding?.primaryColor || "var(--accent)" }} />
+                </WhiteLabelGate>
                 <div className="relative w-8 h-8 rounded-xl bg-slate-950 dark:bg-zinc-900 flex items-center justify-center text-white font-syne font-black text-sm shadow-md cursor-pointer transform group-hover:scale-105 transition-all duration-200">
-                  {activeTenant?.id === "tenant-01"
-                    ? "KM"
-                    : (activeTenant?.name || "S").substring(0, 2).toUpperCase()}
+                  {activeTenant?.branding?.logoUrl ? (
+                    <img src={activeTenant.branding.logoUrl} alt="Logo" className="w-6 h-6 rounded" onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }} />
+                  ) : (
+                    <span className="hidden">
+                      {(activeTenant?.name || "S").substring(0, 2).toUpperCase()}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="min-w-0 transition-opacity duration-300 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
                 <div className="flex items-center gap-1">
-                  <h3 className="font-syne font-black text-[13px] text-slate-900 dark:text-slate-50 tracking-tight truncate uppercase leading-tight">
+                  <h3 className="font-syne font-black text-[13px] tracking-tight truncate uppercase leading-tight" style={{ color: activeTenant?.branding?.primaryColor || "#1e293b" }}>
                     {activeTenant?.name || "Komputer Makassar"}
                   </h3>
                 </div>
-                <span className="text-[8px] font-mono text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/60 dark:border-indigo-900/40 rounded-full px-2 py-0.5 font-extrabold flex items-center gap-1 mt-1 w-max shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
-                  CRM INTEGRATED
+                <span className="text-[8px] font-mono rounded-full px-2 py-0.5 font-extrabold flex items-center gap-1 mt-1 w-max shadow-xs transition-all duration-200" style={{ 
+                   color: activeTenant?.branding?.primaryColor || "var(--accent)",
+                  backgroundColor: activeTenant?.branding?.whiteLabelEnabled ? "#f3f4f6" : (activeTenant?.branding?.secondaryColor ? activeTenant.branding.secondaryColor + '20' : "#dbeafe"),
+                  borderColor: activeTenant?.branding?.whiteLabelEnabled ? "#e5e7eb" : (activeTenant?.branding?.secondaryColor ? activeTenant.branding.secondaryColor + '40' : "#93c5fd")
+                }}
+                >
+                   <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: activeTenant?.branding?.primaryColor || "var(--accent)" }} />
+                  {activeTenant?.branding?.whiteLabelEnabled ? "CUSTOM" : "CRM INTEGRATED"}
                 </span>
               </div>
             </div>
@@ -459,7 +475,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Cari menu..."
-                className="w-full rounded-2xl border border-slate-200 bg-white/90 py-2 pl-9 pr-3 text-xs font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200 dark:border-zinc-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:border-indigo-400 dark:focus:ring-indigo-900"
+                className="w-full rounded-2xl border border-slate-200 bg-white/90 py-2 pl-9 pr-3 text-xs font-semibold text-slate-700 shadow-sm outline-none transition focus:border-accent/50 focus:ring-2 focus:ring-accent/30 dark:border-zinc-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:border-accent/60 dark:focus:ring-accent/90"
               />
             </div>
           </div>
@@ -470,7 +486,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {isSuperAdmin && (
               <div className="space-y-1">
                 <div className="text-[9.5px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest px-3 pt-1 pb-2 font-mono flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent shadow-sm shadow-accent/50 animate-pulse" />
                   <span className="whitespace-nowrap transition-opacity duration-300 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
                     Super Admin Console
                   </span>
@@ -485,7 +501,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => onSetTab(menu.id)}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-black transition-all border text-left cursor-pointer transform hover:translate-x-1 ${
                         isActive
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-500 dark:to-cyan-500 text-white border-indigo-400/60 shadow-lg shadow-indigo-500/20 animate-fadeIn"
+                          ? "bg-gradient-to-r from-accent to-blue-600 dark:from-accent dark:to-cyan-500 text-white border-accent/60 shadow-lg shadow-accent/20 animate-fadeIn"
                           : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-zinc-900 hover:text-slate-950 dark:hover:text-slate-50 shadow-none"
                       }`}
                     >
@@ -524,7 +540,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               onClick={() => onSetTab(mod.id)}
                               className={`w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl text-xs font-black transition-all border text-left cursor-pointer transform hover:translate-x-1 ${
                                 isActive
-                                  ? "bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-500 dark:to-cyan-500 text-white border-indigo-400/60 shadow-lg shadow-indigo-500/20 animate-fadeIn"
+                                  ? "bg-gradient-to-r from-accent to-blue-600 dark:from-accent dark:to-cyan-500 text-white border-accent/60 shadow-lg shadow-accent/20 animate-fadeIn"
                                   : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-zinc-900 hover:text-slate-950 dark:hover:text-slate-50 shadow-none"
                               }`}
                             >
@@ -592,7 +608,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 <div key={mod.id} className="relative">
                                   {/* Accent Line on active tab */}
                                   {isModActive && (
-                                    <div className="absolute left-0 top-3 w-1.2 h-6 bg-indigo-600 dark:bg-indigo-500 rounded-r-full z-10" />
+                                    <div className="absolute left-0 top-3 w-1.2 h-6 bg-accent dark:bg-accent rounded-r-full z-10" />
                                   )}
 
                                   {/* Module Header Button */}
@@ -617,7 +633,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                       locked
                                         ? "cursor-pointer bg-amber-50/70 dark:bg-amber-950/15 text-amber-700 dark:text-amber-300 border-amber-200/70 dark:border-amber-900/50 hover:bg-amber-100 dark:hover:bg-amber-950/30"
                                         : isModActive
-                                          ? "cursor-pointer transform hover:translate-x-1 bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-500 dark:to-cyan-500 text-white border-indigo-400/60 shadow-lg shadow-indigo-500/20 animate-fadeIn"
+                                          ? "cursor-pointer transform hover:translate-x-1 bg-gradient-to-r from-accent to-accent dark:from-accent dark:to-accent text-white border-accent/60/60 shadow-lg shadow-accent/20 animate-fadeIn"
                                           : "cursor-pointer transform hover:translate-x-1 bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-zinc-900 hover:text-slate-950 dark:hover:text-slate-50 shadow-none"
                                     }`}
                                   >
@@ -663,11 +679,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                               }}
                                               className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-left transition-all cursor-pointer ${
                                                 isSubActive
-                                                  ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-extrabold"
+                                                  ? "bg-accent-lighter dark:bg-indigo-950/40 text-accent dark:text-accent font-extrabold"
                                                   : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-zinc-200 hover:bg-slate-100/50 dark:hover:bg-zinc-800/40"
                                               }`}
                                             >
-                                              <SubIcon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`} />
+                                              <SubIcon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? "text-accent dark:text-accent" : "text-slate-400"}`} />
                                               <span className="truncate">{sub.label}</span>
                                             </button>
                                           );
@@ -748,7 +764,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onSetTab(menu.id)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-sm font-semibold transition-all border text-left cursor-pointer ${
                     isActive
-                      ? "border-indigo-500 bg-indigo-600 text-white shadow-lg shadow-indigo-500/10"
+                      ? "border-accent bg-accent text-white shadow-lg shadow-accent/10"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-slate-200 dark:hover:bg-zinc-900"
                   }`}
                 >
@@ -800,15 +816,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </p>
 
               {/* Requirement Alert Badge */}
-              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-start gap-3">
-                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+              <div className="bg-indigo-500/10 border border-accent/20 rounded-2xl p-4 flex items-start gap-3">
+                <Sparkles className="w-4 h-4 text-accent dark:text-accent shrink-0 mt-0.5" />
                 <div>
                   <h5 className="text-[11px] font-bold text-indigo-900 dark:text-indigo-300">
                     Syarat Upgrade Paket
                   </h5>
-                  <p className="text-[10px] text-indigo-700/80 dark:text-indigo-400/80 mt-0.5 leading-relaxed">
+                  <p className="text-[10px] text-accent/80 dark:text-accent/80 mt-0.5 leading-relaxed">
                     Fitur ini memerlukan paket langganan minimal{" "}
-                    <strong className="text-indigo-600 dark:text-indigo-400">
+                    <strong className="text-accent dark:text-accent">
                       {lockedFeatureInfo.requiredTier}
                     </strong>{" "}
                     atau lebih tinggi. Status paket Anda saat ini adalah{" "}
@@ -831,7 +847,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     isSuperAdmin ? undefined : "subscription",
                   );
                 }}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-2xl shadow-lg shadow-indigo-500/15 hover:shadow-indigo-500/25 transition-all duration-200 transform hover:scale-[1.01] active:scale-95 text-center cursor-pointer"
+                className="w-full py-3 px-4 bg-accent hover:bg-accent-hover text-white text-xs font-black rounded-2xl shadow-lg shadow-accent/15 hover:shadow-accent/25 transition-all duration-200 transform hover:scale-[1.01] active:scale-95 text-center cursor-pointer"
               >
                 Tingkatkan Paket Sekarang &rarr;
               </button>

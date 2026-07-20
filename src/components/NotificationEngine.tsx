@@ -159,7 +159,7 @@ export const NotificationEngine: React.FC = () => {
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === tab.id
-                ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                ? "border-accent text-accent dark:border-accent/60 dark:text-accent"
                 : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
             }`}
           >
@@ -207,7 +207,7 @@ export const NotificationEngine: React.FC = () => {
                 className={`w-full py-2 rounded-lg text-xs font-bold transition-colors border ${
                   channel.status === "active"
                     ? "border-slate-200 hover:bg-slate-50 text-slate-700 dark:border-slate-700 dark:hover:bg-slate-800 dark:text-slate-300"
-                    : "border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400"
+                    : "border-indigo-200 bg-accent-lighter text-accent hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-accent"
                 }`}
               >
                 {channel.status === "active"
@@ -231,7 +231,7 @@ export const NotificationEngine: React.FC = () => {
                 Tentukan event sistem apa saja yang akan men-trigger notifikasi.
               </p>
             </div>
-            <button className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-indigo-700 transition-colors">
+            <button className="px-3 py-1.5 bg-accent text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-accent-hover transition-colors">
               <Plus className="w-4 h-4" /> Tambah Event
             </button>
           </div>
@@ -248,7 +248,7 @@ export const NotificationEngine: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">
+                      <span className="font-mono text-xs font-bold text-accent dark:text-accent bg-accent-lighter dark:bg-indigo-900/30 px-2 py-0.5 rounded">
                         {tpl.trigger}
                       </span>
                     </div>
@@ -275,7 +275,7 @@ export const NotificationEngine: React.FC = () => {
                       <span className="capitalize">{tpl.channel}</span>
                     </p>
                   </div>
-                  <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors">
+                  <button className="p-2 text-slate-400 hover:text-accent hover:bg-accent-lighter dark:hover:bg-indigo-900/30 rounded-lg transition-colors">
                     <Settings className="w-5 h-5" />
                   </button>
                 </div>
@@ -301,7 +301,7 @@ export const NotificationEngine: React.FC = () => {
                   {tpl.channel}
                 </span>
               </div>
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 font-mono mb-3">
+              <p className="text-xs text-accent dark:text-accent font-mono mb-3">
                 Trigger: {tpl.trigger}
               </p>
 
@@ -315,14 +315,14 @@ export const NotificationEngine: React.FC = () => {
                 <button className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors">
                   Hapus
                 </button>
-                <button className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-lg transition-colors">
+                <button className="px-3 py-1.5 text-xs font-semibold text-accent bg-accent-lighter hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-lg transition-colors">
                   Edit Template
                 </button>
               </div>
             </div>
           ))}
           <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col items-center justify-center text-center min-h-[200px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-3">
+            <div className="w-12 h-12 rounded-full bg-accent-lighter dark:bg-indigo-900/30 flex items-center justify-center text-accent dark:text-accent mb-3">
               <Plus className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-slate-800 dark:text-white">
@@ -382,7 +382,7 @@ export const NotificationEngine: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {log.status === "failed" ? (
-                        <button className="flex items-center justify-end gap-1.5 text-indigo-600 hover:text-indigo-800 font-medium text-xs ml-auto">
+                        <button className="flex items-center justify-end gap-1.5 text-accent hover:text-indigo-800 font-medium text-xs ml-auto">
                           <RefreshCw className="w-3.5 h-3.5" /> Coba Lagi
                         </button>
                       ) : (

@@ -4,7 +4,8 @@ export type PrintConfig = NonNullable<TenantSettings["printConfig"]>;
 
 export const getPrintPageSize = (pc?: PrintConfig): string => {
   const size = pc?.paperSize || "thermal_80";
-  if (size === "a4" || size === "hvs_a4" || size === "hvs_letter") return "A4";
+  if (size === "a4" || size === "hvs_a4") return "A4";
+  if (size === "hvs_letter") return "Letter";
   if (size === "thermal_58") return "58mm auto";
   return "80mm auto";
 };
@@ -22,7 +23,8 @@ export const getPrintMargin = (pc?: PrintConfig): number => {
 
 export const getPaperWidthStyle = (pc?: PrintConfig): string => {
   const size = pc?.paperSize || "thermal_80";
-  if (size === "a4" || size === "hvs_a4" || size === "hvs_letter") return "180mm";
+  if (size === "a4" || size === "hvs_a4") return "180mm";
+  if (size === "hvs_letter") return "216mm";
   if (size === "thermal_58") return "54mm";
   return "76mm";
 };
@@ -50,9 +52,10 @@ export const getPrintHeaderHtml = (
   pc: PrintConfig | undefined,
   opts: { businessName: string; subtitle?: string },
 ): string => {
-  const title =
+  const title = escapeHtml(
     (pc?.customHeaderTitle || "").trim() ||
-    escapeHtml((opts.businessName || "").toUpperCase());
+    (opts.businessName || "").toUpperCase()
+  );
   const logo = pc?.printHeaderLogo
     ? `<div style="text-align:center;margin-bottom:6px;"><img src="/logo.png" alt="logo" style="height:34px;"/></div>`
     : "";

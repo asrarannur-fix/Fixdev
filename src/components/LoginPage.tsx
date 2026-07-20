@@ -30,7 +30,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   const [ownerName, setOwnerName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
-  const [selectedTheme, setSelectedTheme] = useState("#4f46e5");
+  const [selectedTheme, setSelectedTheme] = useState("var(--accent)");
   const [registrationSuccess, setRegistrationSuccess] = useState<any | null>(null);
 
   const themePresets = [
@@ -140,15 +140,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
     <main className="relative flex min-h-screen flex-col bg-slate-50 text-slate-900" id="login-page">
       <div className="pointer-events-none fixed inset-x-0 top-0 -z-0 h-[420px] bg-[radial-gradient(circle_at_15%_0%,rgba(99,102,241,.16),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(34,211,238,.12),transparent_30%)]" />
 
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <button onClick={onBack} className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-indigo-600"><ArrowLeft className="h-4 w-4" /> Kembali</button>
-        <div className="flex items-center gap-2 font-black"><span className="grid h-8 w-8 place-items-center rounded-xl bg-indigo-600 text-white"><Wrench className="h-4 w-4" /></span>FixDev</div>
-      </header>
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+          <button onClick={onBack} className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-accent"><ArrowLeft className="h-4 w-4" /> Kembali</button>
+          <div className="flex items-center gap-2 font-black">
+            <span className="grid h-8 w-8 place-items-center rounded-xl text-white font-bold text-sm shadow-md transition-all duration-200" style={{ 
+              backgroundColor: activeTenant?.branding?.primaryColor || "#4f46e5" 
+            }}>
+              <Wrench className="h-4 w-4" />
+            </span>
+            <span style={{ color: activeTenant?.branding?.primaryColor || "#1e293b" }}>
+              {activeTenant?.branding?.whiteLabelEnabled && activeTenant?.branding?.customDomain
+                ? activeTenant.branding.customDomain
+                : activeTenant?.name || "KM"
+              }
+            </span>
+          </div>
+        </header>
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_1fr] lg:py-10">
         <aside className="hidden lg:block">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-indigo-100">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600"><Sparkles className="h-4 w-4" /> Multi-cabang</div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-accent/10">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-accent"><Sparkles className="h-4 w-4" /> Multi-cabang</div>
             <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight">Satu akun, seluruh toko terkelola.</h2>
             <p className="mt-2 text-xs leading-5 text-slate-600">Masuk untuk melihat servis, kasir, stok, dan laporan toko Anda. Data tiap cabang terpisah dan aman.</p>
             <ul className="mt-5 grid gap-2 text-xs font-bold text-slate-700">
@@ -160,10 +172,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
         </aside>
 
         <section className="mx-auto w-full max-w-md">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-indigo-100 sm:p-7">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-accent/10 sm:p-7">
             <div className="flex p-1 rounded-xl bg-slate-100">
-              <button onClick={() => { setActiveTab("manual"); setErrorMsg(""); }} className={`flex-1 rounded-lg py-2.5 text-xs font-black transition ${activeTab === "manual" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}><Mail className="mr-1 inline h-3.5 w-3.5" />Masuk</button>
-              <button onClick={() => { setActiveTab("register"); setErrorMsg(""); }} className={`flex-1 rounded-lg py-2.5 text-xs font-black transition ${activeTab === "register" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}><Store className="mr-1 inline h-3.5 w-3.5" />Daftar toko</button>
+              <button onClick={() => { setActiveTab("manual"); setErrorMsg(""); }} className={`flex-1 rounded-lg py-2.5 text-xs font-black transition ${activeTab === "manual" ? "bg-white text-accent shadow-sm" : "text-slate-500"}`}><Mail className="mr-1 inline h-3.5 w-3.5" />Masuk</button>
+              <button onClick={() => { setActiveTab("register"); setErrorMsg(""); }} className={`flex-1 rounded-lg py-2.5 text-xs font-black transition ${activeTab === "register" ? "bg-white text-accent shadow-sm" : "text-slate-500"}`}><Store className="mr-1 inline h-3.5 w-3.5" />Daftar toko</button>
             </div>
 
             {errorMsg && <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] font-medium text-rose-700"><span className="mr-1">⚠️</span>{errorMsg}</div>}
@@ -178,29 +190,29 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
                     <p className="flex justify-between"><span className="text-slate-500">Cabang</span><span className="font-bold text-slate-800">{registrationSuccess.branch.name}</span></p>
                     <p className="flex justify-between"><span className="text-slate-500">Email</span><span className="font-bold text-slate-800">{registrationSuccess.ownerEmail}</span></p>
                   </div>
-                  <button onClick={handleLaunchSimulation} disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">{loading ? "Masuk..." : <>Masuk ke dashboard <ArrowRight className="h-4 w-4" /></>}</button>
+                  <button onClick={handleLaunchSimulation} disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-xs font-black text-white hover:bg-accent-hover disabled:opacity-50">{loading ? "Masuk..." : <>Masuk ke dashboard <ArrowRight className="h-4 w-4" /></>}</button>
                 </motion.div>
               ) : activeTab === "register" ? (
                 <motion.form key="register" onSubmit={handleTenantRegistration} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
                   <h3 className="text-sm font-black">Daftarkan toko baru</h3>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Nama toko</span><input required value={shopName} onChange={(e) => handleShopNameChange(e.target.value)} placeholder="Nama Toko Anda" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
-                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Sektor</span><select value={businessSector} onChange={(e) => setBusinessSector(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"><option>IT & Servis Komputer</option><option>Servis Smartphone & Gadget</option><option>Servis Elektronik Umum</option><option>Bengkel Otomotif</option></select></label>
-                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Nama pemilik</span><input required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Nama lengkap" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
-                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Email owner</span><input required type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="owner@toko.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
-                    <label className="block sm:col-span-2"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Password owner</span><input required type="password" minLength={6} value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} placeholder="Minimal 6 karakter" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Nama toko</span><input required value={shopName} onChange={(e) => handleShopNameChange(e.target.value)} placeholder="Nama Toko Anda" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Sektor</span><select value={businessSector} onChange={(e) => setBusinessSector(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"><option>IT & Servis Komputer</option><option>Servis Smartphone & Gadget</option><option>Servis Elektronik Umum</option><option>Bengkel Otomotif</option></select></label>
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Nama pemilik</span><input required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Nama lengkap" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
+                    <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Email owner</span><input required type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="owner@toko.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
+                    <label className="block sm:col-span-2"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Password owner</span><input required type="password" minLength={6} value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} placeholder="Minimal 6 karakter" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
                   </div>
                   <div><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Tema warna</span><div className="flex gap-2">{themePresets.map((theme) => <button type="button" key={theme.color} onClick={() => setSelectedTheme(theme.color)} style={{ background: theme.color }} className={`h-8 w-8 rounded-xl transition ${selectedTheme === theme.color ? "ring-2 ring-slate-900 ring-offset-2" : ""}`} aria-label={theme.name} />)}</div></div>
-                  <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">{loading ? "Membuat..." : <>Buat toko <ArrowRight className="h-4 w-4" /></>}</button>
+                  <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-xs font-black text-white hover:bg-accent-hover disabled:opacity-50">{loading ? "Membuat..." : <>Buat toko <ArrowRight className="h-4 w-4" /></>}</button>
                   <p className="text-center text-[10px] font-semibold text-slate-500">Sistem menyiapkan cabang, gudang, dan akun otomatis. Data cabang tetap terpisah.</p>
                 </motion.form>
               ) : (
                 <motion.form key="manual" onSubmit={handleManualSubmit} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
                   <h3 className="text-sm font-black">Masuk ke akun</h3>
-                  <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Alamat email</span><input required type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="nama@toko.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
-                  <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Password</span><input required type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="••••••••" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
-                  <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">{loading ? "Memeriksa..." : <>Masuk <ArrowRight className="h-4 w-4" /></>}</button>
-                  <button type="button" onClick={() => { setShowForgotPassword(true); setForgotSuccess(false); setForgotError(""); setForgotEmail(""); }} className="block w-full text-center text-[11px] font-bold text-indigo-600 hover:underline">Lupa password?</button>
+                  <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Alamat email</span><input required type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="nama@toko.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
+                  <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Password</span><input required type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="••••••••" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
+                  <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-xs font-black text-white hover:bg-accent-hover disabled:opacity-50">{loading ? "Memeriksa..." : <>Masuk <ArrowRight className="h-4 w-4" /></>}</button>
+                  <button type="button" onClick={() => { setShowForgotPassword(true); setForgotSuccess(false); setForgotError(""); setForgotEmail(""); }} className="block w-full text-center text-[11px] font-bold text-accent hover:underline">Lupa password?</button>
                 </motion.form>
               )}
             </AnimatePresence>
@@ -213,13 +225,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
           <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-black">Reset password</h3><button onClick={() => setShowForgotPassword(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><span className="text-lg">×</span></button></div>
             {forgotSuccess ? (
-              <div className="space-y-3 py-2 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle className="h-6 w-6" /></div><p className="text-xs text-slate-600">Link reset dikirim ke <strong>{forgotEmail}</strong>. Cek kotak masuk.</p><button onClick={() => setShowForgotPassword(false)} className="w-full rounded-xl bg-indigo-600 py-2.5 text-xs font-black text-white">Kembali</button></div>
+              <div className="space-y-3 py-2 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle className="h-6 w-6" /></div><p className="text-xs text-slate-600">Link reset dikirim ke <strong>{forgotEmail}</strong>. Cek kotak masuk.</p><button onClick={() => setShowForgotPassword(false)} className="w-full rounded-xl bg-accent py-2.5 text-xs font-black text-white">Kembali</button></div>
             ) : (
               <form onSubmit={handleForgotPassword} className="space-y-3">
                 <p className="text-xs text-slate-600">Masukkan email terdaftar. Kami kirim link untuk membuat password baru.</p>
-                <input required type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="contoh@email.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
+                <input required type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="contoh@email.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
                 {forgotError && <p className="text-[11px] text-rose-600">{forgotError}</p>}
-                <div className="flex gap-2"><button type="button" onClick={() => setShowForgotPassword(false)} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600">Batal</button><button type="submit" disabled={forgotLoading} className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-xs font-black text-white disabled:opacity-50">Kirim link</button></div>
+                <div className="flex gap-2"><button type="button" onClick={() => setShowForgotPassword(false)} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600">Batal</button><button type="submit" disabled={forgotLoading} className="flex-1 rounded-xl bg-accent py-2.5 text-xs font-black text-white disabled:opacity-50">Kirim link</button></div>
               </form>
             )}
           </div>

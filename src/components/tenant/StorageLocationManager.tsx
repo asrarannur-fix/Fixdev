@@ -78,9 +78,9 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
     <div className="space-y-4 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 text-slate-800">
-          <Layers className="w-4 h-4 text-indigo-600" /> Rak & Lokasi Penyimpanan ({branchLocs.length})
+          <Layers className="w-4 h-4 text-accent" /> Rak & Lokasi Penyimpanan ({branchLocs.length})
         </h3>
-        <button onClick={() => { resetForm(); setShowForm(true); }} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 cursor-pointer">
+        <button onClick={() => { resetForm(); setShowForm(true); }} className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-[10px] font-bold rounded-lg flex items-center gap-1 cursor-pointer">
           <Plus className="w-3 h-3" /> Tambah Rak
         </button>
       </div>
@@ -112,7 +112,7 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
               </select>
             </div>
             <div className="flex items-end gap-2">
-              <button onClick={handleSave} className="flex-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-lg cursor-pointer">Simpan</button>
+              <button onClick={handleSave} className="flex-1 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-[10px] font-bold rounded-lg cursor-pointer">Simpan</button>
               <button onClick={resetForm} className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] font-bold rounded-lg cursor-pointer">Batal</button>
             </div>
           </div>
@@ -127,7 +127,7 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
         {filtered.map(loc => (
           <div key={loc.id} className="flex items-start justify-between p-3 bg-white border border-slate-200 rounded-xl hover:shadow-xs transition">
             <div className="flex items-start gap-2.5">
-              <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 mt-0.5">
+              <span className="p-1.5 rounded-lg bg-accent-lighter text-accent mt-0.5">
                 {loc.type === "SPAREPART" ? <Package className="w-3.5 h-3.5" /> : <Wrench className="w-3.5 h-3.5" />}
               </span>
               <div>
@@ -141,7 +141,7 @@ export const StorageLocationManager: React.FC<Props> = ({ tenantId, branchId, sh
                 </span>
               </div>
             </div>
-            <button onClick={() => openEdit(loc)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-indigo-600 cursor-pointer" title="Edit Rak"><Edit className="w-3 h-3" /></button>
+            <button onClick={() => openEdit(loc)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-accent cursor-pointer" title="Edit Rak"><Edit className="w-3 h-3" /></button>
           </div>
         ))}
         {filtered.length === 0 && (

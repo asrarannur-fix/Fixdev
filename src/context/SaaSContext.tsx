@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { safeLocalStorage } from "../utils/safeStorage";
+import { applyTenantBranding } from "../utils/branding";
 import {
   Tenant,
   SubscriptionTier,
@@ -1018,6 +1019,21 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     };
     fetchApiData();
   }, [currentTenantId, currentUser?.id, currentUser?.role, isAuthenticated]);
+
+  // === TENANT BRANDING INJECTION ===
+  useEffect(() => {
+    const root = document.documentElement;
+    const active = tenants.find((t) => t.id === currentTenantId);
+    if (!active?.branding) {
+      // Reset to CSS defaults when no branding
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--accent-hover");
+      root.style.removeProperty("--accent-light");
+      root.style.removeProperty("--accent-lighter");
+      return;
+    }
+    applyTenantBranding(active.branding, active.name);
+  }, [tenants, currentTenantId, theme]);
 
   // Public refreshData — reload page to re-fetch all data from DB
   const refreshData = async () => {
@@ -5139,7 +5155,13 @@ export default SaaSProvider;
 export const useSaaS = () => {
   const context = useContext(SaaSContext);
   if (context === undefined) {
-    throw new Error("useSaaS must be used within a SaaSProvider");
+    throw new Error("useSaaS must be used within a SaaSContext");
   }
-  return context;
+
+  const activeTenant = context?.tenants?.find((t: Tenant) => t.id === context.currentTenantId);
+
+  return {
+    ...context,
+    activeTenant,
+  };
 };

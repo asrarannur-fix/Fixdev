@@ -273,7 +273,7 @@ export const ComplaintTemplateSettings: React.FC<TemplateManagerProps> = ({ curr
                   value={formLabel}
                   onChange={(e) => setFormLabel(e.target.value)}
                   placeholder="Contoh: Layar Retak"
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-accent"
                 />
               </div>
               
@@ -284,7 +284,7 @@ export const ComplaintTemplateSettings: React.FC<TemplateManagerProps> = ({ curr
                 <select
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-accent"
                 >
                   <option value="hardware">Hardware</option>
                   <option value="software">Software</option>
@@ -325,7 +325,7 @@ export const ComplaintTemplateSettings: React.FC<TemplateManagerProps> = ({ curr
                 onChange={(e) => setFormValue(e.target.value)}
                 placeholder="Masukkan deskripsi lengkap keluhan..."
                 rows={4}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-blue-500 resize-none"
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-accent resize-none"
               />
             </div>
 
@@ -380,7 +380,7 @@ export const ComplaintTemplateSettings: React.FC<TemplateManagerProps> = ({ curr
             Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
               <div key={category} className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase flex items-center gap-2">
-                  <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
+                  <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-accent dark:text-indigo-300 rounded">
                     {categoryLabels[category] || category}
                   </span>
                   <span className="text-slate-400">({categoryTemplates.filter(t => t.isActive).length})</span>

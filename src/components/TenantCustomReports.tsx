@@ -161,7 +161,7 @@ export const TenantCustomReports: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <FileText className="w-6 h-6 text-accent dark:text-accent" />
             Laporan Kustom Tenant
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -176,7 +176,7 @@ export const TenantCustomReports: React.FC = () => {
           onClick={() => setActiveTab("builder")}
           className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
             activeTab === "builder"
-              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              ? "border-accent text-accent dark:border-accent/60 dark:text-accent"
               : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
           }`}
         >
@@ -186,7 +186,7 @@ export const TenantCustomReports: React.FC = () => {
           onClick={() => setActiveTab("saved")}
           className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
             activeTab === "saved"
-              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              ? "border-accent text-accent dark:border-accent/60 dark:text-accent"
               : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
           }`}
         >
@@ -196,7 +196,7 @@ export const TenantCustomReports: React.FC = () => {
           onClick={() => setActiveTab("scheduled")}
           className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
             activeTab === "scheduled"
-              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              ? "border-accent text-accent dark:border-accent/60 dark:text-accent"
               : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
           }`}
         >
@@ -223,7 +223,7 @@ export const TenantCustomReports: React.FC = () => {
                       setSelectedModule(e.target.value);
                       setSelectedFields([]);
                     }}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
                   >
                     {modules.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -239,7 +239,7 @@ export const TenantCustomReports: React.FC = () => {
                   <select
                     value={dateRange}
                     onChange={(e) => setDateRange(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
                   >
                     <option value="today">Hari Ini</option>
                     <option value="yesterday">Kemarin</option>
@@ -266,7 +266,7 @@ export const TenantCustomReports: React.FC = () => {
                         type="checkbox"
                         checked={selectedFields.includes(field.id)}
                         onChange={() => handleToggleField(field.id)}
-                        className="rounded text-indigo-600 focus:ring-indigo-500 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600"
+                        className="rounded text-accent focus:ring-accent bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600"
                       />
                       <span className="text-sm font-medium">{field.label}</span>
                     </label>
@@ -286,7 +286,7 @@ export const TenantCustomReports: React.FC = () => {
               </h3>
               <div className="flex gap-4">
                 <label
-                  className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${reportFormat === "csv" ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20" : "border-slate-200 dark:border-slate-700 hover:border-indigo-300"}`}
+                  className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${reportFormat === "csv" ? "border-accent bg-accent-lighter dark:bg-indigo-900/20" : "border-slate-200 dark:border-slate-700 hover:border-accent/50"}`}
                 >
                   <input
                     type="radio"
@@ -297,7 +297,7 @@ export const TenantCustomReports: React.FC = () => {
                     className="hidden"
                   />
                   <FileText
-                    className={`w-8 h-8 mb-2 ${reportFormat === "csv" ? "text-indigo-600" : "text-slate-400"}`}
+                    className={`w-8 h-8 mb-2 ${reportFormat === "csv" ? "text-accent" : "text-slate-400"}`}
                   />
                   <span className="text-sm font-bold">CSV</span>
                 </label>
@@ -338,7 +338,7 @@ export const TenantCustomReports: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="bg-indigo-600 text-white rounded-xl p-5 shadow-lg">
+            <div className="bg-accent text-white rounded-xl p-5 shadow-lg">
               <h3 className="font-bold mb-2">Tindakan Laporan</h3>
               <p className="text-indigo-100 text-sm mb-6">
                 Anda dapat membuat pratinjau data atau menyimpan pengaturan ini
@@ -349,20 +349,20 @@ export const TenantCustomReports: React.FC = () => {
                 <button
                   onClick={handleGeneratePreview}
                   disabled={selectedFields.length === 0}
-                  className="w-full bg-white text-indigo-700 hover:bg-indigo-50 font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white text-accent hover:bg-accent-lighter font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Play className="w-4 h-4" /> Preview Data
                 </button>
                 <button
                   onClick={() => setShowSaveModal(true)}
                   disabled={selectedFields.length === 0}
-                  className="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-accent-hover hover:bg-indigo-800 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4" /> Simpan Template
                 </button>
                 <button
                   disabled={selectedFields.length === 0}
-                  className="w-full bg-transparent border border-indigo-400 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-transparent border border-accent/60 hover:bg-accent-hover text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4" /> Ekspor Langsung
                 </button>
@@ -387,7 +387,7 @@ export const TenantCustomReports: React.FC = () => {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-accent dark:text-accent mb-4">
                 <FileText className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-slate-800 dark:text-white mb-1">
@@ -475,7 +475,7 @@ export const TenantCustomReports: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="text-indigo-600 hover:text-indigo-800 font-medium text-xs">
+                        <button className="text-accent hover:text-indigo-800 font-medium text-xs">
                           Edit Jadwal
                         </button>
                       </td>
@@ -526,7 +526,7 @@ export const TenantCustomReports: React.FC = () => {
                   value={newReportName}
                   onChange={(e) => setNewReportName(e.target.value)}
                   placeholder="Contoh: Laporan Penjualan Akhir Bulan"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
                   autoFocus
                 />
               </div>
@@ -537,7 +537,7 @@ export const TenantCustomReports: React.FC = () => {
                 <select
                   value={scheduleType}
                   onChange={(e) => setScheduleType(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
                 >
                   <option value="none">Tidak Dijadwalkan</option>
                   <option value="daily">Harian (Pukul 23:59)</option>
@@ -560,7 +560,7 @@ export const TenantCustomReports: React.FC = () => {
               <button
                 onClick={handleSaveReport}
                 disabled={!newReportName}
-                className="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm font-semibold bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50"
               >
                 Simpan
               </button>

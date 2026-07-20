@@ -129,7 +129,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
             {/* Modal Header */}
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                <span className="p-2 bg-accent-lighter rounded-lg text-accent">
                   <Wrench className="w-5 h-5" />
                 </span>
                 <div>
@@ -137,13 +137,13 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     <h3 className="font-bold text-sm text-slate-800">
                       Manajemen Perbaikan & Servis
                     </h3>
-                    <span className="font-mono text-xs font-bold text-indigo-600">
+                    <span className="font-mono text-xs font-bold text-accent">
                       #{ticket.ticketNo}
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400">
                     Status Aktif:{" "}
-                    <strong className="text-indigo-600">
+                    <strong className="text-accent">
                       {ticket.status}
                     </strong>
                   </p>
@@ -174,7 +174,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       onClick={() =>
                         setShowWarrantyPrintout(ticket.id)
                       }
-                      className="px-2.5 py-1.5 bg-indigo-50 border border-indigo-100 hover:bg-indigo-150 text-indigo-700 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
+                      className="px-2.5 py-1.5 bg-accent-lighter border border-indigo-100 hover:bg-indigo-150 text-accent rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
                     >
                       <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />{" "}
                       Cetak Kartu Garansi
@@ -247,7 +247,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       <span className="text-slate-400 font-mono text-[10px]">
                         MASA GARANSI:
                       </span>{" "}
-                      <span className="font-bold text-indigo-600">
+                      <span className="font-bold text-accent">
                         {ticket.warrantyMonths} Bulan
                       </span>
                     </p>
@@ -345,7 +345,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       Object.keys(ticket.dynamicFields).length >
                         0 && (
                         <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                          <p className="font-mono text-[9px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+                          <p className="font-mono text-[9px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
                             <Cpu className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />{" "}
                             Spesifikasi Kategori (
                             {ticket.deviceCategory})
@@ -403,7 +403,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             timeline: updatedTimeline,
                           });
                         }}
-                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-semibold cursor-pointer text-slate-700"
+                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-semibold cursor-pointer text-slate-700"
                       >
                         <option value="">
                           -- Antrian Bebas (Belum Ditugaskan) --
@@ -432,7 +432,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               });
                               showToast("Lokasi penyimpanan diperbarui.", "success");
                             }}
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-semibold cursor-pointer text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-semibold cursor-pointer text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <option value="">— Belum Ditentukan —</option>
                             {storageLocs.map(loc => (
@@ -451,7 +451,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 <div className="hidden">
                   {ticket.initialPhotos && ticket.initialPhotos.length > 0 && (
                     <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-2 shadow-xs">
-                      <h4 className="font-bold text-[10px] text-indigo-600 uppercase font-mono tracking-wider">
+                      <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
                         Foto Masuk
                       </h4>
                       <div className="rounded-lg overflow-hidden border border-slate-200">
@@ -599,7 +599,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               ],
                             });
                           }}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-bold px-1.5 py-1 rounded cursor-pointer"
+                          className="bg-accent hover:bg-accent-hover text-white text-[9px] font-bold px-1.5 py-1 rounded cursor-pointer"
                         >
                           Demo
                         </button>
@@ -614,7 +614,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   ) : (
                     <button
                       onClick={startCamera}
-                      className="w-full bg-slate-50 border border-dashed border-slate-200 hover:bg-indigo-50 text-[10.5px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-indigo-700 cursor-pointer"
+                      className="w-full bg-slate-50 border border-dashed border-slate-200 hover:bg-accent-lighter text-[10.5px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-accent cursor-pointer"
                     >
                       <Camera className="w-3.5 h-3.5" /> Ambil Foto
                       Kondisi Baru
@@ -626,7 +626,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 {ticket.initialChecklist &&
                   ticket.initialChecklist.length > 0 && (
                     <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-2 shadow-xs">
-                      <h4 className="font-bold text-[10px] text-indigo-600 uppercase font-mono tracking-wider">
+                      <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
                         Checklist Masuk
                       </h4>
                       <div className="grid grid-cols-1 gap-1.5">
@@ -645,7 +645,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   : "bg-rose-50 text-rose-700 border border-rose-200"
                               }`}
                             >
-                              {item.checked ? "OK" : "REJECT"}
+                              {item.checked ? "OK" : "BELUM DIPERIKSA"}
                             </span>
                           </div>
                         ))}
@@ -655,7 +655,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                 {/* Section: Timeline Logs */}
                 <div className="hidden bg-white p-3.5 border border-slate-100 rounded-xl space-y-3 shadow-xs">
-                  <h4 className="font-bold text-[10px] text-indigo-600 uppercase font-mono tracking-wider">
+                  <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
                     Log Riwayat Perjalanan
                   </h4>
                   <div className="relative border-l-2 border-slate-100 pl-3 space-y-3 text-xs">
@@ -663,7 +663,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       ticket.timeline.map((log, idx) => (
                         <div key={idx} className="relative group">
                           <div className="absolute -left-[17px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-white" />
-                          <p className="font-semibold text-[10px] font-mono text-indigo-600">
+                          <p className="font-semibold text-[10px] font-mono text-accent">
                             {log.status}{" "}
                             <span className="text-slate-400 font-normal">
                               |{" "}
@@ -793,9 +793,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         <Activity className="w-3.5 h-3.5 text-indigo-500" />{" "}
                         Visual Repair Workflow
                       </h4>
-                      <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
-                        <span className="text-[9px] font-mono font-bold text-indigo-700">
+                      <div className="flex items-center gap-1.5 bg-accent-lighter border border-indigo-100 px-2 py-0.5 rounded-lg">
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
+                        <span className="text-[9px] font-mono font-bold text-accent">
                           Live Tracker & Control
                         </span>
                       </div>
@@ -889,7 +889,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   isCompleted
                                     ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20"
                                     : isActive
-                                      ? "bg-indigo-600 border-indigo-600 text-white ring-4 ring-indigo-100 shadow-md shadow-indigo-600/20"
+                                      ? "bg-accent border-accent text-white ring-4 ring-indigo-100 shadow-md shadow-accent/20"
                                       : "bg-white border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600"
                                 }`}
                                 title={`Ubah status ke ${step.label}`}
@@ -903,7 +903,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               <span
                                 className={`text-[9px] font-bold mt-1.5 text-center transition-colors ${
                                   isActive
-                                    ? "text-indigo-600 font-extrabold"
+                                    ? "text-accent font-extrabold"
                                     : isCompleted
                                       ? "text-emerald-600"
                                       : "text-slate-500"
@@ -944,7 +944,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             <button
                               type="button"
                               onClick={() => setPartOrderTicket(ticket)}
-                              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
+                              className="px-3 py-1.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
                             >
                               <PackagePlus className="w-3.5 h-3.5" /> Menunggu Spare Part
                             </button>
@@ -993,7 +993,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         <div className="space-y-2">
                           <label className="flex items-center justify-between text-[10px] font-bold text-slate-600 uppercase">
                             <span>Catatan Teknis (Internal)</span>
-                            <span className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                            <span className="text-accent bg-accent-lighter px-1.5 py-0.5 rounded">
                               Admin/Teknisi Saja
                             </span>
                           </label>
@@ -1005,7 +1005,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               })
                             }
                             placeholder="Tulis kendala teknis, pin iclude, atau catatan skema di sini..."
-                            className="w-full h-24 p-3 text-xs border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+                            className="w-full h-24 p-3 text-xs border border-slate-200 rounded-xl focus:border-accent focus:ring-1 focus:ring-accent outline-none resize-none"
                           />
                         </div>
 
@@ -1056,7 +1056,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 </option>
                                 {sparepartsList.map((p) => (
                                   <option key={p.id} value={p.id}>
-                                    {p.name} (Stok: {p.stock})
+                                    {p.name} (Stok: {p.stockQty ?? p.stock ?? 0})
                                   </option>
                                 ))}
                               </select>
@@ -1111,10 +1111,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           )}
 
                           {ticket.microComponentUsages && ticket.microComponentUsages.length > 0 && (
-                            <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-2">
+                            <div className="rounded-xl border border-indigo-100 bg-accent-lighter/40 p-3 space-y-2">
                               <div className="flex items-center justify-between"><span className="text-[10px] font-extrabold text-indigo-800 uppercase">Komponen Mikro Terpakai</span><span className="text-[9px] text-indigo-500">{ticket.microComponentUsages.length} item</span></div>
                               {ticket.microComponentUsages.map((usage) => <div key={usage.id} className="flex items-start justify-between gap-3 rounded-lg bg-white border border-indigo-100 px-2.5 py-2"><div><p className="text-[10px] font-bold text-slate-700">{usage.name} × {usage.quantity}</p><p className="text-[9px] text-slate-400">{usage.chargeable ? `Ditagihkan Rp ${usage.chargeTotal.toLocaleString("id-ID")}` : "Pemakaian internal"}</p></div><span className="text-[9px] font-semibold text-slate-500">HPP Rp {usage.hppTotal.toLocaleString("id-ID")}</span></div>)}
-                              <div className="pt-1 border-t border-indigo-100 grid grid-cols-2 gap-2 text-[9px]"><span>Total HPP: <strong>Rp {ticket.microComponentUsages.reduce((sum, item) => sum + item.hppTotal, 0).toLocaleString("id-ID")}</strong></span><span className="text-right">Ditagihkan: <strong className="text-indigo-700">Rp {ticket.microComponentUsages.reduce((sum, item) => sum + (item.chargeable ? item.chargeTotal : 0), 0).toLocaleString("id-ID")}</strong></span></div>
+                              <div className="pt-1 border-t border-indigo-100 grid grid-cols-2 gap-2 text-[9px]"><span>Total HPP: <strong>Rp {ticket.microComponentUsages.reduce((sum, item) => sum + item.hppTotal, 0).toLocaleString("id-ID")}</strong></span><span className="text-right">Ditagihkan: <strong className="text-accent">Rp {ticket.microComponentUsages.reduce((sum, item) => sum + (item.chargeable ? item.chargeTotal : 0), 0).toLocaleString("id-ID")}</strong></span></div>
                             </div>
                           )}
 
@@ -1169,7 +1169,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                        <div className="p-2 bg-accent-lighter rounded-lg text-accent">
                           <Sparkles className="w-4 h-4" />
                         </div>
                         <div>
@@ -1183,7 +1183,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           </p>
                         </div>
                       </div>
-                      <span className="text-[9px] font-mono bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-bold border border-indigo-150">
+                      <span className="text-[9px] font-mono bg-accent-lighter text-accent px-2.5 py-1 rounded-full font-bold border border-indigo-150">
                         Teknisi:{" "}
                         {technician?.name || "Belum Ditugaskan"}
                       </span>
@@ -1197,7 +1197,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             <span className="w-1.5 h-4 bg-indigo-500 rounded-full" />
                             Pre-Service (Kondisi Masuk)
                           </div>
-                          <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                          <span className="text-[10px] font-mono font-bold text-accent bg-accent-lighter px-2 py-0.5 rounded">
                             {ticket.initialChecklist
                               ? ticket.initialChecklist.filter(
                                   (x) => x.checked,
@@ -1316,7 +1316,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     initialChecklist: defaultList,
                                   });
                                 }}
-                                className="mt-2 px-2.5 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700 cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="mt-2 px-2.5 py-1 bg-accent text-white rounded text-[10px] font-bold hover:bg-accent-hover cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 Inisialisasi Checklist
                               </button>
@@ -1502,7 +1502,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                         );
                                         setQcScore(0);
                                       }}
-                                      className="w-full bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg py-1.5 text-[10px] font-bold hover:bg-indigo-100/50 cursor-pointer transition-all"
+                                      className="w-full bg-accent-lighter border border-indigo-100 text-accent rounded-lg py-1.5 text-[10px] font-bold hover:bg-indigo-100/50 cursor-pointer transition-all"
                                     >
                                       Simpan Checklist QC Standar (10
                                       Pengujian)
@@ -1581,7 +1581,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       </div>
                       <div>
                         <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Catatan Pemeriksaan</label>
-                        <textarea rows={3} placeholder="cth: Keyboard normal, speaker jernih, suhu idle 45 C pasca repasting." value={qcNotes} onChange={(e) => setQcNotes(e.target.value)} className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500" />
+                        <textarea rows={3} placeholder="cth: Keyboard normal, speaker jernih, suhu idle 45 C pasca repasting." value={qcNotes} onChange={(e) => setQcNotes(e.target.value)} className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-accent" />
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -1618,7 +1618,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           onChange={(e) =>
                             setManualDiagNotes(e.target.value)
                           }
-                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500"
+                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                         />
                       </div>
 
@@ -1634,7 +1634,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             onChange={(e) =>
                               setManualDiagCost(e.target.value)
                             }
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500"
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                           />
                         </div>
                         <div className="flex items-end">
@@ -1696,7 +1696,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           onChange={(e) =>
                             setSelectedSparepartId(e.target.value)
                           }
-                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500"
+                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                         >
                           <option value="">
                             -- Pilih part di stok toko --
@@ -1726,7 +1726,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             onChange={(e) =>
                               setSparepartQty(Number(e.target.value))
                             }
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500"
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                           />
                         </div>
                         <div>
@@ -1740,7 +1740,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             onChange={(e) =>
                               setSparepartSN(e.target.value)
                             }
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500"
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                           />
                         </div>
                         <div className="flex items-end">
@@ -1772,7 +1772,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 showToast(error?.message || "Gagal mereservasi spare part.", "error");
                               }
                             }}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
+                            className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
                           >
                             Reservasi Spare Part
                           </button>
@@ -1783,7 +1783,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                   {/* Section 2: Spareparts Used Ledger */}
                   <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
-                    <h4 className="font-bold text-[10px] text-indigo-600 uppercase font-mono tracking-wider">
+                    <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
                       Rincian Komponen Suku Cadang Terpakai
                     </h4>
                     <div className="overflow-x-auto">
@@ -1812,7 +1812,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 <td className="px-3 py-2 font-medium text-slate-700">
                                   {part.name}
                                   {part.serialNumber && (
-                                    <div className="text-[9px] font-mono text-indigo-500 mt-0.5 border border-indigo-100 bg-indigo-50 inline-block px-1 rounded">
+                                    <div className="text-[9px] font-mono text-indigo-500 mt-0.5 border border-indigo-100 bg-accent-lighter inline-block px-1 rounded">
                                       SN: {part.serialNumber}
                                     </div>
                                   )}
@@ -1823,7 +1823,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 <td className="px-3 py-2 font-mono font-bold">
                                   {part.quantity}
                                 </td>
-                                <td className="px-3 py-2 font-mono font-extrabold text-indigo-600">
+                                <td className="px-3 py-2 font-mono font-extrabold text-accent">
                                   Rp{" "}
                                   {part.totalPrice.toLocaleString()}
                                 </td>
@@ -1869,7 +1869,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   {/* Section 3: Manual Status & Workflow Controller */}
                   <div className="bg-white border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-3">
-                      <h4 className="font-bold text-[10px] text-indigo-600 uppercase font-mono tracking-wider">
+                      <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
                         Lompati / Ubah Status Manual
                       </h4>
                       <div>
@@ -1887,7 +1887,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               `Diubah secara manual oleh operator.`,
                             );
                           }}
-                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500"
+                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                         >
                           {Object.values(ServiceStatus).map((st) => (
                             <option key={st} value={st}>
@@ -1914,7 +1914,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 "Teknisi merumuskan estimasi biaya dan menunggu persetujuan pelanggan.",
                               )
                             }
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
+                            className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                           >
                             Ajukan Estimasi Biaya ke Pelanggan
                           </button>
@@ -2027,11 +2027,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                           return (
                             <div className="space-y-3.5 border border-slate-200/85 p-4 rounded-xl bg-slate-50/70 w-full text-left shadow-sm">
-                              <div className="flex justify-between items-center bg-indigo-50/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
+                              <div className="flex justify-between items-center bg-accent-lighter/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
                                 <span className="text-slate-600">
                                   Total Tagihan Pelunasan (PPN 11%):
                                 </span>
-                                <span className="text-indigo-700 font-mono text-sm font-bold">
+                                <span className="text-accent font-mono text-sm font-bold">
                                   Rp {totalAmt.toLocaleString()}
                                 </span>
                               </div>
@@ -2050,7 +2050,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     setHandoverRefNo("");
                                     setHandoverProofName("");
                                   }}
-                                  className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-medium text-slate-700 shadow-xs"
+                                  className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
                                 >
                                   <option value={PaymentMethod.CASH}>
                                     💵 CASH / TUNAI (Kas Utama)
@@ -2094,7 +2094,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                           e.target.value,
                                         )
                                       }
-                                      className="block w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-medium text-slate-700 shadow-xs"
+                                      className="block w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
                                     >
                                       <option value="15">
                                         15 Hari
@@ -2150,7 +2150,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                           e.target.value,
                                         )
                                       }
-                                      className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-medium text-slate-700 shadow-xs"
+                                      className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
                                     />
                                   </div>
 
@@ -2189,7 +2189,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                             )
                                             ?.click();
                                         }}
-                                        className="border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 p-4 rounded-lg text-center cursor-pointer transition-all duration-150"
+                                        className="border-2 border-dashed border-slate-200 hover:border-accent/60 hover:bg-accent-lighter/30 p-4 rounded-lg text-center cursor-pointer transition-all duration-150"
                                       >
                                         <input
                                           type="file"
@@ -2270,7 +2270,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-200/80 pt-3">
                                 <div className="bg-white border border-indigo-100 rounded-xl p-3 shadow-xs">
-                                  <p className="text-[10px] font-black text-indigo-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                  <p className="text-[10px] font-black text-accent uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <Receipt className="w-3.5 h-3.5" /> Preview Jurnal Otomatis
                                   </p>
                                   <div className="space-y-1.5 text-[10px] font-mono text-slate-600">
@@ -2375,7 +2375,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     !isHandoverValid) ||
                                   !isChecklistComplete
                                     ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                                    : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                                    : "bg-accent hover:bg-accent-hover text-white cursor-pointer"
                                 }`}
                               >
                                 Konfirmasi Handover & Sinkronkan
@@ -2409,7 +2409,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             </button>
                             <button
                               onClick={() => setShowWarrantyPrintout(ticket.id)}
-                              className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                              className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-100 text-accent rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
                             >
                               <ShieldCheck className="w-3.5 h-3.5" /> Cetak Kartu Garansi
                             </button>
@@ -2427,7 +2427,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   {/* Section 4: WhatsApp Customer Communication Hub (Manual click-to-chat link helper) */}
                   <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3.5">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-[10px] text-indigo-700 uppercase font-mono tracking-wider flex items-center gap-1.5">
+                      <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider flex items-center gap-1.5">
                         <MessageSquare className="w-4 h-4 text-emerald-500" />{" "}
                         WhatsApp Customer Communication Hub
                       </h4>
@@ -2491,7 +2491,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             }
                             setCustomWaMessageText(txt);
                           }}
-                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-indigo-500 font-medium"
+                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent font-medium"
                         >
                           <option value="intake">
                             ✓ Tanda Terima Unit Baru (Intake)
@@ -2532,7 +2532,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           onChange={(e) =>
                             setCustomWaMessageText(e.target.value)
                           }
-                          className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 font-medium leading-relaxed font-mono"
+                          className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-accent font-medium leading-relaxed font-mono"
                         />
                       </div>
                     </div>

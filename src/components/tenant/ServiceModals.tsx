@@ -42,7 +42,7 @@ export const ServiceModals: React.FC<any> = (props) => {
   };
 
   return <>
-  {justCreatedTicket &&
+  {false && justCreatedTicket &&
     (() => {
       const ticket = justCreatedTicket;
       const customer = customers.find(
@@ -78,7 +78,7 @@ export const ServiceModals: React.FC<any> = (props) => {
         <div className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-2xl border border-indigo-100 max-w-lg w-full overflow-hidden flex flex-col animate-scaleUp">
             {/* Decorative success banner */}
-            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-6 text-center space-y-2 relative">
+            <div className="bg-gradient-to-r from-accent to-accent text-white p-6 text-center space-y-2 relative">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto text-3xl animate-bounce">
                 🎉
               </div>
@@ -92,8 +92,8 @@ export const ServiceModals: React.FC<any> = (props) => {
 
             {/* Info & Options */}
             <div className="p-6 space-y-4">
-              <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 space-y-2 text-xs">
-                <p className="font-bold text-slate-800 uppercase tracking-wider font-mono text-[10px] text-indigo-600">
+              <div className="bg-accent-lighter/50 border border-indigo-100 rounded-2xl p-4 space-y-2 text-xs">
+                <p className="font-bold text-slate-800 uppercase tracking-wider font-mono text-[10px] text-accent">
                   Ringkasan Unit
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-slate-600">
@@ -124,9 +124,9 @@ export const ServiceModals: React.FC<any> = (props) => {
                   onClick={() => {
                     setPreviewReceptionTicket(ticket);
                   }}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/30 hover:bg-indigo-50 transition-all cursor-pointer group text-center"
+                  className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-indigo-200 hover:border-accent bg-accent-lighter/30 hover:bg-accent-lighter transition-all cursor-pointer group text-center"
                 >
-                  <Eye className="w-8 h-8 text-indigo-600 group-hover:scale-110 transition-all mb-2" />
+                  <Eye className="w-8 h-8 text-accent group-hover:scale-110 transition-all mb-2" />
                   <span className="font-extrabold text-xs text-slate-800">
                     Preview Nota Penerimaan
                   </span>
@@ -164,7 +164,7 @@ export const ServiceModals: React.FC<any> = (props) => {
               <button
                 type="button"
                 onClick={() => handlePrintReceptionReceipt(ticket)}
-                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md shadow-indigo-900/10"
+                className="px-4 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md shadow-accent/10"
               >
                 Cetak Nota
               </button>
@@ -189,7 +189,7 @@ export const ServiceModals: React.FC<any> = (props) => {
     return createPortal(
       <div className="fixed inset-0 z-[160] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-fadeIn">
         <div className="bg-white rounded-3xl shadow-2xl border border-indigo-100 max-w-md w-full overflow-hidden">
-          <div className="bg-indigo-600 text-white px-5 py-4">
+          <div className="bg-accent text-white px-5 py-4">
             <h3 className="font-extrabold text-sm">{preview.title}</h3>
             <p className="text-[10px] text-indigo-100 mt-1">{preview.subtitle}</p>
           </div>
@@ -210,7 +210,7 @@ export const ServiceModals: React.FC<any> = (props) => {
               <button
                 type="button"
                 onClick={() => handlePrintReceptionReceipt(ticket)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold"
+                className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-semibold"
               >
                 Buka Nota Cetak
               </button>
@@ -231,11 +231,11 @@ export const ServiceModals: React.FC<any> = (props) => {
         </div>
         <div className="p-4 sm:p-5 overflow-y-auto grid grid-cols-1 lg:grid-cols-[1.35fr_.85fr] gap-5">
           <section className="space-y-3">
-            <div className="relative"><Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" /><input autoFocus value={microSearch} onChange={(e) => setMicroSearch(e.target.value)} placeholder="Cari nama, SKU, kategori, atau model kompatibel..." className="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-200 outline-none" /></div>
-            {microComponentsLoading ? <div className="py-16 text-center text-xs text-slate-500"><RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500" />Memuat stok komponen...</div> : microComponentsError ? <div className="py-10 text-center rounded-2xl bg-rose-50 border border-rose-100"><AlertCircle className="w-6 h-6 text-rose-500 mx-auto mb-2" /><p className="text-xs text-rose-700">{microComponentsError}</p><button onClick={() => loadMicroComponents().catch(() => {})} className="mt-3 px-3 py-2 bg-rose-600 text-white text-xs font-bold rounded-lg">Coba Lagi</button></div> : filteredMicroComponents.length === 0 ? <div className="py-14 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200"><Package className="w-7 h-7 text-slate-300 mx-auto mb-2" /><p className="text-xs font-semibold text-slate-600">Komponen tidak ditemukan</p><p className="text-[10px] text-slate-400 mt-1">Ubah kata pencarian atau tambahkan stok melalui inventaris.</p></div> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[52vh] overflow-y-auto pr-1">{filteredMicroComponents.map((item) => { const selected = item.id === selectedMicroId; const low = item.stockQty <= item.minStock; return <button type="button" key={item.id} onClick={() => { setSelectedMicroId(item.id); setMicroUnitPrice(String(item.sellPrice || 0)); }} className={`text-left p-3 rounded-xl border transition ${selected ? "border-indigo-500 ring-2 ring-indigo-100 bg-indigo-50/50" : "border-slate-200 hover:border-indigo-300"}`}><div className="flex justify-between gap-2"><div><p className="text-xs font-extrabold text-slate-800">{item.name}</p><p className="text-[9px] font-mono text-slate-400 mt-0.5">{item.sku} · {item.category}</p></div><Badge variant={item.stockQty <= 0 ? "danger" : low ? "warning" : "success"}>{item.stockQty} unit</Badge></div><p className="text-[10px] text-slate-500 mt-2">Rak {item.rackId} / Laci {item.drawerId}{item.supplierName ? ` · ${item.supplierName}` : ""}</p><p className="text-[10px] text-slate-500 mt-1">Jual Rp {item.sellPrice.toLocaleString("id-ID")} · Kompatibel: {(item.compatModels || []).join(", ") || "Umum"}</p></button>; })}</div>}
+            <div className="relative"><Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" /><input autoFocus value={microSearch} onChange={(e) => setMicroSearch(e.target.value)} placeholder="Cari nama, SKU, kategori, atau model kompatibel..." className="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent/30 outline-none" /></div>
+            {microComponentsLoading ? <div className="py-16 text-center text-xs text-slate-500"><RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-accent" />Memuat stok komponen...</div> : microComponentsError ? <div className="py-10 text-center rounded-2xl bg-rose-50 border border-rose-100"><AlertCircle className="w-6 h-6 text-rose-500 mx-auto mb-2" /><p className="text-xs text-rose-700">{microComponentsError}</p><button onClick={() => loadMicroComponents().catch(() => {})} className="mt-3 px-3 py-2 bg-rose-600 text-white text-xs font-bold rounded-lg">Coba Lagi</button></div> : filteredMicroComponents.length === 0 ? <div className="py-14 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200"><Package className="w-7 h-7 text-slate-300 mx-auto mb-2" /><p className="text-xs font-semibold text-slate-600">Komponen tidak ditemukan</p><p className="text-[10px] text-slate-400 mt-1">Ubah kata pencarian atau tambahkan stok melalui inventaris.</p></div> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[52vh] overflow-y-auto pr-1">{filteredMicroComponents.map((item) => { const selected = item.id === selectedMicroId; const low = item.stockQty <= item.minStock; return <button type="button" key={item.id} onClick={() => { setSelectedMicroId(item.id); setMicroUnitPrice(String(item.sellPrice || 0)); }} className={`text-left p-3 rounded-xl border transition ${selected ? "border-accent ring-2 ring-indigo-100 bg-accent-lighter/50" : "border-slate-200 hover:border-accent/50"}`}><div className="flex justify-between gap-2"><div><p className="text-xs font-extrabold text-slate-800">{item.name}</p><p className="text-[9px] font-mono text-slate-400 mt-0.5">{item.sku} · {item.category}</p></div><Badge variant={item.stockQty <= 0 ? "danger" : low ? "warning" : "success"}>{item.stockQty} unit</Badge></div><p className="text-[10px] text-slate-500 mt-2">Rak {item.rackId} / Laci {item.drawerId}{item.supplierName ? ` · ${item.supplierName}` : ""}</p><p className="text-[10px] text-slate-500 mt-1">Jual Rp {item.sellPrice.toLocaleString("id-ID")} · Kompatibel: {(item.compatModels || []).join(", ") || "Umum"}</p></button>; })}</div>}
           </section>
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 h-fit space-y-4">
-            {!selectedMicro ? <div className="py-10 text-center"><Cpu className="w-8 h-8 text-slate-300 mx-auto mb-2" /><p className="text-xs font-semibold text-slate-500">Pilih komponen untuk mencatat pemakaian</p></div> : <><div><p className="font-extrabold text-sm text-slate-800">{selectedMicro.name}</p><p className="text-[10px] text-slate-500 mt-1">Stok tersedia {selectedMicro.stockQty} · HPP Rp {selectedMicro.purchaseCost.toLocaleString("id-ID")}/unit</p></div><div><label className="block text-[10px] font-bold text-slate-500 mb-1">Jumlah</label><input type="number" min="1" value={microQty} onChange={(e) => setMicroQty(Math.max(1, Number(e.target.value) || 1))} className="w-full px-3 py-2.5 text-xs border rounded-xl" /></div><label className="flex items-start gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={microChargeable} onChange={(e) => setMicroChargeable(e.target.checked)} className="mt-0.5" /><span>Tagihkan ke pelanggan<span className="block text-[9px] font-normal text-slate-400">Matikan untuk bahan internal yang hanya dicatat sebagai HPP.</span></span></label>{microChargeable && <div><label className="block text-[10px] font-bold text-slate-500 mb-1">Harga Jual / Unit</label><input type="number" min="0" value={microUnitPrice} onChange={(e) => setMicroUnitPrice(e.target.value)} className="w-full px-3 py-2.5 text-xs border rounded-xl" /></div>}<div><label className="block text-[10px] font-bold text-slate-500 mb-1">Catatan</label><textarea rows={2} value={microNote} onChange={(e) => setMicroNote(e.target.value)} placeholder="Contoh: penggantian IC jalur charging" className="w-full px-3 py-2.5 text-xs border rounded-xl resize-none" /></div><div className="rounded-xl bg-white border p-3 space-y-1.5 text-[10px]"><div className="flex justify-between"><span className="text-slate-500">Total HPP internal</span><strong>Rp {(selectedMicro.purchaseCost * microQty).toLocaleString("id-ID")}</strong></div><div className="flex justify-between"><span className="text-slate-500">Biaya pelanggan</span><strong className="text-indigo-600">Rp {(microChargeable ? Number(microUnitPrice || 0) * microQty : 0).toLocaleString("id-ID")}</strong></div></div>{selectedMicro.stockQty < microQty ? <button type="button" onClick={() => { setPartOrderTicket(microTicket); setPartOrderName(selectedMicro.name); setPartOrderQty(Math.max(1, microQty - selectedMicro.stockQty)); setPartOrderSupplier(selectedMicro.supplierName || ""); setPartOrderCost(String(selectedMicro.purchaseCost * Math.max(1, microQty - selectedMicro.stockQty))); setPartOrderReason(`Stok komponen mikro tidak mencukupi (tersedia ${selectedMicro.stockQty}).`); setMicroTicket(null); }} className="w-full px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-extrabold"><PackagePlus className="w-4 h-4 inline mr-1.5" /> Buat Permintaan & Menunggu Spare Part</button> : <button type="button" disabled={savingMicroUsage} onClick={async () => { if (!microTicket) return; setSavingMicroUsage(true); try { await consumeMicroComponentForService(selectedMicro.id, { ticketId: microTicket.id, warehouseId: selectedMicro.warehouseId, quantity: microQty, chargeable: microChargeable, unitPrice: microChargeable ? Number(microUnitPrice || 0) : undefined, note: microNote.trim() || undefined, idempotencyKey: `micro-${microTicket.id}-${selectedMicro.id}-${Date.now()}` }); showToast("Komponen tercatat dan stok diperbarui.", "success"); setSelectedMicroId(""); setMicroQty(1); setMicroNote(""); } catch (error: any) { showToast(error?.message || "Gagal memakai komponen.", "error"); } finally { setSavingMicroUsage(false); } }} className="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold disabled:opacity-50">{savingMicroUsage ? "Menyimpan..." : "Gunakan Komponen"}</button>}</>}
+            {!selectedMicro ? <div className="py-10 text-center"><Cpu className="w-8 h-8 text-slate-300 mx-auto mb-2" /><p className="text-xs font-semibold text-slate-500">Pilih komponen untuk mencatat pemakaian</p></div> : <><div><p className="font-extrabold text-sm text-slate-800">{selectedMicro.name}</p><p className="text-[10px] text-slate-500 mt-1">Stok tersedia {selectedMicro.stockQty} · HPP Rp {selectedMicro.purchaseCost.toLocaleString("id-ID")}/unit</p></div><div><label className="block text-[10px] font-bold text-slate-500 mb-1">Jumlah</label><input type="number" min="1" value={microQty} onChange={(e) => setMicroQty(Math.max(1, Number(e.target.value) || 1))} className="w-full px-3 py-2.5 text-xs border rounded-xl" /></div><label className="flex items-start gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={microChargeable} onChange={(e) => setMicroChargeable(e.target.checked)} className="mt-0.5" /><span>Tagihkan ke pelanggan<span className="block text-[9px] font-normal text-slate-400">Matikan untuk bahan internal yang hanya dicatat sebagai HPP.</span></span></label>{microChargeable && <div><label className="block text-[10px] font-bold text-slate-500 mb-1">Harga Jual / Unit</label><input type="number" min="0" value={microUnitPrice} onChange={(e) => setMicroUnitPrice(e.target.value)} className="w-full px-3 py-2.5 text-xs border rounded-xl" /></div>}<div><label className="block text-[10px] font-bold text-slate-500 mb-1">Catatan</label><textarea rows={2} value={microNote} onChange={(e) => setMicroNote(e.target.value)} placeholder="Contoh: penggantian IC jalur charging" className="w-full px-3 py-2.5 text-xs border rounded-xl resize-none" /></div><div className="rounded-xl bg-white border p-3 space-y-1.5 text-[10px]"><div className="flex justify-between"><span className="text-slate-500">Total HPP internal</span><strong>Rp {(selectedMicro.purchaseCost * microQty).toLocaleString("id-ID")}</strong></div><div className="flex justify-between"><span className="text-slate-500">Biaya pelanggan</span><strong className="text-accent">Rp {(microChargeable ? Number(microUnitPrice || 0) * microQty : 0).toLocaleString("id-ID")}</strong></div></div>{selectedMicro.stockQty < microQty ? <button type="button" onClick={() => { setPartOrderTicket(microTicket); setPartOrderName(selectedMicro.name); setPartOrderQty(Math.max(1, microQty - selectedMicro.stockQty)); setPartOrderSupplier(selectedMicro.supplierName || ""); setPartOrderCost(String(selectedMicro.purchaseCost * Math.max(1, microQty - selectedMicro.stockQty))); setPartOrderReason(`Stok komponen mikro tidak mencukupi (tersedia ${selectedMicro.stockQty}).`); setMicroTicket(null); }} className="w-full px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-extrabold"><PackagePlus className="w-4 h-4 inline mr-1.5" /> Buat Permintaan & Menunggu Spare Part</button> : <button type="button" disabled={savingMicroUsage} onClick={async () => { if (!microTicket) return; setSavingMicroUsage(true); try { await consumeMicroComponentForService(selectedMicro.id, { ticketId: microTicket.id, warehouseId: selectedMicro.warehouseId, quantity: microQty, chargeable: microChargeable, unitPrice: microChargeable ? Number(microUnitPrice || 0) : undefined, note: microNote.trim() || undefined, idempotencyKey: `micro-${microTicket.id}-${selectedMicro.id}-${Date.now()}` }); showToast("Komponen tercatat dan stok diperbarui.", "success"); setSelectedMicroId(""); setMicroQty(1); setMicroNote(""); } catch (error: any) { showToast(error?.message || "Gagal memakai komponen.", "error"); } finally { setSavingMicroUsage(false); } }} className="w-full px-4 py-3 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-extrabold disabled:opacity-50">{savingMicroUsage ? "Menyimpan..." : "Gunakan Komponen"}</button>}</>}
           </section>
         </div>
       </div>
@@ -245,7 +245,7 @@ export const ServiceModals: React.FC<any> = (props) => {
   {partOrderTicket && createPortal(
     <div className="fixed inset-0 z-[170] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
-        <div className="bg-indigo-600 text-white px-5 py-4 flex justify-between items-center">
+        <div className="bg-accent text-white px-5 py-4 flex justify-between items-center">
           <div><h3 className="font-extrabold text-sm">Menunggu Spare Part</h3><p className="text-[10px] text-indigo-100 mt-1">Hentikan pengerjaan sementara dan catat kebutuhan part.</p></div>
           <button type="button" onClick={() => setPartOrderTicket(null)} className="text-xl">×</button>
         </div>
@@ -282,7 +282,7 @@ export const ServiceModals: React.FC<any> = (props) => {
               setPartOrderTicket(null); setPartOrderName(""); setPartOrderReason(""); setPartOrderSupplier(""); setPartOrderCost(""); setPartOrderEta(""); setPartOrderNote("");
             } catch (error: any) { showToast(error?.message || "Gagal membuat permintaan spare part.", "error"); }
             finally { setSavingPartOrder(false); }
-          }} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold disabled:opacity-50">{savingPartOrder ? "Menyimpan..." : "Simpan & Buat Pesan WhatsApp"}</button>
+          }} className="px-4 py-2 bg-accent text-white rounded-xl text-xs font-bold disabled:opacity-50">{savingPartOrder ? "Menyimpan..." : "Simpan & Buat Pesan WhatsApp"}</button>
         </div>
       </div>
     </div>, document.body
@@ -330,7 +330,7 @@ export const ServiceModals: React.FC<any> = (props) => {
           <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 border border-slate-200 p-3 text-center">
             <div><p className="text-[9px] text-slate-400">Harga Lama</p><p className="text-xs font-bold">Rp {(Number(additionalCostTicket.estimatedCost) || 0).toLocaleString("id-ID")}</p></div>
             <div><p className="text-[9px] text-slate-400">Tambahan</p><p className="text-xs font-bold text-amber-600">Rp {Number(additionalCostAmount || 0).toLocaleString("id-ID")}</p></div>
-            <div><p className="text-[9px] text-slate-400">Total Baru</p><p className="text-xs font-extrabold text-indigo-600">Rp {((Number(additionalCostTicket.estimatedCost) || 0) + Number(additionalCostAmount || 0)).toLocaleString("id-ID")}</p></div>
+            <div><p className="text-[9px] text-slate-400">Total Baru</p><p className="text-xs font-extrabold text-accent">Rp {((Number(additionalCostTicket.estimatedCost) || 0) + Number(additionalCostAmount || 0)).toLocaleString("id-ID")}</p></div>
           </div>
         </div>
         <div className="px-5 py-4 bg-slate-50 border-t flex justify-end gap-2">
@@ -379,10 +379,10 @@ export const ServiceModals: React.FC<any> = (props) => {
         {/* Content */}
         <div className="p-5 space-y-4">
           {activeWaModal.type === "ESTIMATE" && (
-            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+            <div className="rounded-2xl border border-indigo-100 bg-accent-lighter/60 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Konfirmasi Harga Perbaikan</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-accent">Konfirmasi Harga Perbaikan</p>
                   <p className="text-sm font-extrabold text-slate-800 mt-1">Rp {Number(activeWaModal.estimatedCost || 0).toLocaleString("id-ID")}</p>
                 </div>
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-bold text-amber-700">
@@ -412,7 +412,7 @@ export const ServiceModals: React.FC<any> = (props) => {
                   message: e.target.value,
                 })
               }
-              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500 font-mono leading-relaxed"
+              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-accent font-mono leading-relaxed"
             />
           </div>
         </div>

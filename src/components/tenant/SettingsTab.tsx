@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Building2,
   Sliders,
@@ -77,6 +77,8 @@ import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../ty
 import { GROUP_ORDER, getSettingsTabs } from "../../config/settingsConfigs";
 import { SettingsPrinterTerms } from "./SettingsPrinterTerms";
 import { SettingsWorkflows } from "./SettingsWorkflows";
+import { checkQzTray, printFrame, printJobAsync } from "../../utils/printJob";
+import { useServiceTrackerQr } from "../../hooks/useServiceTrackerQr";
 
 interface SettingsTabProps {
   activeSubTab: string;
@@ -104,9 +106,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     currentUser,
     switchBranch,
     currentBranchId,
+    services,
+    apiFetch,
   } = useSaaS();
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
+
+  const { handleDirectPrintLabel } = useServiceTrackerQr(services || [], currentTenantId, apiFetch);
 
   const tenantObj = tenants.find((t: Tenant) => t.id === currentTenantId);
   const tenantBranchesCount = branches.filter(
@@ -162,17 +168,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     );
   };
 
-  const [printPaperSize, setPrintPaperSize] = useState(
-    tenantObj?.settings?.printConfig?.paperSize || "thermal_80",
-  );
+
   const [paperSize, setPaperSize] = useState(
     tenantObj?.settings?.printConfig?.paperSize || "thermal_80",
   );
+  const [printMode, setPrintMode] = useState<"browser" | "qz">(tenantObj?.settings?.printConfig?.printMode || "browser");
+  const [printerName, setPrinterName] = useState(tenantObj?.settings?.printConfig?.printerName || "");
   const [labelWidth, setLabelWidth] = useState(
-    tenantObj?.settings?.printConfig?.labelWidth ?? 58,
+    Math.min(600, Math.max(200, Number(tenantObj?.settings?.printConfig?.labelWidth) || 320)),
   );
   const [labelHeight, setLabelHeight] = useState(
-    tenantObj?.settings?.printConfig?.labelHeight ?? 40,
+    Math.min(400, Math.max(100, Number(tenantObj?.settings?.printConfig?.labelHeight) || 180)),
   );
   const [labelFontSize, setLabelFontSize] = useState<string>(
     tenantObj?.settings?.printConfig?.labelFontSize || "sm",
@@ -194,7 +200,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   );
   const activeTenant = tenantObj;
   const [printFontSize, setPrintFontSize] = useState(
-    tenantObj?.settings?.printConfig?.printFontSize || "normal",
+    tenantObj?.settings?.printConfig?.printFontSize || "sm",
   );
   const [printMargin, setPrintMargin] = useState<number>(
     tenantObj?.settings?.printConfig?.printMargin ?? 12,
@@ -217,6 +223,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [printPreviewType, setPrintPreviewType] = useState<"nota" | "label">(
     "nota",
   );
+  const [qzStatus, setQzStatus] = useState("Belum dicek");
+  const [qzPrinters, setQzPrinters] = useState<string[]>([]);
+  const [qzChecking, setQzChecking] = useState(false);
 
   const [termsSalesText, setTermsSalesText] = useState(
     tenantObj?.settings?.printConfig?.termsSalesText || "",
@@ -227,6 +236,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [termsAndConditionsText, setTermsAndConditionsText] = useState(
     tenantObj?.settings?.printConfig?.termsAndConditionsText || "",
   );
+  const printConfigRef = useRef<Record<string, any>>(tenantObj?.settings?.printConfig || {});
+  const printSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const [showAddWorkflowModal, setShowAddWorkflowModal] = useState(false);
   const [wfName, setWfName] = useState("");
@@ -239,60 +250,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   >("WHATSAPP");
   const [wfActionPayload, setWfActionPayload] = useState("");
 
-  const handleDirectPrintLabel = (ticket: any) => {
-    const printConfig = tenantObj?.settings?.printConfig || {};
-    const width = Math.min(600, Math.max(200, Number(printConfig.labelWidth) || 320));
-    const height = Math.min(400, Math.max(100, Number(printConfig.labelHeight) || 180));
-    const frameId = "settings-label-print-frame";
-    let frame = document.getElementById(frameId) as HTMLIFrameElement | null;
-    if (!frame) {
-      frame = document.createElement("iframe");
-      frame.id = frameId;
-      frame.style.cssText = "position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none";
-      document.body.appendChild(frame);
-    }
-    const doc = frame.contentDocument;
-    if (!doc) {
-      showToast("Modul cetak label tidak dapat diinisialisasi.", "error");
-      return;
-    }
-    const title = printConfig.customHeaderTitle?.trim() || tenantObj?.name || "FIXDEV ERP";
-    const trackingUrl = `${window.location.origin}/?ticket=${encodeURIComponent(ticket.ticketNo || "")}`;
-    doc.open();
-    doc.write(`<!doctype html><html><head><title>Label Uji</title><style>@page{size:${width}px ${height}px;margin:0}body{font-family:Arial,sans-serif;margin:0;padding:8px;color:#0f172a;font-size:11px}.title{font-weight:800;text-align:center;border-bottom:1px solid #0f172a;padding-bottom:4px}.line{margin-top:4px;word-break:break-word}.ticket{font-weight:800}.qr{margin-top:8px;font-size:9px;text-align:center;word-break:break-all}.foot{margin-top:6px;border-top:1px dashed #64748b;padding-top:4px;font-size:8px;text-align:center}</style></head><body></body></html>`);
-    doc.close();
-    const root = doc.createElement("main");
-    if (printConfig.labelShowLogo !== false) {
-      const heading = doc.createElement("div");
-      heading.className = "title";
-      heading.textContent = title;
-      root.appendChild(heading);
-    }
-    [["Tiket", ticket.ticketNo], ["Perangkat", ticket.deviceName], ["Model", ticket.deviceBrandModel], ["Serial", ticket.deviceSerial]].forEach(([label, value], index) => {
-      const row = doc.createElement("div");
-      row.className = `line${index === 0 ? " ticket" : ""}`;
-      row.textContent = `${label}: ${value || "-"}`;
-      root.appendChild(row);
-    });
-    if (printConfig.labelShowQr !== false) {
-      const tracking = doc.createElement("div");
-      tracking.className = "qr";
-      tracking.textContent = trackingUrl;
-      root.appendChild(tracking);
-    }
-    const footer = doc.createElement("div");
-    footer.className = "foot";
-    footer.textContent = printConfig.labelCustomText?.trim() || "PINDAI UNTUK LACAK STATUS SERVIS";
-    root.appendChild(footer);
-    doc.body.appendChild(root);
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
+  const checkPrinterConnection = async () => {
+    setQzChecking(true);
+    const result = await checkQzTray();
+    setQzPrinters(result.printers);
+    setQzStatus(result.connected ? `Terhubung (${result.printers.length} printer)` : result.error || "Tidak terhubung");
+    setQzChecking(false);
   };
+  const testConfiguredPrinter = async () => {
+    const config = printConfigRef.current;
+    const result = await printJobAsync({ title: "Tes Printer FIXDEV", printConfig: config, html: `<div style="font-family:Arial;text-align:center;padding:20px"><b>TES PRINTER FIXDEV</b><br/>Printer: ${config.printerName || "Browser"}<br/>${new Date().toLocaleString("id-ID")}</div>` });
+    showToast(result.transport === "qz" ? "Test print QZ Tray berhasil dikonfirmasi." : result.transport === "browser" ? "QZ tidak aktif. Browser print dialog dibuka." : result.error || "Test print gagal.", result.ok ? "success" : "error");
+  };
+
+
   const savePrinterSettings = async (options?: any) => {
-    if (!options) return;
-    // Bangun printConfig baru berdasarkan nilai yang berubah
-    const current = tenantObj?.settings?.printConfig || {};
-    const updated: Record<string, any> = { ...current };
+    if (!options || !tenantObj) return;
+    // Serialize writes. Rapid controls must merge against latest queued config, not stale tenantObj.
+    const updated = { ...printConfigRef.current, ...options };
+    printConfigRef.current = updated;
+    if (options.printMode !== undefined) { setPrintMode(options.printMode); updated.printMode = options.printMode; }
+    if (options.printerName !== undefined) { setPrinterName(options.printerName); updated.printerName = options.printerName; }
 
     if (options.paperSize !== undefined) {
       setPaperSize(options.paperSize);
@@ -371,14 +349,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       updated.termsRentalText = options.termsRentalText;
     }
 
-    // Simpan ke tenant.settings.printConfig → updateTenant → sync DB
-    try {
+    // Serialize persistence. Each write merges against config already queued.
+    const save = printSaveQueueRef.current.then(async () => {
       await updateTenant(currentTenantId, {
         settings: {
-          ...(tenantObj?.settings || {}),
-          printConfig: updated,
+          ...(tenantObj.settings || {}),
+          printConfig: printConfigRef.current,
         },
       });
+    });
+    printSaveQueueRef.current = save.catch(() => undefined);
+    try {
+      await save;
       showToast("Pengaturan cetak berhasil disimpan!", "success");
     } catch (error: any) {
       showToast(error.message || "Gagal menyimpan pengaturan cetak.", "error");
@@ -400,18 +382,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       whiteLabelEnabled: tenantObj.branding?.whiteLabelEnabled || false,
       logo: tenantObj.branding?.logo || "",
     });
-    const pc = tenantObj.settings?.printConfig || {};
-    setPrintPaperSize(pc.paperSize || "thermal_80");
+    const pc = tenantObj?.settings?.printConfig || {};
+    printConfigRef.current = { ...pc };
+    printSaveQueueRef.current = Promise.resolve();
+    setPrintMode(pc.printMode || "browser");
+    setPrinterName(pc.printerName || "");
+
     setPaperSize(pc.paperSize || "thermal_80");
-    setLabelWidth(pc.labelWidth ?? 58);
-    setLabelHeight(pc.labelHeight ?? 40);
+    setLabelWidth(Math.min(600, Math.max(200, Number(pc.labelWidth) || 320)));
+    setLabelHeight(Math.min(400, Math.max(100, Number(pc.labelHeight) || 180)));
     setLabelFontSize(pc.labelFontSize || "sm");
     setLabelShowQr(pc.labelShowQr ?? true);
     setLabelShowLogo(pc.labelShowLogo ?? true);
     setLabelCustomText(pc.labelCustomText || "");
     setCustomHeaderTitle(pc.customHeaderTitle || "");
     setCustomFooterText(pc.customFooterText || "");
-    setPrintFontSize(pc.printFontSize || "normal");
+    setPrintFontSize(pc.printFontSize || "sm");
     setPrintMargin(pc.printMargin ?? 12);
     setPrintHeaderLogo(pc.printHeaderLogo ?? true);
     setPrintQrCode(pc.printQrCode ?? true);
@@ -491,7 +477,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   placeholder="Cari pengaturan"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 text-sm bg-slate-900 border border-slate-700 rounded-full text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+                  className="w-full pl-9 pr-8 py-2 text-sm bg-slate-900 border border-slate-700 rounded-full text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent/60"
                 />
                 {searchQuery && (
                   <button
@@ -515,7 +501,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       onClick={() => setActiveSubTab?.(groupTabs[0].id)}
                       className={`w-full text-left px-3 py-2 rounded-full text-[11px] font-semibold border transition ${
                         isActiveGroup
-                          ? "bg-indigo-500 text-white border-indigo-500"
+                          ? "bg-indigo-500 text-white border-accent"
                           : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
                       }`}
                     >
@@ -537,7 +523,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       onClick={() => setActiveSubTab?.(t.id)}
                       className={`px-2.5 py-1 text-[10px] rounded-full border transition ${
                         effectiveActiveSubTab === t.id
-                          ? "bg-indigo-500 text-white border-indigo-500"
+                          ? "bg-indigo-500 text-white border-accent"
                           : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
                       }`}
                     >
@@ -565,7 +551,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     onClick={() => setActiveSubTab?.(t.id)}
                     className={`text-[11px] font-semibold rounded-full px-3 py-2 border transition ${
                       effectiveActiveSubTab === t.id
-                        ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                        ? "bg-accent-lighter text-accent border-indigo-200"
                         : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-800"
                     }`}
                   >
@@ -579,7 +565,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div className="animate-fadeIn">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                <div className="p-1.5 bg-accent-lighter text-accent rounded-lg">
                   <Server className="w-4 h-4" />
                 </div>
                 <div>
@@ -696,7 +682,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
         )}
 
-        {effectiveActiveSubTab === "printer-terms" && <SettingsPrinterTerms {...{activeTenant, customFooterText, customHeaderTitle, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText}} />}
+        {effectiveActiveSubTab === "printer-terms" && <SettingsPrinterTerms {...{activeTenant, customFooterText, customHeaderTitle, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printMode, printerName, qzStatus, qzPrinters, qzChecking, checkPrinterConnection, testConfiguredPrinter, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText}} />}
 
         {effectiveActiveSubTab === "developer-api" && (
           <div className="animate-fadeIn"><DeveloperApiManager /></div>

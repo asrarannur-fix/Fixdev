@@ -26,7 +26,7 @@ const STATUS_COLOR: Record<string, string> = {
   [ServiceStatus.DITERIMA]:          'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400',
   [ServiceStatus.DIAGNOSA]:          'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400',
   [ServiceStatus.MENUGGU_APPROVAL]:  'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400',
-  [ServiceStatus.SEDANG_DIKERJAKAN]: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400',
+  [ServiceStatus.SEDANG_DIKERJAKAN]: 'bg-indigo-100 dark:bg-indigo-950/40 text-accent dark:text-accent',
   [ServiceStatus.SELESAI]:           'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400',
   [ServiceStatus.DIAMBIL]:           'bg-teal-100 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400',
   [ServiceStatus.DIBATALKAN]:        'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400',
@@ -99,12 +99,12 @@ const InfoRow: React.FC<{ label: string; children: React.ReactNode; mono?: boole
 const inputCls =
   'w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 ' +
   'rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ' +
-  'focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-500 transition-all';
+  'focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent transition-all';
 
 const selectCls =
   'w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 ' +
-  'rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 ' +
-  'focus:border-indigo-500 transition-all cursor-pointer';
+  'rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-accent/25 ' +
+  'focus:border-accent transition-all cursor-pointer';
 
 /* ── main component ──────────────────────────────────────────── */
 type TabKey = 'info' | 'ai' | 'edit' | 'qc' | 'history';
@@ -342,7 +342,7 @@ export const TicketEditorDock: React.FC<{
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap select-none cursor-pointer transition-all ${
               tab === t.key
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                ? 'bg-accent text-white shadow-md shadow-accent/20'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
@@ -469,7 +469,7 @@ export const TicketEditorDock: React.FC<{
 
           <button
             onClick={() => setTab('edit')}
-            className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-bold rounded-xl cursor-pointer transition-all shadow-lg shadow-indigo-600/20"
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-accent hover:bg-accent-hover active:scale-[0.98] text-white text-sm font-bold rounded-xl cursor-pointer transition-all shadow-lg shadow-accent/20"
           >
             <Wrench className="w-4 h-4" />
             Update Status & Perbaikan
@@ -548,7 +548,7 @@ export const TicketEditorDock: React.FC<{
                   {d.parts.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {d.parts.map((p: string, pi: number) => (
-                        <span key={pi} className="text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
+                        <span key={pi} className="text-[10px] font-semibold bg-accent-lighter dark:bg-indigo-950/30 text-accent dark:text-accent px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
                           {p}
                         </span>
                       ))}
@@ -617,7 +617,7 @@ export const TicketEditorDock: React.FC<{
                 </div>
                 <input
                   type="number" value={wDays} onChange={e => setWDays(e.target.value)} min={1} max={365}
-                  className={inputCls + ' border-emerald-200 dark:border-emerald-700 focus:border-emerald-500 focus:ring-emerald-500/25'}
+                  className={inputCls + ' border-emerald-200 dark:border-emerald-700 focus:border-accent focus:ring-accent/25'}
                 />
                 <p className="text-xs text-emerald-600 dark:text-emerald-500">
                   Berlaku hingga: <strong>{fmtDt(new Date(Date.now() + Number(wDays || 30) * 86_400_000).toISOString())}</strong>
@@ -698,7 +698,7 @@ export const TicketEditorDock: React.FC<{
               />
               <button
                 onClick={addPart} disabled={!newPart.name.trim()}
-                className="col-span-1 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl cursor-pointer transition-colors"
+                className="col-span-1 flex items-center justify-center bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl cursor-pointer transition-colors"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -709,7 +709,7 @@ export const TicketEditorDock: React.FC<{
           <div className="flex gap-3 pt-1">
             <button
               onClick={handleSave} disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl cursor-pointer transition-all shadow-lg shadow-indigo-600/20"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-accent hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl cursor-pointer transition-all shadow-lg shadow-accent/20"
             >
               {saving
                 ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Menyimpan...</>
@@ -837,7 +837,7 @@ export const TicketEditorDock: React.FC<{
 
               <div className="flex items-start gap-4 pl-1">
                 <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-950/40 border-2 border-white dark:border-slate-900 shadow flex items-center justify-center shrink-0">
-                  <Wrench className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <Wrench className="w-4 h-4 text-accent dark:text-accent" />
                 </div>
                 <div className="pt-1.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">

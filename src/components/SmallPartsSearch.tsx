@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { usePrintConfig } from "../hooks/usePrintConfig";
+import { printFrame } from "../utils/printJob";
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
@@ -293,8 +294,7 @@ export const SmallPartsSearch: React.FC = () => {
         "hidden-print-iframe",
       ) as HTMLIFrameElement;
       if (pIframe && pIframe.contentWindow) {
-        pIframe.contentWindow.focus();
-        pIframe.contentWindow.print();
+        printFrame(pIframe, printConfig, "Purchase Order");
         addLog(
           "Print Purchase Order",
           `Mencetak dokumen Purchase Order \${poNo} ke printer thermal \${poPrinterFormat}mm.`,
@@ -1174,7 +1174,7 @@ export const SmallPartsSearch: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="p-3 bg-indigo-500/10 rounded-xl space-y-1 border border-indigo-500/20 text-[10.5px]">
+                    <div className="p-3 bg-indigo-500/10 rounded-xl space-y-1 border border-accent/20 text-[10.5px]">
                       <div className="flex justify-between text-slate-400">
                         <span>Original Price:</span>
                         <span>

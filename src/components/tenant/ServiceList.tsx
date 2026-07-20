@@ -65,7 +65,7 @@ export const ServiceList: React.FC<any> = (props) => {
       { label: "Dikerjakan", value: dikerjakan, color: "text-blue-600 dark:text-blue-400" },
       { label: "QC", value: qc, color: "text-purple-600 dark:text-purple-400" },
       { label: "Selesai", value: selesai, color: "text-emerald-600 dark:text-emerald-400" },
-      { label: "Siap Diambil", value: siapDiambil, color: "text-indigo-600 dark:text-indigo-400" },
+      { label: "Siap Diambil", value: siapDiambil, color: "text-accent dark:text-accent" },
       { label: "Terlambat", value: terlambat, color: "text-rose-600 dark:text-rose-400" },
       { label: "Estimasi (Bln Ini)", value: `Rp${totalEstimasiBulanIni.toLocaleString("id-ID")}`, color: "text-slate-700 dark:text-zinc-300" },
     ];
@@ -88,7 +88,7 @@ export const ServiceList: React.FC<any> = (props) => {
         const techCount = qcTickets.reduce((acc, s) => { const k = s.assignedTechId || "unassigned"; acc.add(k); return acc; }, new Set<string>());
         return (
           <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-1">
-            <span className="font-bold text-indigo-600">QC Rata-rata: <strong>{avgQcScore}%</strong></span>
+            <span className="font-bold text-accent">QC Rata-rata: <strong>{avgQcScore}%</strong></span>
             <span className="text-slate-300">·</span>
             <span className="font-bold text-rose-600">Pelanggaran SLA: <strong>{slaBreaches}</strong></span>
             <span className="text-slate-300">·</span>
@@ -113,7 +113,7 @@ export const ServiceList: React.FC<any> = (props) => {
           "action-services-delete-ticket",
         )) && (
           <div className="flex items-center gap-2 animate-fadeIn">
-            <span className="text-[10px] font-bold text-indigo-600 px-2">
+            <span className="text-[10px] font-bold text-accent px-2">
               {selectedServiceIds.length} Terpilih
             </span>
             <button
@@ -167,7 +167,7 @@ export const ServiceList: React.FC<any> = (props) => {
       </button>
       <button
         onClick={() => setActiveSubTab("new-ticket")}
-        className={`bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm transition-all ${isSubTabAllowed("services", "new-ticket") ? "" : "hidden"}`}
+        className={`bg-accent hover:bg-accent-hover text-white font-extrabold text-[10px] px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm transition-all ${isSubTabAllowed("services", "new-ticket") ? "" : "hidden"}`}
       >
         <PlusCircle className="w-3.5 h-3.5" /> Terima Unit Baru
       </button>
@@ -250,7 +250,7 @@ export const ServiceList: React.FC<any> = (props) => {
       <button
         key={card.filter}
         onClick={() => setStatusFilter(card.filter)}
-        className={`border rounded-xl p-2.5 text-left transition-all hover:shadow-sm cursor-pointer select-none ${statusFilter === card.filter ? 'ring-2 ring-indigo-500/30 border-indigo-500 bg-gradient-to-r from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/40 shadow-md transform scale-[1.02]' : ''} ${card.color}`}
+        className={`border rounded-xl p-2.5 text-left transition-all hover:shadow-sm cursor-pointer select-none ${statusFilter === card.filter ? 'ring-2 ring-indigo-500/30 border-accent bg-gradient-to-r from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/40 shadow-md transform scale-[1.02]' : ''} ${card.color}`}
       >
         <p className="text-[9px] uppercase font-mono font-bold opacity-70 tracking-wider truncate">
           {card.label}
@@ -271,7 +271,7 @@ export const ServiceList: React.FC<any> = (props) => {
           placeholder="Cari tiket, nama, device..."
           value={srvSearchQuery}
           onChange={(e) => setSrvSearchQuery(e.target.value)}
-          className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-zinc-900"
+          className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg outline-none focus:border-accent dark:focus:border-accent bg-white dark:bg-zinc-900"
         />
         <select
           value={srvSort}
@@ -290,7 +290,7 @@ export const ServiceList: React.FC<any> = (props) => {
     {statusFilter !== "ALL" && (
       <div className="flex items-center gap-1.5 px-3 pb-1.5">
         <span className="text-xs text-slate-500">Filter:</span>
-        <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-full">
+        <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-accent rounded-full">
           {statusFilter}
         </span>
         <button
@@ -412,7 +412,7 @@ export const ServiceList: React.FC<any> = (props) => {
                       statusRail.includes("orange") ? "bg-orange-100 text-orange-700" :
                       statusRail.includes("amber") ? "bg-amber-100 text-amber-700" :
                       statusRail.includes("teal") ? "bg-teal-100 text-teal-700" :
-                      "bg-indigo-100 text-indigo-700"}`}
+                      "bg-indigo-100 text-accent"}`}
                 >
                   {initials}
                 </span>
@@ -481,7 +481,7 @@ export const ServiceList: React.FC<any> = (props) => {
   {/* Floating bulk action bar */}
   {selectedServiceIds.length > 0 && (
     <div className="sticky bottom-0 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-b-2xl p-2.5 flex items-center justify-between shadow-lg -mt-2">
-      <span className="text-xs font-bold text-indigo-600">{selectedServiceIds.length} terpilih</span>
+      <span className="text-xs font-bold text-accent">{selectedServiceIds.length} terpilih</span>
       <div className="flex items-center gap-2">
         {(currentUser?.role === UserRole.OWNER || currentUserPermissions.includes("action-services-delete-ticket")) && (
           <button
@@ -510,7 +510,7 @@ export const ServiceList: React.FC<any> = (props) => {
   {/* Gemini AI diagnostic recommendations widget (when active) */}
   {selectedServiceId && aiLoading && (
     <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center shadow-inner">
-      <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin" />
+      <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-accent animate-spin" />
       <p className="text-xs font-semibold text-slate-600 font-mono mt-3">
         Sedang merumuskan diagnosa terbaik dengan Gemini AI...
       </p>
@@ -554,7 +554,7 @@ export const ServiceList: React.FC<any> = (props) => {
             <p className="font-bold text-slate-700">
               Estimasi Rentang Jasa:
             </p>
-            <p className="text-sm font-extrabold text-indigo-600 font-mono mt-0.5">
+            <p className="text-sm font-extrabold text-accent font-mono mt-0.5">
               Rp {(aiResult.estimatedCostMin ?? 0).toLocaleString()} -
               Rp {(aiResult.estimatedCostMax ?? 0).toLocaleString()}
             </p>
@@ -590,7 +590,7 @@ export const ServiceList: React.FC<any> = (props) => {
           onClick={() =>
             handleApplyAiRecommendation(selectedServiceId!)
           }
-          className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs cursor-pointer shadow-md shadow-indigo-500/10 flex items-center gap-1"
+          className="px-4 py-1.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg text-xs cursor-pointer shadow-md shadow-accent/10 flex items-center gap-1"
         >
           <Check className="w-3.5 h-3.5" /> Terapkan Diagnosa &
           Estimasikan Biaya

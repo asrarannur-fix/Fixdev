@@ -151,7 +151,7 @@ export const ServiceApprovalPortal: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-950 dark:to-indigo-950 flex items-center justify-center p-4">
         <div className="text-center space-y-4">
-          <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mx-auto" />
+          <Loader2 className="w-10 h-10 text-accent animate-spin mx-auto" />
           <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Memuat data tiket...</p>
         </div>
       </div>
@@ -203,12 +203,29 @@ export const ServiceApprovalPortal: React.FC = () => {
       {/* Header */}
       <header className="h-16 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-slate-200/40 dark:border-zinc-800/60 px-6 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-md">
-            <span className="font-bold text-sm">KM</span>
+          <div className="bg-accent p-2 rounded-xl text-white shadow-md transition-all duration-300" style={{ 
+            backgroundColor: activeTenant?.branding?.primaryColor || "var(--accent)"
+          }}>
+            <span className="font-bold text-sm">
+              {activeTenant?.branding?.logoUrl ? (
+                <img src={activeTenant.branding.logoUrl} alt="Logo" className="h-6 w-6" onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }} />
+              ) : (
+                <span className="hidden">KM</span>
+              )}
+            </span>
           </div>
           <div>
-            <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-              FixDev
+            <span className="text-sm font-black tracking-tight transition-all duration-300" style={{ 
+              color: activeTenant?.branding?.primaryColor || "#1e293b"
+            }}>
+              {activeTenant?.branding?.whiteLabelEnabled && activeTenant?.branding?.customDomain
+                ? activeTenant.branding.customDomain
+                : activeTenant?.name || "KM"
+              }
             </span>
             <span className="text-[10px] text-slate-400 block -mt-1 font-mono">Persetujuan Estimasi</span>
           </div>
@@ -222,7 +239,7 @@ export const ServiceApprovalPortal: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-950/40 rounded-xl flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-indigo-600" />
+                  <FileText className="w-5 h-5 text-accent" />
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 font-mono">#{ticket.ticketNo}</p>
@@ -300,7 +317,7 @@ export const ServiceApprovalPortal: React.FC = () => {
               value={signerName}
               onChange={(e) => setSignerName(e.target.value)}
               placeholder="Masukkan nama lengkap Anda"
-              className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
         </div>

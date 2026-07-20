@@ -21,7 +21,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variants = {
     primary:
-      "bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent shadow-xs hover:shadow-md",
+      "bg-accent hover:bg-accent-hover text-white border border-transparent shadow-xs hover:shadow-md",
     secondary:
       "bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-100 border border-transparent",
     danger:

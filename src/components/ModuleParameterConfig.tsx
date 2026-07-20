@@ -102,7 +102,7 @@ export const ModuleParameterConfig: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <Settings className="w-4 h-4 text-indigo-600" />
+            <Settings className="w-4 h-4 text-accent" />
             Parameter & Penyesuaian Modul Bisnis
           </h3>
           <p className="text-[10px] text-slate-500 mt-1">
@@ -130,15 +130,15 @@ export const ModuleParameterConfig: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-500 uppercase">Prefiks Tiket Servis</label>
-            <input type="text" value={ticketPrefix} onChange={(e) => setTicketPrefix(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-purple-500 uppercase" />
+            <input type="text" value={ticketPrefix} onChange={(e) => setTicketPrefix(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent uppercase" />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-500 uppercase">Prefiks Invoice Servis</label>
-            <input type="text" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-purple-500 uppercase" />
+            <input type="text" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent uppercase" />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-500 uppercase">Prefiks Penjualan / POS</label>
-            <input type="text" value={posPrefix} onChange={(e) => setPosPrefix(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-purple-500 uppercase" />
+            <input type="text" value={posPrefix} onChange={(e) => setPosPrefix(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent uppercase" />
           </div>
         </div>
       </div>
@@ -147,20 +147,20 @@ export const ModuleParameterConfig: React.FC = () => {
         {/* Card 1: Operasional & Garansi */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Zap className="w-5 h-5" /></div>
+            <div className="p-2 bg-accent-lighter text-accent rounded-xl"><Zap className="w-5 h-5" /></div>
             <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">Layanan & Garansi</h4>
           </div>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">Masa Garansi Default</label>
-                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{warrantyDays} Hari</span>
+                <span className="text-[10px] font-bold text-accent bg-accent-lighter px-2 py-0.5 rounded">{warrantyDays} Hari</span>
               </div>
-              <input type="range" min="0" max="365" step="1" value={warrantyDays} onChange={(e) => setWarrantyDays(Number(e.target.value))} className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+              <input type="range" min="0" max="365" step="1" value={warrantyDays} onChange={(e) => setWarrantyDays(Number(e.target.value))} className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-accent" />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">Auto-Reminder Pick-up (Hari)</label>
-              <input type="number" value={autoReminderDays} onChange={(e) => setAutoReminderDays(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono" />
+              <input type="number" value={autoReminderDays} onChange={(e) => setAutoReminderDays(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-accent font-mono" />
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ export const ModuleParameterConfig: React.FC = () => {
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">Default PPN / Tax (%)</label>
               <div className="relative">
-                <input type="number" value={taxRate} onChange={(e) => setTaxRate(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono font-bold" />
+                <input type="number" value={taxRate} onChange={(e) => setTaxRate(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-accent font-mono font-bold" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
               </div>
             </div>
@@ -197,7 +197,7 @@ export const ModuleParameterConfig: React.FC = () => {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">Batas Stok Rendah (Critical)</label>
-              <input type="number" value={stockLowThreshold} onChange={(e) => setStockLowThreshold(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono font-bold" />
+              <input type="number" value={stockLowThreshold} onChange={(e) => setStockLowThreshold(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-accent font-mono font-bold" />
             </div>
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
               <span className="text-[10px] font-bold text-slate-600 uppercase">Aktifkan Modul Skema & Panduan Teknis</span>

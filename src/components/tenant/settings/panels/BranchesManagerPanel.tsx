@@ -30,7 +30,7 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2">
-            <Globe className="w-4 h-4 text-indigo-600" /> Jaringan Lokasi Cabang Usaha
+            <Globe className="w-4 h-4 text-accent" /> Jaringan Lokasi Cabang Usaha
           </h4>
           <button
             onClick={() => {
@@ -41,7 +41,7 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
               setBrIsActive(true);
               setShowAddBranchModal(true);
             }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" /> Tambah Cabang Baru
           </button>
@@ -49,10 +49,10 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
 
         <div className="bg-slate-50 border border-slate-200/65 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="p-2 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl text-xs">??</span>
+            <span className="p-2 bg-accent-lighter border border-indigo-100 text-accent rounded-xl text-xs">??</span>
             <div>
               <p className="font-extrabold text-slate-800 text-xs">Kuota Lokasi Cabang / Outlet ({tenantBranchesCount} / {branchLimit})</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Maksimum outlet fisik sesuai paket <strong className="text-indigo-600 uppercase">{tenantObj?.tier || "BASIC"}</strong> Anda.</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Maksimum outlet fisik sesuai paket <strong className="text-accent uppercase">{tenantObj?.tier || "BASIC"}</strong> Anda.</p>
             </div>
           </div>
           {isBranchLimitReached ? (
@@ -74,7 +74,7 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
               <div className="space-y-1"><label className="block text-[10px] font-mono text-slate-400 uppercase">Nomor Telepon</label><input type="text" value={brPhone} onChange={(e) => setBrPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 bg-white rounded-lg outline-none text-slate-700" /></div>
             </div>
             <div className="flex items-center justify-between text-xs pt-2">
-              <div className="flex items-center gap-2"><input type="checkbox" id="br_active_checkbox" checked={brIsActive} onChange={(e) => setBrIsActive(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded cursor-pointer" /><label htmlFor="br_active_checkbox" className="font-bold text-slate-700 select-none cursor-pointer">Aktifkan Cabang</label></div>
+              <div className="flex items-center gap-2"><input type="checkbox" id="br_active_checkbox" checked={brIsActive} onChange={(e) => setBrIsActive(e.target.checked)} className="w-4 h-4 text-accent rounded cursor-pointer" /><label htmlFor="br_active_checkbox" className="font-bold text-slate-700 select-none cursor-pointer">Aktifkan Cabang</label></div>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setShowAddBranchModal(false)} className="px-3.5 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer">Batal</button>
                 <button
@@ -91,7 +91,7 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
                       showToast(e.message || "Gagal menyimpan cabang.", "error");
                     }
                   }}
-                  className={`px-4 py-1.5 font-bold rounded-lg text-[11px] cursor-pointer transition-all ${!editingBranchId && isBranchLimitReached ? "bg-slate-200 text-slate-400" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
+                  className={`px-4 py-1.5 font-bold rounded-lg text-[11px] cursor-pointer transition-all ${!editingBranchId && isBranchLimitReached ? "bg-slate-200 text-slate-400" : "bg-accent hover:bg-accent-hover text-white"}`}
                 >
                   {editingBranchId ? "Simpan Perubahan" : "Konfirmasi Buat Cabang"}
                 </button>
@@ -104,7 +104,7 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
           {branches.filter((b: any) => b.tenantId === currentTenantId).map((branch: any) => {
             const isSelected = branch.id === currentBranchId;
             return (
-              <div key={branch.id} className={`border rounded-xl p-4 transition-all relative ${isSelected ? "border-indigo-600 bg-indigo-50/20 shadow-md" : "border-slate-200 bg-white shadow-sm"}`}>
+              <div key={branch.id} className={`border rounded-xl p-4 transition-all relative ${isSelected ? "border-accent bg-accent-lighter/20 shadow-md" : "border-slate-200 bg-white shadow-sm"}`}>
                 <div className="space-y-2.5">
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-mono text-slate-400 uppercase">ID Cabang: {branch.id}</span>

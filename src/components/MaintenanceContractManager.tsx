@@ -197,7 +197,7 @@ export const MaintenanceContractManager: React.FC = () => {
               placeholder="Cari kontrak..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <button
@@ -218,7 +218,7 @@ export const MaintenanceContractManager: React.FC = () => {
               <select
                 value={custId}
                 onChange={(e) => setCustId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 <option value="">-- Pilih Pelanggan --</option>
                 {customers
@@ -228,15 +228,15 @@ export const MaintenanceContractManager: React.FC = () => {
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Tipe Device (HP/Laptop/dll)</label>
-              <input value={deviceType} onChange={(e) => setDeviceType(e.target.value)} placeholder="Smartphone" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input value={deviceType} onChange={(e) => setDeviceType(e.target.value)} placeholder="Smartphone" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Brand / Model</label>
-              <input value={deviceBrand} onChange={(e) => setDeviceBrand(e.target.value)} placeholder="Samsung Galaxy S23" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input value={deviceBrand} onChange={(e) => setDeviceBrand(e.target.value)} placeholder="Samsung Galaxy S23" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Serial / IMEI</label>
-              <input value={deviceSerial} onChange={(e) => setDeviceSerial(e.target.value)} placeholder="352915..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input value={deviceSerial} onChange={(e) => setDeviceSerial(e.target.value)} placeholder="352915..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Tipe Kontrak</label>
@@ -249,15 +249,15 @@ export const MaintenanceContractManager: React.FC = () => {
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Biaya Kontrak</label>
-              <input type="number" value={totalCost || ""} onChange={(e) => setTotalCost(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input type="number" value={totalCost || ""} onChange={(e) => setTotalCost(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Mulai</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Berakhir</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Interval Servis</label>
@@ -272,7 +272,7 @@ export const MaintenanceContractManager: React.FC = () => {
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-500 uppercase">Catatan</label>
-            <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500" />
+            <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent" />
           </div>
           <button onClick={handleCreate} className="w-full py-2 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-lg cursor-pointer shadow-sm">
             <CheckCircle2 className="w-4 h-4 inline mr-1.5" /> Buat Kontrak Maintenance

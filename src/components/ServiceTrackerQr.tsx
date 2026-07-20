@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { useServiceTrackerQr } from "../hooks/useServiceTrackerQr";
@@ -69,6 +69,16 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
   const [cameraState, setCameraState] = useState<
     "idle" | "streaming" | "success"
   >("idle");
+  const scannerRef = useRef<any>(null);
+
+  // Cleanup scanner on unmount
+  React.useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+      }
+    };
+  }, []);
 
   // Thermal print parameters
   const [thermalTapeSize, setThermalTapeSize] = useState<"58" | "80">("58");
@@ -148,30 +158,49 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
     }
   };
 
-  // Jalankan pemindaian barcode/QR Code tiket servis
-  const startCameraScanner = () => {
+  // Scanner kamera real via html5-qrcode (dynamic import)
+  const startCameraScanner = useCallback(async () => {
     setScanning(true);
     setCameraState("streaming");
     setScanResult(null);
 
-    // Cari barcode/QR Code dalam beberapa detik
-    setTimeout(() => {
-      if (tenantServices.length > 0) {
-        // Ambil tiket yang terdaftar untuk demo pemindaian
-        const randomTicket =
-          tenantServices[Math.floor(Math.random() * tenantServices.length)];
-        playBeep();
-        setScanResult(randomTicket.ticketNo);
-        setSelectedTicketId(randomTicket.id);
-        setCameraState("success");
-        setScanning(false);
-      } else {
-        setCameraState("idle");
-        setScanning(false);
-        showToast("Belum ada tiket servis terdaftar untuk dipindai!", "error");
-      }
-    }, 2000);
-  };
+    if (scannerRef.current) {
+      try { await scannerRef.current.stop(); } catch {}
+    }
+
+    try {
+      const Html5Qrcode = (await import("html5-qrcode")).Html5Qrcode;
+      const scanner = new Html5Qrcode("qr-scanner-element");
+
+      const onSuccess = (decodedText: string) => {
+        const ticketNo = decodedText.match(/ticket=([^&]+)/)?.[1] || decodedText;
+        const match = tenantServices.find((s) => s.ticketNo === ticketNo);
+        if (match) {
+          setScanResult(ticketNo);
+          setSelectedTicketId(match.id);
+          setCameraState("success");
+          playBeep();
+          scanner.stop().catch(() => {});
+        } else {
+          showToast(`Tiket ${ticketNo} tidak ditemukan`, "error");
+        }
+      };
+
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onSuccess,
+        () => {},
+      );
+      scannerRef.current = scanner;
+    } catch (err) {
+      console.error("Scanner error:", err);
+      setCameraState("idle");
+      showToast("Kamera tidak tersedia atau izin ditolak", "error");
+    } finally {
+      setScanning(false);
+    }
+  }, [tenantServices, setSelectedTicketId, showToast]);
 
   // Aktivasi Cetak Thermal Roll
   const triggerThermalPrintAnimation = () => {
@@ -192,7 +221,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 dark:border-zinc-800 pb-4 gap-3">
         <div>
           <h2 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
-            <QrCode className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <QrCode className="w-5 h-5 text-accent dark:text-accent" />
             QR Code Lacak &amp; Label Sticker Thermal
           </h2>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 leading-tight">
@@ -207,7 +236,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
             onClick={() => setActiveTab("print")}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === "print"
-                ? "bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                ? "bg-white dark:bg-zinc-900 text-accent dark:text-accent shadow-xs"
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -217,7 +246,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
             onClick={() => setActiveTab("scanner")}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
               activeTab === "scanner"
-                ? "bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                ? "bg-white dark:bg-zinc-900 text-accent dark:text-accent shadow-xs"
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -228,7 +257,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
             onClick={() => setActiveTab("thermal")}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
               activeTab === "thermal"
-                ? "bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                ? "bg-white dark:bg-zinc-900 text-accent dark:text-accent shadow-xs"
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -251,7 +280,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                 <select
                   value={selectedTicketId}
                   onChange={(e) => setSelectedTicketId(e.target.value)}
-                  className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-100 rounded-xl outline-none focus:border-indigo-500"
+                  className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-100 rounded-xl outline-none focus:border-accent"
                 >
                   {tenantServices.length === 0 ? (
                     <option value="">Belum ada servis yang terdaftar</option>
@@ -278,7 +307,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                           {selectedTicket.deviceName}
                         </p>
                       </div>
-                      <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 text-[9px] font-black font-mono rounded border border-indigo-100 dark:border-indigo-900/40 uppercase">
+                      <span className="px-1.5 py-0.5 bg-accent-lighter dark:bg-indigo-950/40 text-accent dark:text-accent text-[9px] font-black font-mono rounded border border-indigo-100 dark:border-indigo-900/40 uppercase">
                         {selectedTicket.status}
                       </span>
                     </div>
@@ -315,7 +344,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                     <button
                       onClick={() => handleSyncTicket(selectedTicket)}
                       disabled={syncStatus === "syncing"}
-                      className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black py-2 rounded-xl cursor-pointer transition-all disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white text-xs font-black py-2 rounded-xl cursor-pointer transition-all disabled:opacity-50"
                     >
                       {syncStatus === "syncing" ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -358,7 +387,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                     </button>
                     <button
                       onClick={() => handleDirectPrintLabel(selectedTicket, businessName)}
-                      className="flex items-center justify-center gap-1 border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 text-[9.5px] font-black py-2 rounded-xl cursor-pointer transition-all"
+                      className="flex items-center justify-center gap-1 border border-indigo-200 dark:border-indigo-900/50 bg-accent-lighter hover:bg-indigo-100 dark:bg-indigo-950/30 text-accent dark:text-indigo-300 text-[9.5px] font-black py-2 rounded-xl cursor-pointer transition-all"
                     >
                       <Printer className="w-3.5 h-3.5" /> Label 58mm
                     </button>
@@ -406,13 +435,13 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
               {selectedTicket ? (
                 <div className="w-full max-w-xs bg-white dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-4.5 space-y-3 shadow-md text-xs text-slate-800 dark:text-zinc-200 transform hover:scale-[1.01] transition-transform animate-fadeIn">
                   <div className="text-center border-b border-slate-100 dark:border-zinc-850 pb-2.5 space-y-1">
-                    <h3 className="font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                    <h3 className="font-extrabold text-accent dark:text-accent uppercase tracking-wide">
                       {businessName}
                     </h3>
                     <p className="text-[9px] text-slate-400 dark:text-zinc-500 font-medium">
                       Layanan Servis Profesional &amp; Terpercaya
                     </p>
-                    <div className="inline-block mt-1.5 px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-400 font-extrabold font-mono text-[10.5px] rounded-lg border border-indigo-100/50 dark:border-indigo-900/30">
+                    <div className="inline-block mt-1.5 px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-accent font-extrabold font-mono text-[10.5px] rounded-lg border border-indigo-100/50 dark:border-indigo-900/30">
                       TIKET: #{selectedTicket.ticketNo}
                     </div>
                   </div>
@@ -439,7 +468,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                       <span className="text-slate-400 dark:text-zinc-500">
                         Estimasi Biaya:
                       </span>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+                      <span className="font-bold text-accent dark:text-accent font-mono">
                         {formatRupiah(selectedTicket.estimatedCost)}
                       </span>
                     </div>
@@ -505,7 +534,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
               <button
                 onClick={startCameraScanner}
                 disabled={scanning}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-black text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {scanning ? (
                   <>
@@ -551,15 +580,13 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
           <div className="lg:col-span-7 bg-slate-950 rounded-3xl p-6 flex flex-col items-center justify-center min-h-[410px] border border-zinc-800 text-center relative overflow-hidden">
             {/* Camera stream video frame */}
             {cameraState === "streaming" && (
-              <div className="absolute inset-0 bg-slate-900/40 flex flex-col items-center justify-center space-y-4">
-                {/* Red Laser Scanning Line animation */}
-                <div className="w-64 h-64 border-2 border-indigo-500 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)] bg-black/80">
-                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-rose-500 shadow-[0_0_10px_#f43f5e] animate-scanLine" />
-                  <QrCode className="w-20 h-20 text-indigo-400 opacity-20 animate-pulse" />
+              <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
+                <div className="w-full max-w-sm rounded-2xl overflow-hidden border-2 border-accent">
+                  <div id="qr-scanner-element" style={{ width: "100%", minHeight: "250px" }} />
                 </div>
                 <div className="text-white text-xs font-mono font-bold animate-pulse flex items-center gap-2 bg-indigo-950/85 px-4 py-1.5 rounded-full border border-indigo-900/60">
                   <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                  MENDETEKSI KAMERA &amp; QR CODE...
+                  ARAHKAN QR KE KAMERA...
                 </div>
               </div>
             )}
@@ -600,7 +627,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                       // Simulating opening the workspace
                       setActiveTab("print");
                     }}
-                    className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] rounded-lg transition text-center"
+                    className="flex-1 py-1.5 bg-accent hover:bg-accent-hover text-white font-extrabold text-[10px] rounded-lg transition text-center"
                   >
                     Buka Slip Nota
                   </button>
@@ -660,7 +687,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                     onClick={() => setThermalTapeSize("58")}
                     className={`py-1.5 font-bold rounded-lg border text-center cursor-pointer transition ${
                       thermalTapeSize === "58"
-                        ? "bg-indigo-50 text-indigo-700 border-indigo-400 font-black"
+                        ? "bg-accent-lighter text-accent border-accent/60 font-black"
                         : "bg-white dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -670,7 +697,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                     onClick={() => setThermalTapeSize("80")}
                     className={`py-1.5 font-bold rounded-lg border text-center cursor-pointer transition ${
                       thermalTapeSize === "80"
-                        ? "bg-indigo-50 text-indigo-700 border-indigo-400 font-black"
+                        ? "bg-accent-lighter text-accent border-accent/60 font-black"
                         : "bg-white dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -706,7 +733,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                       onClick={() => setStickerMode(item.id as any)}
                       className={`p-2.5 border rounded-xl flex items-start gap-2 cursor-pointer transition ${
                         stickerMode === item.id
-                          ? "bg-indigo-50/50 border-indigo-200"
+                          ? "bg-accent-lighter/50 border-indigo-200"
                           : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50/50"
                       }`}
                     >
@@ -715,7 +742,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                         name="sticker_mode"
                         checked={stickerMode === item.id}
                         readOnly
-                        className="mt-0.5 accent-indigo-600"
+                        className="mt-0.5 accent-accent"
                       />
                       <div className="leading-tight">
                         <strong className="text-slate-700 dark:text-zinc-200 font-bold block">
@@ -734,7 +761,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                 <button
                   onClick={triggerThermalPrintAnimation}
                   disabled={isThermalPrinting}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {isThermalPrinting ? (
                     <>

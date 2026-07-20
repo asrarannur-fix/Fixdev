@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: "line",
   use: {
     baseURL: process.env.TEST_BASE_URL || "https://fixdev.web.id",
-    trace: "on-first-retry",
+    trace: "on",
     headless: true,
     launchOptions: { args: ["--no-sandbox", "--disable-http2"] },
     viewport: { width: 1280, height: 720 },

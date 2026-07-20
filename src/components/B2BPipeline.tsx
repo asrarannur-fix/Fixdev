@@ -452,7 +452,7 @@ export const B2BPipeline: React.FC = () => {
                 placeholder="Cth: PT Pertamina Regional VII"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-semibold dark:text-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-semibold dark:text-white"
               />
             </div>
             <div>
@@ -464,7 +464,7 @@ export const B2BPipeline: React.FC = () => {
                 placeholder="Cth: Ibu Fitri (Bagian Umum)"
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-medium dark:text-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-medium dark:text-white"
               />
             </div>
             <div>
@@ -476,7 +476,7 @@ export const B2BPipeline: React.FC = () => {
                 placeholder="0812XXXXXXXX"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-mono dark:text-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-mono dark:text-white"
               />
             </div>
           </div>
@@ -492,7 +492,7 @@ export const B2BPipeline: React.FC = () => {
                 placeholder="Cth: Upgrade 14 unit laptop kerja Lenovo Core i5"
                 value={deviceDetails}
                 onChange={(e) => setDeviceDetails(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-semibold dark:text-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-semibold dark:text-white"
               />
             </div>
             <div>
@@ -504,7 +504,7 @@ export const B2BPipeline: React.FC = () => {
                 min={1}
                 value={qty}
                 onChange={(e) => setQty(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-mono dark:text-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-mono dark:text-white"
               />
             </div>
             <div>
@@ -517,7 +517,7 @@ export const B2BPipeline: React.FC = () => {
                 placeholder="Cth: 15000000"
                 value={valAmount}
                 onChange={(e) => setValAmount(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-mono font-bold dark:text-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-mono font-bold dark:text-white"
               />
             </div>
           </div>
@@ -532,7 +532,7 @@ export const B2BPipeline: React.FC = () => {
                 placeholder="Cth: SSD disediakan dari gudang utama kami, jasa instalasi sistem operasi"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-medium dark:text-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-medium dark:text-white"
               />
             </div>
             <div>
@@ -544,7 +544,7 @@ export const B2BPipeline: React.FC = () => {
                 onChange={(e) =>
                   setInitStage(e.target.value as PipelineDeal["stage"])
                 }
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-semibold text-slate-700 dark:text-zinc-300"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-semibold text-slate-700 dark:text-zinc-300"
               >
                 <option value="LEAD">Leads Baru</option>
                 <option value="OPPORTUNITY">Negosiasi / Kontak</option>

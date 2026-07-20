@@ -94,7 +94,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
       case "fraud":
         return "Modul Keamanan & Audit (AI Fraud Detector) mendeteksi keanehan transaksi void kasir dan melacak histori audit trail secara ketat.";
       default:
-        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium FixDev.";
+        return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium.";
     }
   };
 
@@ -103,8 +103,8 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
   const modules = useMemo(
     () => OPERATIONAL_MODULES.map((mod) => ({
       ...mod,
-      color: mod.color || "hover:text-indigo-500",
-      activeColor: mod.activeColor || "bg-indigo-600 text-white dark:bg-indigo-500 shadow-indigo-500/10",
+      color: mod.color || "hover:text-accent",
+      activeColor: mod.activeColor || "bg-accent text-white dark:bg-accent shadow-accent/10",
       subtabs: mod.subtabs || [],
     })),
     [],
@@ -303,9 +303,9 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
           label: "Customer Portal",
           desc: "Portal Hub",
           icon: Wrench,
-          color: "hover:text-indigo-500",
+          color: "hover:text-accent",
           activeColor:
-            "bg-indigo-600 text-white dark:bg-indigo-500 shadow-indigo-500/10",
+            "bg-accent text-white dark:bg-indigo-500 shadow-accent/10",
           subtabs: [],
         },
         {
@@ -336,9 +336,9 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
         label: "Customer Portal",
         desc: "Portal Hub",
         icon: Wrench,
-        color: "hover:text-indigo-500",
+        color: "hover:text-accent",
         activeColor:
-          "bg-indigo-600 text-white dark:bg-indigo-500 shadow-indigo-500/10",
+          "bg-accent text-white dark:bg-indigo-500 shadow-accent/10",
         subtabs: [],
       },
       {
@@ -443,7 +443,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
                     onClick={() => onSetTab(activeTab, sub.id)}
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10.5px] font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 select-none ${
                       isSubActive
-                        ? "bg-indigo-600/10 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 border border-indigo-500/20 shadow-xs"
+                        ? "bg-accent/10 text-accent dark:bg-indigo-500/10 dark:text-accent border border-accent/20 shadow-xs"
                         : "bg-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900 border border-transparent hover:border-slate-200/40 dark:hover:border-zinc-800/50"
                     }`}
                   >
@@ -488,15 +488,15 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
               </p>
 
               {/* Requirement Alert Badge */}
-              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-start gap-3">
-                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+              <div className="bg-indigo-500/10 border border-accent/20 rounded-2xl p-4 flex items-start gap-3">
+                <Sparkles className="w-4 h-4 text-accent dark:text-accent shrink-0 mt-0.5" />
                 <div>
                   <h5 className="text-[11px] font-bold text-indigo-900 dark:text-indigo-300">
                     Syarat Upgrade Paket
                   </h5>
-                  <p className="text-[10px] text-indigo-700/80 dark:text-indigo-400/80 mt-0.5 leading-relaxed">
+                  <p className="text-[10px] text-accent/80 dark:text-accent/80 mt-0.5 leading-relaxed">
                     Fitur ini memerlukan paket langganan minimal{" "}
-                    <strong className="text-indigo-600 dark:text-indigo-400">
+                    <strong className="text-accent dark:text-accent">
                       {lockedFeatureInfo.requiredTier}
                     </strong>{" "}
                     atau lebih tinggi. Status paket Anda saat ini adalah{" "}
@@ -516,7 +516,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
                   setLockedFeatureInfo(null);
                   onSetTab("settings", "subscription");
                 }}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-2xl shadow-lg shadow-indigo-500/15 hover:shadow-indigo-500/25 transition-all duration-200 transform hover:scale-[1.01] active:scale-95 text-center cursor-pointer"
+                className="w-full py-3 px-4 bg-accent hover:bg-accent-hover text-white text-xs font-black rounded-2xl shadow-lg shadow-accent/15 hover:shadow-accent/25 transition-all duration-200 transform hover:scale-[1.01] active:scale-95 text-center cursor-pointer"
               >
                 Tingkatkan Paket Sekarang &rarr;
               </button>

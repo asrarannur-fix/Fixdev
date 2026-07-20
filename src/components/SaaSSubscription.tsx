@@ -4,6 +4,7 @@ import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { SubscriptionTier, SaaSInvoice, UserRole } from "../types";
 import { usePrintConfig } from "../hooks/usePrintConfig";
+import { printFrame } from "../utils/printJob";
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
@@ -184,8 +185,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
     printDoc.close();
     setTimeout(() => {
       if (printIframe.contentWindow) {
-        printIframe.contentWindow.focus();
-        printIframe.contentWindow.print();
+        printFrame(printIframe, printConfig, "SaaS Invoice");
       }
     }, 500);
   };
@@ -562,7 +562,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
     return (
       <div className="flex flex-col items-center justify-center py-12 md:py-20 px-4">
         <div className="relative mb-6">
-          <RefreshCw className="w-12 h-12 md:w-16 md:h-16 text-indigo-600 animate-spin" />
+          <RefreshCw className="w-12 h-12 md:w-16 md:h-16 text-accent animate-spin" />
           <div className="absolute inset-0 w-12 h-12 md:w-16 md:h-16 bg-indigo-500/30 rounded-full blur-2xl animate-pulse" />
         </div>
         <div className="text-center space-y-2 mb-8">
@@ -626,9 +626,9 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         {/* Progress indicator */}
         <div className="mt-8 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
           <div className="flex gap-1">
-            <span className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-            <span className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-            <span className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+            <span className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+            <span className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+            <span className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
           </div>
           <span className="font-mono">Mohon tunggu sebentar...</span>
         </div>
@@ -642,14 +642,14 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-10 text-center max-w-xl mx-auto shadow-sm my-10 animate-fadeIn"
         id="saas-billing-empty"
       >
-        <Building className="w-14 h-14 text-indigo-500 mx-auto mb-4 bg-indigo-50 dark:bg-indigo-950/40 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/30" />
+        <Building className="w-14 h-14 text-indigo-500 mx-auto mb-4 bg-accent-lighter dark:bg-indigo-950/40 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/30" />
         <h3 className="font-extrabold text-slate-800 dark:text-zinc-200 text-base">
           Belum Ada Tenant Terdaftar
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 mb-6 leading-relaxed">
           Sistem SaaS saat ini belum memiliki tenant aktif terdaftar. Silakan
           daftarkan tenant atau usaha baru terlebih dahulu melalui tab{" "}
-          <strong className="text-indigo-600 dark:text-indigo-400">
+          <strong className="text-accent dark:text-accent">
             Kelola Tenant
           </strong>{" "}
           di sidebar sebelum mengonfigurasi billing.
@@ -687,7 +687,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 className="font-extrabold text-sm text-slate-800 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-2">
-              <Building className="w-5 h-5 text-indigo-600" /> Pilih Tenant
+              <Building className="w-5 h-5 text-accent" /> Pilih Tenant
               untuk Dikelola (SaaS Billing)
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -699,7 +699,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
           <select
             value={selectedTenantId}
             onChange={(e) => setSelectedTenantId(e.target.value)}
-            className="w-full md:w-80 text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 font-bold text-slate-800 dark:text-zinc-200 outline-none cursor-pointer focus:border-indigo-500 transition-colors"
+            className="w-full md:w-80 text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 font-bold text-slate-800 dark:text-zinc-200 outline-none cursor-pointer focus:border-accent transition-colors"
           >
             {tenants.length === 0 ? (
               <option value="">Belum ada tenant tersedia</option>
@@ -746,7 +746,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-indigo-500/20 text-indigo-300 text-[9px] md:text-[10px] font-extrabold uppercase px-2 md:px-2.5 py-1 rounded-full border border-indigo-400/20 tracking-wider flex items-center gap-1 md:gap-1.5">
+              <span className="bg-indigo-500/20 text-indigo-300 text-[9px] md:text-[10px] font-extrabold uppercase px-2 md:px-2.5 py-1 rounded-full border border-accent/60/20 tracking-wider flex items-center gap-1 md:gap-1.5">
                 <ShieldCheck className="w-3 h-3 md:w-3.5 md:h-3.5" /> SECURE INTEGRATED QRIS
                 BILLING
               </span>
@@ -761,7 +761,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
           </div>
 
           <div className="bg-white/5 border border-white/10 rounded-lg md:rounded-xl p-3 md:p-4 flex items-center gap-3 md:gap-4 shrink-0 w-full md:w-auto">
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-400/30">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-accent/60/30">
               {getTierIcon(activeTenant?.tier || SubscriptionTier.BASIC)}
             </div>
             <div className="flex-1 md:flex-none">
@@ -936,7 +936,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   key={p.tier}
                   className={`bg-white dark:bg-zinc-900 border rounded-2xl md:rounded-3xl p-4 md:p-6 flex flex-col justify-between shadow-sm relative transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${
                     isCurrent
-                      ? "border-2 border-indigo-600 dark:border-indigo-500 ring-4 ring-indigo-50 dark:ring-indigo-950/20"
+                      ? "border-2 border-accent dark:border-accent ring-4 ring-indigo-50 dark:ring-indigo-950/20"
                       : p.tier === "PRO"
                         ? "border-teal-300 dark:border-teal-850"
                         : "border-slate-200 dark:border-zinc-800"
@@ -961,7 +961,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                         </p>
                       </div>
                       {isCurrent && (
-                        <span className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-900/40 flex items-center gap-1">
+                        <span className="bg-indigo-100 dark:bg-indigo-950/40 text-accent dark:text-indigo-300 text-[10px] font-extrabold px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-900/40 flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Paket Anda
                         </span>
                       )}
@@ -1023,7 +1023,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                         ? "bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-slate-200 dark:border-zinc-800"
                         : p.tier === "PRO"
                           ? "bg-teal-600 hover:bg-teal-700 text-white hover:shadow-lg hover:shadow-teal-500/20 shadow-md cursor-pointer"
-                          : "bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg hover:shadow-indigo-500/20 shadow-md cursor-pointer"
+                          : "bg-accent hover:bg-accent-hover text-white hover:shadow-lg hover:shadow-accent/20 shadow-md cursor-pointer"
                     }`}
                   >
                     {isCurrent ? "Paket Sedang Aktif" : `Upgrade ke ${p.tier}`}{" "}
@@ -1039,7 +1039,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       {/* 3. Secure Recurring Automated Billing System */}
       <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
-          <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 rounded-xl flex items-center justify-center text-indigo-600">
+          <div className="w-10 h-10 bg-accent-lighter dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 rounded-xl flex items-center justify-center text-accent">
             <RefreshCw className="w-5 h-5 animate-spin animate-duration-10000" />
           </div>
           <div>
@@ -1054,7 +1054,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
           </div>
           <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-xl p-3 md:p-4 text-xs md:text-sm text-slate-700 dark:text-slate-300 space-y-2 leading-relaxed">
             <p className="font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5 text-sm">
-              <ShieldCheck className="w-4 h-4 text-indigo-600" /> Kriteria
+              <ShieldCheck className="w-4 h-4 text-accent" /> Kriteria
               Auto-Renewal:
             </p>
             <ul className="list-disc list-inside space-y-1.5 ml-1">
@@ -1182,7 +1182,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                     onClick={() => setSelectedConfigTier(item.tier)}
                     className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${
                       selectedConfigTier === item.tier
-                        ? "border-2 border-indigo-600 bg-indigo-50/20 dark:bg-indigo-950/10 dark:border-indigo-500 text-indigo-950 dark:text-white ring-2 ring-indigo-500/20"
+                        ? "border-2 border-accent bg-accent-lighter/20 dark:bg-indigo-950/10 dark:border-accent text-indigo-950 dark:text-white ring-2 ring-indigo-500/20"
                         : "border-slate-200 hover:border-slate-300 dark:border-zinc-800 dark:hover:border-zinc-700 bg-slate-50/50 dark:bg-zinc-950 text-slate-700 dark:text-slate-400"
                     }`}
                   >
@@ -1206,7 +1206,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   required
                   value={configPlanName}
                   onChange={(e) => setConfigPlanName(e.target.value)}
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
 
@@ -1221,7 +1221,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   onChange={(e) =>
                     setConfigPlanPriceMonthly(Number(e.target.value))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
 
@@ -1236,7 +1236,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   onChange={(e) =>
                     setConfigPlanPriceYearly(Number(e.target.value))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
             </div>
@@ -1255,7 +1255,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   onChange={(e) =>
                     setConfigPlanUserLimit(Number(e.target.value))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
 
@@ -1271,7 +1271,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   onChange={(e) =>
                     setConfigPlanBranchLimit(Number(e.target.value))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
 
@@ -1287,7 +1287,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   onChange={(e) =>
                     setConfigPlanStorageLimitMb(Number(e.target.value))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
             </div>
@@ -1378,7 +1378,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                               );
                             }
                           }}
-                          className="rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-zinc-700 w-3.5 h-3.5 cursor-pointer"
+                          className="rounded text-accent focus:ring-accent border-slate-300 dark:border-zinc-700 w-3.5 h-3.5 cursor-pointer"
                         />
                         <span className="text-xs font-bold leading-none">
                           {feature.label}
@@ -1403,7 +1403,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                 value={configPlanBulletText}
                 onChange={(e) => setConfigPlanBulletText(e.target.value)}
                 placeholder="Semua Fitur Basic&#10;Double-Entry Accounting&#10;WhatsApp Broadcast"
-                className="w-full text-xs font-sans px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors leading-relaxed"
+                className="w-full text-xs font-sans px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors leading-relaxed"
               />
               <span className="text-[9px] text-slate-400 dark:text-zinc-500 mt-1 block">
                 Tuliskan fasilitas pemasaran yang akan ditampilkan sebagai
@@ -1444,7 +1444,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4 dark:border-zinc-800"><label className="flex items-center justify-between text-xs font-bold"><span>Aktifkan QRIS statis</span><input type="checkbox" checked={manualConfig.manualQrisEnabled} onChange={(e) => setManualConfig({ ...manualConfig, manualQrisEnabled: e.target.checked })} /></label>{manualConfig.qrisImageUrl && <img src={manualConfig.qrisImageUrl} alt="QRIS statis merchant" className="mx-auto h-44 w-44 rounded-xl border bg-white object-contain p-2" />}<label className="block text-xs font-bold">Upload QRIS merchant<input type="file" accept="image/jpeg,image/png" onChange={(e) => setManualQrisFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs" /></label><p className="text-[11px] text-slate-500">{manualQrisFile?.name || manualConfig.qrisOriginalName || "Belum ada gambar QRIS"}</p></section>
           </div>
           <label className="mt-4 block text-xs font-bold">Instruksi pembayaran<textarea rows={3} value={manualConfig.instructions} onChange={(e) => setManualConfig({ ...manualConfig, instructions: e.target.value })} placeholder="Contoh: Cantumkan nomor invoice pada berita transfer." className="mt-1 w-full rounded-xl border border-slate-200 p-3 dark:border-zinc-700 dark:bg-zinc-950" /></label>
-          <button type="submit" disabled={readOnlyMode || manualConfigSaving} className="mt-4 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white disabled:opacity-40">{manualConfigSaving ? "Menyimpan…" : "Simpan Pembayaran Manual"}</button>
+          <button type="submit" disabled={readOnlyMode || manualConfigSaving} className="mt-4 rounded-xl bg-accent px-5 py-2.5 text-xs font-bold text-white disabled:opacity-40">{manualConfigSaving ? "Menyimpan…" : "Simpan Pembayaran Manual"}</button>
         </form>
       )}
 
@@ -1457,7 +1457,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-100 dark:border-zinc-800 pb-4 gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl text-indigo-600">
+                <span className="p-2 bg-accent-lighter dark:bg-indigo-950/40 rounded-xl text-accent">
                   <ShieldCheck className="w-5 h-5" />
                 </span>
                 <div>
@@ -1508,7 +1508,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       isEnabled: !prev.isEnabled,
                     }))
                   }
-                  className="text-indigo-600 hover:text-indigo-700 transition-colors cursor-pointer"
+                  className="text-accent hover:text-accent transition-colors cursor-pointer"
                 >
                   {gatewayConfig.isEnabled ? (
                     <ToggleRight className="w-10 h-10 text-emerald-600 fill-emerald-100 dark:fill-emerald-950/20" />
@@ -1533,7 +1533,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       merchantId: e.target.value,
                     }))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
 
@@ -1550,7 +1550,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       isProduction: e.target.value === "production",
                     }))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 >
                   <option value="sandbox">Sandbox (Testing / Uji Coba)</option>
                   <option value="production">
@@ -1574,7 +1574,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       clientKey: e.target.value,
                     }))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
               </div>
 
@@ -1597,7 +1597,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       serverKeyInput: e.target.value,
                     }))
                   }
-                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 rounded-xl font-medium text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
                 <p className="text-[10px] text-slate-400 leading-relaxed">
                   * Server Key dienkripsi dan disimpan dengan aman secara
@@ -1617,7 +1617,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
               <button
                 type="submit"
                 disabled={saveLoading}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
+                className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
               >
                 {saveLoading ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1686,7 +1686,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
 
         <div className="border-b border-slate-100 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex flex-wrap items-center gap-2">
-            <input value={invoiceSearch} onChange={(event) => setInvoiceSearch(event.target.value)} placeholder="Cari ID invoice, paket, status..." className="min-w-56 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200" />
+            <input value={invoiceSearch} onChange={(event) => setInvoiceSearch(event.target.value)} placeholder="Cari ID invoice, paket, status..." className="min-w-56 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-accent/60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200" />
             <select aria-label="Filter status invoice" value={invoiceStatusFilter} onChange={(event) => setInvoiceStatusFilter(event.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-zinc-700 dark:bg-zinc-950"><option value="">Semua status</option><option value="PAID">Lunas</option><option value="UNPAID">Belum lunas</option><option value="PENDING_VERIFICATION">Menunggu verifikasi</option><option value="OVERDUE">Terlambat</option></select>
             <select aria-label="Filter siklus invoice" value={invoiceCycleFilter} onChange={(event) => setInvoiceCycleFilter(event.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-zinc-700 dark:bg-zinc-950"><option value="">Semua siklus</option><option value="monthly">Bulanan</option><option value="yearly">Tahunan</option></select>
             <input aria-label="Tanggal invoice mulai" type="date" value={invoiceDateFrom} onChange={(event) => setInvoiceDateFrom(event.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-zinc-700 dark:bg-zinc-950" />
@@ -1798,7 +1798,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                               setManualInvoice(inv);
                             }}
                             disabled={readOnlyMode}
-                            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-lg text-[10px] transition-all"
+                            className="px-2.5 py-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold rounded-lg text-[10px] transition-all"
                           >
                             Bayar Manual
                           </button>
@@ -1838,7 +1838,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             </div>
             <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Metode pembayaran manual">
               {([...(manualConfig.bankTransferEnabled ? ["BANK_TRANSFER" as const] : []), ...(manualConfig.manualQrisEnabled ? ["MANUAL_QRIS" as const] : [])]).map((method) => (
-                <button key={method} type="button" onClick={() => setManualMethod(method)} className={`rounded-xl border p-3 text-xs font-bold ${manualMethod === method ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300" : "border-slate-200 dark:border-zinc-700"}`}>
+                <button key={method} type="button" onClick={() => setManualMethod(method)} className={`rounded-xl border p-3 text-xs font-bold ${manualMethod === method ? "border-accent bg-accent-lighter text-accent dark:bg-indigo-950/30 dark:text-indigo-300" : "border-slate-200 dark:border-zinc-700"}`}>
                   {method === "BANK_TRANSFER" ? "Transfer Bank" : "QRIS Manual"}
                 </button>
               ))}
@@ -1860,7 +1860,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300">Bukti pembayaran (JPG/PNG/PDF, maks. 5 MB)
               <input type="file" accept="image/jpeg,image/png,application/pdf" onChange={(e) => setManualProof(e.target.files?.[0] || null)} required className="mt-1 block w-full text-xs" />
             </label>
-            <button type="submit" disabled={readOnlyMode || manualSubmitting} className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 p-3 text-sm font-black text-white">
+            <button type="submit" disabled={readOnlyMode || manualSubmitting} className="w-full rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 p-3 text-sm font-black text-white">
               {manualSubmitting ? "Mengunggah bukti..." : "Kirim untuk Verifikasi"}
             </button></> : <p className="rounded-xl bg-amber-50 p-4 text-xs text-amber-800">Super Admin belum mengaktifkan metode pembayaran manual.</p>}
           </form>
@@ -1879,7 +1879,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   <p className={`mt-1 text-[10px] font-bold ${Date.now() - new Date(request.submitted_at).getTime() > 24 * 60 * 60 * 1000 ? "text-rose-600" : "text-amber-600"}`}>Menunggu {Math.max(0, Math.floor((Date.now() - new Date(request.submitted_at).getTime()) / 3600000))} jam · SLA 24 jam</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={async () => { try { const result = await readJsonResponse<any>(await apiFetch(`/api/billing/manual-payments/${request.id}/proof-url`), "Bukti pembayaran"); window.open(result.signedUrl, "_blank", "noopener,noreferrer"); } catch (err: any) { showToast(err.message, "error"); } }} className="rounded-lg border border-indigo-300 px-3 py-1.5 text-xs font-bold text-indigo-700">Lihat bukti</button>
+                  <button onClick={async () => { try { const result = await readJsonResponse<any>(await apiFetch(`/api/billing/manual-payments/${request.id}/proof-url`), "Bukti pembayaran"); window.open(result.signedUrl, "_blank", "noopener,noreferrer"); } catch (err: any) { showToast(err.message, "error"); } }} className="rounded-lg border border-accent/50 px-3 py-1.5 text-xs font-bold text-accent">Lihat bukti</button>
                   <button disabled={readOnlyMode} onClick={() => handleReviewManual(request, "reject")} className="rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50">Tolak</button>
                   <button disabled={readOnlyMode} onClick={() => handleReviewManual(request, "approve")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">Setujui</button>
                 </div>
@@ -1977,7 +1977,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
 
             {/* Secure Payment Control Button */}
             <div className="space-y-2 md:space-y-2.5">
-              <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3 text-xs text-indigo-100">
+              <div className="rounded-xl border border-accent/30 bg-indigo-500/10 p-3 text-xs text-indigo-100">
                 Pembayaran diterima oleh Midtrans dan akan berubah menjadi LUNAS hanya setelah webhook terverifikasi. Tidak ada tombol konfirmasi manual pada alur ini.
               </div>
 
@@ -2059,7 +2059,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                 </div>
                 <div className="flex justify-between items-start gap-4">
                   <span className="text-slate-500 dark:text-slate-400">Deskripsi Item:</span>
-                  <span className="font-bold text-indigo-700 dark:text-indigo-400 text-right">
+                  <span className="font-bold text-accent dark:text-accent text-right">
                     Paket SaaS {detailModalInvoice.tier} (
                     {detailModalInvoice.billingCycle === "yearly"
                       ? "Per Tahun"
@@ -2111,7 +2111,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
 
             <button
               onClick={() => handlePrintInvoice(detailModalInvoice)}
-              className="w-full bg-slate-950 hover:bg-slate-900 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white font-bold text-xs md:text-sm py-2.5 md:py-3 rounded-xl mt-4 md:mt-5 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg hover:shadow-xl"
+              className="w-full bg-slate-950 hover:bg-slate-900 dark:bg-accent dark:hover:bg-accent-hover text-white font-bold text-xs md:text-sm py-2.5 md:py-3 rounded-xl mt-4 md:mt-5 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg hover:shadow-xl"
             >
               <Download className="w-4 h-4" /> Cetak / Download Invoice PDF
             </button>

@@ -308,7 +308,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
           <div className="flex flex-col lg:flex-row gap-6 items-center">
             <div className="flex-1 w-full">
               <div className="flex items-center gap-3 mb-2">
-                <span className="px-2 py-1 bg-indigo-600 text-white text-[10px] font-bold rounded uppercase tracking-widest animate-pulse">
+                <span className="px-2 py-1 bg-accent text-white text-[10px] font-bold rounded uppercase tracking-widest animate-pulse">
                   Sedang Dikerjakan
                 </span>
                 <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono">
@@ -346,7 +346,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
               <div className="flex gap-2 w-full sm:w-auto">
                 <button
                   onClick={() => onViewTicket && onViewTicket(activeTask.id)}
-                  className="flex-1 sm:flex-none px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition"
+                  className="flex-1 sm:flex-none px-4 py-3 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition"
                 >
                   Buka Workspace <ArrowRight className="w-4 h-4" />
                 </button>
@@ -360,9 +360,9 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <button
           onClick={() => onSetTab && onSetTab("services", "new-ticket")}
-          className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 hover:border-indigo-300 hover:shadow-md transition-all group"
+          className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:shadow-md transition-all group"
         >
-          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+          <div className="w-12 h-12 bg-accent-lighter text-accent rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-accent group-hover:text-white transition-all">
             <PlusCircle className="w-6 h-6" />
           </div>
           <span className="text-xs font-bold text-slate-700">
@@ -498,7 +498,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
               >
                 <FastForward className="w-4 h-4 text-indigo-500" />
                 Antrian Perbaikan
-                <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <span className="bg-accent-lighter text-accent px-2 py-0.5 rounded-full text-[10px] font-bold">
                   {nextTasks.length}
                 </span>
               </button>
@@ -556,7 +556,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                   {nextTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="p-4 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:border-indigo-300 hover:shadow-sm"
+                      className="p-4 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:border-accent/50 hover:shadow-sm"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1.5">
@@ -651,7 +651,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                     <button
                       onClick={playNotificationSound}
                       title="Tes Suara Notifikasi"
-                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 hover:text-indigo-600 rounded-lg transition"
+                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 hover:text-accent rounded-lg transition"
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
@@ -675,7 +675,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                           <div
                             className={`p-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
                               isOwn
-                                ? "bg-indigo-600 text-white rounded-tr-none"
+                                ? "bg-accent text-white rounded-tr-none"
                                 : "bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-tl-none text-slate-800 dark:text-zinc-100"
                             }`}
                           >
@@ -766,11 +766,11 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       placeholder="Ketik pesan balasan ke admin cabang..."
-                      className="flex-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-zinc-100"
+                      className="flex-1 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-accent text-slate-800 dark:text-zinc-100"
                     />
                     <button
                       type="submit"
-                      className="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition flex items-center justify-center shadow-md shadow-indigo-500/10 cursor-pointer"
+                      className="p-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl transition flex items-center justify-center shadow-md shadow-accent/10 cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                     </button>
@@ -897,8 +897,8 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                   </p>
                 </div>
 
-                <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl text-xs space-y-1">
-                  <span className="text-[9px] font-mono text-indigo-600 dark:text-indigo-400 block uppercase font-bold tracking-wider">
+                <div className="p-4 bg-indigo-500/10 border border-accent/20 rounded-2xl text-xs space-y-1">
+                  <span className="text-[9px] font-mono text-accent dark:text-accent block uppercase font-bold tracking-wider">
                     Rating Kepuasan (CSAT)
                   </span>
                   <strong className="text-indigo-950 dark:text-indigo-300 text-lg font-black block">
@@ -1141,7 +1141,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                             status: ServiceStatus.DIAGNOSA,
                           });
                         }}
-                        className="text-[9px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded transition"
+                        className="text-[9px] font-bold bg-accent-lighter text-accent hover:bg-indigo-100 px-2 py-1 rounded transition"
                       >
                         Ambil
                       </button>
@@ -1158,7 +1158,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                 ))}
                 {unassignedTasks.length > 5 && (
                   <div className="text-center pt-2">
-                    <span className="text-[10px] text-slate-400 font-bold hover:text-indigo-600 cursor-pointer transition">
+                    <span className="text-[10px] text-slate-400 font-bold hover:text-accent cursor-pointer transition">
                       Tampilkan {unassignedTasks.length - 5} tiket lainnya
                     </span>
                   </div>
@@ -1197,7 +1197,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
 
             <div className="p-6 space-y-6">
               <div className="text-center">
-                <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <div className="w-20 h-20 bg-accent-lighter text-accent rounded-full flex items-center justify-center mx-auto mb-3">
                   <UserCheck className="w-10 h-10" />
                 </div>
                 <h4 className="font-bold text-slate-800">
@@ -1277,7 +1277,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                     );
                     setShowAttendanceModal(false);
                   }}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition"
+                  className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-3 rounded-xl transition"
                 >
                   Clock-In Sekarang
                 </button>
@@ -1342,7 +1342,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                   type="number"
                   value={kasbonAmount}
                   onChange={(e) => setKasbonAmount(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
                   placeholder="Contoh: 500000"
                 />
               </div>
@@ -1353,7 +1353,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                 <textarea
                   value={kasbonReason}
                   onChange={(e) => setKasbonReason(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none h-24 resize-none"
                   placeholder="Jelaskan alasan/keperluan..."
                 />
               </div>

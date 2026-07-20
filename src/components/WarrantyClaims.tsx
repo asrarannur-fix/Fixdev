@@ -3,6 +3,7 @@ import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { ServiceStatus, ServiceTicket, Customer } from "../types";
 import { usePrintConfig } from "../hooks/usePrintConfig";
+import { printFrame } from "../utils/printJob";
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
@@ -233,8 +234,7 @@ export const WarrantyClaims: React.FC = () => {
     printDoc.close();
     setTimeout(() => {
       if (printIframe.contentWindow) {
-        printIframe.contentWindow.focus();
-        printIframe.contentWindow.print();
+        printFrame(printIframe, printConfig, "Warranty Claim");
         addLog(
           "Print Warranty",
           `Mencetak kartu garansi digital untuk tiket ${ticket.ticketNo}.`,
@@ -392,7 +392,7 @@ export const WarrantyClaims: React.FC = () => {
                 placeholder="Cari berdasarkan nama customer, tiket, atau tipe unit..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 rounded-xl text-xs outline-none focus:border-blue-500 font-semibold"
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 rounded-xl text-xs outline-none focus:border-accent font-semibold"
               />
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -597,7 +597,7 @@ export const WarrantyClaims: React.FC = () => {
                   <select
                     value={claimTicketId}
                     onChange={(e) => setClaimTicketId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 font-semibold outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 font-semibold outline-none focus:border-accent"
                     required
                   >
                     <option value="">-- Pilih Tiket Servis --</option>
@@ -710,7 +710,7 @@ export const WarrantyClaims: React.FC = () => {
                     placeholder="Tuliskan secara lengkap gejala kerusakan kembali, segel robek, komplain casing lecet, atau rincian alasan refund sparepart..."
                     value={claimComplaints}
                     onChange={(e) => setClaimComplaints(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500 leading-relaxed font-semibold"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent leading-relaxed font-semibold"
                     required
                   />
                 </div>
@@ -852,7 +852,7 @@ export const WarrantyClaims: React.FC = () => {
               <select
                 value={selectedCustId}
                 onChange={(e) => setSelectedCustId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-semibold text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-semibold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
               >
                 <option value="">-- Pilih Pelanggan --</option>
                 {customers.map((c) => (
@@ -1052,7 +1052,7 @@ export const WarrantyClaims: React.FC = () => {
                   placeholder="cth: SRV-2026-001"
                   value={trackTicketNo}
                   onChange={(e) => setTrackTicketNo(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500 font-semibold uppercase"
+                  className="w-full text-xs px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent font-semibold uppercase"
                 />
                 <button
                   type="submit"
@@ -1153,7 +1153,7 @@ export const WarrantyClaims: React.FC = () => {
                             placeholder="cth: Budi Santoso"
                             value={signerName}
                             onChange={(e) => setSignerName(e.target.value)}
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500 font-semibold"
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent font-semibold"
                           />
                         </div>
                         <div className="space-y-1">
@@ -1165,7 +1165,7 @@ export const WarrantyClaims: React.FC = () => {
                             placeholder="cth: /budi_s/"
                             value={signerText}
                             onChange={(e) => setSignerText(e.target.value)}
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-blue-500 font-mono italic text-blue-700 dark:text-blue-400"
+                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent font-mono italic text-blue-700 dark:text-blue-400"
                           />
                         </div>
                       </div>

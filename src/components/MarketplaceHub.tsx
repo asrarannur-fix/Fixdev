@@ -1011,7 +1011,7 @@ export const MarketplaceHub: React.FC = () => {
                     Beban server global gateway
                   </p>
                 </div>
-                <p className="font-mono font-black text-indigo-600 dark:text-indigo-400 text-sm">
+                <p className="font-mono font-black text-accent dark:text-accent text-sm">
                   45 ms
                 </p>
               </div>
@@ -1117,7 +1117,7 @@ export const MarketplaceHub: React.FC = () => {
                             ? "bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30 animate-pulse"
                             : err.status === "RESOLVED"
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30"
-                              : "bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30"
+                              : "bg-accent-lighter text-accent border border-indigo-100 dark:bg-indigo-950/20 dark:text-accent dark:border-indigo-900/30"
                         }`}
                       >
                         {err.status === "PENDING"
@@ -1143,7 +1143,7 @@ export const MarketplaceHub: React.FC = () => {
                             onClick={() =>
                               handleResolveReconciliation(err.id, "DISPUTE")
                             }
-                            className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded cursor-pointer"
+                            className="px-2 py-1 bg-accent hover:bg-accent-hover text-white font-bold text-[10px] rounded cursor-pointer"
                             title="Ajukan banding tagihan ke Seller Center API"
                           >
                             Dispute API
@@ -1226,7 +1226,7 @@ export const MarketplaceHub: React.FC = () => {
           <div>
             <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200 tracking-wider flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-3 justify-between">
               <span className="flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <Layers className="w-4 h-4 text-accent dark:text-accent" />
                 <span>Pemetaan SKU (SKU Mapping)</span>
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-zinc-300 rounded font-mono">
@@ -1550,7 +1550,7 @@ export const MarketplaceHub: React.FC = () => {
                 Rp {totalMpSales.toLocaleString()}
               </p>
             </div>
-            <div className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/60 dark:border-indigo-900/40 rounded-xl">
+            <div className="p-3 bg-accent-lighter/50 dark:bg-indigo-950/20 border border-indigo-100/60 dark:border-indigo-900/40 rounded-xl">
               <span className="text-[9px] font-mono text-indigo-500 dark:text-indigo-400 uppercase">
                 Toko Dominan Bulan Ini
               </span>

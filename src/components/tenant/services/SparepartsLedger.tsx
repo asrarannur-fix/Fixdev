@@ -80,7 +80,7 @@ export const SparepartsLedger: React.FC<SparepartsLedgerProps> = ({
           value={ticket.manualDiagCost ?? ""}
           onChange={(e) => setManualDiagCost(e.target.value)}
           placeholder="Kosongkan untuk pakai default"
-          className="block w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-indigo-500 font-medium text-slate-700"
+          className="block w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700"
         />
       </div>
     </div>

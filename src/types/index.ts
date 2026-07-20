@@ -74,6 +74,8 @@ export interface TenantSettings {
     telegramChatId?: string;
   };
   printConfig?: {
+    printMode?: "browser" | "qz";
+    printerName?: string;
     paperSize?: string;
     printQrCode?: boolean;
     printHeaderLogo?: boolean;

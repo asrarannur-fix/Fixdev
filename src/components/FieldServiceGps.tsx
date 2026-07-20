@@ -198,7 +198,7 @@ export const FieldServiceGps: React.FC = () => {
               placeholder="Cari klien atau tugas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs pl-8 pr-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-blue-500 font-medium text-slate-700 dark:text-zinc-300"
+              className="w-full text-xs pl-8 pr-3 py-2 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl outline-none focus:border-accent font-medium text-slate-700 dark:text-zinc-300"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" />
           </div>
@@ -539,7 +539,7 @@ export const FieldServiceGps: React.FC = () => {
                                 value={reportText}
                                 onChange={(e) => setReportText(e.target.value)}
                                 placeholder="Cth: Mengganti kapasitor motherboard yang bocor, tes nyala normal, tegangan stabil..."
-                                className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-750 rounded-xl outline-none focus:border-blue-500 dark:text-white"
+                                className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-750 rounded-xl outline-none focus:border-accent dark:text-white"
                               />
                             </div>
 

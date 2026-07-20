@@ -81,7 +81,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
       <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-5">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="font-extrabold text-xs text-slate-800 flex items-center gap-2 uppercase tracking-wider font-mono">
-            <Sliders className="w-4 h-4 text-indigo-600" /> Kalkulator
+            <Sliders className="w-4 h-4 text-accent" /> Kalkulator
             Estimasi Biaya
           </h3>
           <p className="text-[11px] text-slate-500 mt-0.5">
@@ -121,7 +121,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                   setCalcServiceCost("0");
                 }
               }}
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 font-medium"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent font-medium"
             >
               <option value="MacBook Pro M1">MacBook Pro M1 (High Class)</option>
               <option value="MacBook Air M1">MacBook Air M1 (Medium Class)</option>
@@ -142,7 +142,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                 placeholder="cth: Asus ROG Zephyrus G14"
                 value={calcCustomDeviceModel}
                 onChange={(e) => setCalcCustomDeviceModel(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
               />
             </div>
           )}
@@ -183,7 +183,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                   setCalcServiceCost("0");
                 }
               }}
-              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 font-medium"
+              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent font-medium"
             >
               <option value="Ganti Layar LCD">Ganti Layar LCD Original</option>
               <option value="Ganti Baterai">Ganti Baterai High Capacity</option>
@@ -204,7 +204,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                 placeholder="cth: Kerusakan Engsel Layar & Casing Retak"
                 value={calcCustomDamageType}
                 onChange={(e) => setCalcCustomDamageType(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
               />
             </div>
           )}
@@ -219,7 +219,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                 type="number"
                 value={calcPartCost}
                 onChange={(e) => setCalcPartCost(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent font-mono"
               />
             </div>
             <div>
@@ -230,7 +230,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                 type="number"
                 value={calcServiceCost}
                 onChange={(e) => setCalcServiceCost(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent font-mono"
               />
             </div>
           </div>
@@ -243,7 +243,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                 id="include-tax-chk"
                 checked={calcIncludeTax}
                 onChange={(e) => setCalcIncludeTax(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 text-accent rounded border-slate-300 focus:ring-accent cursor-pointer"
               />
               <label
                 htmlFor="include-tax-chk"
@@ -258,7 +258,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                 placeholder="Diskon (Rupiah)..."
                 value={calcDiscountValue}
                 onChange={(e) => setCalcDiscountValue(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 font-mono"
+                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent font-mono"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
               <select
                 value={calcCustomerId}
                 onChange={(e) => setCalcCustomerId(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-500 font-medium"
+                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent font-medium"
               >
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -323,7 +323,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                     onClick={() => setCalcWarranty(m)}
                     className={`py-1.5 px-2 text-xs font-bold font-mono rounded-lg border cursor-pointer transition-all ${
                       calcWarranty === m
-                        ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
+                        ? "bg-accent border-accent text-white shadow-xs"
                         : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -412,7 +412,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-slate-200 pb-5">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <Wrench className="w-5 h-5 text-indigo-600" />
+                    <Wrench className="w-5 h-5 text-accent" />
                     <span className="font-black text-sm uppercase tracking-tight text-slate-900">
                       {activeTenant?.name || "REPAIR SERVICE CENTER"}
                     </span>
@@ -445,7 +445,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                   <p className="font-extrabold text-slate-800">{activeQuote.deviceName}</p>
                   <p className="text-slate-500">
                     Estimasi Kerusakan:{" "}
-                    <span className="font-bold text-indigo-600">{activeQuote.damageType}</span>
+                    <span className="font-bold text-accent">{activeQuote.damageType}</span>
                   </p>
                 </div>
               </div>
@@ -507,7 +507,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                 )}
                 <div className="flex justify-between w-64 text-slate-900 border-t border-slate-200 pt-2 font-black text-sm">
                   <span className="font-sans">Grand Total:</span>
-                  <span className="text-indigo-600">
+                  <span className="text-accent">
                     Rp {(activeQuote.grandTotal ?? 0).toLocaleString()}
                   </span>
                 </div>

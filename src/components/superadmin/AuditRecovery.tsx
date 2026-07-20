@@ -57,12 +57,12 @@ export const AuditRecovery: React.FC<AuditRecoveryProps> = ({ auditLogs, handleE
   };
 
   return <div className="space-y-6" id="sa-bottom-infrastructure">
-    <nav className="flex flex-wrap gap-2" aria-label="Keamanan dan recovery">{([['audit','Audit'],['backup','Backup & Recovery'],['roles','Role & Permission']] as const).map(([id,label]) => <button key={id} type="button" onClick={() => setActiveSection(id)} className={`rounded-xl px-4 py-2 text-xs font-bold ${activeSection === id ? 'bg-indigo-600 text-white' : 'border border-slate-200 bg-white text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'}`}>{label}</button>)}</nav>
+    <nav className="flex flex-wrap gap-2" aria-label="Keamanan dan recovery">{([['audit','Audit'],['backup','Backup & Recovery'],['roles','Role & Permission']] as const).map(([id,label]) => <button key={id} type="button" onClick={() => setActiveSection(id)} className={`rounded-xl px-4 py-2 text-xs font-bold ${activeSection === id ? 'bg-accent text-white' : 'border border-slate-200 bg-white text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'}`}>{label}</button>)}</nav>
     {activeSection === "backup" && <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <h3 className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white"><Database className="h-4 w-4" /> Snapshot Aplikasi & Pemulihan</h3>
         <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-zinc-400">Snapshot JSON state aplikasi dengan metadata dan validasi struktur. Ini bukan backup terenkripsi atau point-in-time recovery database.</p>
-        <button type="button" disabled={readOnlyMode} onClick={recordSnapshot} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white disabled:opacity-40"><Download className="h-4 w-4" /> Catat & unduh snapshot</button>
+        <button type="button" disabled={readOnlyMode} onClick={recordSnapshot} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-xs font-bold text-white disabled:opacity-40"><Download className="h-4 w-4" /> Catat & unduh snapshot</button>
         <label className="mt-3 block rounded-xl border border-dashed border-slate-300 p-3 text-center text-xs text-slate-500 dark:border-zinc-700"><span>Validasi dan restore snapshot JSON</span><input type="file" accept=".json" onChange={handleImportBackup} disabled={readOnlyMode} className="mt-2 block w-full text-xs" /></label>
       </article>
       <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2 dark:border-zinc-800 dark:bg-zinc-900">

@@ -1,4 +1,8 @@
 node_modules/
+
+# QZ Tray self-signed production key material
+certs/qz-key.pem
+certs/qz-cert.pem
 build/
 dist/
 coverage/

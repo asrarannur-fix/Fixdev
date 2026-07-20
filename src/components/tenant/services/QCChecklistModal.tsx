@@ -241,7 +241,7 @@ export const QCChecklistModal: React.FC<{
                               value={item.notes}
                               onChange={e => setNote(item.id, e.target.value)}
                               placeholder="Catatan tambahan (opsional)..."
-                              className="w-full mt-2.5 px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400 transition-all"
+                              className="w-full mt-2.5 px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent/60 transition-all"
                             />
                           </div>
                         )}
@@ -259,7 +259,7 @@ export const QCChecklistModal: React.FC<{
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-accent hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl shadow-lg shadow-accent/20 transition-all cursor-pointer"
           >
             {saving ? (
               <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Menyimpan...</>

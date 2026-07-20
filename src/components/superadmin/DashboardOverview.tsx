@@ -75,8 +75,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = (fallback) =>
         <div className="mb-3 flex items-center justify-between"><h3 id="kpi-heading" className="text-sm font-extrabold text-slate-900 dark:text-white">Ringkasan Bisnis</h3>{loading && <span className="text-xs text-slate-400">Memuat data database…</span>}</div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map(({ label, value, meta, icon: Icon, tab, filter }) => (
-            <button key={label} type="button" onClick={() => fallback.onNavigate?.(tab, filter)} className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-700">
-              <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</p><p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{value}</p></div><span className="rounded-xl bg-indigo-50 p-2 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300"><Icon className="h-5 w-5" /></span></div>
+            <button key={label} type="button" onClick={() => fallback.onNavigate?.(tab, filter)} className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-accent/50 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-700">
+              <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold text-slate-500 dark:text-zinc-400">{label}</p><p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{value}</p></div><span className="rounded-xl bg-accent-lighter p-2 text-accent dark:bg-indigo-950/30 dark:text-indigo-300"><Icon className="h-5 w-5" /></span></div>
               <p className="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400"><span>{meta}</span><ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></p>
             </button>
           ))}

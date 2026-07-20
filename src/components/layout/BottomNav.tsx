@@ -43,7 +43,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               aria-label={item.label}
               className={`flex flex-1 flex-col items-center justify-center gap-1 py-2.5 transition-colors cursor-pointer ${
                 active
-                  ? "text-indigo-600 dark:text-indigo-400"
+                  ? "text-accent dark:text-accent"
                   : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
               }`}
             >

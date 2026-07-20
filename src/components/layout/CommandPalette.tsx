@@ -545,14 +545,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             }
                             className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-all border ${
                               isSelected
-                                ? "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900/40 text-indigo-950 dark:text-indigo-200"
+                                ? "bg-accent-lighter dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900/40 text-indigo-950 dark:text-indigo-200"
                                 : "bg-transparent border-transparent hover:bg-slate-50/50 dark:hover:bg-zinc-850/30"
                             }`}
                           >
                             <div
                               className={`p-2 rounded-xl shrink-0 border ${
                                 isSelected
-                                  ? "bg-indigo-600 border-indigo-500 text-white shadow-md"
+                                  ? "bg-accent border-accent text-white shadow-md"
                                   : "bg-slate-100 dark:bg-zinc-800 border-slate-200/50 dark:border-zinc-800 text-slate-500 dark:text-zinc-400"
                               }`}
                             >
@@ -570,7 +570,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                   {item.title}
                                 </p>
                                 {isSelected && (
-                                  <span className="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-100/60 dark:bg-indigo-950/60 border border-indigo-200/50 dark:border-indigo-900/40 rounded-full px-2 py-0.5 leading-none flex items-center gap-1 font-mono uppercase">
+                                  <span className="text-[9px] font-extrabold text-accent dark:text-accent bg-indigo-100/60 dark:bg-indigo-950/60 border border-indigo-200/50 dark:border-indigo-900/40 rounded-full px-2 py-0.5 leading-none flex items-center gap-1 font-mono uppercase">
                                     PILIH <ArrowRight className="w-2.5 h-2.5" />
                                   </span>
                                 )}

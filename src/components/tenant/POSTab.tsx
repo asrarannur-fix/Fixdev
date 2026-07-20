@@ -435,7 +435,7 @@ export const POSTab: React.FC<POSTabProps> = ({
                       <select
                         value={selectedPosCust ?? ""}
                         onChange={(e) => setSelectedPosCust?.(e.target.value)}
-                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-blue-500"
+                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:border-accent"
                       >
                         <option value="">-- Pilih Customer --</option>
                         {customers.map((c) => (
@@ -583,7 +583,7 @@ export const POSTab: React.FC<POSTabProps> = ({
                     type="number"
                     value={shiftEndCash}
                     onChange={(e) => setShiftEndCash(e.target.value)}
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-blue-500"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
                   />
                 </div>
                 <button
@@ -617,7 +617,7 @@ export const POSTab: React.FC<POSTabProps> = ({
                     type="number"
                     value={shiftStartCash}
                     onChange={(e) => setShiftStartCash(e.target.value)}
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-blue-500"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
                   />
                 </div>
                 <button

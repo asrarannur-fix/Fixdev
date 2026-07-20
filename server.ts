@@ -55,6 +55,8 @@ import { platformHealthHandler } from "./src/server/controllers/monitoring.contr
 import { acceptInvitation, validateInvitation } from "./src/server/controllers/invitation.controller.js";
 import { telegramTestHandler } from "./src/server/controllers/telegram.controller.js";
 import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.controller.js";
+import { qzPublicCertHandler, qzSignHandler } from "./src/server/controllers/qz.controller.js";
+import { qzCertDownloadHandler, qzInstallerBatHandler } from "./src/server/controllers/qzinstaller.controller.js";
 
 dotenv.config();
 
@@ -183,6 +185,10 @@ app.get("/api/module-records", requireSupabaseJwt, requireTenantScope, moduleRec
 app.post("/api/module-records", requireSupabaseJwt, requireTenantScope, moduleRecordsPostHandler);
 
 app.post("/api/data/sync", requireSupabaseJwt, requireTenantScope, dataSyncHandler);
+app.get("/api/qz/certificate", qzPublicCertHandler);
+app.get("/api/qz/certificate/download", qzCertDownloadHandler);
+app.get("/api/qz/installer.bat", qzInstallerBatHandler);
+app.post("/api/qz/sign", requireSupabaseJwt, requireTenantScope, qzSignHandler);
 
 app.post("/api/onboarding/register", onboardingRegisterHandler);
 app.get("/api/invitations/validate", validateInvitation);

@@ -80,7 +80,7 @@ export const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "pr
   const base = "inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer select-none";
   const sizes = { sm: "px-3 py-1.5 text-[10px]", md: "px-4 py-2", lg: "px-5 py-2.5" };
   const styles = {
-    primary: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md",
+    primary: "bg-accent hover:bg-accent-hover text-white shadow-sm hover:shadow-md",
     secondary: "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800",
     danger: "bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200",
     ghost: "text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800",
@@ -116,7 +116,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = "neutral", cla
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }> = ({ label, error, className = "", ...props }) => (
   <div className="w-full">
     {label && <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{label}</label>}
-    <input className={`w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-slate-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder:text-slate-400 dark:placeholder:text-zinc-500 ${className}`} {...props} />
+    <input className={`w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-slate-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent placeholder:text-slate-400 dark:placeholder:text-zinc-500 ${className}`} {...props} />
     {error && <p className="text-[10px] text-rose-500 mt-1">{error}</p>}
   </div>
 );
@@ -124,7 +124,7 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; error?: string }> = ({ label, error, children, className = "", ...props }) => (
   <div className="w-full">
     {label && <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{label}</label>}
-    <select className={`w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-slate-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 ${className}`} {...props}>
+    <select className={`w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-bold text-slate-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent ${className}`} {...props}>
       {children}
     </select>
     {error && <p className="text-[10px] text-rose-500 mt-1">{error}</p>}
@@ -141,7 +141,7 @@ export const Spacer: React.FC<{ size?: "sm" | "md" | "lg" | "xl" }> = ({ size = 
 
 export const Loading: React.FC<{ text?: string }> = ({ text = "Memuat..." }) => (
   <div className="flex flex-col items-center justify-center p-12 space-y-3">
-    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
     <p className="text-xs font-mono text-slate-400">{text}</p>
   </div>
 );

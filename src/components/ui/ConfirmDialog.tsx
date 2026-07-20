@@ -84,7 +84,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
                         ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
                         : options.type === "warning"
                           ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-                          : "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400"
+                          : "bg-accent-lighter text-accent dark:bg-indigo-950/30 dark:text-accent"
                     }`}
                   >
                     {options.type === "danger" ? (
@@ -111,7 +111,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none transition-all"
                     placeholder="Ketik di sini..."
                   />
                 )}
@@ -131,7 +131,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
                       ? "bg-rose-600 hover:bg-rose-700 shadow-rose-500/20"
                       : options.type === "warning"
                         ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20"
-                        : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20"
+                        : "bg-accent hover:bg-accent-hover shadow-accent/20"
                   }`}
                 >
                   {options.confirmLabel ||
