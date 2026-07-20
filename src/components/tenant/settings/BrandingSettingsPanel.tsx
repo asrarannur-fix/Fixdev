@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CheckCircle2, Globe, RefreshCw, Save, Sparkles } from "lucide-react";
 import { Tenant, TenantBranding } from "../../../types";
+import { applyTenantBranding } from "../../../utils/branding";
 
 interface BrandingSettingsPanelProps {
   currentTenantId: string;
@@ -32,7 +33,11 @@ export const BrandingSettingsPanel: React.FC<BrandingSettingsPanelProps> = ({
   verifyDomain,
 }) => {
   const updateBranding = (patch: Partial<TenantBranding>) => {
-    setBranding((prev) => ({ ...prev, ...patch }));
+    setBranding((prev) => {
+      const next = { ...prev, ...patch };
+      applyTenantBranding(next, tenantObj?.name);
+      return next;
+    });
   };
 
   const save = async () => {

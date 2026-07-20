@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { Settings, Globe, Mail, Upload, Palette, Save, RefreshCw, Shield } from "lucide-react";
 import { useSaaS } from "../../context/SaaSContext";
 import { useToast } from "../ui/Toast";
+import { applyTenantBranding } from "../../utils/branding";
 
 type AppSectionKey = "general" | "portal" | "email" | "file" | "theme";
 
@@ -79,6 +80,11 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
     setIsSaving(true);
     try {
       await updateTenant(currentTenantId, {
+        branding: {
+          ...tenantObj?.branding,
+          primaryColor: cleanPrimary,
+          secondaryColor: cleanSecondary,
+        },
         settings: {
           ...s,
           generalSettings: { appName: appName.trim() || "FIXDEV ERP", timezone, dateFormat, language, maintenanceMode },
@@ -310,12 +316,12 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
         <Section title="Tampilan & Tema" icon={Palette}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1"><Label text="Warna Primer" />
-              <div className="flex gap-2"><input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer" />
-              <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg" /></div>
+              <div className="flex gap-2"><input type="color" value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); applyTenantBranding({ primaryColor: e.target.value, secondaryColor }, tenantObj?.name); }} className="w-10 h-10 rounded-lg cursor-pointer" />
+              <input type="text" value={primaryColor} onChange={(e) => { setPrimaryColor(e.target.value); applyTenantBranding({ primaryColor: e.target.value, secondaryColor }, tenantObj?.name); }} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg" /></div>
             </div>
             <div className="space-y-1"><Label text="Warna Sekunder" />
-              <div className="flex gap-2"><input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer" />
-              <input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg" /></div>
+              <div className="flex gap-2"><input type="color" value={secondaryColor} onChange={(e) => { setSecondaryColor(e.target.value); applyTenantBranding({ primaryColor, secondaryColor: e.target.value }, tenantObj?.name); }} className="w-10 h-10 rounded-lg cursor-pointer" />
+              <input type="text" value={secondaryColor} onChange={(e) => { setSecondaryColor(e.target.value); applyTenantBranding({ primaryColor, secondaryColor: e.target.value }, tenantObj?.name); }} className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg" /></div>
             </div>
           </div>
           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] font-bold text-slate-600 uppercase">Dark Mode</span><Toggle val={darkMode} onToggle={() => toggle(darkMode, setDarkMode)} /></div>
