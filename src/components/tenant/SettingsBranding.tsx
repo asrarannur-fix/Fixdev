@@ -3,6 +3,7 @@ import { useToast } from "../ui/Toast";
 import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus, Sparkles, RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck } from "lucide-react";
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
 import { BRANDING_PRESETS } from "../../config/BrandingPresets";
+import { applyTenantBranding } from "../../utils/branding";
 
 export const SettingsBranding: React.FC<any> = (props) => {
   const { activeTenant, branding, brandingPreviewTab, domainVerified, isVerifyingDomain, setBranding, setBrandingPreviewTab, setDomainVerified, showToast, updateTenant, verifyDomain } = props;
@@ -25,9 +26,67 @@ export const SettingsBranding: React.FC<any> = (props) => {
             <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
               Identitas Visual & Skema Warna
             </h4>
+            <p className="text-[10px] text-slate-400">Logo, slogan, warna utama, dan font brand.</p>
           </div>
         </div>
-        {/* Visual Settings Content ... */}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-400">Warna utama</span>
+            <div className="flex gap-2">
+              <input type="color" value={branding.primaryColor || "#4f46e5"} onChange={(e) => {
+                const next = { ...branding, primaryColor: e.target.value };
+                setBranding(next);
+                applyTenantBranding(next, activeTenant?.name);
+              }} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer" />
+              <input type="text" value={branding.primaryColor || "#4f46e5"} onChange={(e) => {
+                const next = { ...branding, primaryColor: e.target.value };
+                setBranding(next);
+                applyTenantBranding(next, activeTenant?.name);
+              }} className="flex-1 px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg" />
+            </div>
+          </label>
+          <label className="space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-400">Warna aksen</span>
+            <div className="flex gap-2">
+              <input type="color" value={branding.secondaryColor || "#0ea5e9"} onChange={(e) => {
+                const next = { ...branding, secondaryColor: e.target.value };
+                setBranding(next);
+                applyTenantBranding(next, activeTenant?.name);
+              }} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer" />
+              <input type="text" value={branding.secondaryColor || "#0ea5e9"} onChange={(e) => {
+                const next = { ...branding, secondaryColor: e.target.value };
+                setBranding(next);
+                applyTenantBranding(next, activeTenant?.name);
+              }} className="flex-1 px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg" />
+            </div>
+          </label>
+        </div>
+
+        <label className="block space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400">URL Logo</span>
+          <input value={branding.logoUrl || ""} onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })} placeholder="https://domain/logo.png" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent" />
+        </label>
+
+        <label className="block space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400">Slogan</span>
+          <input value={branding.slogan || ""} onChange={(e) => setBranding({ ...branding, slogan: e.target.value })} placeholder="Slogan bisnis" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent" />
+        </label>
+
+        <label className="block space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400">Font</span>
+          <select value={branding.fontFamily || "inter"} onChange={(e) => setBranding({ ...branding, fontFamily: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white outline-none focus:border-accent">
+            <option value="inter">Inter</option>
+            <option value="grotesk">Space Grotesk</option>
+            <option value="serif">Playfair Display</option>
+            <option value="outfit">Outfit</option>
+          </select>
+        </label>
+
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+          <input type="checkbox" checked={!!branding.whiteLabelEnabled} onChange={(e) => setBranding({ ...branding, whiteLabelEnabled: e.target.checked })} className="accent-accent" />
+          Aktifkan white-label branding
+        </label>
       </div>
 
       {/* 4. Portal Branding & Custom Domain */}
@@ -173,6 +232,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
             if (!activeTenant) return;
             try {
               await updateTenant(activeTenant.id, { branding });
+              applyTenantBranding(branding, activeTenant.name);
               showToast(
                 "Kustomisasi branding dan template berhasil disimpan untuk tenant " +
                   activeTenant.name,
