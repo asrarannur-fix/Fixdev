@@ -12,6 +12,22 @@ React + Vite + TypeScript (frontend) · Express + tsx (server) · PostgreSQL via
 - `npm run validate` — `lint` + `build`
 - `npm test:workflow` / `npm test:frontend` / `npm test:browser` — smoke test lokal/browser
 
+## Aturan Rilis
+- Jangan menjalankan build mode produksi (`npm run build` atau `npm run validate`) sebelum pengguna memerintahkannya.
+- Jangan push ke GitHub sebelum pengguna memerintahkannya.
+- Perintah eksplisit pengguna diperlukan sebelum setiap tindakan build produksi atau push GitHub.
+
+## Aturan Dokumentasi
+- Setiap perbaikan yang selesai wajib dicatat di file `.md` yang relevan.
+- Catatan harus berbahasa Indonesia dan mencantumkan ringkasan perubahan serta file terkait.
+
+## Aturan Desain Landing Page
+- Landing page harus berorientasi pada konversi penyewa dengan visual premium, modern, dan mewah.
+- Tonjolkan manfaat bisnis, fitur nyata aplikasi, alur kerja, bukti kepercayaan, paket harga, dan CTA pendaftaran.
+- Dilarang memakai aset, ikon, desain, kode, atau hasil generatif Gemini/Gemini 2.
+- Gunakan rancangan orisinal serta ikon dari pustaka yang sudah tersedia di proyek.
+- Paket dan harga landing page wajib dimuat dinamis dari konfigurasi billing; dilarang hardcode nama paket, harga, batas, atau fitur paket di komponen landing page.
+
 ## Modul
 Services (Servis) · POS (Kasir) · Inventory (Stok) · Accounting · HR · CRM · WhatsApp · Settings.
 

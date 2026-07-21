@@ -224,6 +224,18 @@ export const getBillingPlans = async (req: any, res: any) => {
   res.json(Array.isArray(plans) && plans.length > 0 ? plans : DEFAULT_PLANS);
 };
 
+export const getPublicBillingPlans = async (_req: any, res: any) => {
+  const storedPlans = await getSettingJson<any[]>("billing_plans", DEFAULT_PLANS);
+  const plans = Array.isArray(storedPlans) && storedPlans.length > 0 ? storedPlans : DEFAULT_PLANS;
+  res.json(plans.map(({ tier, name, priceMonthly, priceYearly, features }) => ({
+    tier,
+    name,
+    priceMonthly,
+    priceYearly,
+    features: Array.isArray(features) ? features : [],
+  })));
+};
+
 export const updateBillingPlans = async (req: any, res: any) => {
   const updatedPlans = req.body;
   if (!Array.isArray(updatedPlans)) {

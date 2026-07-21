@@ -20,6 +20,7 @@ import {
 } from "../controllers/manualPayment.controller.js";
 import {
   getBillingPlans,
+  getPublicBillingPlans,
   updateBillingPlans,
   getSubscription,
   createInvoice,
@@ -38,6 +39,7 @@ const router = express.Router();
 // Public: called directly by Midtrans servers (no user session available).
 // Authenticity is verified inside the handler via HMAC signature check.
 router.post("/midtrans-webhook", handleMidtransWebhook);
+router.get("/public-plans", getPublicBillingPlans);
 
 // Everything else requires an authenticated Supabase session.
 router.use(requireSupabaseJwt);

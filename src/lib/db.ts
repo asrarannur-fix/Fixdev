@@ -13,16 +13,16 @@ let _pool: InstanceType<typeof Pool> | null = null;
 export function getPool(): InstanceType<typeof Pool> {
   if (_pool) return _pool;
 
-  const dbUrl = process.env.SUPABASE_DB_URL;
+  const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
-    throw new Error("SUPABASE_DB_URL environment variable is not set.");
+    throw new Error("DATABASE_URL environment variable is not set.");
   }
 
-  const poolMax = Number(process.env.SUPABASE_DB_POOL_MAX || 10);
+  const poolMax = Number(process.env.DB_POOL_MAX || 10);
 
   _pool = new Pool({
-    connectionString: dbUrl.replace(/:6543\b/, ":5432"), // Fix: use Session Pooler port 5432 for transaction support
-    ssl: { rejectUnauthorized: false },
+    connectionString: dbUrl,
+    ssl: false,
     max: poolMax,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,

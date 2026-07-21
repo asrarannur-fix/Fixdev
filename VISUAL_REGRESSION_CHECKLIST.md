@@ -23,3 +23,10 @@ Cek regresi visual sebelum rilis. Fokus pada konsistensi UI lintas modul.
 ## Tools
 - Playwright `test:browser` (capture di `e2e-screenshots`).
 - Bandingkan manual atau via GitHub Actions artifact bila ada.
+
+## Catatan Perubahan Landing Page
+- Landing page diarahkan untuk konversi penyewa dengan hero bisnis, mockup dashboard orisinal, alur kerja, CTA, dan tampilan premium.
+- Modul kini menampilkan subfitur nyata Servis, POS, Inventory, Keuangan, HR, CRM, keamanan, WhatsApp, workflow, dan integrasi.
+- Paket dan harga dimuat dinamis dari endpoint `/api/billing/plans`; tidak ada hardcode paket di komponen.
+- Ditambahkan bagian testimoni pengguna bergaya lokal Makassar tanpa gambar atau aset eksternal.
+- File terkait: `src/components/LandingPage.tsx`.
