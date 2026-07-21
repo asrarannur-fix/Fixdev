@@ -1,19 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 import { logger } from "../../lib/logger.js";
 
-// Supported model — gemini-1.5-flash is the correct identifier
-const GEMINI_MODEL = "gemini-1.5-flash";
+// Supported model — AI model identifier
+const AI_MODEL = "gemini-1.5-flash";
 
 // Initialize GoogleGenAI client on the server side
 let aiClient: GoogleGenAI | null = null;
 
 export function getAiClient(): GoogleGenAI {
   if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.AI_API_KEY;
     if (!key) {
-      logger.warn("GEMINI_API_KEY is not defined. AI features will run in simulation mode.");
+      logger.warn("AI_API_KEY is not defined. AI features will run in simulation mode.");
       throw new Error(
-        "GEMINI_API_KEY is missing. Please set it in your environment variables.",
+        "AI_API_KEY is missing. Please set it in your environment variables.",
       );
     }
     aiClient = new GoogleGenAI({ apiKey: key });
@@ -35,7 +35,7 @@ export const aiDiagnose = async (req: any, res: any) => {
     const prompt = `Diagnosa masalah untuk perangkat berikut:\nPerangkat: ${deviceName}\nBrand & Model: ${deviceBrandModel || "Unknown"}\nKeluhan: ${customerComplaints}\n\nBerikan hasil analisis dalam format JSON.`;
 
     const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
+      model: AI_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -63,7 +63,7 @@ export const aiChat = async (req: any, res: any) => {
     }));
 
     const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
+      model: AI_MODEL,
       contents,
       config: {
         systemInstruction: `Anda adalah 'AssistSaaS AI', asisten AI terintegrasi dalam sistem ERP Multi-Tenant SaaS kami. 
@@ -78,7 +78,7 @@ export const aiChat = async (req: any, res: any) => {
     // Fallback simulation chat
     const lastMessage = messages[messages.length - 1]?.text || "";
     let simulatedResponse =
-      "Halo! Saya adalah AssistSaaS AI. Maaf, Gemini API Key belum terkonfigurasi di Secrets. Namun, saya dapat membantu mensimulasikan respons. Anda menanyakan tentang: " +
+      "Halo! Saya adalah AssistSaaS AI. Maaf, API Key belum terkonfigurasi di Secrets. Namun, saya dapat membantu mensimulasikan respons. Anda menanyakan tentang: " +
       lastMessage;
     if (lastMessage.toLowerCase().includes("servis")) {
       simulatedResponse =
@@ -108,7 +108,7 @@ export const aiAnalyzeSales = async (req: any, res: any) => {
     const prompt = `Analisis data penjualan dan stok gudang berikut:\nData Penjualan (Bulan ini): ${JSON.stringify(salesData)}\nData Stok (Rendah): ${JSON.stringify(inventoryData)}\n\nBerikan analisis komprehensif.`;
 
     const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
+      model: AI_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",

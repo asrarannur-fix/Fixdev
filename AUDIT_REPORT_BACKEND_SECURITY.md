@@ -29,12 +29,12 @@ const SEED_TOKENS_FALLBACK: PersonalAccessToken[] = allowDevTokens
 
 Risk: Dev token `km_sanctum_token_owner` with `["*"]` abilities + hardcoded tenant UUID. Guarded by env var `ALLOW_DEV_API_TOKENS=false` (default). Safe in production unless `.env` misconfigured from dev. **Recommend: remove `SEED_TOKENS_FALLBACK` entirely — DB-backed tokens only.**
 
-### Gemini API key — env-based
+### AI API key — env-based
 **File:** `src/server/controllers/ai.controller.ts` line 19
 ```ts
 aiClient = new GoogleGenAI({ apiKey: *** });
 ```
-Severity: **LOW** — uses `process.env.GEMINI_API_KEY`, not hardcoded.
+Severity: **LOW** — uses `process.env.AI_API_KEY`, not hardcoded.
 
 ---
 
