@@ -97,7 +97,7 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
 
 const PORT = Number(
   process.env.NODE_ENV !== "production"
-    ? (process.env.DEV_PORT || 8083)
+    ? (process.env.DEV_PORT || 3001)
     : (process.env.PORT || 3000)
 );
 
