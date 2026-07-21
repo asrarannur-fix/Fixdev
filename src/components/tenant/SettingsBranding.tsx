@@ -1,12 +1,80 @@
 import * as React from "react";
 import { useToast } from "../ui/Toast";
-import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus, Sparkles, RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck } from "lucide-react";
+import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus, Sparkles, RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck, Download, Upload, RotateCcw, Moon, Sun, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
 import { BRANDING_PRESETS } from "../../config/BrandingPresets";
 import { applyTenantBranding } from "../../utils/branding";
+import BrandingHistory, { logBrandingChange } from "./BrandingHistory";
 
 export const SettingsBranding: React.FC<any> = (props) => {
   const { activeTenant, branding, brandingPreviewTab, domainVerified, isVerifyingDomain, setBranding, setBrandingPreviewTab, setDomainVerified, showToast, updateTenant, verifyDomain } = props;
+
+  const [darkModePreview, setDarkModePreview] = React.useState(false);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [presetsOpen, setPresetsOpen] = React.useState(true);
+  const importRef = React.useRef<HTMLInputElement>(null);
+
+  const applyPreset = (presetKey: string) => {
+    const preset = BRANDING_PRESETS[presetKey];
+    if (!preset) return;
+    const next = { ...branding, primaryColor: preset.primaryColor, secondaryColor: preset.secondaryColor, fontFamily: preset.fontFamily };
+    setBranding(next);
+    applyTenantBranding(next, activeTenant?.name);
+  };
+
+  const resetToDefault = () => {
+    const def = BRANDING_PRESETS.indigo;
+    const next = { ...branding, primaryColor: def.primaryColor, secondaryColor: def.secondaryColor, fontFamily: def.fontFamily };
+    setBranding(next);
+    applyTenantBranding(next, activeTenant?.name);
+    showToast("Branding direset ke default (Indigo)", "info");
+  };
+
+  const exportBranding = () => {
+    const data = { version: "1.0", exportedAt: new Date().toISOString(), branding };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `branding-${activeTenant?.name || "tenant"}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("Branding exported", "success");
+  };
+
+  const importBranding = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        if (json.branding?.primaryColor) {
+          const next = { ...branding, ...json.branding };
+          setBranding(next);
+          applyTenantBranding(next, activeTenant?.name);
+          showToast("Branding imported", "success");
+        } else {
+          showToast("Format JSON tidak valid", "error");
+        }
+      } catch {
+        showToast("Gagal parse JSON", "error");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleLogoUpload = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      showToast("File harus gambar", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const next = { ...branding, logoUrl: e.target?.result as string };
+      setBranding(next);
+      applyTenantBranding(next, activeTenant?.name);
+    };
+    reader.readAsDataURL(file);
+  };
   return (
   <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn">
     {/* Dynamic Font Loader */}
@@ -28,6 +96,24 @@ export const SettingsBranding: React.FC<any> = (props) => {
             </h4>
             <p className="text-[10px] text-slate-400">Logo, slogan, warna utama, dan font brand.</p>
           </div>
+        </div>
+
+        <div>
+          <button onClick={() => setPresetsOpen(!presetsOpen)} className="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500 hover:text-accent transition-colors w-full">
+            <Paintbrush className="w-3.5 h-3.5" />
+            Color Palette Presets
+            {presetsOpen ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+          </button>
+          {presetsOpen && (
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-3">
+              {Object.entries(BRANDING_PRESETS).map(([key, preset]) => (
+                <button key={key} onClick={() => applyPreset(key)} className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all cursor-pointer hover:scale-105 ${branding.primaryColor === preset.primaryColor ? "border-accent bg-accent-lighter/30" : "border-slate-200 hover:border-slate-300"}`} title={preset.description}>
+                  <div className="w-8 h-8 rounded-full shadow-inner border border-white/50" style={{ backgroundColor: preset.primaryColor }} />
+                  <span className="text-[9px] font-bold text-slate-600 truncate w-full text-center">{preset.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -65,7 +151,14 @@ export const SettingsBranding: React.FC<any> = (props) => {
 
         <label className="block space-y-1">
           <span className="text-[10px] font-bold uppercase text-slate-400">URL Logo</span>
-          <input value={branding.logoUrl || ""} onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })} placeholder="https://domain/logo.png" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent" />
+          <div className="flex gap-2">
+            <input value={branding.logoUrl || ""} onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })} placeholder="https://domain/logo.png" className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent" />
+            <button onClick={() => importRef.current?.click()} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors flex items-center gap-1" title="Upload gambar">
+              <Upload className="w-3.5 h-3.5" /> Upload
+            </button>
+            <input ref={importRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); e.target.value = ""; }} />
+          </div>
+          {branding.logoUrl && <img src={branding.logoUrl} alt="Logo preview" className="h-10 w-10 rounded-lg object-cover border border-slate-200 mt-1" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
         </label>
 
         <label className="block space-y-1">
@@ -75,12 +168,19 @@ export const SettingsBranding: React.FC<any> = (props) => {
 
         <label className="block space-y-1">
           <span className="text-[10px] font-bold uppercase text-slate-400">Font</span>
-          <select value={branding.fontFamily || "inter"} onChange={(e) => setBranding({ ...branding, fontFamily: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white outline-none focus:border-accent">
+          <select value={branding.fontFamily || "inter"} onChange={(e) => {
+            const next = { ...branding, fontFamily: e.target.value };
+            setBranding(next);
+            applyTenantBranding(next, activeTenant?.name);
+          }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white outline-none focus:border-accent">
             <option value="inter">Inter</option>
             <option value="grotesk">Space Grotesk</option>
             <option value="serif">Playfair Display</option>
             <option value="outfit">Outfit</option>
           </select>
+          <p className="text-[10px] text-slate-500 italic" style={{ fontFamily: branding.fontFamily === "grotesk" ? "Space Grotesk" : branding.fontFamily === "serif" ? "Playfair Display" : branding.fontFamily === "outfit" ? "Outfit" : "Inter" }}>
+            Contoh: Teknisi Komputer Makassar
+          </p>
         </label>
 
         <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
@@ -226,28 +326,51 @@ export const SettingsBranding: React.FC<any> = (props) => {
         )}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <button onClick={resetToDefault} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg cursor-pointer transition-all flex items-center gap-1.5" title="Reset ke default indigo">
+          <RotateCcw className="w-3.5 h-3.5" /> Reset
+        </button>
+        <button onClick={exportBranding} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg cursor-pointer transition-all flex items-center gap-1.5" title="Export branding JSON">
+          <Download className="w-3.5 h-3.5" /> Export
+        </button>
+        <button onClick={() => importRef.current?.click()} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg cursor-pointer transition-all flex items-center gap-1.5" title="Import branding JSON">
+          <Upload className="w-3.5 h-3.5" /> Import
+        </button>
+        <input ref={importRef} type="file" accept=".json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importBranding(f); e.target.value = ""; }} />
         <button
           onClick={async () => {
             if (!activeTenant) return;
             try {
               await updateTenant(activeTenant.id, { branding });
               applyTenantBranding(branding, activeTenant.name);
-              showToast(
-                "Kustomisasi branding dan template berhasil disimpan untuk tenant " +
-                  activeTenant.name,
-                "success",
-              );
+              logBrandingChange(activeTenant.id, branding, "admin");
+              showToast("Branding berhasil disimpan!", "success");
             } catch (error: any) {
-              showToast(error?.message || "Kustomisasi branding gagal disimpan.", "error");
+              showToast(error?.message || "Gagal menyimpan.", "error");
             }
           }}
           className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-sm"
         >
           <CheckSquare className="w-4 h-4" />
-          Terapkan & Simpan Seluruh Identitas
+          Simpan Branding
         </button>
       </div>
+
+      {/* Branding History */}
+      {activeTenant && (
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <button onClick={() => setHistoryOpen(!historyOpen)} className="w-full flex items-center gap-2 px-5 py-3 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-50 transition-colors">
+            <Clock className="w-3.5 h-3.5" />
+            Riwayat Perubahan
+            {historyOpen ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+          </button>
+          {historyOpen && (
+            <div className="border-t border-slate-100 p-4">
+              <BrandingHistory tenantId={activeTenant.id} currentBranding={branding} onRestore={(b) => { setBranding(b); applyTenantBranding(b, activeTenant.name); showToast("Branding dipulihkan", "info"); }} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
 
     {/* RIGHT COLUMN: Real-Time Interactive Live Preview Sandbox */}
@@ -268,6 +391,10 @@ export const SettingsBranding: React.FC<any> = (props) => {
           </div>
 
           <div className="flex rounded-lg bg-slate-800 p-0.5 self-start">
+            <button onClick={() => setDarkModePreview(!darkModePreview)} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-bold transition-all cursor-pointer ${darkModePreview ? "bg-slate-600 text-white" : "text-slate-400 hover:text-white"}`} title="Toggle dark mode preview">
+              {darkModePreview ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
+              {darkModePreview ? "Gelap" : "Terang"}
+            </button>
             {[
               { id: "login", label: "Portal Client", icon: Smartphone },
               { id: "invoice", label: "Invoicing PDF", icon: FileText },
