@@ -36,7 +36,8 @@ export const BrandingWizard: React.FC<BrandingWizardProps> = ({ open, onClose, t
               <Button size='sm' onClick={() => {
                 onSelectPreset({ 
                   primaryColor: preset.primaryColor, 
-                  secondaryColor: preset.secondaryColor, 
+                  accentColor: preset.accentColor,
+                  secondaryColor: preset.secondaryColor,
                   fontFamily: preset.fontFamily, 
                   slogan: getSuggestedSlogan(tenant.name) 
                 });

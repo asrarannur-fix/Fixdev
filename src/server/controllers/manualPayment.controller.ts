@@ -1,8 +1,11 @@
 import { randomUUID } from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import fs from "fs/promises";
+import path from "path";
 import type { Request, Response } from "express";
 import { dbQuery, dbTransaction } from "../../lib/db.js";
 import { logger } from "../../lib/logger.js";
+
+const uploadRoot = path.resolve(process.env.FILE_UPLOAD_DIR || "uploads");
 
 const PROOF_BUCKET = process.env.BILLING_PROOF_BUCKET || "billing-payment-proofs";
 const MANUAL_CONFIG_KEY = "manual_payment_config";
@@ -33,11 +36,14 @@ const DEFAULT_MANUAL_CONFIG: ManualPaymentConfig = {
   qrisOriginalName: "",
 };
 
-function storageAdmin() {
-  const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Supabase Storage is not configured.");
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+function localUploadPath(objectPath: string) {
+  const resolved = path.resolve(uploadRoot, objectPath);
+  if (!resolved.startsWith(`${uploadRoot}${path.sep}`)) throw new Error("Invalid upload path.");
+  return resolved;
+}
+
+async function ensureUploadTarget(objectPath: string) {
+  await fs.mkdir(path.dirname(localUploadPath(objectPath)), { recursive: true });
 }
 
 function extensionFor(contentType: string) {
@@ -56,8 +62,8 @@ export async function getManualPaymentConfig(req: Request, res: Response) {
     const config = await readManualConfig();
     let qrisImageUrl = "";
     if (config.manualQrisEnabled && config.qrisObjectPath) {
-      const signed = await storageAdmin().storage.from(PROOF_BUCKET).createSignedUrl(config.qrisObjectPath, 600);
-      if (!signed.error) qrisImageUrl = signed.data.signedUrl;
+      await ensureUploadTarget(config.qrisObjectPath);
+      qrisImageUrl = `/uploads/${config.qrisObjectPath}`;
     }
     const isSuperAdmin = req.authActor?.role === "SUPER_ADMIN";
     res.json({
@@ -84,9 +90,8 @@ export async function createManualQrisUpload(req: Request, res: Response) {
   }
   const objectPath = `platform/manual-payment/qris-${randomUUID()}.${extensionFor(contentType)}`;
   try {
-    const { data, error } = await storageAdmin().storage.from(PROOF_BUCKET).createSignedUploadUrl(objectPath);
-    if (error) throw error;
-    res.json({ objectPath, signedUploadUrl: data.signedUrl, token: data.token, expiresIn: 120 });
+    await ensureUploadTarget(objectPath);
+    res.json({ objectPath, signedUploadUrl: `/uploads/${objectPath}`, expiresIn: 60 });
   } catch (err: any) {
     logger.error({ err: err.message }, "Could not create QRIS upload URL");
     res.status(503).json({ error: "Penyimpanan gambar QRIS belum tersedia." });
@@ -112,7 +117,10 @@ export async function updateManualPaymentConfig(req: Request, res: Response) {
     return res.status(422).json({ error: "Upload gambar QRIS terlebih dahulu." });
   }
   try {
-    await dbQuery(`INSERT INTO app_settings(key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT(key) DO UPDATE SET value=$2::jsonb,updated_at=now()`, [MANUAL_CONFIG_KEY, JSON.stringify(config)]);
+    await dbQuery(
+      `INSERT INTO app_settings(key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT(key) DO UPDATE SET value=$2::jsonb,updated_at=now()`,
+      [MANUAL_CONFIG_KEY, JSON.stringify(config)],
+    );
     res.json({ success: true, config: { ...config, qrisObjectPath: undefined } });
   } catch (err: any) {
     logger.error({ err: err.message }, "Could not save manual payment config");
@@ -146,10 +154,10 @@ async function notify(client: any, eventKey: string, tenantId: string, audienceR
 
   const contact = await client.query(
     `SELECT COALESCE(
-       settings #>> '{notificationSettings,whatsappNumber}',
-       settings #>> '{waConfig,phoneNumber}'
-     ) AS phone
-     FROM tenants WHERE id = $1`,
+        settings #>> '{notificationSettings,whatsappNumber}',
+        settings #>> '{waConfig,phoneNumber}'
+      ) AS phone
+      FROM tenants WHERE id = $1`,
     [tenantId],
   );
   const phone = contact.rows[0]?.phone?.replace(/[^0-9+]/g, "");
@@ -171,18 +179,24 @@ export async function createManualProofUpload(req: Request, res: Response) {
     return res.status(422).json({ error: "Bukti harus JPG, PNG, atau PDF dengan ukuran maksimal 5 MB." });
   }
 
-  const invoice = await dbQuery(`SELECT id, tenant_id, status FROM saas_invoices WHERE id = $1 AND tenant_id = $2`, [invoiceId, req.tenantId]);
+  const invoice = await dbQuery(`SELECT id, tenant_id, amount, status FROM saas_invoices WHERE id = $1 AND tenant_id = $2`, [invoiceId, req.tenantId]);
   if (!invoice.rows[0]) return res.status(404).json({ error: "Invoice tidak ditemukan." });
   if (invoice.rows[0].status === "PAID") return res.status(409).json({ error: "Invoice sudah lunas." });
 
   const uploadId = randomUUID();
   const objectPath = `tenant/${req.tenantId}/invoice/${invoiceId}/${uploadId}.${extensionFor(contentType)}`;
+
   try {
-    const { data, error } = await storageAdmin().storage.from(PROOF_BUCKET).createSignedUploadUrl(objectPath);
-    if (error) throw error;
-    return res.json({ uploadId, objectPath, signedUploadUrl: data.signedUrl, token: data.token, expiresIn: 120, fileName, contentType, sizeBytes });
+    await ensureUploadTarget(objectPath);
+
+    if (req.body && (req.body as any).fileBuffer) {
+      const fileBuffer = Buffer.from((req.body as any).fileBuffer);
+      await fs.writeFile(localUploadPath(objectPath), fileBuffer);
+    }
+
+    return res.json({ uploadId, objectPath, fileUrl: `/uploads/${objectPath}`, fileName, contentType, sizeBytes });
   } catch (err: any) {
-    logger.error({ err: err.message }, "Could not create billing proof upload URL");
+    logger.error({ err: err.message }, "Could not save billing proof file locally");
     return res.status(503).json({ error: "Penyimpanan bukti pembayaran belum tersedia." });
   }
 }
@@ -278,9 +292,8 @@ export async function getManualProofUrl(req: Request, res: Response) {
   }
   const result = await dbQuery(`SELECT proof_object_path FROM manual_payment_requests WHERE id = $1${scope}`, params);
   if (!result.rows[0]) return res.status(404).json({ error: "Bukti pembayaran tidak ditemukan." });
-  const { data, error } = await storageAdmin().storage.from(PROOF_BUCKET).createSignedUrl(result.rows[0].proof_object_path, 120);
-  if (error) return res.status(503).json({ error: "Bukti pembayaran tidak dapat dibuka." });
-  res.json({ signedUrl: data.signedUrl, expiresIn: 120 });
+
+  res.json({ fileUrl: `/uploads/${result.rows[0].proof_object_path}`, expiresIn: 60 });
 }
 
 async function reviewManualPayment(req: Request, res: Response, decision: "APPROVED" | "REJECTED") {

@@ -1,9 +1,13 @@
 import { Request, Response } from "express";
 import { createHash, randomUUID } from "node:crypto";
 import { getPool } from "../../lib/db.js";
-import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { logger } from "../../lib/logger.js";
 import nodemailer from "nodemailer";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fixdev_jwt_secret_2026_min_32_chars_secure";
+const JWT_EXPIRES_IN = "24h";
 
 async function withDb<T>(fn: (client: any) => Promise<T>): Promise<T> {
   const pool = getPool();
@@ -11,17 +15,6 @@ async function withDb<T>(fn: (client: any) => Promise<T>): Promise<T> {
   try { return await fn(client); }
   finally { client.release(); }
 }
-
-const getAdminSupabase = () => {
-  const url = process.env.VITE_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
-    throw new Error("VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not configured.");
-  }
-  return createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-};
 
 /**
  * Create email transporter with nodemailer
@@ -53,7 +46,6 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   const transporter = getEmailTransporter();
   
   if (!transporter) {
-    // Dry-run mode when email not configured
     logger.info({ to, subject }, "[email] Dry-run - Email would be sent");
     return true;
   }
@@ -73,13 +65,121 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   }
 }
 
-export async function authProfileHandler(req: Request, res: Response) {
+// ---------------------------------------------------------------------------
+// Login / Register
+// ---------------------------------------------------------------------------
+
+export async function loginHandler(req: Request, res: Response) {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(422).json({ error: "email and password are required." });
+  }
+
   try {
     const rows = (await withDb(async (c) => {
-      const r = await c.query("SELECT id, name, email, role, tenant_id, permissions, mfa_enabled FROM users WHERE auth_id = $1 LIMIT 1", [(req as any).supabaseUser.id]);
+      const r = await c.query(
+        "SELECT id, tenant_id, email, name, role, permissions, password_hash, mfa_enabled FROM users WHERE email = $1 LIMIT 1",
+        [String(email).toLowerCase().trim()]
+      );
       return r.rows;
     })) as any[];
-    if (!rows.length) return res.status(404).json({ error: "User profile not found. Contact admin to create a tenant account." });
+
+    if (!rows.length) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    const user = rows[0];
+    if (!user.password_hash) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    const valid = await bcrypt.compare(String(password), user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenant_id,
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        tenantId: user.tenant_id,
+        permissions: user.permissions || [],
+        mfaEnabled: user.mfa_enabled || false,
+      },
+    });
+  } catch (err: any) {
+    logger.error({ err: err.message }, "[login] Failed");
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function registerHandler(req: Request, res: Response) {
+  const { email, password, name, tenantId, role } = req.body || {};
+  if (!email || !password || !name) {
+    return res.status(422).json({ error: "email, password, and name are required." });
+  }
+  if (String(password).length < 6) {
+    return res.status(422).json({ error: "Password must be at least 6 characters." });
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(String(password), 10);
+    const userId = randomUUID();
+
+    await withDb(async (c) => {
+      await c.query(
+        `INSERT INTO users (id, tenant_id, email, name, role, permissions, password_hash, mfa_enabled, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, false, now())`,
+        [userId, tenantId || null, String(email).toLowerCase().trim(), name, role || "TEKNISI", [], passwordHash]
+      );
+    });
+
+    const payload = { userId, email: String(email).toLowerCase().trim(), role: role || "TEKNISI", tenantId: tenantId || null };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    res.status(201).json({
+      token,
+      user: { id: userId, email: String(email).toLowerCase().trim(), name, role: role || "TEKNISI", tenantId: tenantId || null, permissions: [], mfaEnabled: false },
+    });
+  } catch (err: any) {
+    if (err.code === "23505") {
+      return res.status(409).json({ error: "Email already registered." });
+    }
+    logger.error({ err: err.message }, "[register] Failed");
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Profile
+// ---------------------------------------------------------------------------
+
+export async function authProfileHandler(req: Request, res: Response) {
+  try {
+    const userId = req.authActor?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Invalid or expired token." });
+    }
+
+    const rows = (await withDb(async (c) => {
+      const r = await c.query("SELECT id, name, email, role, tenant_id, permissions, mfa_enabled FROM users WHERE id = $1 LIMIT 1", [userId]);
+      return r.rows;
+    })) as any[];
+    if (!rows.length) {
+      return res.status(404).json({ error: "User profile not found. Contact admin to create a tenant account." });
+    }
     const user = rows[0];
     const branchRows = (await withDb(async (c) => {
       const r = await c.query("SELECT branch_id FROM user_branches WHERE user_id = $1", [user.id]);
@@ -92,27 +192,38 @@ export async function authProfileHandler(req: Request, res: Response) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Admin: Reset Password (local bcrypt)
+// ---------------------------------------------------------------------------
+
 export async function adminResetPasswordHandler(req: Request, res: Response) {
   const { email, password } = req.body || {};
   if (!email || !password || String(password).length < 8) {
     return res.status(422).json({ success: false, message: "email and password (min 8 chars) are required." });
   }
   try {
-    const admin = getAdminSupabase();
-    const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (listError) throw listError;
-    const authUsers = (listed.users || []) as Array<{ id: string; email?: string | null }>;
-    const user = authUsers.find((u) => u.email?.toLowerCase() === String(email).toLowerCase());
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found in Supabase Auth." });
+    const passwordHash = await bcrypt.hash(String(password), 10);
+    const result = await withDb(async (c) => {
+      const r = await c.query(
+        "UPDATE users SET password_hash = $1 WHERE email = $2 RETURNING id, email",
+        [passwordHash, String(email).toLowerCase().trim()]
+      );
+      return r.rows;
+    }) as any[];
+
+    if (!result.length) {
+      return res.status(404).json({ success: false, message: "User not found." });
     }
-    const { error } = await admin.auth.admin.updateUserById(user.id, { password: String(password) });
-    if (error) throw error;
-    return res.json({ success: true, message: "Password updated.", userId: user.id, email: user.email });
+
+    return res.json({ success: true, message: "Password updated.", userId: result[0].id, email: result[0].email });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message || "Failed to reset password." });
   }
 }
+
+// ---------------------------------------------------------------------------
+// Onboarding: Register new tenant with owner
+// ---------------------------------------------------------------------------
 
 export async function onboardingRegisterHandler(req: Request, res: Response) {
   const { shopName, subdomain, ownerName, ownerEmail, ownerPassword, themeColor, tier } = req.body || {};
@@ -122,16 +233,10 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
   if (String(ownerPassword).length < 6) {
     return res.status(422).json({ success: false, message: "Password must be at least 6 characters." });
   }
-  const admin = getAdminSupabase();
+
   const client = await getPool().connect();
   try {
-    const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-      email: String(ownerEmail).toLowerCase().trim(),
-      password: String(ownerPassword),
-      email_confirm: true,
-    });
-    if (authErr) throw new Error(`Auth creation failed: ${authErr.message}`);
-    const authId = authData.user.id;
+    const passwordHash = await bcrypt.hash(String(ownerPassword), 10);
     const tenantId = randomUUID();
     const branchId = randomUUID();
     await client.query("BEGIN");
@@ -166,9 +271,9 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     }
     const userId = randomUUID();
     await client.query(
-      `INSERT INTO users (id, tenant_id, email, name, role, permissions, mfa_enabled, auth_id, created_at)
-       VALUES ($1, $2, $3, $4, 'OWNER', ARRAY[$5]::text[], false, $6, now())`,
-      [userId, tenantId, String(ownerEmail).toLowerCase().trim(), ownerName, "*", authId]
+      `INSERT INTO users (id, tenant_id, email, name, role, permissions, password_hash, mfa_enabled, created_at)
+       VALUES ($1, $2, $3, $4, 'OWNER', ARRAY[$5]::text[], $6, false, now())`,
+      [userId, tenantId, String(ownerEmail).toLowerCase().trim(), ownerName, "*", passwordHash]
     );
     await client.query(`INSERT INTO user_branches (user_id, branch_id) VALUES ($1, $2)`, [userId, branchId]);
     await client.query(
@@ -192,10 +297,10 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
   }
 }
 
-/**
- * Upgrade Trial Tenant to Paid Plan
- * Auto-converts TRIAL → ACTIVE status after payment
- */
+// ---------------------------------------------------------------------------
+// Upgrade Trial Tenant to Paid Plan
+// ---------------------------------------------------------------------------
+
 export async function upgradeTrialHandler(req: Request, res: Response) {
   const { tier, billingCycle } = req.body || {};
   const tenantId = req.tenantId;
@@ -209,7 +314,6 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
 
   const client = await getPool().connect();
   try {
-    // 1. Validate tenant exists and is in TRIAL status
     const tenantResult = await client.query(
       `SELECT id, name, subdomain, status, tier, trial_ends_at, settings->>'limits' as limits
        FROM tenants WHERE id = $1`,
@@ -217,10 +321,7 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
     );
     
     if (tenantResult.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Tenant tidak ditemukan" 
-      });
+      return res.status(404).json({ success: false, message: "Tenant tidak ditemukan" });
     }
 
     const tenant = tenantResult.rows[0];
@@ -232,7 +333,6 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
       });
     }
 
-    // 2. Check if trial hasn't expired
     const trialEndsAt = new Date(tenant.trial_ends_at);
     const now = new Date();
     if (trialEndsAt < now) {
@@ -242,7 +342,6 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
       });
     }
 
-    // 3. Get plan configuration
     const plansResult = await client.query(
       `SELECT value FROM app_settings WHERE key = $1 LIMIT 1`,
       ["billing_plans"]
@@ -258,30 +357,23 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
     
     const plan = plans.find((p: any) => p.tier === tier);
     if (!plan) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid subscription tier" 
-      });
+      return res.status(400).json({ success: false, message: "Invalid subscription tier" });
     }
 
     const amount = billingCycle === "yearly" ? plan.priceYearly : plan.priceMonthly;
 
-    // 4. Generate invoice ID and QRIS data
     const invoiceId = "upgrade-inv-" + Date.now().toString(36);
     const dateStr = new Date().toISOString().split("T")[0];
     const due = new Date();
     due.setDate(due.getDate() + 3);
     const dueDateStr = due.toISOString().split("T")[0];
 
-    // 5. Create invoice in database
     await client.query(
       `INSERT INTO saas_invoices (id, tenant_id, date, due_date, amount, tier, status, billing_cycle, auto_renew)
-       VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', $7, true)
-       RETURNING id, status`,
+       VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', $7, true)`,
       [invoiceId, tenantId, dateStr, dueDateStr, amount, tier, billingCycle]
     );
 
-    // 6. Send email notification to owner
     const ownerEmailResult = await client.query(
       `SELECT email, name FROM users WHERE tenant_id = $1 AND role = 'OWNER' LIMIT 1`,
       [tenantId]
@@ -313,38 +405,30 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
   } catch (error: any) {
     await client.query("ROLLBACK");
     logger.error({ err: error.message, tenantId, tier }, "[upgrade-trial] Failed");
-    return res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
+    return res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
   }
 }
 
-/**
- * Extend Trial Period for Tenant
- * Extends trial by 7 days (configurable via environment)
- */
+// ---------------------------------------------------------------------------
+// Extend Trial Period
+// ---------------------------------------------------------------------------
+
 export async function extendTrialHandler(req: Request, res: Response) {
   const { days } = req.body || {};
   const tenantId = req.tenantId;
   
   if (!tenantId) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Missing required: tenantId" 
-    });
+    return res.status(400).json({ success: false, message: "Missing required: tenantId" });
   }
 
-  // Default to 7 days, max 14 days
   const defaultDays = parseInt(process.env.TRIAL_EXTENSION_DAYS || "7");
   const maxDays = parseInt(process.env.TRIAL_EXTENSION_MAX_DAYS || "14");
   const extensionDays = Math.min(days || defaultDays, maxDays);
 
   const client = await getPool().connect();
   try {
-    // 1. Validate tenant exists and is in TRIAL status
     const tenantResult = await client.query(
       `SELECT id, name, subdomain, status, trial_ends_at
        FROM tenants WHERE id = $1`,
@@ -352,10 +436,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
     );
     
     if (tenantResult.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Tenant tidak ditemukan" 
-      });
+      return res.status(404).json({ success: false, message: "Tenant tidak ditemukan" });
     }
 
     const tenant = tenantResult.rows[0];
@@ -367,7 +448,6 @@ export async function extendTrialHandler(req: Request, res: Response) {
       });
     }
 
-    // 2. Extend trial period
     const currentTrialEndsAt = new Date(tenant.trial_ends_at);
     const newTrialEndsAt = new Date(currentTrialEndsAt);
     newTrialEndsAt.setDate(newTrialEndsAt.getDate() + extensionDays);
@@ -377,18 +457,6 @@ export async function extendTrialHandler(req: Request, res: Response) {
       [newTrialEndsAt, tenantId]
     );
 
-    // 3. Log the extension in audit_logs table
-    await client.query(
-      `INSERT INTO audit_logs (tenant_id, user_id, action, details, category, risk_level)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [tenantId, "system", "TRIAL_EXTENSION", 
-       `Trial diperpanjang ${extensionDays} hari. Batas baru: ${newTrialEndsAt.toISOString()}`,
-       "BILLING", "LOW"]
-    );
-
-    await client.query("COMMIT");
-
-    // 4. Send email notification to owner
     const ownerEmailResult = await client.query(
       `SELECT email FROM users WHERE tenant_id = $1 AND role = 'OWNER' LIMIT 1`,
       [tenantId]
@@ -405,25 +473,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
       );
     }
 
-    // 5. Send Telegram alert
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-    if (botToken && chatId) {
-      try {
-        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-        await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `✅ <b>TRIAL DIPERPANJANG</b>\nTenant: ${tenant.name} (${tenant.subdomain})\nExtension: ${extensionDays} hari\nBatas Baru: ${newTrialEndsAt.toLocaleDateString('id-ID')}`,
-            parse_mode: "HTML",
-          }),
-        });
-      } catch (telegramErr: any) {
-        logger.error({ err: telegramErr.message }, "[extend-trial] Telegram alert failed");
-      }
-    }
+    await client.query("COMMIT");
 
     return res.json({
       success: true,
@@ -432,16 +482,11 @@ export async function extendTrialHandler(req: Request, res: Response) {
       newTrialEndsAt: newTrialEndsAt.toISOString(),
       extensionDays,
     });
-
   } catch (error: any) {
     await client.query("ROLLBACK");
     logger.error({ err: error.message, tenantId, days }, "[extend-trial] Failed");
-    return res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
+    return res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
   }
 }
-

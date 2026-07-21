@@ -48,6 +48,7 @@ interface TicketDetail {
 type PageState = "loading" | "ready" | "submitting" | "success" | "error" | "expired";
 
 export const ServiceApprovalPortal: React.FC = () => {
+  const activeTenant: any = null;
   const [ticketId, setTicketId] = useState<string>("");
   const [token, setToken] = useState<string>("");
   const [ticket, setTicket] = useState<TicketDetail | null>(null);

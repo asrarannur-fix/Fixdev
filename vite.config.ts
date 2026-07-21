@@ -18,7 +18,7 @@ export default defineConfig(() => {
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
       // allow any host (quick tunnels / public demos). tighten for prod.
-      allowedHosts: ['fixdev.web.id', 'www.fixdev.web.id'],
+      allowedHosts: ['fixdev.web.id', 'www.fixdev.web.id', 'dev.fixdev.web.id'],
     },
     build: {
       chunkSizeWarningLimit: 700,

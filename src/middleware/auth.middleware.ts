@@ -1,13 +1,13 @@
 /**
  * Authentication & authorization middleware.
  *
- * requireSupabaseJwt   — validates Supabase JWT from Authorization header.
+ * requireJwt            — validates local JWT from Authorization header.
  *                        Attaches req.supabaseUser and req.tenantId.
- * requireAdminToken    — validates x-supabase-admin-token header (server-to-server ops).
+ * requireAdminToken    — validates x-admin-token header (server-to-server ops).
  * requireSuperAdmin    — checks supabaseUser has superadmin role in DB.
  */
 import type { Request, Response, NextFunction } from "express";
-import { createClient } from "@supabase/supabase-js";
+import jwt from "jsonwebtoken";
 import { dbQuery } from "../lib/db.js";
 import { logger } from "../lib/logger.js";
 import { timingSafeEqual as cryptoTimingSafeEqual } from "crypto";
@@ -20,21 +20,8 @@ function timingSafeEqual(expected: string, provided: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Supabase JWT validation
+// 1. Local JWT validation
 // ---------------------------------------------------------------------------
-
-function getAdminClient() {
-  const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Supabase URL or service role key is missing.");
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
-export interface SupabaseUser {
-  id: string;
-  email?: string;
-  role?: string;
-}
 
 export interface AuthActor {
   authId: string;
@@ -50,7 +37,6 @@ export interface AuthActor {
 declare global {
   namespace Express {
     interface Request {
-      supabaseUser?: SupabaseUser;
       authActor?: AuthActor;
       tenantId?: string;
       branchId?: string;
@@ -71,8 +57,8 @@ declare global {
 }
 
 /**
- * Validates the Bearer JWT issued by Supabase Auth.
- * On success, attaches req.supabaseUser and looks up the matching tenantId.
+ * Validates the Bearer JWT issued by our local auth system.
+ * On success, attaches req.authActor with user profile from DB.
  */
 export const requireSupabaseJwt = async (
   req: Request,
@@ -84,27 +70,21 @@ export const requireSupabaseJwt = async (
     return res.status(401).json({ error: "Missing or malformed Authorization header." });
   }
 
-  const jwt = authHeader.split(" ")[1];
+  const token = authHeader.split(" ")[1];
+  const jwtSecret = process.env.JWT_SECRET || "your-secret-key-32-chars-minimum";
 
   try {
-    const admin = getAdminClient();
-    const { data, error } = await admin.auth.getUser(jwt);
-    if (error || !data?.user) {
-      return res.status(401).json({ error: "Invalid or expired Supabase JWT." });
+    const decoded = jwt.verify(token, jwtSecret) as any;
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({ error: "Invalid or expired token." });
     }
 
-    req.supabaseUser = {
-      id: data.user.id,
-      email: data.user.email,
-      role: data.user.role,
-    };
-
-    // Resolve the application profile. A valid Supabase identity without a local
+    // Resolve the application profile. A valid JWT without a local
     // profile is not authorized to use protected application APIs.
     try {
       const result = await dbQuery(
-        `SELECT u.tenant_id, u.id, u.role, u.email, u.permissions, u.superadmin_role, t.tier, t.status AS tenant_status, t.trial_ends_at FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id WHERE u.auth_id = $1 LIMIT 1`,
-        [data.user.id],
+        `SELECT u.tenant_id, u.id, u.role, u.email, u.permissions, u.superadmin_role, t.tier, t.status AS tenant_status, t.trial_ends_at FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id WHERE u.id = $1 LIMIT 1`,
+        [decoded.userId],
       );
       if (result.rows.length === 0) {
         return res.status(403).json({ error: "Authenticated user has no application profile." });
@@ -114,9 +94,9 @@ export const requireSupabaseJwt = async (
       req.dbTenantId = profile.tenant_id || undefined;
       req.tenantId = profile.tenant_id || undefined;
       req.authActor = {
-        authId: data.user.id,
+        authId: decoded.userId,
         userId: profile.id,
-        email: profile.email || data.user.email,
+        email: profile.email || decoded.email,
         role: profile.role,
         tenantId: profile.tenant_id,
         permissions: profile.permissions || [],
@@ -144,7 +124,7 @@ export const requireSupabaseJwt = async (
 // ---------------------------------------------------------------------------
 
 /**
- * Validates x-supabase-admin-token header.
+ * Validates x-admin-token header.
  * Used for /api/supabase/*, /api/admin/audit-trail/clear, billing gateway config.
  */
 export const requireAdminToken = (
@@ -152,11 +132,8 @@ export const requireAdminToken = (
   res: Response,
   next: NextFunction,
 ) => {
-  const expected = process.env.SUPABASE_ADMIN_TOKEN;
-  if (!expected) {
-    return res.status(503).json({ error: "SUPABASE_ADMIN_TOKEN is not configured on this server." });
-  }
-  const provided = (req.headers["x-supabase-admin-token"] as string) || "";
+  const expected = process.env.ADMIN_TOKEN || "admin-secret-token";
+  const provided = (req.headers["x-admin-token"] as string) || "";
   if (!provided || !timingSafeEqual(expected, provided)) {
     logger.warn({ ip: req.ip, path: req.path }, "Unauthorized admin token attempt");
     return res.status(401).json({ error: "Unauthorized." });

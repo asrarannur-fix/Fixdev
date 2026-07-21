@@ -118,15 +118,7 @@ export const BrandingSettingsPanel: React.FC<BrandingSettingsPanelProps> = ({
             <textarea value={branding.portalContactText || ""} onChange={(e) => updateBranding({ portalContactText: e.target.value })} rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent" />
           </label>
 
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Custom domain</span>
-            <div className="flex gap-2">
-              <input value={branding.customDomain || ""} onChange={(e) => updateBranding({ customDomain: e.target.value })} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent" />
-              <button type="button" onClick={() => verifyDomain(branding.customDomain || "")} disabled={isVerifyingDomain || !branding.customDomain} className="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold disabled:opacity-50">
-                {isVerifyingDomain ? <RefreshCw className="w-4 h-4 animate-spin" /> : domainVerified ? <CheckCircle2 className="w-4 h-4" /> : "Verifikasi"}
-              </button>
-            </div>
-          </div>
+
 
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
             <input type="checkbox" checked={!!branding.whiteLabelEnabled} onChange={(e) => updateBranding({ whiteLabelEnabled: e.target.checked })} className="accent-accent" />

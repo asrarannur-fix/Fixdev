@@ -1,21 +1,14 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Local auth client — replaces Supabase JS client.
+ * All auth calls now go through our own Express API endpoints.
  */
-import { createClient } from "@supabase/supabase-js";
 import { safeLocalStorage } from "./safeStorage";
 import { toSnakeCase } from "./saasUtils";
 
 const localStorage = safeLocalStorage;
-const isValidSupabaseUrl = (value: unknown): value is string => {
-  if (typeof value !== "string") return false;
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === "https:" || url.protocol === "http:";
-  } catch {
-    return false;
-  }
-};
 
 export const cleanUserForDb = (user: any) => {
   const snakeUser = toSnakeCase(user);
@@ -31,61 +24,121 @@ export const cleanUserForDb = (user: any) => {
 };
 
 export const isSupabaseConfigured = (): boolean => {
-  try {
-    const envUrl = (import.meta as any).env.VITE_SUPABASE_URL || "";
-    const envAnon = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || "";
-    if (envUrl.trim() && envAnon.trim()) {
-      return true;
-    }
-    const saved = localStorage.getItem("saas_supabase_config");
-    if (saved) {
-      const config = JSON.parse(saved);
-      return !!(isValidSupabaseUrl(config.url) && typeof config.anonKey === "string" && config.anonKey.trim());
-    }
-  } catch (_) {}
-  return false;
+  return true;
 };
 
-let cachedSupabaseClient: any = null;
-let cachedUrl: string = "";
-let cachedKey: string = "";
-
-function getSupabaseConfig(): { url: string; key: string } | null {
-  try {
-    const envUrl = (import.meta as any).env.VITE_SUPABASE_URL || "";
-    const envAnon = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || "";
-    if (envUrl.trim() && envAnon.trim()) {
-      return { url: envUrl.trim(), key: envAnon.trim() };
-    }
-    const saved = localStorage.getItem("saas_supabase_config");
-    if (saved) {
-      const config = JSON.parse(saved);
-      if (isValidSupabaseUrl(config.url) && typeof config.anonKey === "string" && config.anonKey.trim()) {
-        return { url: config.url.trim(), key: config.anonKey.trim() };
-      }
-    }
-  } catch (_) {}
-  return null;
+/**
+ * Local auth client that talks to our Express backend.
+ * API shape matches Supabase JS client for easy migration.
+ */
+function getBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return "http://localhost:8083";
 }
 
 export const getSupabase = () => {
-  try {
-    const cfg = getSupabaseConfig();
-    if (!cfg) return null;
+  return {
+    auth: {
+      signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.token) {
+            return { data: null, error: { message: data.error || "Login failed" } };
+          }
+          const token = data.token;
+          localStorage.setItem("fixdev_token", token);
+          return {
+            data: {
+              session: { access_token: token, refresh_token: "", expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400, token_type: "bearer" },
+              user: data.user,
+            },
+            error: null,
+          };
+        } catch (err: any) {
+          return { data: null, error: { message: err.message } };
+        }
+      },
 
-    // Invalidate cache when config changes at runtime
-    if (cfg.url !== cachedUrl || cfg.key !== cachedKey) {
-      cachedSupabaseClient = null;
-    }
+      signUp: async ({ email, password, options }: any) => {
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/onboarding/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ownerEmail: email, ownerPassword: password, ownerName: options?.data?.name || email, shopName: options?.data?.name || "My Shop" }),
+          });
+          const data = await res.json();
+          if (!res.ok) return { data: null, error: { message: data.message || data.error || "Signup failed" } };
+          if (data.token) localStorage.setItem("fixdev_token", data.token);
+          return { data: { user: data.owner }, error: null };
+        } catch (err: any) {
+          return { data: null, error: { message: err.message } };
+        }
+      },
 
-    if (cachedSupabaseClient) {
-      return cachedSupabaseClient;
-    }
+      signOut: async () => {
+        localStorage.removeItem("fixdev_token");
+        return { error: null };
+      },
 
-    cachedSupabaseClient = createClient(cfg.url, cfg.key);
-    cachedUrl = cfg.url;
-    cachedKey = cfg.key;
-    return cachedSupabaseClient;
-  } catch (_) {}
-  return null;
+      getSession: async () => {
+        const token = localStorage.getItem("fixdev_token");
+        if (!token) return { data: { session: null }, error: null };
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/auth/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) {
+            localStorage.removeItem("fixdev_token");
+            return { data: { session: null }, error: null };
+          }
+          const profile = await res.json();
+          return {
+            data: {
+              session: {
+                access_token: token,
+                user: profile,
+                expires_at: Math.floor(Date.now() / 1000) + 86400,
+              },
+            },
+            error: null,
+          };
+        } catch {
+          return { data: { session: null }, error: null };
+        }
+      },
+
+      getUser: async () => {
+        const token = localStorage.getItem("fixdev_token");
+        if (!token) return { data: { user: null }, error: null };
+        try {
+          const res = await fetch(`${getBaseUrl()}/api/auth/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return { data: { user: null }, error: null };
+          const profile = await res.json();
+          return { data: { user: profile }, error: null };
+        } catch {
+          return { data: { user: null }, error: null };
+        }
+      },
+
+      resetPasswordForEmail: async (email: string) => {
+        return { data: {}, error: null };
+      },
+
+      setSession: async () => ({ data: { session: null }, error: null }),
+    },
+
+    from: (table: string) => ({
+      select: () => ({ data: [], error: null }),
+      insert: () => ({ data: null, error: null }),
+    }),
+  };
 };

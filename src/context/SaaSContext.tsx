@@ -846,13 +846,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
           };
 
           let bootstrapResponse = await requestBootstrap(accessToken);
-          if (bootstrapResponse.status === 401 && client) {
-            const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
-            const refreshedToken = refreshed.session?.access_token || "";
-            if (!refreshError && refreshedToken) {
-              bootstrapResponse = await requestBootstrap(refreshedToken);
-            }
-          }
 
           const bootstrap = await readJsonResponse<any>(bootstrapResponse, "Backend bootstrap");
           Object.assign(fetchedData, {
@@ -1050,58 +1043,49 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 // Supabase restores persisted sessions through onAuthStateChange below.
 // Do not sign out a valid server-verified session just because local UI cache is absent.
 
-  // Supabase Real Authentication Session Listener
+  // Check existing session on mount
   useEffect(() => {
-    const client = getSupabase();
-    if (!client) return;
-
-    const {
-      data: { subscription },
-    } = client.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        try {
-          const profileRes = await fetch("/api/auth/profile", {
-            headers: { Authorization: "Bearer " + session.access_token },
-          });
-          const dbUser = profileRes.ok ? await profileRes.json() : null;
-
-          if (dbUser) {
-            const camelUser = toCamelCase<User>(dbUser);
-            camelUser.permissions =
-              camelUser.permissions && camelUser.permissions.length > 0
-                ? camelUser.permissions
-                : DEFAULT_ROLE_PERMISSIONS[camelUser.role] || [];
-
-            setCurrentUser(camelUser);
-            setIsAuthenticated(true);
-            localStorage.setItem("saas_is_authenticated", "true");
-            localStorage.setItem("saas_curr_user", JSON.stringify(camelUser));
-            if (camelUser.tenantId) {
-              setCurrentTenantId(camelUser.tenantId);
-              localStorage.setItem("saas_curr_tenant_id", camelUser.tenantId);
-            } else {
-              setCurrentTenantId("");
-              localStorage.removeItem("saas_curr_tenant_id");
-            }
-          } else if ([401, 403, 404].includes(profileRes.status)) {
-            await client.auth.signOut();
-            setIsAuthenticated(false);
-            localStorage.setItem("saas_is_authenticated", "false");
-            localStorage.removeItem("saas_curr_user");
-          }
-        } catch (e) {
-          console.error("Error reading Supabase user profile:", e);
-        }
-      } else if (event === "SIGNED_OUT") {
-        setIsAuthenticated(false);
-        localStorage.setItem("saas_is_authenticated", "false");
-        localStorage.removeItem("saas_curr_user");
+    const token = localStorage.getItem("fixdev_token");
+    if (!token) {
+      const storedAuth = localStorage.getItem("saas_is_authenticated");
+      if (storedAuth === "true") {
+        setIsAuthenticated(true);
       }
-    });
+      return;
+    }
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    (async () => {
+      try {
+        const profileRes = await fetch("/api/auth/profile", {
+          headers: { Authorization: "Bearer " + token },
+        });
+        const dbUser = profileRes.ok ? await profileRes.json() : null;
+
+        if (dbUser) {
+          const camelUser = toCamelCase<User>(dbUser);
+          camelUser.permissions =
+            camelUser.permissions && camelUser.permissions.length > 0
+              ? camelUser.permissions
+              : DEFAULT_ROLE_PERMISSIONS[camelUser.role] || [];
+
+          setCurrentUser(camelUser);
+          setIsAuthenticated(true);
+          localStorage.setItem("saas_is_authenticated", "true");
+          localStorage.setItem("saas_curr_user", JSON.stringify(camelUser));
+          if (camelUser.tenantId) {
+            setCurrentTenantId(camelUser.tenantId);
+            localStorage.setItem("saas_curr_tenant_id", camelUser.tenantId);
+          }
+        } else if ([401, 403, 404].includes(profileRes.status)) {
+          localStorage.removeItem("fixdev_token");
+          setIsAuthenticated(false);
+          localStorage.setItem("saas_is_authenticated", "false");
+          localStorage.removeItem("saas_curr_user");
+        }
+      } catch (e) {
+        console.error("Error reading user profile:", e);
+      }
+    })();
   }, []);
 
   const loginUser = async (
@@ -1188,22 +1172,21 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateCurrentUserPassword = async (_currentPassword: string, newPassword: string): Promise<void> => {
-    const client = getSupabase();
-    if (!client) {
-      throw new Error("Tidak dapat terhubung ke Supabase. Pastikan konfigurasi sudah benar.");
-    }
-
     setApiLoading(true);
     setApiStatus("Memperbarui password...");
     try {
-      const { data: userData, error: updateError } = await client.auth.updateUser({
-        password: newPassword,
+      const token = localStorage.getItem("fixdev_token");
+      const res = await fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: "Bearer " + token } : {}),
+        },
+        body: JSON.stringify({ password: newPassword }),
       });
-      if (updateError) {
-        throw new Error(updateError.message || "Gagal memperbarui password.");
-      }
-      if (!userData?.user) {
-        throw new Error("Gagal memperbarui password. Sesi user tidak valid.");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Gagal memperbarui password.");
       }
       addLog(
         "Password Changed",
@@ -1219,18 +1202,17 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // ==========================================
-  // RESET PASSWORD VIA SUPABASE EMAIL
+  // RESET PASSWORD VIA API
   // ==========================================
   const sendPasswordReset = async (email: string): Promise<void> => {
-    const client = getSupabase();
-    if (!client) {
-      throw new Error("Supabase belum dikonfigurasi. Hubungi administrator sistem.");
-    }
-    const { error } = await client.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
     });
-    if (error) {
-      throw new Error(error.message || "Gagal mengirim email reset password.");
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || "Gagal mengirim email reset password.");
     }
     addLog(
       "Password Reset Requested",
@@ -4771,61 +4753,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       activeSessions: [],
     };
 
-    const client = getSupabase();
-    if (client) {
-      setApiLoading(true);
-      setApiStatus("Menyimpan pengguna baru ke database Supabase...");
-      try {
-        const { error } = await client
-          .from("users")
-          .insert(cleanUserForDb(newUser));
-        if (error) throw error;
-
-        if (newUser.branchIds && newUser.branchIds.length > 0) {
-          const branchRows = newUser.branchIds.map((branchId) => ({
-            user_id: newUser.id,
-            branch_id: branchId,
-          }));
-          const { error: branchError } = await client
-            .from("user_branches")
-            .insert(branchRows);
-          if (branchError) {
-            await client.from("users").delete().eq("id", newUser.id);
-            throw branchError;
-          }
-        }
-
-        // Refresh users list
-        const { data: dbUsers } = await client.from("users").select("*");
-        const { data: dbUserBranches } = await client.from("user_branches").select("*");
-        if (dbUsers) {
-          const userBranchRows = dbUserBranches
-            ? toCamelCase<Array<{ userId: string; branchId: string }>>(dbUserBranches)
-            : [];
-          const userBranchMap = userBranchRows.reduce<Record<string, string[]>>((acc, row) => {
-            acc[row.userId] = [...(acc[row.userId] || []), row.branchId];
-            return acc;
-          }, {});
-          setUsers(
-            toCamelCase<User[]>(dbUsers).map((user) => ({
-              ...user,
-              branchIds: userBranchMap[user.id] || user.branchIds || [],
-              loginHistory: user.loginHistory || [],
-              activeSessions: user.activeSessions || [],
-            })),
-          );
-        }
-      } catch (err: any) {
-        console.error("Error saving user to Supabase:", err);
-        showToast("Gagal menyimpan pengguna baru: " + err.message, "error");
-        throw err;
-      } finally {
-        setApiLoading(false);
-        setApiStatus("");
-      }
-    } else {
-      setUsers((prev) => [...prev, newUser]);
-    }
+    setUsers((prev) => [...prev, newUser]);
     addLog(
       "Create Staff User",
       `Membuat akun login staff baru: ${userData.name} (${userData.role})`,

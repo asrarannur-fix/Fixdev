@@ -11,7 +11,7 @@ test("debug login with fixed localstorage injection", async ({ page }) => {
   });
 
   console.log("Starting loginTenant...");
-  const ok = await loginTenant(page, { timeout: 30000 });
+  const ok = await loginTenant(page);
   console.log("LoginTenant result:", ok);
 
   if (!ok) {

@@ -150,7 +150,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     fontFamily: tenantObj?.branding?.fontFamily || BRANDING_PRESETS.blue.fontFamily,
     portalHelpTitle: tenantObj?.branding?.portalHelpTitle || "Pusat Bantuan & Garansi",
     portalContactText: tenantObj?.branding?.portalContactText || "0812-3456-7890 | support@fixdev.com",
-    customDomain: tenantObj?.branding?.customDomain || "repair.fixdev.com",
+
     accentColor: tenantObj?.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
     whiteLabelEnabled: tenantObj?.branding?.whiteLabelEnabled || false,
     logo: tenantObj?.branding?.logo || "",
@@ -377,7 +377,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       fontFamily: tenantObj.branding?.fontFamily || BRANDING_PRESETS.blue.fontFamily,
       portalHelpTitle: tenantObj.branding?.portalHelpTitle || "Pusat Bantuan & Garansi",
       portalContactText: tenantObj.branding?.portalContactText || "0812-3456-7890 | support@fixdev.com",
-      customDomain: tenantObj.branding?.customDomain || "repair.fixdev.com",
+
       accentColor: tenantObj.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
       whiteLabelEnabled: tenantObj.branding?.whiteLabelEnabled || false,
       logo: tenantObj.branding?.logo || "",

@@ -83,3 +83,16 @@ export function loadBrandingFromUpload(file: File): Promise<TenantBranding | nul
     reader.readAsText(file);
   });
 }
+
+export const SUGGESTED_PRESETS = [
+  { key: "indigo", name: "Indigo Cyber", primaryColor: "#4f46e5", accentColor: "#818cf8", secondaryColor: "#6366f1", fontFamily: "Inter, sans-serif", slogan: "Layanan sempurna, pusat kendali digital" },
+  { key: "emerald", name: "Emerald Tech", primaryColor: "#059669", accentColor: "#10b981", secondaryColor: "#34d399", fontFamily: "Inter, sans-serif", slogan: "Pelayanan andal, generasi digital cerdas" },
+  { key: "crimson", name: "Crimson Flame", primaryColor: "#dc2626", accentColor: "#ef4444", secondaryColor: "#f87171", fontFamily: "Inter, sans-serif", slogan: "Solusi instan untuk masalah teknis Anda" },
+  { key: "sunset", name: "Sunset Gold", primaryColor: "#d97706", accentColor: "#fbbf24", secondaryColor: "#fb923c", fontFamily: "Inter, sans-serif", slogan: "Layanan cepat dengan sentuhan personal" },
+  { key: "ocean", name: "Deep Ocean", primaryColor: "#0284c7", accentColor: "#38bdf8", secondaryColor: "#60a5fa", fontFamily: "Inter, sans-serif", slogan: "Layanan berkualitas tinggi tanpa batas" },
+  { key: "purple", name: "Grape Purple", primaryColor: "#7c3aed", accentColor: "#a78bfa", secondaryColor: "#c084fc", fontFamily: "Inter, sans-serif", slogan: "Solusi canggih untuk bisnis modern" },
+];
+
+export const getSuggestedSlogan = (tenantName: string): string => {
+  return `Welcome to ${tenantName}`;
+}

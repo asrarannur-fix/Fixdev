@@ -12,7 +12,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
-  const { loginUser, addTenant, addUser, users, isAuthenticated, sendPasswordReset } = useSaaS();
+  const { loginUser, addTenant, addUser, users, isAuthenticated, sendPasswordReset, activeTenant } = useSaaS();
 
   const [activeTab, setActiveTab] = useState<"register" | "manual">("manual");
   const [emailInput, setEmailInput] = useState("");

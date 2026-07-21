@@ -75,8 +75,8 @@ export const SettingsBranding: React.FC<any> = (props) => {
     };
     reader.readAsDataURL(file);
   };
-  return (
-  <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn">
+   return (
+     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn">
     {/* Dynamic Font Loader */}
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
@@ -233,97 +233,6 @@ export const SettingsBranding: React.FC<any> = (props) => {
             className="w-full px-3 py-2 border border-slate-200 bg-white rounded-lg outline-none text-slate-700 min-h-[60px]"
           />
         </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Custom Domain Portal
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={branding.customDomain}
-                onChange={(e) => {
-                  setBranding({ ...branding, customDomain: e.target.value });
-                  setDomainVerified(false);
-                }}
-                placeholder="servis.bisnisanda.com"
-                className="w-full px-3 py-2 border border-slate-200 bg-white rounded-lg outline-none text-slate-700"
-              />
-              {branding.customDomain && (
-                <button
-                  onClick={() =>
-                    setBranding({ ...branding, customDomain: "" })
-                  }
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => verifyDomain(branding.customDomain)}
-              className={`px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold transition-all ${
-                isVerifyingDomain
-                  ? "bg-slate-100 text-slate-500 cursor-not-allowed"
-                  : "bg-white hover:bg-slate-50 text-slate-700"
-              }`}
-              disabled={isVerifyingDomain}
-            >
-              {isVerifyingDomain ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 mr-1 animate-spin" />
-                  Memeriksa...
-                </>
-              ) : (
-                "Verifikasi DNS"
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Interactive verification state output */}
-        {domainVerified ? (
-          <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg space-y-1 animate-fadeIn">
-            <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-[10px] uppercase tracking-wider">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              Domain Terkoneksi & Terverifikasi Aktif
-            </div>
-            <p className="text-[10px] text-emerald-700 leading-normal">
-              Sertifikat SSL/TLS otomatis dari{" "}
-              <strong>Let's Encrypt</strong> telah berhasil diterbitkan dan
-              statusnya <strong>Secured & Active</strong>. Portal pelanggan
-              Anda kini dapat diakses secara penuh di{" "}
-              <span className="font-mono underline font-bold">
-                https://{branding.customDomain}
-              </span>
-              .
-            </p>
-          </div>
-        ) : (
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
-            <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-              Harap arahkan catatan DNS domain Anda di penyedia domain (seperti
-              Niagahoster, Domainesia, dsb) dengan parameter berikut:
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px]">
-              <div className="p-2 bg-white border border-slate-200 rounded font-mono">
-                <span className="block text-[8px] text-slate-400 font-sans font-bold uppercase">
-                  Tipe Catatan
-                </span>
-                <span className="font-bold text-slate-800">CNAME Record</span>
-              </div>
-              <div className="p-2 bg-white border border-slate-200 rounded font-mono">
-                <span className="block text-[8px] text-slate-400 font-sans font-bold uppercase">
-                  Nilai / Target Tujuan
-                </span>
-                <span className="font-bold text-accent">
-                  lb.fixdev.my.id
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="flex flex-wrap justify-end gap-2">

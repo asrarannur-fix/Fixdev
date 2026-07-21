@@ -120,25 +120,27 @@ export async function getOverview(req: Request, res: Response) {
 
 export async function collectStorageUsage(req: Request, res: Response) {
   try {
-    const url = process.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) return res.status(503).json({ error: "Supabase Storage belum dikonfigurasi." });
-    const { createClient } = await import("@supabase/supabase-js");
-    const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const uploadDir = process.env.FILE_UPLOAD_DIR || "./uploads";
+    const fs = await import("fs");
+    const path = await import("path");
     const tenants = await dbQuery(`SELECT id FROM tenants ORDER BY id`);
     let measured = 0;
     for (const tenant of tenants.rows) {
       let total = 0;
-      const buckets = [`tenant-${tenant.id}`, tenant.id];
-      for (const bucket of buckets) {
-        const { data, error } = await admin.storage.from(bucket).list("", { limit: 1000, sortBy: { column: "name", order: "asc" } });
-        if (error) continue;
-        total += (data || []).reduce((sum, object: any) => sum + Number(object.metadata?.size || 0), 0);
+      const tenantDir = path.join(uploadDir, `tenant-${tenant.id}`);
+      if (fs.existsSync(tenantDir)) {
+        const files = fs.readdirSync(tenantDir, { recursive: true, withFileTypes: true });
+        for (const file of files) {
+          if (file.isFile()) {
+            const stats = fs.statSync(path.join(tenantDir, file.name));
+            total += stats.size;
+          }
+        }
       }
       await dbQuery(`UPDATE tenants SET storage_used_bytes=$2,storage_measured_at=now() WHERE id=$1`, [tenant.id, total]);
       measured++;
     }
-    res.json({ success: true, measured, measuredAt: new Date().toISOString(), source: "supabase-storage" });
+    res.json({ success: true, measured, measuredAt: new Date().toISOString(), source: "local-storage" });
   } catch (err: any) {
     logger.error({ err: err.message }, "Storage usage collection failed");
     res.status(500).json({ error: "Pengukuran storage gagal." });

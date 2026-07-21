@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import http from "http";
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
@@ -20,6 +21,8 @@ import {
   onboardingRegisterHandler,
   upgradeTrialHandler,
   extendTrialHandler,
+  loginHandler,
+  registerHandler
 } from "./src/server/controllers/auth.controller.js";
 import {
   moduleRecordsGetHandler,
@@ -60,7 +63,7 @@ import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.contr
 import { qzPublicCertHandler, qzSignHandler } from "./src/server/controllers/qz.controller.js";
 import { qzCertDownloadHandler, qzInstallerBatHandler } from "./src/server/controllers/qzinstaller.controller.js";
 
-dotenv.config();
+dotenv.config({ override: false });
 
 const app = express();
 // Cloudflare Tunnel is the only public proxy hop. Trust its forwarded client IP
@@ -92,7 +95,11 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
   next(err);
 });
 
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(
+  process.env.NODE_ENV !== "production"
+    ? (process.env.DEV_PORT || 8083)
+    : (process.env.PORT || 3000)
+);
 
 // ==========================================
 // SECURITY: Manual CORS Configuration
@@ -192,6 +199,8 @@ app.get("/api/qz/certificate/download", qzCertDownloadHandler);
 app.get("/api/qz/installer.bat", qzInstallerBatHandler);
 app.post("/api/qz/sign", requireSupabaseJwt, requireTenantScope, qzSignHandler);
 
+app.post("/api/auth/login", loginHandler);
+app.post("/api/auth/register", registerHandler);
 app.post("/api/onboarding/register", onboardingRegisterHandler);
 app.get("/api/invitations/validate", validateInvitation);
 app.post("/api/invitations/accept", acceptInvitation);
@@ -236,19 +245,34 @@ app.use("/api", (req, res) => {
 // ==========================================
 
 async function startServer() {
-  // Production only: Serve built static files
+  const isDev = process.env.NODE_ENV !== "production";
   const distPath = path.join(process.cwd(), "dist");
-  app.use(express.static(distPath));
-  app.get("*", (req, res) => {
-    // Only serve index.html for non-API routes
-    if (!req.path.startsWith("/api/")) {
-      res.sendFile(path.join(distPath, "index.html"));
-    } else {
-      res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
-    }
-  });
 
-  // Global uncaught exception / rejection handlers
+  // Create HTTP server first so we can share it with Vite's HMR WebSocket
+  const httpServer = http.createServer(app);
+
+  if (isDev) {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      server: {
+        middlewareMode: true,
+        hmr: { server: httpServer },
+      },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+    logger.info({ port: PORT }, "[Dev Server] Vite middleware active (HMR on)");
+  } else {
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      if (!req.path.startsWith("/api/")) {
+        res.sendFile(path.join(distPath, "index.html"));
+      } else {
+        res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
+      }
+    });
+  }
+
   process.on("uncaughtException", (err) => {
     logger.error({ err: err.message, stack: err.stack }, "Uncaught exception");
     process.exit(1);
@@ -258,34 +282,32 @@ async function startServer() {
     logger.error({ err: reason }, "Unhandled rejection");
   });
 
-  function listenWithRetry(attempt = 1) {
-    const server = app.listen(PORT, "0.0.0.0");
-
-    // Graceful shutdown handler - defined after server variable
-    process.on("SIGTERM", () => {
-      logger.info("SIGTERM received, shutting down gracefully...");
-      server.close(() => {
-        logger.info("Server closed.");
-        process.exit(0);
-      });
-      setTimeout(() => {
-        logger.error("Forced shutdown after timeout");
-        process.exit(1);
-      }, 10000);
+  process.on("SIGTERM", () => {
+    logger.info("SIGTERM received, shutting down gracefully...");
+    httpServer.close(() => {
+      logger.info("Server closed.");
+      process.exit(0);
     });
+    setTimeout(() => {
+      logger.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, 10000);
+  });
 
-    server.on("error", (err: any) => {
+  function listenWithRetry(attempt = 1) {
+    httpServer.once("error", (err: any) => {
       if (err.code === "EADDRINUSE" && attempt < 5) {
         logger.warn({ port: PORT, attempt }, "Port in use, retrying in 2s…");
-        server.close();
+        httpServer.close();
         setTimeout(() => listenWithRetry(attempt + 1), 2000);
       } else {
         logger.error({ err: err.message }, "Fatal server error");
-        process.exit(1); // Let PM2 restart us
+        process.exit(1);
       }
     });
-    server.on("listening", () => {
-      logger.info({ port: PORT, env: "production" }, "[ERP SaaS Server] Started");
+
+    httpServer.listen(PORT, "0.0.0.0", () => {
+      logger.info({ port: PORT, env: isDev ? "development" : "production" }, "[ERP SaaS Server] Started");
     });
   }
 

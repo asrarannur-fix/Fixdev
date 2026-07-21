@@ -69,14 +69,15 @@ export const auditMiddleware = async (
   const category = "API";
   const riskLevel = req.method === "DELETE" ? "HIGH" : req.method === "POST" || req.method === "PUT" || req.method === "PATCH" ? "MEDIUM" : "LOW";
 
-  dbQuery(
-    `INSERT INTO audit_logs
-       (tenant_id, branch_id, endpoint, method, is_valid_tenant, is_valid_branch, verified, client_ip, action, details, category, risk_level, timestamp)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now())`,
-    [tenantId, branchId, req.path, req.method, isValidTenant, isValidBranch, verified, clientIp, action, details, category, riskLevel],
-  ).catch((err) => {
-    logger.warn({ err: err.message }, "[audit] Failed to persist audit entry");
-  });
+  if (tenantId) {
+    dbQuery(
+      `INSERT INTO audit_logs (id, tenant_id, user_id, action, details, created_at)
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, now())`,
+      [tenantId, req.authActor?.userId || null, action, details],
+    ).catch((err) => {
+      logger.warn({ err: err.message }, "[audit] Failed to persist audit entry");
+    });
+  }
 
   next();
 };
