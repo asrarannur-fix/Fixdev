@@ -507,12 +507,12 @@ export const ServiceList: React.FC<any> = (props) => {
     </div>
   )}
 
-  {/* Gemini AI diagnostic recommendations widget (when active) */}
+  {/* AI diagnostic recommendations widget (when active) */}
   {selectedServiceId && aiLoading && (
     <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center shadow-inner">
       <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-accent animate-spin" />
       <p className="text-xs font-semibold text-slate-600 font-mono mt-3">
-        Sedang merumuskan diagnosa terbaik dengan Gemini AI...
+        Sedang merumuskan diagnosa terbaik...
       </p>
     </div>
   )}
@@ -522,7 +522,7 @@ export const ServiceList: React.FC<any> = (props) => {
       <div className="flex items-center justify-between border-b border-amber-100 pb-2.5">
         <h4 className="font-bold text-xs text-amber-800 flex items-center gap-2 uppercase font-mono">
           <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />{" "}
-          Hasil Diagnosa Pintar Gemini AI
+          Hasil Diagnosa AI
         </h4>
         <div className="flex gap-2">
           <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[9px] font-mono uppercase">

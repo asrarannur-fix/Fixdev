@@ -29,7 +29,7 @@ export const AICopilot: React.FC = () => {
     } else if (currentUser.role === UserRole.KASIR) {
       welcomeText += ` Sebagai Kasir Utama, Anda bertanggung jawab untuk terminal transaksi, shift laci kasir harian, hold transaction, serta rekonsiliasi kas. Ada kendala dalam operasional kasir hari ini?`;
     } else if (currentUser.role === UserRole.TEKNISI) {
-      welcomeText += ` Sebagai Teknisi Ahli, Anda mengelola antrian reparasi, diagnosa cerdas Gemini AI, checklist QC penyerahan, hingga kanibalisasi unit cadangan. Butuh bantuan memecahkan masalah perangkat?`;
+      welcomeText += ` Sebagai Teknisi Ahli, Anda mengelola antrian reparasi, diagnosa cerdas AI, checklist QC penyerahan, hingga kanibalisasi unit cadangan. Butuh bantuan memecahkan masalah perangkat?`;
     } else {
       welcomeText += ` Bagaimana saya bisa membantu operasional cabang atau manajemen tim Anda hari ini?`;
     }

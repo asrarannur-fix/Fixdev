@@ -265,7 +265,7 @@ export const KnowledgeBase: React.FC = () => {
           </h2>
           <p className="text-xs text-slate-300 leading-relaxed">
             Akses diagram boardview sirkuit cetak (PCB), skema kelistrikan
-            resmi, dan gunakan Asisten Diagnosis AI Gemini untuk memecahkan
+            resmi, dan gunakan Asisten Diagnosis AI untuk memecahkan
             masalah perangkat keras yang kompleks dalam hitungan detik.
           </p>
         </div>
@@ -284,7 +284,7 @@ export const KnowledgeBase: React.FC = () => {
                   Asisten Troubleshooter AI
                 </h3>
                 <p className="text-[10px] text-slate-500 mt-0.5">
-                  Gemini Co-Pilot Spesialis Mikro-Solder & Elektronika
+                  AI Spesialis Mikro-Solder & Elektronika
                 </p>
               </div>
             </div>
@@ -326,7 +326,7 @@ export const KnowledgeBase: React.FC = () => {
                 {isAnalyzing ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Menghubungi Gemini AI...
+                    Menganalisis masalah...
                   </>
                 ) : (
                   <>
