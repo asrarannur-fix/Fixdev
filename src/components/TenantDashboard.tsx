@@ -53,6 +53,9 @@ const TechnicianOverview = React.lazy(() =>
 const SystemBackup = React.lazy(() =>
   import("./tenant/SystemBackup").then((m) => ({ default: m.SystemBackup }))
 );
+const DataExplorer = React.lazy(() =>
+  import("./tenant/DataExplorer").then((m) => ({ default: m.DataExplorer }))
+);
 
 interface TenantDashboardProps {
   activeTab: string;
@@ -322,6 +325,12 @@ export const TenantDashboard = ({
         {activeTab === "fraud" && (
           <FraudTab
             activeSubTab={activeSubTab}
+          />
+        )}
+        {activeTab === "data-explorer" && (
+          <DataExplorer
+            activeSubTab={activeSubTab}
+            setActiveSubTab={setActiveSubTab}
           />
         )}
         {activeTab === "customer-approval" && (

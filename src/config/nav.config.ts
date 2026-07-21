@@ -171,6 +171,24 @@ export const OPERATIONAL_MODULES: NavModule[] = [
       { id: "fraud-alert", label: "Proteksi", icon: AlertTriangle },
     ],
   },
+  {
+    id: "data-explorer",
+    label: "Data Manager",
+    desc: "Kelola Data Master",
+    icon: Database,
+    iconColor: "text-indigo-500",
+    activeBg: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    subtabs: [
+      { id: "customers", label: "Pelanggan", icon: Users },
+      { id: "products", label: "Produk", icon: Package },
+      { id: "service_tickets", label: "Tiket Servis", icon: Wrench },
+      { id: "warehouses", label: "Gudang", icon: MapPin },
+      { id: "branches", label: "Cabang", icon: Globe },
+      { id: "coa_accounts", label: "COA", icon: BookOpen },
+      { id: "journal_entries", label: "Jurnal", icon: FileSpreadsheet },
+      { id: "pos_shifts", label: "Shift", icon: CheckSquare },
+    ],
+  },
 ];
 
 // Settings modules (only in profile dropdown)

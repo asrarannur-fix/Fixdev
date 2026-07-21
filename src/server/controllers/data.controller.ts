@@ -54,7 +54,7 @@ export function sanitizePayloadForTable(table: string, data: any, allowedColumns
 
 const tableColumnsCache = new Map<string, string[]>();
 
-async function getTableColumns(table: string): Promise<string[]> {
+export async function getTableColumns(table: string): Promise<string[]> {
   const cached = tableColumnsCache.get(table);
   if (cached) return cached;
 

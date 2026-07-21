@@ -443,7 +443,6 @@ const MainAppContent: React.FC = () => {
       {/* Trial Banner */}
       {(() => {
         const isTrial = activeTenant?.status === "TRIAL" && isTrialActive(activeTenant);
-        console.log("[DEBUG] TrialBanner", { status: activeTenant?.status, endsAt: activeTenant?.trialEndsAt, isTrial });
         if (!isTrial) return null;
         return (
           <div
@@ -640,7 +639,8 @@ const MainAppContent: React.FC = () => {
                       activeTab === "hr" ||
                       activeTab === "crm" ||
                       activeTab === "settings" ||
-                      activeTab === "fraud") && (
+                      activeTab === "fraud" ||
+                      activeTab === "data-explorer") && (
                       <TenantDashboard
                         activeTab={activeTab}
                         activeSubTab={activeSubTab}

@@ -218,6 +218,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         icon: ShieldCheck,
         modules: ["fraud"],
       },
+      {
+        id: "data",
+        label: "Data Manager",
+        icon: Database,
+        modules: ["data-explorer"],
+      },
     ],
     [],
   );

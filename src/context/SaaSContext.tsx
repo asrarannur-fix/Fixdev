@@ -483,6 +483,7 @@ interface SaaSContextType {
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: [
     "overview",
+    "data-explorer",
     "services-list",
     "services-new-ticket",
     "services-field-service",
@@ -538,6 +539,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   OWNER: [
     "overview",
+    "data-explorer",
     "services-list",
     "services-new-ticket",
     "services-field-service",
@@ -592,6 +594,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   ADMIN: [
     "overview",
+    "data-explorer",
     "services-list",
     "services-new-ticket",
     "services-field-service",
@@ -635,6 +638,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   MANAGER: [
     "overview",
+    "data-explorer",
     "services-list",
     "services-field-service",
     "pos-cashier",
@@ -656,6 +660,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   KASIR: [
     "overview",
+    "data-explorer",
     "pos-cashier",
     "pos-shifts",
     "crm-customers",
@@ -663,6 +668,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   TEKNISI: [
     "overview",
+    "data-explorer",
     "services-list",
     "services-new-ticket",
     "services-field-service",
@@ -679,6 +685,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   SALES: ["overview", "pos-cashier", "crm-customers", "crm-pipeline"],
   HR: [
     "overview",
+    "data-explorer",
     "hr-attendance",
     "hr-payroll",
     "hr-kasbon",

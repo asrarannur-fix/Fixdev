@@ -34,15 +34,7 @@ const RESOURCES: Record<string, ResourceConfig> = {
       { name: "name", label: "Nama", required: true },
       { name: "phone", label: "Telepon", required: true },
       { name: "email", label: "Email" },
-      {
-        name: "segment",
-        label: "Segmen",
-        type: "select",
-        options: [
-          { label: "Personal", value: "PERSONAL" },
-          { label: "Corporate", value: "CORPORATE" },
-        ],
-      },
+      { name: "segment", label: "Segmen", type: "select", options: [{ label: "Personal", value: "PERSONAL" }, { label: "Corporate", value: "CORPORATE" }] },
       { name: "address", label: "Alamat", type: "textarea" },
     ],
   },
@@ -60,18 +52,7 @@ const RESOURCES: Record<string, ResourceConfig> = {
       { name: "name", label: "Nama", required: true },
       { name: "sku", label: "SKU", required: true },
       { name: "barcode", label: "Barcode" },
-      {
-        name: "category",
-        label: "Kategori",
-        type: "select",
-        required: true,
-        options: [
-          { label: "Sparepart", value: "SPAREPART" },
-          { label: "Aksesoris", value: "AKSESORIS" },
-          { label: "Jasa", value: "JASA" },
-          { label: "Lainnya", value: "LAINNYA" },
-        ],
-      },
+      { name: "category", label: "Kategori", type: "select", required: true, options: [{ label: "Sparepart", value: "SPAREPART" }, { label: "Aksesoris", value: "AKSESORIS" }, { label: "Jasa", value: "JASA" }, { label: "Lainnya", value: "LAINNYA" }] },
       { name: "purchaseCost", label: "Harga Beli", type: "number" },
       { name: "sellPrice", label: "Harga Jual", type: "number", required: true },
       { name: "stockQty", label: "Stok Awal", type: "number" },
@@ -82,10 +63,10 @@ const RESOURCES: Record<string, ResourceConfig> = {
     title: "Tiket Servis",
     icon: Wrench,
     columns: [
-      { key: "ticketNo", header: "No Tiket", accessor: "ticketNo" },
-      { key: "deviceName", header: "Device", accessor: "deviceName", sortable: true },
-      { key: "status", header: "Status", accessor: "status" },
-      { key: "customerApprovalStatus", header: "Approval", accessor: "customerApprovalStatus" },
+      { key: "ticketNo", header: "No Tiket", accessor: "ticketNo", filterable: true },
+      { key: "deviceName", header: "Device", accessor: "deviceName", sortable: true, filterable: true },
+      { key: "status", header: "Status", accessor: "status", filterable: true },
+      { key: "customerApprovalStatus", header: "Approval", accessor: "customerApprovalStatus", filterable: true },
     ],
     fields: [
       { name: "customerId", label: "Customer ID", required: true },
@@ -101,7 +82,7 @@ const RESOURCES: Record<string, ResourceConfig> = {
     title: "Gudang",
     icon: MapPin,
     columns: [
-      { key: "name", header: "Nama", accessor: "name", sortable: true },
+      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
       { key: "branchId", header: "Branch ID", accessor: "branchId" },
     ],
     fields: [
@@ -113,7 +94,7 @@ const RESOURCES: Record<string, ResourceConfig> = {
     title: "Cabang",
     icon: Globe,
     columns: [
-      { key: "name", header: "Nama", accessor: "name", sortable: true },
+      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
       { key: "address", header: "Alamat", accessor: "address" },
       { key: "phone", header: "Telepon", accessor: "phone" },
     ],
@@ -127,26 +108,14 @@ const RESOURCES: Record<string, ResourceConfig> = {
     title: "COA",
     icon: BookOpen,
     columns: [
-      { key: "code", header: "Kode", accessor: "code" },
-      { key: "name", header: "Nama", accessor: "name", sortable: true },
-      { key: "type", header: "Tipe", accessor: "type" },
+      { key: "code", header: "Kode", accessor: "code", filterable: true },
+      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
+      { key: "type", header: "Tipe", accessor: "type", filterable: true },
     ],
     fields: [
       { name: "code", label: "Kode", required: true },
       { name: "name", label: "Nama", required: true },
-      {
-        name: "type",
-        label: "Tipe",
-        type: "select",
-        required: true,
-        options: [
-          { label: "Aset", value: "ASSET" },
-          { label: "Liabilitas", value: "LIABILITY" },
-          { label: "Ekuitas", value: "EQUITY" },
-          { label: "Pendapatan", value: "REVENUE" },
-          { label: "Beban", value: "EXPENSE" },
-        ],
-      },
+      { name: "type", label: "Tipe", type: "select", required: true, options: [{ label: "Aset", value: "ASSET" }, { label: "Liabilitas", value: "LIABILITY" }, { label: "Ekuitas", value: "EQUITY" }, { label: "Pendapatan", value: "REVENUE" }, { label: "Beban", value: "EXPENSE" }] },
       { name: "isGroup", label: "Kelompok", type: "checkbox" },
     ],
   },
@@ -155,7 +124,7 @@ const RESOURCES: Record<string, ResourceConfig> = {
     icon: FileSpreadsheet,
     columns: [
       { key: "date", header: "Tanggal", accessor: "date" },
-      { key: "description", header: "Keterangan", accessor: "description" },
+      { key: "description", header: "Keterangan", accessor: "description", filterable: true },
     ],
     fields: [
       { name: "date", label: "Tanggal", type: "date" },
@@ -168,7 +137,7 @@ const RESOURCES: Record<string, ResourceConfig> = {
     icon: CheckSquare,
     columns: [
       { key: "openedAt", header: "Buka", accessor: "openedAt" },
-      { key: "status", header: "Status", accessor: "status" },
+      { key: "status", header: "Status", accessor: "status", filterable: true },
     ],
     fields: [
       { name: "status", label: "Status" },
@@ -192,7 +161,6 @@ export const DataExplorer: React.FC<{
         <Database className="w-4 h-4 text-indigo-500" />
         <span>Pilih jenis data master untuk dikelola.</span>
       </div>
-
       <div className="flex flex-wrap gap-1.5">
         {module?.subtabs.map((sub) => {
           const Icon = sub.icon;
@@ -213,7 +181,6 @@ export const DataExplorer: React.FC<{
           );
         })}
       </div>
-
       <CrudManager
         table={current}
         title={config.title}

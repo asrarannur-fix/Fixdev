@@ -40,6 +40,7 @@ import { auditMiddleware } from "./src/server/controllers/audit.controller.js";
 import auditRoutes from "./src/server/routes/audit.routes.js";
 import billingRoutes from "./src/server/routes/billing.routes.js";
 import aiRoutes from "./src/server/routes/ai.routes.js";
+import { createCrudRouter } from "./src/server/plugins/crudPlugin.js";
 import tenantRoutes from "./src/server/routes/tenant.routes.js";
 import serviceTrackerRoutes from "./src/server/routes/serviceTracker.routes.js";
 import serviceReceptionRoutes from "./src/server/routes/serviceReception.routes.js";
@@ -48,6 +49,7 @@ import microComponentsRoutes from "./src/server/routes/microComponents.routes.js
 import apiV1Routes from "./src/server/routes/apiV1.routes.js";
 import posRoutes from "./src/server/routes/pos.routes.js";
 import accountingRoutes from "./src/server/routes/accounting.routes.js";
+import purchasingRoutes from "./src/server/routes/purchasing.routes.js";
 import complaintTemplateRoutes from "./src/server/routes/complaintTemplate.routes.js";
 import monitoringRoutes from "./src/server/routes/monitoring.routes.js";
 import superadminRoutes from "./src/server/routes/superadmin.routes.js";
@@ -209,12 +211,16 @@ app.use("/api/services", serviceWorkflowRoutes);
 app.use("/api/micro-components", microComponentsRoutes);
 app.use("/api/pos", posRoutes);
 app.use("/api/accounting", requireSupabaseJwt, requireTenantScope, requireFeature("ACCOUNTING"), accountingRoutes);
+app.use("/api/purchasing", requireSupabaseJwt, requireTenantScope, purchasingRoutes);
 app.use("/api/complaint-templates", requireSupabaseJwt, requireTenantScope, complaintTemplateRoutes);
 
 // Public / Service routes
 app.use("/api/service-tracking", serviceTrackerRoutes);
 app.use("/api/v1", apiV1Routes);
 app.use("/api/monitoring", monitoringRoutes);
+
+// Generic CRUD API plugin (tenant-isolated, column-whitelisted)
+app.use("/api/crud", createCrudRouter());
 
 app.post("/api/supabase/test", requireSupabaseAdmin, supabaseTestHandler);
 app.post("/api/supabase/migrate", requireSupabaseAdmin, supabaseMigrateHandler);
