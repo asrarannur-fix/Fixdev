@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useSaaS } from "../context/SaaSContext";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  ArrowLeft, ArrowRight, Banknote, Building, Lock, Mail, Sparkles, Store,
+  ArrowLeft, ArrowRight, Banknote, Building, Lock, Mail, Store,
   User, Wrench, ShieldCheck, CheckCircle, Palette, Briefcase,
 } from "lucide-react";
 
@@ -160,7 +160,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
       <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_1fr] lg:py-10">
         <aside className="hidden lg:block">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-accent/10">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-accent"><Sparkles className="h-4 w-4" /> Multi-cabang</div>
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-accent"><Building className="h-4 w-4" /> Multi-cabang</div>
             <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight">Satu akun, seluruh toko terkelola.</h2>
             <p className="mt-2 text-xs leading-5 text-slate-600">Masuk untuk melihat servis, kasir, stok, dan laporan toko Anda. Data tiap cabang terpisah dan aman.</p>
             <ul className="mt-5 grid gap-2 text-xs font-bold text-slate-700">
