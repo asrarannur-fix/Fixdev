@@ -73,7 +73,7 @@ import { AppSettingsPanel } from "./AppSettingsPanel";
 import { BRANDING_PRESETS } from "../../config/BrandingPresets";
 import { SettingsBranding } from "./SettingsBranding";
 
-import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
+import { Tenant, Branch, WorkflowRule, TenantBranding } from "../../types";
 import { GROUP_ORDER, getSettingsTabs } from "../../config/settingsConfigs";
 import { SettingsPrinterTerms } from "./SettingsPrinterTerms";
 import { SettingsWorkflows } from "./SettingsWorkflows";
@@ -120,20 +120,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     (b: Branch) => b.tenantId === currentTenantId,
   ).length;
 
-  const currentUserPermissions = useMemo(() => {
-    if (currentUser?.role === UserRole.SUPER_ADMIN) {
-      return ["admin_access"];
-    }
-    return (
-      tenantObj?.rbacMatrix?.[currentUser?.role] ??
-      currentUser?.permissions ??
-      []
-    );
-  }, [tenantObj, currentUser]);
-
-  const isSuperAdmin =
-    currentUser?.role === UserRole.SUPER_ADMIN ||
-    currentUserPermissions?.includes("admin_access");
+  const currentUserPermissions = currentUser?.permissions ?? [];
 
   // Local state for Settings
   const [searchQuery, setSearchQuery] = useState("");
@@ -411,8 +398,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   }, [tenantObj]);
 
   const settingsTabs = useMemo(
-    () => getSettingsTabs(isSuperAdmin),
-    [isSuperAdmin],
+    () => getSettingsTabs(currentUser?.role, currentUserPermissions),
+    [currentUser?.role, currentUserPermissions],
   );
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const filtered = useMemo(
@@ -430,17 +417,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         : settingsTabs,
     [normalizedSearchQuery, settingsTabs],
   );
-  const effectiveActiveSubTab = useMemo<string | null>(() => {
-    if (!normalizedSearchQuery) {
-      return settingsTabs.some((t) => t.id === activeSubTab)
-        ? activeSubTab
-        : settingsTabs[0]?.id || null;
-    }
-    if (filtered.some((t) => t.id === activeSubTab)) {
-      return activeSubTab;
-    }
-    return filtered[0]?.id || null;
-  }, [normalizedSearchQuery, filtered, activeSubTab]);
+  const effectiveActiveSubTab = useMemo<string | null>(
+    () => settingsTabs.some((t) => t.id === activeSubTab) ? activeSubTab : settingsTabs[0]?.id || null,
+    [settingsTabs, activeSubTab],
+  );
   const activeTabObj = useMemo(
     () =>
       effectiveActiveSubTab
@@ -467,7 +447,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     <>
       <div className="space-y-6" id="settings-pane">
         <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-slate-700 bg-slate-950 p-4 text-slate-100 sticky top-6 self-start max-h-[calc(100vh-96px)] overflow-y-auto">
+          <aside className="rounded-3xl border border-slate-700 bg-slate-950 p-4 text-slate-100 overflow-y-auto xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-96px)]">
             <div className="space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -476,12 +456,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   placeholder="Cari pengaturan"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 text-sm bg-slate-900 border border-slate-700 rounded-full text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent/60"
+                  className="w-full min-h-11 pl-9 pr-11 py-2 text-sm bg-slate-900 border border-slate-700 rounded-full text-white placeholder-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    aria-label="Hapus pencarian"
+                    className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -498,7 +479,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       id={`settings-group-${g.key}`}
                       aria-label={`Grup pengaturan ${g.label}`}
                       onClick={() => setActiveSubTab?.(groupTabs[0].id)}
-                      className={`w-full text-left px-3 py-2 rounded-full text-[11px] font-semibold border transition ${
+                      className={`w-full min-h-11 text-left px-3 py-2 rounded-full text-[11px] font-semibold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                         isActiveGroup
                           ? "bg-indigo-500 text-white border-accent"
                           : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
@@ -520,7 +501,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     <button
                       key={t.id}
                       onClick={() => setActiveSubTab?.(t.id)}
-                      className={`px-2.5 py-1 text-[10px] rounded-full border transition ${
+                      className={`min-h-11 px-3 py-2 text-[10px] rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                         effectiveActiveSubTab === t.id
                           ? "bg-indigo-500 text-white border-accent"
                           : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
@@ -544,11 +525,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 .filter((t) => t.group === activeGroup)
                 .map((t) => (
                   <button
-                    key={t.id}
+                        key={t.id}
                     id={`settings-tab-${t.id}`}
                     aria-label={`Pengaturan ${t.label}`}
                     onClick={() => setActiveSubTab?.(t.id)}
-                    className={`text-[11px] font-semibold rounded-full px-3 py-2 border transition ${
+                    className={`min-h-11 text-[11px] font-semibold rounded-full px-3 py-2 border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                       effectiveActiveSubTab === t.id
                         ? "bg-accent-lighter text-accent border-indigo-200"
                         : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-800"
@@ -560,45 +541,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </div>
 
             <div className="p-6 space-y-6">
-        {effectiveActiveSubTab === "storage" && (
-          <div className="animate-fadeIn">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-accent-lighter text-accent rounded-lg">
-                  <Server className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
-                    Cloud Storage
-                  </h4>
-                  <p className="text-[10px] text-slate-400">
-                    System Managed vs Custom S3/R2 Storage Providers
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-slate-200 rounded-xl p-4">
-                  <h5 className="text-xs font-bold text-slate-700 mb-2">Default (System Managed)</h5>
-                  <p className="text-[10px] text-slate-500 mb-3">
-                    File disimpan di storage sistem default yang dikelola otomatis.
-                  </p>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1">
-                    <CheckCircle2 className="w-3 h-3" /> Aktif
-                  </span>
-                </div>
-                <div className="border border-slate-200 rounded-xl p-4 opacity-75">
-                  <h5 className="text-xs font-bold text-slate-700 mb-2">Custom S3 / R2</h5>
-                  <p className="text-[10px] text-slate-500 mb-3">
-                    Hubungkan bucket S3 atau Cloudflare R2 sendiri untuk kontrol penuh.
-                  </p>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 rounded-full px-2 py-1">
-                    Belum dikonfigurasi
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {effectiveActiveSubTab === "security" && (
           <div className="animate-fadeIn">

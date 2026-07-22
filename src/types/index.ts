@@ -280,6 +280,7 @@ export interface Tenant {
   tier: SubscriptionTier;
   trialEndsAt: string;
   createdAt: string;
+  version?: number;
   limits: TenantLimits;
   branding: TenantBranding;
   settings: TenantSettings;

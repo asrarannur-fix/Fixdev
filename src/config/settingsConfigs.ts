@@ -1,5 +1,4 @@
 import {
-  Server,
   Smartphone,
   Globe,
   Lock,
@@ -16,21 +15,24 @@ import {
   Code,
   Wrench,
   Save,
-  ShieldCheck,
 } from "lucide-react";
 
-export const getSettingsTabs = (isSuperAdmin: boolean) => [
-  ...(isSuperAdmin
-    ? [
-        {
-          id: "storage",
-          label: "Cloud Storage",
-          desc: "System Managed vs Custom S3/R2 Storage Providers",
-          icon: Server,
-          group: "perusahaan",
-        },
-      ]
-    : []),
+const SETTINGS_DOMAIN: Record<string, string> = {
+  rbac: "security",
+  security: "security",
+  backup: "security",
+  whatsapp: "whatsapp",
+  telegram: "notification",
+  notifications: "notification",
+  "developer-api": "api",
+};
+
+export const getSettingsTabs = (
+  role?: string,
+  permissions: string[] = [],
+): Array<{ id: string; label: string; desc?: string; icon: any; group: string }> => {
+  const canAccessAll = role === "OWNER" || role === "ADMIN" || permissions.includes("*") || permissions.includes("settings");
+  return [
   {
     id: "branding",
     label: "Branding & White-Label",
@@ -157,7 +159,11 @@ export const getSettingsTabs = (isSuperAdmin: boolean) => [
     icon: Save,
     group: "keamanan",
   },
-];
+  ].filter(({ id }) => {
+    const domain = SETTINGS_DOMAIN[id] || id;
+    return canAccessAll || permissions.includes(`settings:${domain}`);
+  });
+};
 
 export const GROUP_ORDER = [
   { key: "perusahaan", label: "Perusahaan & Akses" },

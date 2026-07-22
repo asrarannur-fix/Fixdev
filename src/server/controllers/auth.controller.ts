@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { logger } from "../../lib/logger.js";
 import nodemailer from "nodemailer";
+import { passwordPolicyError } from "../lib/passwordPolicy.js";
 
 const JWT_EXPIRES_IN = "24h";
 
@@ -176,11 +177,13 @@ export async function authPasswordUpdateHandler(req: Request, res: Response) {
   }
 
   try {
-    const passwordHash = await withDb(async (c) => {
-      const result = await c.query("SELECT password_hash FROM users WHERE id = $1 LIMIT 1", [userId]);
-      return result.rows[0]?.password_hash;
+    const account = await withDb(async (c) => {
+      const result = await c.query(`SELECT u.password_hash,t.settings->'securitySettings' AS policy FROM users u LEFT JOIN tenants t ON t.id=u.tenant_id WHERE u.id = $1 LIMIT 1`, [userId]);
+      return result.rows[0];
     });
-    if (!passwordHash || !(await bcrypt.compare(String(currentPassword), passwordHash))) {
+    const policyError = passwordPolicyError(String(newPassword), account?.policy);
+    if (policyError) return res.status(422).json({ error: policyError });
+    if (!account?.password_hash || !(await bcrypt.compare(String(currentPassword), account.password_hash))) {
       return res.status(401).json({ error: "Current password is incorrect." });
     }
     const newPasswordHash = await bcrypt.hash(String(newPassword), 10);

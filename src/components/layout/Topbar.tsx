@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { RoleAvatar } from "../ui";
 import { PasswordChangeModal } from "../ui/PasswordChangeModal";
-import { SETTINGS_MODULES } from "../../config/nav.config";
+import { getSettingsTabs } from "../../config/settingsConfigs";
 
 interface TopbarProps {
   onSetTab?: (tab: string, subTab?: string) => void;
@@ -41,6 +41,11 @@ interface TopbarProps {
 const SettingsDropdown: React.FC<{ onSetTab?: (tab: string, subTab?: string) => void }> = ({ onSetTab }) => {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  const { currentUser } = useSaaS();
+  const items = React.useMemo(
+    () => getSettingsTabs(currentUser?.role, currentUser?.permissions),
+    [currentUser?.role, currentUser?.permissions],
+  );
 
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -49,6 +54,8 @@ const SettingsDropdown: React.FC<{ onSetTab?: (tab: string, subTab?: string) => 
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="relative shrink-0" ref={ref}>
@@ -75,7 +82,7 @@ const SettingsDropdown: React.FC<{ onSetTab?: (tab: string, subTab?: string) => 
             <span className="text-[10px] font-black text-slate-600 dark:text-zinc-300 uppercase tracking-widest">Pengaturan Sistem</span>
           </div>
           <div className="p-1.5 grid grid-cols-2 gap-1">
-            {SETTINGS_MODULES.map((item) => {
+            {items.map((item) => {
               const ItemIcon = item.icon;
               return (
                 <button
@@ -84,7 +91,7 @@ const SettingsDropdown: React.FC<{ onSetTab?: (tab: string, subTab?: string) => 
                   className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-[10px] font-bold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
                   role="menuitem"
                 >
-                  <ItemIcon className={`w-4 h-4 ${item.iconColor}`} />
+                   <ItemIcon className="w-4 h-4 text-teal-600" />
                   <span className="truncate max-w-full text-center leading-tight">{item.label.split(" ")[0]}</span>
                 </button>
               );

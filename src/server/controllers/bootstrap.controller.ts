@@ -11,6 +11,22 @@ export function sanitizeServiceTicketsForBootstrap(tickets: Record<string, any>[
   return tickets.map(redactScreenLockPin);
 }
 
+export function redactTenantSettingsSecrets(tenant: Record<string, any>) {
+  const settings = tenant.settings || {};
+  const emailSettings = { ...(settings.emailSettings || {}) };
+  const notificationSettings = { ...(settings.notificationSettings || {}) };
+  const waConfig = { ...(settings.waConfig || {}) };
+  const smtpConfigured = Boolean(emailSettings.smtpPass);
+  const telegramConfigured = Boolean(notificationSettings.telegramBotToken);
+  const waConfigured = Boolean(waConfig.apiToken || waConfig.webhookSecret || waConfig.whatsappKey);
+  delete emailSettings.smtpPass;
+  delete notificationSettings.telegramBotToken;
+  delete waConfig.apiToken;
+  delete waConfig.webhookSecret;
+  delete waConfig.whatsappKey;
+  return { ...tenant, settings: { ...settings, emailSettings: { ...emailSettings, smtpConfigured }, notificationSettings: { ...notificationSettings, telegramConfigured }, waConfig: { ...waConfig, credentialsConfigured: waConfigured } } };
+}
+
 export async function platformBootstrapHandler(req: Request, res: Response) {
   if (req.authActor?.role !== "SUPER_ADMIN") {
     return res.status(403).json({ error: "Super Admin access is required." });
@@ -51,7 +67,7 @@ export async function bootstrapHandler(req: Request, res: Response) {
       pool.query(`select * from audit_logs where tenant_id = $1 LIMIT 500`, [tenantId]),
       pool.query(`select * from module_records where tenant_id = $1 LIMIT 500`, [tenantId]),
     ]).then((results) => ({
-      tenants: results[0].status === 'fulfilled' ? results[0].value.rows : [],
+       tenants: results[0].status === 'fulfilled' ? results[0].value.rows.map(redactTenantSettingsSecrets) : [],
       users: results[1].status === 'fulfilled' ? results[1].value.rows : [],
       userBranches: results[2].status === 'fulfilled' ? results[2].value.rows : [],
       branches: results[3].status === 'fulfilled' ? results[3].value.rows : [],

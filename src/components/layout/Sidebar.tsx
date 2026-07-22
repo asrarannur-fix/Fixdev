@@ -713,12 +713,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 {theme === "light" ? "Gelap" : "Terang"}
               </button>
-              <button
-                onClick={() => onSetTab("settings", "branding")}
-                className="flex-1 flex items-center justify-center gap-2 bg-slate-100/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-zinc-800 rounded-xl py-2 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer"
-              >
-                <Settings className="w-4 h-4" /> Pengaturan
-              </button>
+              {!isSuperAdmin && (
+                <button
+                  onClick={() => onSetTab("settings", "branding")}
+                  className="flex-1 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200/60 bg-slate-100/60 py-2 text-xs font-bold text-slate-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:border-zinc-800 dark:bg-slate-900/50 dark:text-slate-300"
+                >
+                  <Settings className="w-4 h-4" /> Pengaturan
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-3 bg-slate-100/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-zinc-800 rounded-xl px-3 py-2">
               <RoleAvatar role={currentUser.role} name={currentUser.name} size="sm" />

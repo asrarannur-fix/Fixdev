@@ -212,12 +212,10 @@ export async function dataSyncHandler(req: Request, res: Response) {
   const tenantId = (req as any).tenantId || "";
   if (!tenantId) return res.status(403).json({ error: "Tenant not resolved" });
   if (table === "tenants") {
-    if (action !== "update") {
-      return res.status(403).json({ error: "Tenant creation/deletion is not allowed through direct sync" });
-    }
-    if (String(data.id || "") !== String(tenantId)) {
-      return res.status(403).json({ error: "Cross-tenant update is forbidden" });
-    }
+    return res.status(403).json({ error: "Gunakan endpoint pengaturan khusus untuk memperbarui tenant." });
+  }
+  if (table === "branches" && action === "insert") {
+    return res.status(403).json({ error: "Gunakan endpoint cabang khusus untuk membuat cabang." });
   }
 
   try {

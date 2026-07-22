@@ -9,7 +9,7 @@ import express from "express";
 import path from "path";
 import rateLimit from "express-rate-limit";
 import { logger } from "./src/lib/logger.js";
-import { requireAdminToken, requireSuperAdmin, requireJwt, requireTenantScope, requireRoles } from "./src/middleware/auth.middleware.js";
+import { requireAdminToken, requireSuperAdmin, requireJwt, requireTenantScope, requireRoles, requireSettingsDomain } from "./src/middleware/auth.middleware.js";
 import { requireFeature } from "./src/middleware/feature.middleware.js";
 import {
   bootstrapHandler,
@@ -226,8 +226,8 @@ app.use("/api/billing", billingRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use("/api/ai", requireJwt, requireTenantScope, requireFeature("AI_DIAGNOSE"), aiRoutes);
 app.use("/api/tenant", requireJwt, requireTenantScope, tenantRoutes);
-app.post("/api/tenant/telegram/test", requireJwt, requireTenantScope, telegramTestHandler);
-app.post("/api/tenant/whatsapp/test", requireJwt, requireTenantScope, whatsappTestHandler);
+app.post("/api/tenant/telegram/test", requireJwt, requireTenantScope, requireSettingsDomain("notification"), telegramTestHandler);
+app.post("/api/tenant/whatsapp/test", requireJwt, requireTenantScope, requireSettingsDomain("whatsapp"), whatsappTestHandler);
 app.use("/api/service-receptions", serviceReceptionRoutes);
 app.use("/api/services", serviceWorkflowRoutes);
 app.use("/api/micro-components", microComponentsRoutes);

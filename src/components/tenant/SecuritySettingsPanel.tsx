@@ -57,7 +57,6 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
 
   const handleSave = async () => {
     if (!updateTenant || !currentTenantId) return;
-    const current = tenantObj?.settings || {};
     const safeSecuritySettings = {
       sessionTimeout: clampNumber(sessionTimeout, 15, 480),
       minPasswordLength: clampNumber(minPasswordLength, 6, 32),
@@ -71,14 +70,7 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
     };
     try {
       await updateTenant(currentTenantId, {
-        settings: {
-          ...current,
-          authSettings: {
-            ...(current.authSettings || {}),
-            requireMfa: enableMFA,
-          },
-          securitySettings: safeSecuritySettings,
-        },
+        settings: { securitySettings: safeSecuritySettings },
       });
       showToast("Pengaturan keamanan berhasil disimpan!", "success");
     } catch (error: any) {

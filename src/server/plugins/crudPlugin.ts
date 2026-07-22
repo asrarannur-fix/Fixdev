@@ -11,7 +11,7 @@
  */
 
 import express from "express";
-import { dbQuery } from "../../lib/db.js";
+import { dbQuery, dbTransaction } from "../../lib/db.js";
 import { toApiResponse } from "../utils/responseTransform.js";
 import { requireJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 import { requireFeature } from "../../middleware/feature.middleware.js";
@@ -187,8 +187,10 @@ export async function getCrud(req: express.Request, res: express.Response) {
 export async function createCrud(req: express.Request, res: express.Response) {
   const cfg = req.crudCfg!;
   const cols = req.crudColumns!;
+  if (cfg.table === "branches") return res.status(403).json({ error: "Gunakan endpoint cabang khusus untuk membuat cabang." });
+  const tenantId = req.tenantId;
   const sanitized = sanitizePayloadForTable(cfg.table, req.body || {}, cols);
-  if (hasColumn(cols, "tenant_id") && req.tenantId) sanitized.tenant_id = req.tenantId;
+  if (hasColumn(cols, "tenant_id") && tenantId) sanitized.tenant_id = tenantId;
   if (hasColumn(cols, "branch_id") && req.branchId) sanitized.branch_id = req.branchId;
 
   Object.keys(sanitized).forEach((k) => {
@@ -200,10 +202,19 @@ export async function createCrud(req: express.Request, res: express.Response) {
 
   const colSql = keys.join(",");
   const valSql = keys.map((_, i) => `$${i + 1}`).join(",");
-  const result = await dbQuery(
+  const insert = (client: { query: typeof dbQuery }) => client.query(
     `INSERT INTO ${cfg.table} (${colSql}) VALUES (${valSql}) RETURNING *`,
     keys.map((k) => sanitized[k]),
   );
+  const result = cfg.table === "branches" && tenantId
+    ? await dbTransaction(async (client) => {
+        const tenant = await client.query(`SELECT COALESCE((settings#>>'{limits,branches}')::int, 999) AS limit FROM tenants WHERE id = $1 FOR UPDATE`, [tenantId]);
+        const count = await client.query(`SELECT COUNT(*)::int AS count FROM branches WHERE tenant_id = $1`, [tenantId]);
+        if (Number(count.rows[0]?.count) >= Number(tenant.rows[0]?.limit)) return null;
+        return insert(client);
+      })
+    : await insert({ query: dbQuery });
+  if (!result) return res.status(403).json({ error: "Batas cabang tenant tercapai." });
   res.status(201).json(toApiResponse(result.rows[0]));
 }
 

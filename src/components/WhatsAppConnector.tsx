@@ -501,7 +501,6 @@ export const WhatsAppConnector: React.FC = () => {
     const current = activeTenant.settings?.waConfig || {};
     void updateTenant(currentTenantId, {
       settings: {
-        ...(activeTenant.settings || {}),
         waConfig: { ...current, ...debouncedWaConfig },
       },
     }).catch((error: any) => {

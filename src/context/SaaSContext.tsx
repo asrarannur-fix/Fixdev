@@ -420,8 +420,8 @@ interface SaaSContextType {
   updateWorkflow: (id: string, updates: Partial<ERPWorkflow>) => Promise<void>;
   deleteWorkflow: (id: string) => Promise<void>;
   executeWorkflow: (id: string) => Promise<void>;
-  updateUserRole: (userId: string, role: UserRole) => void;
-  updateUserPermissions: (userId: string, permissions: string[]) => void;
+  updateUserRole: (userId: string, role: UserRole) => Promise<void>;
+  updateUserPermissions: (userId: string, permissions: string[]) => Promise<void>;
   addUser: (
     user: Omit<
       User,
@@ -2086,9 +2086,36 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateTenant = async (id: string, updates: Partial<Tenant>) => {
     const current = tenants.find((tenant) => tenant.id === id);
     if (!current) throw new Error("Tenant tidak ditemukan.");
-    const updated = { ...current, ...updates };
-    await syncToApi("tenants", "update", updated);
-    setTenants((prev) => prev.map((tenant) => (tenant.id === id ? updated : tenant)));
+    const updated = {
+      ...current,
+      ...updates,
+      settings: updates.settings ? { ...(current.settings || {}), ...updates.settings } : current.settings,
+    };
+    const domainUpdates = [
+      ...(updates.settings ? Object.entries(updates.settings) : []),
+      ...(updates.branding ? [["branding", updates.branding] as const] : []),
+    ];
+    let saved = updated;
+    if (domainUpdates.length) {
+      let expectedVersion = current.version ?? 1;
+      for (const [domain, value] of domainUpdates) {
+        const response = await apiFetch(`/api/tenant/settings/${encodeURIComponent(domain)}`, {
+          method: "PUT",
+          body: JSON.stringify({ expectedVersion, value }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (response.status === 403) throw new Error(data.error || "Anda tidak memiliki izin mengubah pengaturan ini.");
+          if (response.status === 409) throw new Error(data.error || "Pengaturan telah berubah. Muat ulang lalu coba lagi.");
+          throw new Error(data.error || `Gagal menyimpan pengaturan (HTTP ${response.status}).`);
+        }
+        saved = { ...saved, ...data, settings: { ...(saved.settings || {}), ...(data.settings || {}) } };
+        expectedVersion = data.version ?? expectedVersion + 1;
+      }
+    } else {
+      await syncToApi("tenants", "update", updated);
+    }
+    setTenants((prev) => prev.map((tenant) => (tenant.id === id ? saved : tenant)));
     addLog(
       "Update Tenant Settings",
       `Memperbarui konfigurasi tenant ID: ${id}`,
@@ -4414,10 +4441,18 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-    const updateUserPermissions = (userId: string, permissions: string[]) => {
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, permissions } : u)));
-    syncToApi("users", "update", { id: userId, permissions });
+    const updateUserPermissions = async (userId: string, permissions: string[]) => {
     const targetUser = users.find((u) => u.id === userId);
+    if (!targetUser) throw new Error("Pengguna tidak ditemukan.");
+    const response = await apiFetch(`/api/tenant/rbac/users/${encodeURIComponent(userId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ role: targetUser.role, permissions }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || (response.status === 403 ? "Anda tidak memiliki izin mengubah hak akses." : response.status === 409 ? "Hak akses telah berubah. Muat ulang lalu coba lagi." : `Gagal menyimpan hak akses (HTTP ${response.status}).`));
+    }
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, permissions } : u)));
     if (targetUser) {
       addLog(
         "Update Permissions",
@@ -4428,10 +4463,17 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const updateUserRole = (userId: string, role: UserRole) => {
+  const updateUserRole = async (userId: string, role: UserRole) => {
     const newPermissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
+    const response = await apiFetch(`/api/tenant/rbac/users/${encodeURIComponent(userId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ role, permissions: newPermissions }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || (response.status === 403 ? "Anda tidak memiliki izin mengubah peran." : response.status === 409 ? "Peran telah berubah. Muat ulang lalu coba lagi." : `Gagal menyimpan peran (HTTP ${response.status}).`));
+    }
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role, permissions: newPermissions } : u)));
-    syncToApi("users", "update", { id: userId, role, permissions: newPermissions });
     const targetUser = users.find((u) => u.id === userId);
     if (targetUser) {
       addLog(

@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { dbQuery, dbTransaction } from "../../lib/db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { passwordPolicyError } from "../lib/passwordPolicy.js";
 
 export async function validateInvitation(req: Request, res: Response) {
   const token = String(req.query.token || "");

@@ -64,17 +64,16 @@ export const OperationalSettingsPanel: React.FC<Props> = ({ currentTenantId, ten
 
     setIsSaving(true);
     try {
-      await updateTenant(currentTenantId, {
-        settings: {
-          ...s,
-          serviceSettings: { defaultDiagnosisFee: safeDiagFee, requireEstimateApproval: requireEstApprove, allowProceedWithoutApproval: allowProceedNoApprove, slaHours: safeSlaHours, autoAssignTechnician: autoAssign },
-          posSettings: { maxDiscount: safeMaxDiscount, allowNegativeStock: allowNegStock, requireVoidApproval: voidApprove, requireCloseCash: closeCash },
-          purchaseSettings: { hppMethod, requireAdjustmentApproval: adjustApprove },
-          inventorySettings: { enableStockAlert: stockAlert },
-          accountingSettings: { autoJournalEnabled: autoJournal },
-          hrSettings: { defaultWorkHours: safeWorkHours, graceLateMinutes: safeGraceLate, enableOvertime, overtimeRate: safeOvertimeRate },
-        },
-      });
+      const settings = activeSection === "service"
+        ? { serviceSettings: { defaultDiagnosisFee: safeDiagFee, requireEstimateApproval: requireEstApprove, allowProceedWithoutApproval: allowProceedNoApprove, slaHours: safeSlaHours, autoAssignTechnician: autoAssign } }
+        : activeSection === "pos"
+          ? { posSettings: { maxDiscount: safeMaxDiscount, allowNegativeStock: allowNegStock, requireVoidApproval: voidApprove, requireCloseCash: closeCash } }
+          : activeSection === "stok"
+            ? { inventorySettings: { hppMethod, requireAdjustmentApproval: adjustApprove, enableStockAlert: stockAlert } }
+            : activeSection === "accounting"
+              ? { accountingSettings: { autoJournalEnabled: autoJournal } }
+              : { hrmSettings: { defaultWorkHours: safeWorkHours, graceLateMinutes: safeGraceLate, enableOvertime, overtimeRate: safeOvertimeRate } };
+      await updateTenant(currentTenantId, { settings });
       showToast("Pengaturan operasional berhasil disimpan!", "success");
     } catch (error: any) {
       showToast(error.message || "Pengaturan operasional gagal disimpan.", "error");

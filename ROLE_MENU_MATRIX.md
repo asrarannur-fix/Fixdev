@@ -39,4 +39,15 @@ Contoh pemetaan (seed):
 - Batasan UI dihitung dari `tenant.rbacMatrix[currentUser.role]` (`Sidebar.tsx:231`, `HorizontalNavbar.tsx:231`).
 - **Matriks dapat diedit** di `RBACManager` (Settings → rbac) via `EditableRbacMatrix.tsx`; perubahan disimpan ke `tenant.rbacMatrix` & langsung berlaku pada Sidebar/Navbar.
 - Permission disimpan di kolom `users.permissions` (tipe `TEXT[]`) — lihat `DATABASE_SCHEMA_GUARDRAIL.md`.
+- Perubahan role dan permission dari `RBACManager` menunggu respons API sebelum memperbarui state lokal serta menampilkan error otorisasi/konflik.
+- Panel pengaturan aktif mengirim pembaruan per domain melalui endpoint tenant settings; setiap domain divalidasi dengan schema ketat dan tidak boleh mengubah limit milik billing.
+- Nilai rahasia email, Telegram, dan WhatsApp yang kosong, disamarkan, atau tidak dikirim mempertahankan secret tersimpan melalui merge di server.
+- Bootstrap tenant tidak mengirim `smtpPass`, `telegramBotToken`, `apiToken`, `webhookSecret`, atau `whatsappKey`; respons hanya menyertakan status konfigurasi.
+- Route uji Telegram/WhatsApp hanya boleh dipakai `OWNER`, `ADMIN`, atau pengguna dengan izin granular `settings:notification`/`settings:whatsapp`.
+- File terkait: `src/context/SaaSContext.tsx`, `src/components/RBACManager.tsx`, `src/components/TelegramBotManager.tsx`, `src/components/WhatsAppConnector.tsx`, `src/components/tenant/AppSettingsPanel.tsx`, `src/components/tenant/OperationalSettingsPanel.tsx`, `src/components/tenant/SecuritySettingsPanel.tsx`, `src/types/index.ts`.
+- Pembersihan panel pengaturan menghapus 14 komponen dan wrapper duplikat yang tidak memiliki referensi: `BrandingSettingsPanel`, `BackupPanel`, `ComingSoonPanel`, `ComplaintTemplateSettings`, `DeveloperAPIPanel`, `EmailSettingsPanel`, `GeneralSettingsPanel`, `ModulesParameterPanel`, `NotificationsSettingsPanel`, `PaymentSettingsPanel`, `RBACPanel`, `StoragePanel`, `SubscriptionPanel`, dan `WorkflowsBuilderPanel`. `BranchesManagerPanel` tetap dipakai oleh `SettingsTab`.
+- File terkait pembersihan: `src/components/tenant/settings/BrandingSettingsPanel.tsx`, `src/components/tenant/settings/panels/*.tsx`, `src/components/tenant/SettingsTab.tsx`.
+- Dropdown dan konten Settings memakai registri kanonis `src/config/settingsConfigs.ts`; tab sensitif difilter memakai role/permission dari server, sedangkan otorisasi mutasi tetap ditegakkan middleware server.
+- Pengaturan storage platform tidak tersedia pada UI tenant. `SUPER_ADMIN` tidak diarahkan ke route Settings tenant tanpa konteks tenant.
+- Pencarian Settings hanya menyaring pilihan tanpa mengganti konten aktif secara implisit; kontrol navigasi mendukung fokus keyboard, target minimum 44 px, dan overflow responsif.
 - Jangan hardcode role selain `SUPER_ADMIN` untuk bypass akses; gunakan matrix tenant.

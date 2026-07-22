@@ -51,17 +51,16 @@ export const TelegramBotManager: React.FC = () => {
 
   const handleSave = async () => {
     if (!updateTenant) return;
-    const current = activeTenant?.settings || {};
+    const current = activeTenant?.settings?.notificationSettings || {};
     const cleanToken = botToken.trim();
     const cleanChatId = chatId.trim();
     try {
       await updateTenant(currentTenantId, {
         settings: {
-          ...current,
           notificationSettings: {
-            ...current.notificationSettings,
+            ...current,
             telegramEnabled: isEnabled,
-            telegramBotToken: cleanToken,
+            ...(cleanToken ? { telegramBotToken: cleanToken } : {}),
             telegramChatId: cleanChatId,
           },
         },

@@ -79,21 +79,16 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
       Math.min(max, Math.max(min, Number.isFinite(value) ? Math.trunc(value) : min));
     setIsSaving(true);
     try {
-      await updateTenant(currentTenantId, {
-        branding: {
-          ...tenantObj?.branding,
-          primaryColor: cleanPrimary,
-          secondaryColor: cleanSecondary,
-        },
-        settings: {
-          ...s,
-          generalSettings: { appName: appName.trim() || "ERP", timezone, dateFormat, language, maintenanceMode },
-          customerPortalSettings: { enableStatusCheck, enableEstimateApproval: enableEstApprove, enableInvoiceView, enableWarrantyView, enableTicketTracking, hideInternalNotes, hideProfit },
-          emailSettings: { smtpHost: smtpHost.trim(), smtpPort: clamp(smtpPort, 1, 65535), smtpUser: smtpUser.trim(), smtpPass, defaultFromEmail: cleanFromEmail, enablePushNotifications: enablePush, enableRealtimeNotifications: enableRealtime },
-          fileUploadSettings: { maxUploadSizeMb: clamp(maxUploadMb, 1, 100), allowedFileTypes: allowedTypes.trim(), retentionDays: clamp(retentionDays, 30, 3650), fileVisibility },
-          themeSettings: { primaryColor: cleanPrimary, secondaryColor: cleanSecondary, darkMode, sidebarMode, layoutDensity },
-        },
-      });
+      const settings = activeSection === "general"
+        ? { generalSettings: { appName: appName.trim() || "ERP", timezone, dateFormat, language, maintenanceMode } }
+        : activeSection === "portal"
+          ? { portalSettings: { enableStatusCheck, enableEstimateApproval: enableEstApprove, enableInvoiceView, enableWarrantyView, enableTicketTracking, hideInternalNotes, hideProfit } }
+          : activeSection === "email"
+            ? { emailSettings: { smtpHost: smtpHost.trim(), smtpPort: clamp(smtpPort, 1, 65535), smtpUser: smtpUser.trim(), ...(smtpPass ? { smtpPass } : {}), defaultFromEmail: cleanFromEmail, enablePushNotifications: enablePush, enableRealtimeNotifications: enableRealtime } }
+            : activeSection === "file"
+              ? { uploadSettings: { maxUploadSizeMb: clamp(maxUploadMb, 1, 100), allowedFileTypes: allowedTypes.trim(), retentionDays: clamp(retentionDays, 30, 3650), fileVisibility } }
+              : { themeSettings: { primaryColor: cleanPrimary, secondaryColor: cleanSecondary, darkMode, sidebarMode, layoutDensity } };
+      await updateTenant(currentTenantId, { settings });
       showToast("Pengaturan aplikasi berhasil disimpan!", "success");
     } catch (error: any) {
       showToast(error.message || "Pengaturan aplikasi gagal disimpan.", "error");

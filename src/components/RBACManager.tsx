@@ -180,11 +180,15 @@ export const RBACManager: React.FC = () => {
     "action-hr-payroll-approve": "Persetujuan Slip Gaji Massal",
   };
 
-  const saveEditPerms = () => {
+  const saveEditPerms = async () => {
     if (!editingUser) return;
-    updateUserPermissions(editingUser.id, editPerms);
-    showToast(`Hak akses ${editingUser.name} disimpan.`, "success");
-    setEditingUser(null);
+    try {
+      await updateUserPermissions(editingUser.id, editPerms);
+      showToast(`Hak akses ${editingUser.name} disimpan.`, "success");
+      setEditingUser(null);
+    } catch (error: any) {
+      showToast(error.message || "Gagal menyimpan hak akses.", "error");
+    }
   };
 
   const handleAddUser = (e: React.FormEvent) => {
@@ -396,9 +400,14 @@ export const RBACManager: React.FC = () => {
                       </span>
                       <select
                         value={user.role}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           if (user.tenantId !== currentTenantId) return;
-                          updateUserRole(user.id, e.target.value as UserRole);
+                          try {
+                            await updateUserRole(user.id, e.target.value as UserRole);
+                            showToast(`Peran ${user.name} disimpan.`, "success");
+                          } catch (error: any) {
+                            showToast(error.message || "Gagal menyimpan peran.", "error");
+                          }
                         }}
                         className="block w-auto max-w-[130px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-600 outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={(user.id === currentUser.id && user.role === UserRole.OWNER) || user.tenantId !== currentTenantId}

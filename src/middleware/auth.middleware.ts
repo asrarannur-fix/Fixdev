@@ -237,6 +237,20 @@ export const requireRoles = (...roles: string[]) => (
 
 export const requireSuperAdmin = requireRoles("SUPER_ADMIN");
 
+export const requireSettingsDomain = (domainParam = "domain") => (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const actor = req.authActor;
+  if (!actor) return res.status(401).json({ error: "Authentication is required." });
+  if (["OWNER", "ADMIN"].includes(actor.role)) return next();
+  const domain = String(req.params[domainParam] || "").trim();
+  if (actor.permissions.includes("*") || actor.permissions.includes("settings") || actor.permissions.includes(`settings:${domain}`)) return next();
+  logger.warn({ userId: actor.userId, role: actor.role, domain, path: req.path }, "Settings domain authorization denied");
+  return res.status(403).json({ error: "You do not have permission for this settings domain." });
+};
+
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /**
