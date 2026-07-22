@@ -57,6 +57,7 @@ interface HorizontalNavbarProps {
   setActiveSubTab: (subTab: string) => void;
   navigationMode: "sidebar" | "horizontal";
   setNavigationMode: (mode: "sidebar" | "horizontal") => void;
+  tenantWorkspace?: boolean;
 }
 
 export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
@@ -66,10 +67,11 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
   setActiveSubTab,
   navigationMode,
   setNavigationMode,
+  tenantWorkspace = false,
 }) => {
   const { currentUser, tenants, currentTenantId } = useSaaS();
   const activeTenant = tenants.find((t) => t.id === currentTenantId);
-  const isSuperAdmin = currentUser.role === UserRole.SUPER_ADMIN;
+  const isSuperAdmin = currentUser.role === UserRole.SUPER_ADMIN && !tenantWorkspace;
   const isOwner = currentUser.role === UserRole.OWNER;
 
   const [lockedFeatureInfo, setLockedFeatureInfo] = useState<{

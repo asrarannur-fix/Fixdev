@@ -24,7 +24,8 @@ test("invitation provisioning tracks completion and compensation failure", () =>
   assert.match(invitation, /provisioning_status='PROVISIONING'/);
   assert.match(invitation, /provisioning_status='COMPLETED'/);
   assert.match(invitation, /provisioning_status='FAILED'/);
-  assert.match(invitation, /deleteUser\(authUserId\)/);
+  assert.match(invitation, /password_hash/);
+  assert.doesNotMatch(invitation, /ARRAY\['\*'\]/);
   assert.match(migration, /provisioning_status/);
 });
 

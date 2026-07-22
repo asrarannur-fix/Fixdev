@@ -48,8 +48,8 @@ VALUES (
         "name": "SaaS Professional ERP",
         "priceMonthly": 250000,
         "priceYearly": 2400000,
-        "features": ["Semua Fitur Basic", "Double-Entry Accounting & Ledger", "WhatsApp Broadcast", "Multi-Branch & Cabang (Maks 5)", "Maks 15 Staff User", "Penyimpanan 2GB"],
-        "limits": { "users": 15, "branches": 5, "storageMb": 2048, "features": ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM"] }
+        "features": ["Semua Fitur Basic", "Double-Entry Accounting & Ledger", "WhatsApp Broadcast", "AI Repair Diagnostik", "Multi-Branch & Cabang (Maks 5)", "Maks 15 Staff User", "Penyimpanan 2GB"],
+        "limits": { "users": 15, "branches": 5, "storageMb": 2048, "features": ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE"] }
       },
       {
         "tier": "ENTERPRISE",
@@ -57,7 +57,7 @@ VALUES (
         "priceMonthly": 1500000,
         "priceYearly": 15000000,
         "features": ["Semua Fitur Pro", "Integrasi Marketplace Sync", "Workflow Builder (Automasi)", "Proteksi Keamanan & Fraud Detector", "Hingga 20 Cabang", "Hingga 100 Staff User", "Penyimpanan 10GB", "Custom Domain & White-Label"],
-        "limits": { "users": 100, "branches": 20, "storageMb": 10240, "features": ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "MARKETPLACE", "RENTAL", "SECURITY"] }
+        "limits": { "users": 100, "branches": 20, "storageMb": 10240, "features": ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE", "MARKETPLACE", "RENTAL", "SECURITY"] }
       }
     ]'::jsonb
   )

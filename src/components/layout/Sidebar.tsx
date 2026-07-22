@@ -98,6 +98,7 @@ interface SidebarProps {
   onClose?: () => void;
   onOpenSearch?: () => void;
   navigationMode?: "sidebar" | "horizontal";
+  tenantWorkspace?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -108,6 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClose,
   onOpenSearch,
   navigationMode = "sidebar",
+  tenantWorkspace = false,
 }) => {
   const {
     currentUser,
@@ -121,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     logoutUser,
   } = useSaaS();
   const activeTenant = tenants.find((t) => t.id === currentTenantId);
-  const isSuperAdmin = currentUser.role === UserRole.SUPER_ADMIN;
+  const isSuperAdmin = currentUser.role === UserRole.SUPER_ADMIN && !tenantWorkspace;
   const isOwner = currentUser.role === UserRole.OWNER;
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);

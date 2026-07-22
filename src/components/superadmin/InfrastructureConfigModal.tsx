@@ -464,7 +464,7 @@ export const InfrastructureConfigModal: React.FC<
             Batal
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               const cleanName = configName.trim();
               const cleanSubdomain = configSubdomain
                 .trim()
@@ -484,7 +484,7 @@ export const InfrastructureConfigModal: React.FC<
               const safeUsers = Math.max(1, Math.floor(configUserLimit) || 1);
               const safeBranches = Math.max(1, Math.floor(configBranchLimit) || 1);
 
-              updateTenant(selectedTenantForConfig, {
+              await updateTenant(selectedTenantForConfig, {
                 name: cleanName,
                 tier: configTier,
                 status: configStatus,

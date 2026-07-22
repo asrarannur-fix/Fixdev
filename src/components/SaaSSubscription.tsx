@@ -55,6 +55,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
   const printConfig = usePrintConfig();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
 
+  const [simpleView, setSimpleView] = useState<"overview" | "invoices" | "settings">("overview");
   const [selectedTenantId, setSelectedTenantId] = useState<string>(() => {
     return isSuperAdmin ? tenants[0]?.id || "" : currentTenantId;
   });
@@ -255,7 +256,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
   });
 
   const loadManualRequests = async () => {
-    const query = isSuperAdmin ? "" : `?tenantId=${selectedTenantId}`;
+    const query = selectedTenantId ? `?tenantId=${encodeURIComponent(selectedTenantId)}` : "";
     const response = await apiFetch(`/api/billing/manual-payments${query}`);
     if (response.ok) {
       const data = await response.json();
@@ -292,23 +293,23 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       setManualSubmitting(true);
       const uploadResponse = await apiFetch(`/api/billing/invoices/${manualInvoice.id}/manual-payments/upload-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId },
         body: JSON.stringify({ tenantId: selectedTenantId, fileName: manualProof.name, contentType: manualProof.type, sizeBytes: manualProof.size }),
       });
       if (!uploadResponse.ok) throw new Error((await uploadResponse.json()).error || "Upload URL gagal dibuat");
       const upload = await uploadResponse.json();
-      const storageResponse = await fetch(upload.signedUploadUrl, {
+      const storageResponse = await apiFetch(upload.signedUploadUrl, {
         method: "PUT",
-        headers: { "Content-Type": manualProof.type },
+        headers: { "Content-Type": manualProof.type, "X-Tenant-ID": selectedTenantId },
         body: manualProof,
       });
       if (!storageResponse.ok) throw new Error("Bukti pembayaran gagal diunggah");
 
       const submitResponse = await apiFetch(`/api/billing/invoices/${manualInvoice.id}/manual-payments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tenantId: selectedTenantId,
+method: "POST",
+         headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId },
+         body: JSON.stringify({
+           tenantId: selectedTenantId,
           method: manualMethod,
           paidAt: new Date(manualPaidAt).toISOString(),
           payerName: manualPayerName,
@@ -477,7 +478,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       if (manualQrisFile) {
         if (!["image/jpeg", "image/png"].includes(manualQrisFile.type) || manualQrisFile.size > 2 * 1024 * 1024) throw new Error("QRIS harus JPG atau PNG maksimal 2 MB.");
         const upload = await readJsonResponse<any>(await apiFetch("/api/billing/manual-payment-config/qris-upload", { method: "POST", body: JSON.stringify({ fileName: manualQrisFile.name, contentType: manualQrisFile.type, sizeBytes: manualQrisFile.size }) }), "Upload QRIS");
-        const storageResponse = await fetch(upload.signedUploadUrl, { method: "PUT", headers: { "Content-Type": manualQrisFile.type }, body: manualQrisFile });
+        const storageResponse = await apiFetch(upload.signedUploadUrl, { method: "PUT", headers: { "Content-Type": manualQrisFile.type }, body: manualQrisFile });
         if (!storageResponse.ok) throw new Error("Gambar QRIS gagal diunggah.");
         qrisObjectPath = upload.objectPath;
         qrisOriginalName = manualQrisFile.name;
@@ -632,33 +633,34 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
     );
   }
 
-  if (isSuperAdmin && tenants.length === 0) {
-    return (
-      <div
-        className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-10 text-center max-w-xl mx-auto shadow-sm my-10 animate-fadeIn"
-        id="saas-billing-empty"
-      >
-        <Building className="w-14 h-14 text-indigo-500 mx-auto mb-4 bg-accent-lighter dark:bg-indigo-950/40 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/30" />
-        <h3 className="font-extrabold text-slate-800 dark:text-zinc-200 text-base">
-          Belum Ada Tenant Terdaftar
-        </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 mb-6 leading-relaxed">
-          Sistem SaaS saat ini belum memiliki tenant aktif terdaftar. Silakan
-          daftarkan tenant atau usaha baru terlebih dahulu melalui tab{" "}
-          <strong className="text-accent dark:text-accent">
-            Kelola Tenant
-          </strong>{" "}
-          di sidebar sebelum mengonfigurasi billing.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div
-      className="space-y-6 max-w-7xl mx-auto animate-fadeIn"
+      className={`billing-view-${simpleView} space-y-6 max-w-7xl mx-auto animate-fadeIn`}
       id="saas-billing-container"
     >
+      <style>{`
+        .billing-view-overview #billing-invoices,.billing-view-overview #billing-review,.billing-view-overview #billing-config,.billing-view-overview #billing-recurring,.billing-view-overview #saas-plan-editor,.billing-view-overview #saas-gateway-setup{display:none}
+        .billing-view-invoices #sa-billing-reconciliation,.billing-view-invoices #billing-tenant-summary,.billing-view-invoices #billing-plans,.billing-view-invoices #billing-config,.billing-view-invoices #billing-recurring,.billing-view-invoices #saas-plan-editor,.billing-view-invoices #saas-gateway-setup{display:none}
+        .billing-view-settings #sa-billing-reconciliation,.billing-view-settings #billing-tenant-summary,.billing-view-settings #billing-plans,.billing-view-settings #billing-invoices,.billing-view-settings #billing-review{display:none}
+      `}</style>
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.24),_transparent_42%),linear-gradient(135deg,#020617,#172554_55%,#312e81)] px-5 py-6 text-white sm:px-8 sm:py-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100"><ShieldCheck className="h-3.5 w-3.5" /> Billing Control Plane</span>
+              <h2 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">Pendapatan langganan dalam satu ruang kerja</h2>
+              <p className="mt-2 max-w-xl text-xs leading-6 text-slate-300 sm:text-sm">Kelola paket, invoice, metode pembayaran, settlement, dan recurring billing dengan tenant scope serta audit yang jelas.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+              {[{label:"Tenant",value:tenants.length},{label:"Invoice",value:invoices.length},{label:"Perlu review",value:manualRequests.filter((item)=>item.status==="SUBMITTED").length},{label:"Overdue",value:overdueInvoices}].map((item)=><div key={item.label} className="min-w-24 rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p><p className="mt-1 text-xl font-black">{item.value}</p></div>)}
+            </div>
+          </div>
+        </div>
+        <nav className="grid grid-cols-3 gap-2 border-t border-white/5 bg-slate-950 p-3" aria-label="Navigasi billing">
+          {([['overview','Ringkasan'],['invoices','Tagihan'],['settings','Pengaturan']] as const).map(([view,label])=><button key={view} type="button" onClick={()=>setSimpleView(view)} aria-pressed={simpleView===view} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${simpleView===view?'bg-white text-slate-950 shadow':'border border-slate-700 text-slate-300 hover:border-indigo-400 hover:text-white'}`}>{label}</button>)}
+        </nav>
+      </section>
+
       {(billingError || usingFallbackPlans) && (
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -680,7 +682,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       )}
       {/* Super Admin Tenant Selector dropdown */}
       {isSuperAdmin && (
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div id="billing-context" className="scroll-mt-24 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 className="font-extrabold text-sm text-slate-800 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-2">
               <Building className="w-5 h-5 text-accent" /> Pilih Tenant
@@ -734,7 +736,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       )}
 
       {/* 1. Header Banner & Current Subscription Stats */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-900/50 rounded-xl md:rounded-2xl p-4 md:p-6 text-white shadow-lg relative overflow-hidden">
+      <div id="billing-tenant-summary" className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-900/50 rounded-xl md:rounded-2xl p-4 md:p-6 text-white shadow-lg relative overflow-hidden">
         {/* Background glow effects */}
         <div className="absolute right-0 top-0 w-60 md:w-80 h-60 md:h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute left-1/3 bottom-0 w-40 md:w-60 h-40 md:h-60 bg-teal-500/5 rounded-full blur-2xl pointer-events-none" />
@@ -868,7 +870,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       </div>
 
       {/* 2. Plan Switcher & Subscription Packages Cards */}
-      <div className="space-y-4">
+      <div id="billing-plans" className="scroll-mt-24 space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="font-extrabold text-sm text-slate-800 dark:text-zinc-200 uppercase tracking-wider">
@@ -1033,7 +1035,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       </div>
 
       {/* 3. Secure Recurring Automated Billing System */}
-      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div id="billing-recurring" className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
           <div className="w-10 h-10 bg-accent-lighter dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 rounded-xl flex items-center justify-center text-accent">
             <RefreshCw className="w-5 h-5 animate-spin animate-duration-10000" />
@@ -1059,7 +1061,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
               <li>Masa aktif mencapai tanggal jatuh tempo</li>
             </ul>
           </div>
-          <button
+          {isSuperAdmin && <button
             onClick={handleRunCronSimulation}
             disabled={readOnlyMode || cronLoading}
             className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-900/50 disabled:cursor-not-allowed text-white font-mono text-xs md:text-sm font-bold py-2.5 md:py-3 px-4 rounded-xl flex items-center justify-center gap-2 border border-slate-800 hover:shadow-lg hover:shadow-slate-950/50 transition-all"
@@ -1075,7 +1077,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                 Cron Job
               </>
             )}
-          </button>
+          </button>}
         </div>
 
         {/* Live Rolling Logs Console Output */}
@@ -1148,7 +1150,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             </div>
           </div>
 
-          <form onSubmit={handleSavePlanConfig} className="space-y-6">
+          <form onSubmit={handleSavePlanConfig} className="space-y-6"><fieldset disabled={readOnlyMode || usingFallbackPlans} className="contents disabled:opacity-60">
             {/* Package Tier Selector Tabs */}
             <div>
               <label className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-2">
@@ -1417,7 +1419,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={planSaveLoading}
+                disabled={readOnlyMode || usingFallbackPlans || planSaveLoading}
                 className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
               >
                 {planSaveLoading ? (
@@ -1428,12 +1430,12 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                 Simpan Paket &amp; Terapkan Secara Global
               </button>
             </div>
-          </form>
+          </fieldset></form>
         </div>
       )}
 
       {isSuperAdmin && (
-        <form onSubmit={handleSaveManualConfig} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" id="manual-payment-settings">
+        <form onSubmit={handleSaveManualConfig} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" id="billing-config"><fieldset disabled={readOnlyMode} className="contents disabled:opacity-60">
           <div className="border-b border-slate-100 pb-4 dark:border-zinc-800"><h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Pembayaran Manual</h3><p className="mt-1 text-xs text-slate-500">Atur rekening tujuan, QRIS statis merchant, dan instruksi yang dilihat tenant.</p></div>
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             <section className="space-y-3 rounded-2xl border border-slate-200 p-4 dark:border-zinc-800"><label className="flex items-center justify-between text-xs font-bold"><span>Aktifkan transfer bank</span><input type="checkbox" checked={manualConfig.bankTransferEnabled} onChange={(e) => setManualConfig({ ...manualConfig, bankTransferEnabled: e.target.checked })} /></label><label className="block text-xs font-bold">Nama bank<input value={manualConfig.bankName} onChange={(e) => setManualConfig({ ...manualConfig, bankName: e.target.value })} placeholder="BCA / BRI / Mandiri" className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 dark:border-zinc-700 dark:bg-zinc-950" /></label><label className="block text-xs font-bold">Nomor rekening<input value={manualConfig.accountNumber} onChange={(e) => setManualConfig({ ...manualConfig, accountNumber: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 dark:border-zinc-700 dark:bg-zinc-950" /></label><label className="block text-xs font-bold">Nama pemilik rekening<input value={manualConfig.accountHolder} onChange={(e) => setManualConfig({ ...manualConfig, accountHolder: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 dark:border-zinc-700 dark:bg-zinc-950" /></label></section>
@@ -1441,7 +1443,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
           </div>
           <label className="mt-4 block text-xs font-bold">Instruksi pembayaran<textarea rows={3} value={manualConfig.instructions} onChange={(e) => setManualConfig({ ...manualConfig, instructions: e.target.value })} placeholder="Contoh: Cantumkan nomor invoice pada berita transfer." className="mt-1 w-full rounded-xl border border-slate-200 p-3 dark:border-zinc-700 dark:bg-zinc-950" /></label>
           <button type="submit" disabled={readOnlyMode || manualConfigSaving} className="mt-4 rounded-xl bg-accent px-5 py-2.5 text-xs font-bold text-white disabled:opacity-40">{manualConfigSaving ? "Menyimpan…" : "Simpan Pembayaran Manual"}</button>
-        </form>
+        </fieldset></form>
       )}
 
       {/* Super Admin Payment Gateway Setup (Midtrans QRIS) */}
@@ -1483,7 +1485,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             </div>
           </div>
 
-          <form onSubmit={handleSaveGatewayConfig} className="space-y-5">
+          <form onSubmit={handleSaveGatewayConfig} className="space-y-5"><fieldset disabled={readOnlyMode} className="contents disabled:opacity-60">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Toggle Enable/Disable Gateway */}
               <div className="md:col-span-3 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 flex justify-between items-center">
@@ -1612,7 +1614,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                disabled={saveLoading}
+                disabled={readOnlyMode || saveLoading}
                 className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
               >
                 {saveLoading ? (
@@ -1623,7 +1625,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                 Simpan Konfigurasi Gateway
               </button>
             </div>
-          </form>
+          </fieldset></form>
 
           {/* Edu section */}
           <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-4 border border-slate-100 dark:border-zinc-800 space-y-3">
@@ -1663,7 +1665,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       {/* 4. Billing Invoices History List */}
       <div
         className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden"
-        id="saas-invoice-history"
+        id="billing-invoices"
       >
         <div className="px-5 py-4 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -1863,8 +1865,8 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         </div>, document.body,
       )}
 
-      {isSuperAdmin && manualRequests.length > 0 && (
-        <section className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/10 p-4 md:p-5">
+      {isSuperAdmin && (
+        <section id="billing-review" className="scroll-mt-24 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/10 p-4 md:p-5">
           <h3 className="font-black text-sm text-slate-900 dark:text-white">Antrean Verifikasi Pembayaran Manual</h3>
           <div className="mt-3 space-y-2">
             {manualRequests.filter((request) => request.status === "SUBMITTED").map((request) => (
@@ -1875,12 +1877,13 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   <p className={`mt-1 text-[10px] font-bold ${Date.now() - new Date(request.submitted_at).getTime() > 24 * 60 * 60 * 1000 ? "text-rose-600" : "text-amber-600"}`}>Menunggu {Math.max(0, Math.floor((Date.now() - new Date(request.submitted_at).getTime()) / 3600000))} jam · SLA 24 jam</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={async () => { try { const result = await readJsonResponse<any>(await apiFetch(`/api/billing/manual-payments/${request.id}/proof-url`), "Bukti pembayaran"); window.open(result.signedUrl, "_blank", "noopener,noreferrer"); } catch (err: any) { showToast(err.message, "error"); } }} className="rounded-lg border border-accent/50 px-3 py-1.5 text-xs font-bold text-accent">Lihat bukti</button>
+                  <button onClick={async () => { try { const result = await readJsonResponse<any>(await apiFetch(`/api/billing/manual-payments/${request.id}/proof-url`), "Bukti pembayaran"); const proofResponse = await apiFetch(result.fileUrl); if (!proofResponse.ok) throw new Error("Bukti pembayaran gagal dimuat."); const proofUrl = URL.createObjectURL(await proofResponse.blob()); window.open(proofUrl, "_blank", "noopener,noreferrer"); window.setTimeout(() => URL.revokeObjectURL(proofUrl), 60000); } catch (err: any) { showToast(err.message, "error"); } }} className="rounded-lg border border-accent/50 px-3 py-1.5 text-xs font-bold text-accent">Lihat bukti</button>
                   <button disabled={readOnlyMode} onClick={() => handleReviewManual(request, "reject")} className="rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50">Tolak</button>
                   <button disabled={readOnlyMode} onClick={() => handleReviewManual(request, "approve")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">Setujui</button>
                 </div>
               </div>
             ))}
+            {manualRequests.filter((request) => request.status === "SUBMITTED").length === 0 && <p className="rounded-xl border border-dashed border-amber-300/60 bg-white/60 p-5 text-center text-xs text-amber-800 dark:bg-zinc-900/50 dark:text-amber-200">Tidak ada pembayaran manual menunggu verifikasi.</p>}
           </div>
         </section>
       )}

@@ -58,6 +58,11 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
   const createConsoleSession = async (mode: "READ_ONLY" | "EDIT") => {
     setSessionLoading(true);
     try {
+      const existing = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null");
+      if (existing?.id) {
+        await apiFetch(`/api/superadmin/sessions/${existing.id}/end`, { method: "POST" }).catch(() => undefined);
+        localStorage.removeItem("saas_superadmin_console_session");
+      }
       const response = await apiFetch("/api/superadmin/sessions", {
         method: "POST",
         body: JSON.stringify({ mode, durationMinutes: 60 }),

@@ -26,15 +26,14 @@ export async function runPendingMigrations(connectionString: string) {
     const { join } = await import("path");
     const { createHash } = await import("crypto");
     const migrationDir = join(process.cwd(), "migrations");
-    const baselinePath = join(process.cwd(), "postgresql-schema.sql");
-    const files = ["000_baseline.sql", ...readdirSync(migrationDir).filter((name) => /^\d+.*\.sql$/.test(name)).sort()];
+    const files = readdirSync(migrationDir).filter((name) => /^\d+.*\.sql$/.test(name)).sort();
     await client.connect();
     await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
       version TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`);
     await client.query("SELECT pg_advisory_lock(hashtext('fixdev_schema_migrations'))");
     for (const file of files) {
-      const sql = readFileSync(file === "000_baseline.sql" ? baselinePath : join(migrationDir, file), "utf8");
+      const sql = readFileSync(join(migrationDir, file), "utf8");
       const checksum = createHash("sha256").update(sql).digest("hex");
       const applied = await client.query("SELECT checksum FROM schema_migrations WHERE version = $1", [file]);
       if (applied.rows[0]) {

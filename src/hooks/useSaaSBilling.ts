@@ -101,7 +101,7 @@ export function useSaaSBilling(
 
       const subRes = await apiFetch(
         `/api/billing/subscription?tenantId=${selectedTenantId}`,
-        { signal: controller.signal },
+        { signal: controller.signal, headers: { "X-Tenant-ID": selectedTenantId } },
       );
       if (requestId !== latestRequestId.current) return;
 
@@ -191,7 +191,7 @@ export function useSaaSBilling(
         : "SaaS ERP Merchant";
       const response = await apiFetch("/api/billing/create-invoice", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId, "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({
           tenantId: selectedTenantId,
           tier: plan.tier,
@@ -230,7 +230,7 @@ export function useSaaSBilling(
     try {
       const response = await apiFetch("/api/billing/toggle-renew", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId },
         body: JSON.stringify({
           invoiceId,
           autoRenew: !currentVal,

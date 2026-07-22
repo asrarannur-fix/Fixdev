@@ -95,5 +95,81 @@ Tiga spec lama gagal sebelum alur modul karena memakai password test kosong dan 
 - Dokumentasi role menyatakan SUPER_ADMIN sebagai role platform terpisah dan bukan bypass RBAC tenant; file terkait: `ROLE_MENU_MATRIX.md`.
 - Verifikasi: `npm run lint` — PASS; `npm run test:unit` — 15/15 PASS; `git diff --check` — PASS.
 
+## Refactor Impersonasi Super Admin — 22 Juli 2026
+- Actor Super Admin tidak lagi diubah menjadi role OWNER saat impersonasi; sesi tenant disimpan terpisah dari profil actor.
+- Bootstrap memilih control-plane atau tenant workspace berdasarkan sesi impersonasi valid, bukan role saja; state platform tidak membuat branch/gudang semu.
+- Reload dengan sesi impersonasi valid tetap memakai bootstrap tenant dan header sesi; sesi read-only diblokir di client sebelum mutation, tetap diperiksa ulang server.
+- Sidebar dan horizontal navigation menerima workspace mode sehingga role platform tidak mencampur menu tenant.
+- Verifikasi: `npm run lint` — PASS; `npm run test:unit` — 15/15 PASS; `git diff --check` — PASS.
+
+## Penyempurnaan Workflow Super Admin — 22 Juli 2026
+- Impersonasi tidak lagi mengubah profil actor menjadi OWNER; actor tetap SUPER_ADMIN, sementara workspace tenant ditentukan sesi impersonasi valid.
+- Bootstrap, routing, sidebar, horizontal navigation, dan API scope membedakan control-plane dari tenant workspace.
+- Ditambahkan endpoint terproteksi `PUT /api/superadmin/tenants/:id/config` dengan whitelist payload, optimistic locking, redaksi state audit, dan permission `tenants:manage_config`; file terkait: `src/server/controllers/superadmin.controller.ts`, `src/server/routes/superadmin.routes.ts`, `migrations/028_superadmin_tenant_config.sql`.
+- Manual payment review kini membutuhkan invoice berstatus `PENDING_VERIFICATION`, audit memakai tenant invoice yang benar, dan bukti file wajib tersedia sebelum submit.
+- Verifikasi: `npm run lint` — PASS; `npm run test:unit` — 15/15 PASS; `git diff --check` — PASS.
+- Batas tersisa: migration runner masih menolak checksum baseline lama yang drift; pemulihan memerlukan baseline historis/backup, bukan bypass metadata.
+
+## Perbaikan Detail Billing Super Admin — 22 Juli 2026
+- Tenant pilihan dropdown billing kini dikirim sebagai header authoritative dan tidak ditimpa context tenant lama; subscription, invoice, auto-renew, upload, serta submit pembayaran memakai tenant yang sama.
+- Mutasi invoice, auto-renew, dan upload/submit manual oleh Super Admin kini mewajibkan console session EDIT di server.
+- Upload QRIS dan bukti pembayaran memakai endpoint PUT terautentikasi dengan path server-generated, batas ukuran aktual, MIME whitelist, dan penyimpanan privat; bukti dilayani melalui endpoint terotorisasi, bukan URL `/uploads` publik.
+- Konfigurasi pembayaran manual global hanya dapat diubah Super Admin; tenant tetap dapat membaca instruksi pembayaran.
+- Plan update memvalidasi tier unik, harga positif, limits, dan features; invoice memvalidasi channel serta ketersediaan metode manual; webhook Midtrans hanya dapat menyelesaikan invoice yang memang terikat ke order Midtrans.
+- Manual payment memvalidasi metode aktif, waktu bayar, panjang input, keberadaan bukti, status invoice, tenant audit, dan konsistensi review.
+- Migration `029_billing_integrity.sql` menambahkan constraint amount/status/cycle/tier/date, gateway order unik, dan composite foreign key invoice–tenant.
+- Console session lama diakhiri saat mengganti mode agar session EDIT tidak tetap aktif di belakang UI read-only.
+- Verifikasi: `npm run lint` — PASS; `npm run test:unit` — 15/15 PASS; `git diff --check` — PASS.
+- Batas yang belum boleh diklaim selesai: migration runner checksum baseline masih drift dan migration baru belum diterapkan; idempotency invoice/gateway serta audit before/after seluruh cron/config masih perlu implementasi lanjutan sebelum status billing dinyatakan sempurna.
+
+## Rombak Billing Workflow — 22 Juli 2026
+- Migration baseline kini immutable di `migrations/000_baseline.sql`; runner tidak lagi membaca `postgresql-schema.sql` mutable. Migration `005` dipulihkan ke checksum historis, delta dipindah ke `031_billing_invoice_gateway_columns.sql`.
+- Ditambahkan request idempotency invoice, gateway event ledger, renewal linkage, notification dedupe, dan audit session linkage melalui `030_billing_workflow.sql`.
+- Invoice creation memakai `Idempotency-Key`, UUID invoice, validasi channel/metode, dan menyimpan response replayable.
+- Webhook Midtrans memakai event ledger idempotent, validasi gateway order, amount, dan mencegah overwrite manual verification.
+- Plan, gateway flags, manual method, paidAt, input text, proof file, dan invoice lifecycle mendapat validasi server.
+- Billing audit mencatat perubahan plan dan gateway tanpa menyimpan server key.
+- Test billing/security dijalankan dengan runner benar: 9/9 PASS; unit test 15/15 PASS; lint dan diff check PASS.
+- Residual yang harus tetap diuji di staging: external Midtrans reconciliation, upload MIME magic-byte inspection, notification worker delivery, dan migration `029–031` pada production backup sebelum rollout.
+
+## Perbaikan HTTP 403 Riwayat Billing — 22 Juli 2026
+- `GET /api/billing/subscription` kini memakai scope control-plane granular untuk Super Admin dan tenant scope biasa untuk OWNER/ADMIN; pemilihan tenant billing tidak lagi membutuhkan impersonasi.
+- Permission `billing:view_subscription`, `billing:manage_invoices`, dan `billing:manage_subscription` ditambahkan untuk ROOT_ADMIN dan BILLING_ADMIN melalui migration `032_billing_control_plane_permissions.sql`.
+- Verifikasi: migration 032 PASS; billing tests 5/5 PASS; unit test 15/15 PASS; lint PASS.
+
+## Pendalaman Billing Control Plane — 22 Juli 2026
+- Middleware platform scope kini tetap memeriksa permission sebelum melewati tenant lookup; tidak ada bypass permission karena tenantId kosong.
+- Idempotency invoice menangani request `FAILED` agar retry aman, menandai kegagalan reservation, dan memakai UUID invoice.
+- Webhook Midtrans menyimpan ledger event, mendeteksi payload berbeda untuk event key sama, replay aman, dan menolak settlement atas invoice manual atau invoice manual-verification.
+- Audit platform ditambahkan untuk plan, gateway, manual config, QRIS allocation, manual approval/rejection; secret gateway tidak masuk state audit.
+- Notification billing memakai event key dedupe; overdue memilih nomor WhatsApp bila tersedia dan fallback email; payment confirmation menolak invoice belum PAID.
+- Proof URL memakai endpoint terotorisasi; upload bukti dan QRIS memakai raw PUT endpoint server, bukan static public upload.
+- Verifikasi terbaru: billing/security 9/9 PASS; unit 15/15 PASS; lint PASS; migration 000–032 development PASS.
+- Residual eksplisit: external Midtrans reconciliation nyata, magic-byte file inspection, worker delivery staging, dan production migration rollout belum diverifikasi; status “sempurna” belum diklaim.
+
+## Rombak UI Billing Control Plane — 22 Juli 2026
+- Billing memiliki hero control-plane, metrik operasional, dan navigasi anchor Ringkasan/Paket/Invoice/Verifikasi/Konfigurasi.
+- Tenant selector, invoice history, review queue, serta konfigurasi diberi struktur section dan scroll target yang jelas.
+- Review queue selalu terlihat dengan empty state; bukti pembayaran dibuka melalui authenticated blob URL, bukan URL privat tanpa token.
+- Plan editor diblokir saat read-only atau memakai fallback plans; gateway form diblokir saat read-only; tombol save mengikuti state server.
+- Verifikasi UI: lint PASS, unit 15/15 PASS, billing tests 5/5 PASS, diff check PASS.
+
+## Penyederhanaan UI Billing — 22 Juli 2026
+- Halaman billing kini memakai tiga tampilan sederhana: `Ringkasan`, `Tagihan`, dan `Pengaturan`.
+- Ringkasan fokus pada tenant context, status, paket, dan metrik penting.
+- Tagihan fokus pada invoice dan antrean verifikasi.
+- Pengaturan memuat plan, gateway, pembayaran manual, dan recurring tanpa menumpuk di layar utama.
+- Empty state antrean dan error/status tetap terlihat; layout responsive dan dark mode dipertahankan.
+- Verifikasi: lint PASS, unit 15/15 PASS, billing tests 5/5 PASS.
+
+## Audit Pengaturan Billing — 22 Juli 2026
+- Recurring memakai `period_end` dan menyimpan `renewed_from_invoice_id`, sehingga invoice renewal tidak dibuat tiga hari setelah pembayaran atau berulang tiap hari.
+- Update gateway tidak lagi menyalin fallback secret environment ke database; semua field gateway divalidasi tipe dan runtime fallback tetap mendukung rotasi environment.
+- Manual config mewajibkan boolean asli, path QRIS valid, file tersedia, serta magic-byte PNG/JPEG sesuai MIME.
+- Billing plan wajib memuat BASIC/PRO/ENTERPRISE lengkap dengan batas nama, fitur, dan entitlements.
+- Plan, manual config, dan gateway memakai fieldset disabled nyata pada read-only; keyboard tidak dapat mengubah draft palsu.
+- Konfigurasi global tetap dapat dibuka tanpa tenant; cron action hanya tampil untuk Super Admin.
+- Verifikasi: lint PASS, unit 15/15 PASS, billing tests 5/5 PASS.
+
 ## Status
-Database lokal berhasil dimigrasikan: 26 migration termasuk baseline. Migrasi idempoten dan schema auth terverifikasi.
+Database lokal berhasil dimigrasikan: 33 migration termasuk immutable baseline. Migrasi idempoten dan schema auth terverifikasi.

@@ -817,7 +817,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const [isImpersonating, setIsImpersonating] = useState<boolean>(() => {
-    return !!localStorage.getItem("saas_original_user");
+    try {
+      const session = JSON.parse(localStorage.getItem("saas_impersonation_session") || "null");
+      return Boolean(session?.id && session?.tenantId && new Date(session.expiresAt).getTime() > Date.now());
+    } catch {
+      return false;
+    }
   });
 
   useEffect(() => {
@@ -844,17 +849,24 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
             const { data: sessionData } = await client.auth.getSession();
             accessToken = sessionData.session?.access_token || "";
           }
+          const impersonationSession = (() => {
+            try {
+              const session = JSON.parse(localStorage.getItem("saas_impersonation_session") || "null");
+              return session?.id && session?.tenantId && new Date(session.expiresAt).getTime() > Date.now() ? session : null;
+            } catch {
+              return null;
+            }
+          })();
           const isSuperAdminProfile = currentUser.role === UserRole.SUPER_ADMIN;
-          const bootstrapUrl = isSuperAdminProfile
+          const isTenantWorkspace = !isSuperAdminProfile || Boolean(impersonationSession);
+          const bootstrapUrl = !isTenantWorkspace
             ? "/api/platform/bootstrap"
             : `/api/bootstrap?tenantId=${encodeURIComponent(currentTenantId)}`;
           const requestBootstrap = (token: string) => {
             const headers: Record<string, string> = token ? { Authorization: "Bearer " + token } : {};
-            if (!isSuperAdminProfile) {
-              try {
-                const impersonation = JSON.parse(localStorage.getItem("saas_impersonation_session") || "null");
-                if (impersonation?.id) headers["X-Impersonation-Session-ID"] = impersonation.id;
-              } catch {}
+            if (impersonationSession?.id) {
+              headers["X-Tenant-ID"] = impersonationSession.tenantId;
+              headers["X-Impersonation-Session-ID"] = impersonationSession.id;
             }
             return fetch(bootstrapUrl, { headers });
           };
@@ -937,7 +949,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
                 activeSessions: user.activeSessions || [],
               }))
             : [];
-          if (currentUser.role === UserRole.SUPER_ADMIN) {
+          if (currentUser.role === UserRole.SUPER_ADMIN && !isImpersonating) {
             setTenants(tenantsList);
             setUsers(usersList);
             setBranches([]);
@@ -1054,7 +1066,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         }
     };
     fetchApiData();
-  }, [currentTenantId, currentUser?.id, currentUser?.role, isAuthenticated]);
+  }, [currentTenantId, currentUser?.id, currentUser?.role, isAuthenticated, isImpersonating]);
 
   // === TENANT BRANDING INJECTION ===
   useEffect(() => {
@@ -1781,19 +1793,24 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     const headers = new Headers(options.headers || {});
     const isControlPlaneEndpoint = endpoint.startsWith("/api/superadmin/") || endpoint.startsWith("/api/platform/");
     if (!isControlPlaneEndpoint) {
-      headers.set("X-Tenant-ID", currentTenantId);
-      headers.set("X-Branch-ID", currentBranchId);
+      if (!headers.has("X-Tenant-ID")) headers.set("X-Tenant-ID", currentTenantId);
+      if (!headers.has("X-Branch-ID")) headers.set("X-Branch-ID", currentBranchId);
     }
     try {
+      const impersonationSession = JSON.parse(localStorage.getItem("saas_impersonation_session") || "null");
+      const method = String(options.method || "GET").toUpperCase();
+      if (impersonationSession?.accessMode === "READ_ONLY" && !["GET", "HEAD", "OPTIONS"].includes(method)) {
+        throw new Error("Sesi impersonasi hanya-baca. Aksi perubahan diblokir.");
+      }
       const consoleSession = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null");
       if (consoleSession?.id && new Date(consoleSession.expiresAt).getTime() > Date.now()) {
         headers.set("X-SuperAdmin-Session-ID", consoleSession.id);
       }
-      const impersonationSession = JSON.parse(localStorage.getItem("saas_impersonation_session") || "null");
       if (impersonationSession?.id && new Date(impersonationSession.expiresAt).getTime() > Date.now()) {
         headers.set("X-Impersonation-Session-ID", impersonationSession.id);
       }
-    } catch {
+    } catch (error: any) {
+      if (error?.message === "Sesi impersonasi hanya-baca. Aksi perubahan diblokir.") throw error;
       localStorage.removeItem("saas_superadmin_console_session");
       localStorage.removeItem("saas_impersonation_session");
     }
@@ -2115,6 +2132,25 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       ...updates,
       settings: updates.settings ? { ...(current.settings || {}), ...updates.settings } : current.settings,
     };
+    if (currentUser.role === UserRole.SUPER_ADMIN && !isImpersonating) {
+      const response = await apiFetch(`/api/superadmin/tenants/${id}/config`, {
+        method: "PUT",
+        body: JSON.stringify({
+          expectedVersion: current.version ?? 1,
+          name: updates.name,
+          subdomain: updates.subdomain,
+          status: updates.status,
+          tier: updates.tier,
+          branding: updates.branding ? { customDomain: updates.branding.customDomain } : undefined,
+          storageSettings: (updates.settings as any)?.storageSettings,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Konfigurasi tenant gagal diperbarui.");
+      setTenants((prev) => prev.map((tenant) => tenant.id === id ? { ...tenant, ...data.tenant } : tenant));
+      return;
+    }
+
     const domainUpdates = [
       ...(updates.settings ? Object.entries(updates.settings) : []),
       ...(updates.branding ? [["branding", updates.branding] as const] : []),
@@ -2151,11 +2187,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   const impersonateTenant = (tenantId: string) => {
     const tenant = tenants.find((t) => t.id === tenantId);
     if (tenant) {
-      // Store original credentials to restore them on exit
-      localStorage.setItem("saas_original_user", JSON.stringify(currentUser));
-      localStorage.setItem("saas_original_tenant_id", currentTenantId);
-      localStorage.setItem("saas_original_branch_id", currentBranchId);
-
       setCurrentTenantId(tenantId);
       localStorage.setItem("saas_curr_tenant_id", tenantId);
       const b = branches.filter((br) => br.tenantId === tenantId);
@@ -2164,15 +2195,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.setItem("saas_curr_branch_id", b[0].id);
       }
 
-      const impersonatedUser = {
-        ...currentUser,
-        role: UserRole.OWNER,
-        tenantId,
-        name: `Impersonated (${tenant.name})`,
-      };
-
-      setCurrentUser(impersonatedUser);
-      localStorage.setItem("saas_curr_user", JSON.stringify(impersonatedUser));
       setIsImpersonating(true);
 
       addLog(
@@ -2185,37 +2207,21 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const exitImpersonate = () => {
-    const origUserStr = localStorage.getItem("saas_original_user");
-    const origTenantId = localStorage.getItem("saas_original_tenant_id");
-    const origBranchId = localStorage.getItem("saas_original_branch_id");
-
-    if (origUserStr) {
-      const origUser = JSON.parse(origUserStr);
-      setCurrentUser(origUser);
-      localStorage.setItem("saas_curr_user", JSON.stringify(origUser));
-
-      if (origTenantId) {
-        setCurrentTenantId(origTenantId);
-        localStorage.setItem("saas_curr_tenant_id", origTenantId);
-      }
-
-      if (origBranchId) {
-        setCurrentBranchId(origBranchId);
-        localStorage.setItem("saas_curr_branch_id", origBranchId);
-      }
-
-      localStorage.removeItem("saas_original_user");
-      localStorage.removeItem("saas_original_tenant_id");
-      localStorage.removeItem("saas_original_branch_id");
-      setIsImpersonating(false);
-
-      addLog(
-        "Exit Impersonation",
-        `Keluar dari mode impersonasi, kembali sebagai ${origUser.name}`,
-        "SECURITY",
-        "MEDIUM",
-      );
-    }
+    localStorage.removeItem("saas_impersonation_session");
+    localStorage.removeItem("saas_original_user");
+    localStorage.removeItem("saas_original_tenant_id");
+    localStorage.removeItem("saas_original_branch_id");
+    localStorage.removeItem("saas_curr_tenant_id");
+    localStorage.removeItem("saas_curr_branch_id");
+    setCurrentTenantId("");
+    setCurrentBranchId("");
+    setIsImpersonating(false);
+    addLog(
+      "Exit Impersonation",
+      `Keluar dari mode impersonasi, kembali sebagai ${currentUser.name}`,
+      "SECURITY",
+      "MEDIUM",
+    );
   };
 
   // ==========================================

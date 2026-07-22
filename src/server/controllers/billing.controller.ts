@@ -29,9 +29,14 @@
  *   );
  */
 
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, randomUUID, timingSafeEqual } from "crypto";
 import { dbQuery, dbTransaction } from "../../lib/db.js";
 import { logger } from "../../lib/logger.js";
+
+async function recordBillingAdminAudit(client: any, req: any, action: string, resourceType: string, resourceId: string | null, tenantId: string | null, beforeState: unknown, afterState: unknown, metadata: Record<string, unknown> = {}) {
+  if (req.authActor?.role !== "SUPER_ADMIN") return;
+  await client.query(`INSERT INTO superadmin_audit_events(actor_user_id,actor_role,effective_tenant_id,impersonation_session_id,action,resource_type,resource_id,outcome,client_ip,before_state,after_state,metadata) VALUES($1,$2,$3,$4,$5,$6,$7,'SUCCESS',$8,$9::jsonb,$10::jsonb,$11::jsonb)`, [req.authActor.userId, req.authActor.role, tenantId, req.impersonationSession?.id || null, action, resourceType, resourceId, req.ip, JSON.stringify(beforeState ?? null), JSON.stringify(afterState ?? null), JSON.stringify(metadata)]);
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -184,29 +189,36 @@ export const getGatewayConfig = async (req: any, res: any) => {
 
 export const updateGatewayConfig = async (req: any, res: any) => {
   const { merchantId, serverKey, clientKey, isProduction, isEnabled } = req.body;
+  if ((merchantId !== undefined && typeof merchantId !== "string") || (serverKey !== undefined && typeof serverKey !== "string") || (clientKey !== undefined && typeof clientKey !== "string") || (isProduction !== undefined && typeof isProduction !== "boolean") || (isEnabled !== undefined && typeof isEnabled !== "boolean")) return res.status(422).json({ error: "Konfigurasi gateway tidak valid." });
   const current = await getSettingJson<MidtransConfig>("midtrans_config", DEFAULT_MIDTRANS);
   const mergedCurrent = mergeWithEnv(current);
 
   const updated: MidtransConfig = {
-    merchantId: merchantId !== undefined ? merchantId : mergedCurrent.merchantId,
-    serverKey: serverKey && !serverKey.includes("*****") ? serverKey : mergedCurrent.serverKey,
-    clientKey: clientKey !== undefined ? clientKey : mergedCurrent.clientKey,
-    isProduction: isProduction !== undefined ? isProduction : mergedCurrent.isProduction,
-    isEnabled: isEnabled !== undefined ? isEnabled : mergedCurrent.isEnabled,
+    merchantId: merchantId !== undefined ? merchantId : current.merchantId,
+    serverKey: typeof serverKey === "string" && serverKey && !serverKey.includes("*****") ? serverKey : current.serverKey,
+    clientKey: clientKey !== undefined ? clientKey : current.clientKey,
+    isProduction: isProduction !== undefined ? isProduction : current.isProduction,
+    isEnabled: isEnabled !== undefined ? isEnabled : current.isEnabled,
   };
+  const runtimeUpdated = mergeWithEnv(updated);
 
   try {
-    await upsertSettingJson("midtrans_config", updated);
+    await dbTransaction(async (client) => {
+      await client.query(`INSERT INTO app_settings(key,value,updated_at) VALUES('midtrans_config',$1::jsonb,now()) ON CONFLICT(key) DO UPDATE SET value=$1::jsonb,updated_at=now()`, [JSON.stringify(updated)]);
+      await recordBillingAdminAudit(client, req, "BILLING_GATEWAY_CONFIG_UPDATED", "billing_gateway_config", "midtrans_config", null,
+        { merchantId: mergedCurrent.merchantId, clientKey: mergedCurrent.clientKey, isProduction: mergedCurrent.isProduction, isEnabled: mergedCurrent.isEnabled, serverKeyConfigured: Boolean(mergedCurrent.serverKey) },
+        { merchantId: updated.merchantId, clientKey: updated.clientKey, isProduction: updated.isProduction, isEnabled: updated.isEnabled, serverKeyConfigured: Boolean(updated.serverKey) });
+    });
     logger.info("[billing] Midtrans config updated");
     res.json({
       success: true,
       message: "Konfigurasi Payment Gateway Midtrans berhasil diperbarui!",
       config: {
-        merchantId: updated.merchantId,
-        serverKeyMasked: updated.serverKey ? updated.serverKey.slice(0, 7) + "****************" + updated.serverKey.slice(-4) : "",
-        clientKey: updated.clientKey,
-        isProduction: updated.isProduction,
-        isEnabled: updated.isEnabled,
+        merchantId: runtimeUpdated.merchantId,
+        serverKeyMasked: runtimeUpdated.serverKey ? runtimeUpdated.serverKey.slice(0, 7) + "****************" + runtimeUpdated.serverKey.slice(-4) : "",
+        clientKey: runtimeUpdated.clientKey,
+        isProduction: runtimeUpdated.isProduction,
+        isEnabled: runtimeUpdated.isEnabled,
       },
     });
   } catch (err: any) {
@@ -238,11 +250,23 @@ export const getPublicBillingPlans = async (_req: any, res: any) => {
 
 export const updateBillingPlans = async (req: any, res: any) => {
   const updatedPlans = req.body;
-  if (!Array.isArray(updatedPlans)) {
-    return res.status(400).json({ error: "Data plans harus berupa array" });
+  if (!Array.isArray(updatedPlans) || updatedPlans.length === 0) {
+    return res.status(400).json({ error: "Data plans harus berupa array non-kosong." });
   }
+  const tiers = new Set<string>();
+  for (const plan of updatedPlans) {
+    if (!plan || !["BASIC", "PRO", "ENTERPRISE"].includes(plan.tier) || tiers.has(plan.tier) || typeof plan.name !== "string" || !plan.name.trim() || plan.name.length > 100 || !Number.isFinite(plan.priceMonthly) || plan.priceMonthly <= 0 || !Number.isFinite(plan.priceYearly) || plan.priceYearly <= 0 || !Array.isArray(plan.features) || plan.features.length > 100 || plan.features.some((feature: unknown) => typeof feature !== "string" || feature.length > 200) || !plan.limits || !Number.isInteger(plan.limits.users) || plan.limits.users < 1 || !Number.isInteger(plan.limits.branches) || plan.limits.branches < 1 || !Number.isInteger(plan.limits.storageMb) || plan.limits.storageMb < 1 || !Array.isArray(plan.limits.features) || plan.limits.features.length > 100 || plan.limits.features.some((feature: unknown) => typeof feature !== "string" || feature.length > 100)) {
+      return res.status(422).json({ error: "Konfigurasi paket billing tidak valid." });
+    }
+    tiers.add(plan.tier);
+  }
+  if (!["BASIC", "PRO", "ENTERPRISE"].every((tier) => tiers.has(tier))) return res.status(422).json({ error: "Semua tier billing wajib tersedia." });
   try {
-    await upsertSettingJson("billing_plans", updatedPlans);
+    await dbTransaction(async (client) => {
+      const before = await client.query(`SELECT value FROM app_settings WHERE key='billing_plans'`);
+      await client.query(`INSERT INTO app_settings(key,value,updated_at) VALUES('billing_plans',$1::jsonb,now()) ON CONFLICT(key) DO UPDATE SET value=$1::jsonb,updated_at=now()`, [JSON.stringify(updatedPlans)]);
+      await recordBillingAdminAudit(client, req, "BILLING_PLANS_UPDATED", "billing_plans", "billing_plans", null, before.rows[0]?.value || null, updatedPlans);
+    });
     res.json({ success: true, message: "Paket langganan SaaS berhasil diperbarui!", plans: updatedPlans });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] updateBillingPlans failed");
@@ -274,17 +298,41 @@ export const getSubscription = async (req: any, res: any) => {
 export const createInvoice = async (req: any, res: any) => {
   const { tier, billingCycle, paymentChannel = "MANUAL" } = req.body;
   const tenantId = req.tenantId;
-  if (!tenantId || !tier || !["monthly", "yearly"].includes(billingCycle)) {
+  if (!tenantId || !tier || !["monthly", "yearly"].includes(billingCycle) || !["MANUAL", "MIDTRANS"].includes(paymentChannel)) {
     return res.status(400).json({ error: "Missing or invalid tenant, tier, or billingCycle" });
   }
 
+  const idempotencyKey = String(req.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey || idempotencyKey.length > 200) return res.status(422).json({ error: "Idempotency-Key wajib diisi." });
+  const requestHash = createHash("sha256").update(JSON.stringify({ tenantId, tier, billingCycle, paymentChannel })).digest("hex");
+  try {
+    const existing = await dbQuery(`SELECT request_hash,status,response FROM billing_invoice_requests WHERE tenant_id=$1 AND idempotency_key=$2`, [tenantId, idempotencyKey]);
+    if (existing.rows[0]) {
+      if (existing.rows[0].request_hash !== requestHash) return res.status(409).json({ error: "Idempotency-Key telah digunakan untuk request berbeda." });
+      if (existing.rows[0].status === "COMPLETED" && existing.rows[0].response) return res.json(existing.rows[0].response);
+      if (existing.rows[0].status === "PROCESSING") return res.status(409).json({ error: "Pembuatan invoice dengan key ini sedang diproses." });
+      await dbQuery(`DELETE FROM billing_invoice_requests WHERE tenant_id=$1 AND idempotency_key=$2 AND status='FAILED'`, [tenantId, idempotencyKey]);
+    }
+    await dbQuery(`INSERT INTO billing_invoice_requests(tenant_id,idempotency_key,request_hash,created_by) VALUES($1,$2,$3,$4)`, [tenantId, idempotencyKey, requestHash, req.authActor?.userId]);
+  } catch (err: any) {
+    if (err.code === "23505") return res.status(409).json({ error: "Pembuatan invoice sedang diproses." });
+    logger.error({ err: err.message }, "Could not reserve invoice idempotency key");
+    return res.status(500).json({ error: "Pembuatan invoice gagal dimulai." });
+  }
+
+  const failInvoiceRequest = async () => {
+    await dbQuery(`UPDATE billing_invoice_requests SET status='FAILED',updated_at=now() WHERE tenant_id=$1 AND idempotency_key=$2`, [tenantId, idempotencyKey]).catch(() => undefined);
+  };
   const storedPlans = await getSettingJson<any[]>("billing_plans", DEFAULT_PLANS);
   const plans = Array.isArray(storedPlans) && storedPlans.length > 0 ? storedPlans : DEFAULT_PLANS;
   const planConfig = plans.find((p: any) => p.tier === tier);
-  if (!planConfig) return res.status(400).json({ error: "Invalid subscription tier: " + tier });
+  if (!planConfig) {
+    await failInvoiceRequest();
+    return res.status(400).json({ error: "Invalid subscription tier: " + tier });
+  }
 
   const amount = billingCycle === "yearly" ? planConfig.priceYearly : planConfig.priceMonthly;
-  const invoiceId = "saas-inv-" + Date.now().toString(36);
+  const invoiceId = `saas-inv-${randomUUID()}`;
   const dateStr = new Date().toISOString().split("T")[0];
   const due = new Date();
   due.setDate(due.getDate() + 3);
@@ -292,6 +340,13 @@ export const createInvoice = async (req: any, res: any) => {
 
   let qrisData = "";
   let isRealMidtrans = false;
+  if (paymentChannel === "MANUAL") {
+    const manualConfig = await getSettingJson<any>("manual_payment_config", { bankTransferEnabled: false, manualQrisEnabled: false });
+    if (!manualConfig.bankTransferEnabled && !manualConfig.manualQrisEnabled) {
+      await failInvoiceRequest();
+      return res.status(409).json({ error: "Pembayaran manual belum dikonfigurasi." });
+    }
+  }
 
   const dbCfg = await getSettingJson<MidtransConfig>("midtrans_config", DEFAULT_MIDTRANS);
   const cfg = mergeWithEnv(dbCfg);
@@ -321,13 +376,16 @@ export const createInvoice = async (req: any, res: any) => {
         }
       } else {
         logger.warn({ status: response.status }, "[billing] Midtrans charge failed");
+        await failInvoiceRequest();
         return res.status(502).json({ error: "Midtrans gagal membuat transaksi. Pilih pembayaran manual atau coba kembali." });
       }
     } catch (err: any) {
       logger.warn({ err: err.message }, "[billing] Midtrans charge exception");
+      await failInvoiceRequest();
       return res.status(502).json({ error: "Midtrans tidak tersedia. Pilih pembayaran manual atau coba kembali." });
     }
   } else if (paymentChannel === "MIDTRANS") {
+    await failInvoiceRequest();
     return res.status(409).json({ error: "Midtrans belum diaktifkan. Pilih pembayaran manual." });
   }
 
@@ -337,18 +395,7 @@ export const createInvoice = async (req: any, res: any) => {
   }
 
   try {
-    await dbQuery(
-      `INSERT INTO saas_invoices
-         (id, tenant_id, date, due_date, amount, tier, status, qris_data, billing_cycle, auto_renew, plan_snapshot, gateway_provider, gateway_order_id)
-       VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', $7, $8, true, $9::jsonb, $10, $11)`,
-      [invoiceId, tenantId, dateStr, dueDateStr, amount, tier, qrisData, billingCycle,
-        JSON.stringify(planConfig), isRealMidtrans ? "MIDTRANS" : null, isRealMidtrans ? invoiceId : null],
-    );
-
-    // Invoice creation is durable before notifications. Manual-payment lifecycle
-    // events enqueue WhatsApp/internal notifications when proof is submitted.
-
-    res.json({
+    const responseBody = {
       success: true,
       invoice: { id: invoiceId, tenantId, date: dateStr, dueDate: dueDateStr, amount, tier, status: "UNPAID", qrisData, billingCycle, autoRenew: true },
       isRealGateway: isRealMidtrans,
@@ -356,10 +403,21 @@ export const createInvoice = async (req: any, res: any) => {
       message: isRealMidtrans
         ? "Invoice Midtrans dibuat. Status akan diperbarui melalui webhook terverifikasi."
         : "Invoice dibuat. Unggah bukti transfer bank atau QRIS manual untuk verifikasi.",
+    };
+    await dbTransaction(async (client) => {
+      await client.query(
+        `INSERT INTO saas_invoices
+           (id, tenant_id, date, due_date, amount, tier, status, qris_data, billing_cycle, auto_renew, plan_snapshot, gateway_provider, gateway_order_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', $7, $8, true, $9::jsonb, $10, $11)`,
+        [invoiceId, tenantId, dateStr, dueDateStr, amount, tier, qrisData, billingCycle, JSON.stringify(planConfig), isRealMidtrans ? "MIDTRANS" : null, isRealMidtrans ? invoiceId : null],
+      );
+      await client.query(`UPDATE billing_invoice_requests SET status='COMPLETED',invoice_id=$3,response=$4::jsonb,updated_at=now() WHERE tenant_id=$1 AND idempotency_key=$2`, [tenantId, idempotencyKey, invoiceId, JSON.stringify(responseBody)]);
     });
+    res.json(responseBody);
   } catch (err: any) {
+    await failInvoiceRequest();
     logger.error({ err: err.message }, "[billing] createInvoice DB insert failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Invoice gagal dibuat." });
   }
 };
 
@@ -417,9 +475,18 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
   if (!nextStatus) return res.status(400).json({ error: "Unsupported Midtrans transaction_status" });
 
   try {
+    const eventKey = String(req.body.transaction_id || `${order_id}:${transaction_status}:${status_code}`);
+    const payloadHash = createHash("sha256").update(JSON.stringify(req.body)).digest("hex");
     const invoice = await dbTransaction(async (client) => {
+      const priorEvent = await client.query(`SELECT payload_hash,processing_status,result FROM billing_gateway_events WHERE provider='MIDTRANS' AND event_key=$1 FOR UPDATE`, [eventKey]);
+      if (priorEvent.rows[0]) {
+        if (priorEvent.rows[0].payload_hash !== payloadHash) return { webhookConflict: true };
+        if (priorEvent.rows[0].processing_status === "COMPLETED") return { webhookReplay: priorEvent.rows[0].result };
+      } else {
+        await client.query(`INSERT INTO billing_gateway_events(provider,event_key,order_id,payload_hash,transaction_status) VALUES('MIDTRANS',$1,$2,$3,$4)`, [eventKey, order_id, payloadHash, transaction_status]);
+      }
       const current = await client.query(
-        `SELECT id, tenant_id, tier, status, amount, billing_cycle, plan_snapshot FROM saas_invoices WHERE id = $1 FOR UPDATE`,
+        `SELECT id, tenant_id, tier, status, amount, billing_cycle, plan_snapshot FROM saas_invoices WHERE id = $1 AND gateway_provider='MIDTRANS' AND gateway_order_id=$1 FOR UPDATE`,
         [order_id],
       );
       if (current.rowCount === 0) return null;
@@ -428,7 +495,16 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
       if (Number(row.amount) !== Number(gross_amount)) {
         throw new Error("Midtrans amount does not match invoice amount");
       }
-      if (row.status === "PAID") return row;
+      if (row.status === "PENDING_VERIFICATION") {
+        const result = { invoiceId: row.id, status: row.status };
+        await client.query(`UPDATE billing_gateway_events SET processing_status='REJECTED',result=$2::jsonb,processed_at=now() WHERE provider='MIDTRANS' AND event_key=$1`, [eventKey, JSON.stringify(result)]);
+        return result;
+      }
+      if (row.status === "PAID") {
+        const result = { invoiceId: row.id, status: row.status };
+        await client.query(`UPDATE billing_gateway_events SET processing_status='COMPLETED',result=$2::jsonb,processed_at=now() WHERE provider='MIDTRANS' AND event_key=$1`, [eventKey, JSON.stringify(result)]);
+        return result;
+      }
 
       const updated = await client.query(
         `UPDATE saas_invoices SET status = $2, paid_at = CASE WHEN $2 = 'PAID' THEN now() ELSE paid_at END, version = version + 1 WHERE id = $1
@@ -448,6 +524,7 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
           [row.id, row.tenant_id, String(req.body.transaction_id || order_id), row.amount,
             JSON.stringify({ transaction_status, fraud_status, status_code })],
         );
+        await client.query(`UPDATE saas_invoices SET period_start=COALESCE(period_start,now()),period_end=COALESCE(period_end,$2) WHERE id=$1`, [row.id, periodEnd]);
         await client.query(
           `UPDATE tenants SET status = 'ACTIVE', tier = $2, trial_ends_at = $3,
              settings = COALESCE(settings, '{}'::jsonb) || jsonb_build_object('limits', COALESCE($4::jsonb, '{}'::jsonb))
@@ -456,11 +533,15 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
         );
       }
 
-      return updated.rows[0];
+      const result = { invoiceId: updated.rows[0].id, status: updated.rows[0].status };
+      await client.query(`UPDATE billing_gateway_events SET processing_status='COMPLETED',result=$2::jsonb,processed_at=now() WHERE provider='MIDTRANS' AND event_key=$1`, [eventKey, JSON.stringify(result)]);
+      return result;
     });
 
+    if ((invoice as any)?.webhookConflict) return res.status(409).json({ error: "Webhook event key digunakan dengan payload berbeda." });
+    if ((invoice as any)?.webhookReplay) return res.json({ success: true, ...(invoice as any).webhookReplay });
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
-    res.json({ success: true, invoiceId: invoice.id, status: invoice.status });
+    res.json({ success: true, ...(invoice as any) });
   } catch (err: any) {
     logger.error({ err: err.message, orderId: order_id }, "[billing] Midtrans webhook failed");
     res.status(500).json({ error: err.message });
@@ -469,6 +550,7 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
 
 export const toggleRenew = async (req: any, res: any) => {
   const { invoiceId, autoRenew } = req.body;
+  if (!invoiceId || typeof autoRenew !== "boolean") return res.status(422).json({ error: "invoiceId dan autoRenew boolean wajib diisi." });
   try {
     const result = await dbQuery(
       `UPDATE saas_invoices SET auto_renew = $2, version = version + 1
@@ -517,7 +599,7 @@ export const simulateRecurringCron = async (req: any, res: any) => {
 
   try {
     const expiring = await dbQuery(
-      `SELECT * FROM saas_invoices WHERE status = 'PAID' AND auto_renew = true AND due_date <= CURRENT_DATE`,
+      `SELECT i.* FROM saas_invoices i WHERE i.status='PAID' AND i.auto_renew=true AND i.period_end<=now() AND NOT EXISTS (SELECT 1 FROM saas_invoices r WHERE r.renewed_from_invoice_id=i.id AND r.status IN ('UNPAID','PENDING_VERIFICATION','PAID'))`,
     );
 
     for (const invoice of expiring.rows) {
@@ -529,10 +611,10 @@ export const simulateRecurringCron = async (req: any, res: any) => {
 
       const inserted = await dbQuery(
         `INSERT INTO saas_invoices
-           (id, tenant_id, date, due_date, amount, tier, status, qris_data, billing_cycle, auto_renew, plan_snapshot)
-         VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', NULL, $7, true, $8::jsonb)
+           (id, tenant_id, date, due_date, amount, tier, status, qris_data, billing_cycle, auto_renew, plan_snapshot, renewed_from_invoice_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', NULL, $7, true, $8::jsonb, $9)
          ON CONFLICT (id) DO NOTHING RETURNING id`,
-        [nextId, invoice.tenant_id, nextDate, nextDue.toISOString().split("T")[0], invoice.amount, invoice.tier, invoice.billing_cycle, JSON.stringify(invoice.plan_snapshot || {})],
+        [nextId, invoice.tenant_id, nextDate, nextDue.toISOString().split("T")[0], invoice.amount, invoice.tier, invoice.billing_cycle, JSON.stringify(invoice.plan_snapshot || {}), invoice.id],
       );
       if (inserted.rowCount) logs.push(`Renewal invoice ${nextId} dibuat dengan status BELUM LUNAS.`);
       else logs.push(`Renewal invoice ${nextId} sudah pernah dibuat; dilewati.`);
@@ -555,7 +637,7 @@ export const simulateRecurringCron = async (req: any, res: any) => {
 
 async function getTenantOwner(tenantId: string) {
   const rows = await dbQuery(
-    `SELECT email, name FROM users WHERE tenant_id = $1 AND role = 'OWNER' LIMIT 1`,
+    `SELECT email, name, COALESCE(t.settings #>> '{notificationSettings,whatsappNumber}', t.settings #>> '{waConfig,phoneNumber}') AS phone FROM users u JOIN tenants t ON t.id=u.tenant_id WHERE u.tenant_id = $1 AND u.role = 'OWNER' LIMIT 1`,
     [tenantId],
   );
   return rows.rows[0] || null;
@@ -568,11 +650,13 @@ async function queueNotification(params: {
   channel: "email" | "whatsapp" | "telegram";
   recipient: string;
   payload: Record<string, any>;
+  eventKey: string;
 }) {
   await dbQuery(
-    `INSERT INTO billing_notifications (tenant_id, invoice_id, type, channel, recipient, payload, status)
-     VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
-    [params.tenantId, params.invoiceId || null, params.type, params.channel, params.recipient, JSON.stringify(params.payload)],
+    `INSERT INTO billing_notifications (tenant_id, invoice_id, type, channel, recipient, payload, status, event_key)
+     VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
+     ON CONFLICT (event_key, channel, recipient) WHERE event_key IS NOT NULL DO NOTHING`,
+    [params.tenantId, params.invoiceId || null, params.type, params.channel, params.recipient, JSON.stringify(params.payload), params.eventKey],
   );
 }
 
@@ -606,9 +690,10 @@ export const notifyDueReminders = async (req: any, res: any) => {
         invoiceId: inv.id,
         type: "due_reminder",
         channel: "email",
-        recipient: owner.email,
-        payload,
-      });
+       recipient: owner.email,
+       payload,
+       eventKey: `payment_confirmed:${inv.id}`,
+     });
 
       sent++;
     }
@@ -649,9 +734,10 @@ export const notifyOverdueAlerts = async (req: any, res: any) => {
         tenantId: inv.tenant_id,
         invoiceId: inv.id,
         type: "overdue_alert",
-        channel: "whatsapp",
-        recipient: owner.email,
+        channel: owner.phone ? "whatsapp" : "email",
+        recipient: owner.phone || owner.email,
         payload,
+        eventKey: `overdue_alert:${inv.id}:${inv.due_date}`,
       });
 
       sent++;
@@ -683,6 +769,7 @@ export const sendPaymentConfirmation = async (req: any, res: any) => {
     }
 
     const inv = invoiceRows.rows[0];
+    if (inv.status !== "PAID") return res.status(409).json({ error: "Invoice belum lunas." });
     const owner = await getTenantOwner(tenantId);
     if (!owner) {
       return res.json({ success: true, message: "Payment confirmed. No owner email found for notification." });
@@ -703,8 +790,9 @@ export const sendPaymentConfirmation = async (req: any, res: any) => {
       type: "payment_confirmed",
       channel: "email",
       recipient: owner.email,
-      payload,
-    });
+         payload,
+         eventKey: `due_reminder:${inv.id}:${inv.due_date}`,
+       });
 
     res.json({ success: true, message: "Notifikasi pembayaran berhasil dikirim." });
   } catch (err: any) {

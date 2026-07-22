@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { dbQuery, dbTransaction } from "../../lib/db.js";
 import { logger } from "../../lib/logger.js";
 import nodemailer from "nodemailer";
+import { z } from "zod";
 import { redactTenantSettingsSecrets } from "./bootstrap.controller.js";
 
 async function sendInvitationEmail(email: string, ownerName: string, tenantName: string, token: string, expiresAt: string) {
@@ -17,6 +18,16 @@ async function sendInvitationEmail(email: string, ownerName: string, tenantName:
   await transporter.sendMail({ from: process.env.EMAIL_FROM || user, to: email, subject: `Undangan Owner ${tenantName}`, html: `<p>Halo ${ownerName},</p><p>Anda diundang sebagai owner <strong>${tenantName}</strong>.</p><p><a href="${inviteUrl}">Terima undangan dan buat password</a></p><p>Berlaku sampai ${expiresAt}.</p>` });
   return true;
 }
+
+const tenantConfigSchema = z.object({
+  expectedVersion: z.number().int().positive(),
+  name: z.string().trim().min(1).max(150).optional(),
+  subdomain: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(100).optional(),
+  status: z.enum(["TRIAL", "ACTIVE", "SUSPENDED"]).optional(),
+  tier: z.enum(["BASIC", "PRO", "ENTERPRISE"]).optional(),
+  branding: z.object({ customDomain: z.string().trim().toLowerCase().max(253).optional() }).strict().optional(),
+  storageSettings: z.object({ mode: z.string().trim().min(1).max(50), bucketName: z.string().trim().max(255) }).strict().optional(),
+}).strict();
 
 const allowedSorts: Record<string, string> = {
   name: "t.name",
@@ -197,6 +208,42 @@ export async function listTenants(req: Request, res: Response) {
     res.json({ items, page, pageSize, total: Number(count.rows[0]?.count || 0) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+}
+
+export async function updateTenantConfig(req: Request, res: Response) {
+  const parsed = tenantConfigSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(422).json({ error: "Konfigurasi tenant tidak valid." });
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      const locked = await client.query(`SELECT id,name,subdomain,status,tier,settings,branding,version FROM tenants WHERE id=$1 FOR UPDATE`, [req.params.id]);
+      const current = locked.rows[0];
+      if (!current) return { code: 404, error: "Tenant tidak ditemukan." };
+      if (current.version !== parsed.data.expectedVersion) return { code: 409, error: "Data tenant telah berubah. Muat ulang halaman." };
+
+      const nextSettings = parsed.data.storageSettings
+        ? { ...(current.settings || {}), storageSettings: parsed.data.storageSettings }
+        : current.settings;
+      const nextBranding = parsed.data.branding
+        ? { ...(current.branding || {}), ...parsed.data.branding }
+        : current.branding;
+      const updated = await client.query(
+        `UPDATE tenants SET name=COALESCE($2,name),subdomain=COALESCE($3,subdomain),status=COALESCE($4,status),tier=COALESCE($5,tier),settings=$6::jsonb,branding=$7::jsonb,version=version+1 WHERE id=$1 AND version=$8 RETURNING id,name,subdomain,status,tier,settings,branding,version`,
+        [current.id, parsed.data.name ?? null, parsed.data.subdomain ?? null, parsed.data.status ?? null, parsed.data.tier ?? null, JSON.stringify(nextSettings), JSON.stringify(nextBranding), parsed.data.expectedVersion],
+      );
+      await adminAudit(client, req, "TENANT_CONFIG_UPDATED", "tenant", current.id, current.id,
+        { name: current.name, subdomain: current.subdomain, status: current.status, tier: current.tier, branding: current.branding, storageSettings: current.settings?.storageSettings, version: current.version },
+        { ...updated.rows[0], settings: undefined, storageSettings: updated.rows[0].settings?.storageSettings },
+        { fields: Object.keys(parsed.data).filter((field) => field !== "expectedVersion") });
+      return { tenant: redactTenantSettingsSecrets(updated.rows[0]) };
+    });
+    if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
+    return res.json({ success: true, ...result });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId: req.params.id }, "Tenant config update failed");
+    if (err.code === "23505") return res.status(409).json({ error: "Subdomain sudah digunakan." });
+    return res.status(500).json({ error: "Konfigurasi tenant gagal diperbarui." });
   }
 }
 

@@ -177,6 +177,8 @@ const MainAppContent: React.FC = () => {
   }, [apiLoading]);
   const effectiveLoading = apiLoading && !forceHideLoading;
   const isSuperAdmin = currentUser.role === UserRole.SUPER_ADMIN;
+  const isControlPlane = isSuperAdmin && !isImpersonating;
+  const isTenantWorkspace = !isControlPlane;
 
   // Intercept window.alert & dispatch clean toast alerts
   React.useEffect(() => {
@@ -296,7 +298,7 @@ const MainAppContent: React.FC = () => {
   const handleSetTab = (tab: string, subTab?: string) => {
     // Normalize SA clicks to safe known tab
     const finalTab =
-      isSuperAdmin &&
+      isControlPlane &&
       !SUPER_ADMIN_TABS.includes(tab) &&
       tab !== "customer-portal"
         ? "saas-dashboard"
@@ -317,7 +319,7 @@ const MainAppContent: React.FC = () => {
       else if (finalTab === "hr") finalSub = "attendance";
       else if (finalTab === "crm") finalSub = "customers";
       else if (finalTab === "settings")
-        finalSub = isSuperAdmin ? "storage" : "branding";
+        finalSub = isControlPlane ? "storage" : "branding";
       else if (finalTab === "fraud") finalSub = "audit-log";
 
       setActiveSubTab(finalSub);
@@ -339,10 +341,10 @@ const MainAppContent: React.FC = () => {
     const savedSubTab = localStorage.getItem("saas_active_sub_tab");
     if (savedTab) {
       const isSaTab = SUPER_ADMIN_TABS.includes(savedTab);
-      if (isSuperAdmin && !isSaTab && savedTab !== "customer-portal") {
+             if (isControlPlane && !isSaTab && savedTab !== "customer-portal") {
         setActiveTab("saas-dashboard");
         setActiveSubTab("dashboard");
-      } else if (!isSuperAdmin && isSaTab) {
+      } else if (isTenantWorkspace && isSaTab) {
         setActiveTab("overview");
         setActiveSubTab("overview");
       } else {
@@ -351,7 +353,7 @@ const MainAppContent: React.FC = () => {
         return;
       }
     } else {
-      if (isSuperAdmin) {
+      if (isControlPlane) {
         setActiveTab("saas-dashboard");
         setActiveSubTab("dashboard");
       } else {
@@ -556,6 +558,7 @@ const MainAppContent: React.FC = () => {
             onClose={() => setIsMobileSidebarOpen(false)}
             onOpenSearch={() => setIsSearchOpen(true)}
             navigationMode={navigationMode}
+            tenantWorkspace={isTenantWorkspace}
           />
         )}
 
@@ -584,7 +587,7 @@ const MainAppContent: React.FC = () => {
             />
           </div>
 
-          {!isSuperAdmin && (
+          {isTenantWorkspace && (
             <BottomNav
               activeTab={activeTab}
               onSetTab={handleSetTab}
@@ -594,7 +597,7 @@ const MainAppContent: React.FC = () => {
 
           {/* Top Horizontal Module & Subtab Navigation Ribbon */}
           {navigationMode === "horizontal" &&
-            !isSuperAdmin &&
+            isTenantWorkspace &&
             activeTab !== "customer-portal" && (
               <HorizontalNavbar
                 activeTab={activeTab}
@@ -603,6 +606,7 @@ const MainAppContent: React.FC = () => {
                 setActiveSubTab={setActiveSubTab}
                 navigationMode={navigationMode}
                 setNavigationMode={setNavigationMode}
+                tenantWorkspace={isTenantWorkspace}
               />
             )}
 
@@ -614,7 +618,7 @@ const MainAppContent: React.FC = () => {
             <AppErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 {/* Render Super Admin Workspace */}
-                {isSuperAdmin && (
+                {isControlPlane && (
                   <div id="sa-view-wrapper">
                     <SuperAdminDashboard
                       activeTab={
@@ -628,7 +632,7 @@ const MainAppContent: React.FC = () => {
                 )}
 
                 {/* Render Tenant ERP Workspace */}
-                {!isSuperAdmin && (
+                {isTenantWorkspace && (
                   <div id="tenant-view-wrapper">
                     {(activeTab === "overview" ||
                       activeTab === "services" ||

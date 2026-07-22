@@ -270,7 +270,6 @@ export const requireTenantOrSuperAdminPermission = (permission: string, allowPla
     req.query.tenantId || req.query.tenant_id || "",
   ).trim();
   if (!requestedTenant && !allowPlatformScope) return res.status(400).json({ error: "tenantId is required." });
-  if (!requestedTenant && allowPlatformScope) return next();
 
   let permissions = req.authActor.permissions;
   if (req.authActor.superadminRole) {
@@ -288,6 +287,7 @@ export const requireTenantOrSuperAdminPermission = (permission: string, allowPla
   if (!permissions.includes("*") && !permissions.includes(permission)) {
     return res.status(403).json({ error: "Izin Super Admin tidak mencukupi." });
   }
+  if (!requestedTenant && allowPlatformScope) return next();
   try {
     const tenant = await dbQuery(`SELECT id FROM tenants WHERE id=$1 LIMIT 1`, [requestedTenant]);
     if (!tenant.rows[0]) return res.status(404).json({ error: "Tenant tidak ditemukan." });
