@@ -937,6 +937,28 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
                 activeSessions: user.activeSessions || [],
               }))
             : [];
+          if (currentUser.role === UserRole.SUPER_ADMIN) {
+            setTenants(tenantsList);
+            setUsers(usersList);
+            setBranches([]);
+            setWarehouses([]);
+            setCustomers([]);
+            setProducts([]);
+            setServices([]);
+            setTransactions([]);
+            setShifts([]);
+            setAccounts([]);
+            setJournals([]);
+            setAuditLogs(dbAudits ? toCamelCase(dbAudits) : []);
+            setCurrentTenantId("");
+            setCurrentBranchId("");
+            localStorage.removeItem("saas_curr_tenant_id");
+            localStorage.removeItem("saas_curr_branch_id");
+            setApiStatus("Control plane Super Admin tersinkronisasi.");
+            setApiLoading(false);
+            return;
+          }
+
           const productStockRows = dbProductStock
             ? toCamelCase<Array<{ productId: string; warehouseId: string; quantity: number }>>(dbProductStock)
             : [];
@@ -1757,9 +1779,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const headers = new Headers(options.headers || {});
-    // Inject headers
-    headers.set("X-Tenant-ID", currentTenantId);
-    headers.set("X-Branch-ID", currentBranchId);
+    const isControlPlaneEndpoint = endpoint.startsWith("/api/superadmin/") || endpoint.startsWith("/api/platform/");
+    if (!isControlPlaneEndpoint) {
+      headers.set("X-Tenant-ID", currentTenantId);
+      headers.set("X-Branch-ID", currentBranchId);
+    }
     try {
       const consoleSession = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null");
       if (consoleSession?.id && new Date(consoleSession.expiresAt).getTime() > Date.now()) {
@@ -1802,9 +1826,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     let url = endpoint;
     const separator = url.includes("?") ? "&" : "?";
 
-    if (!options.method || options.method === "GET") {
+    if ((!options.method || options.method === "GET") && !isControlPlaneEndpoint) {
       url = `${url}${separator}tenant_id=${encodeURIComponent(currentTenantId)}&branch_id=${encodeURIComponent(currentBranchId)}`;
-    } else if (options.body && typeof options.body === "string") {
+    } else if (!isControlPlaneEndpoint && options.body && typeof options.body === "string") {
       try {
         const bodyObj = JSON.parse(options.body);
         bodyObj.tenant_id = currentTenantId;

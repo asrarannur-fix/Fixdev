@@ -4,11 +4,11 @@ Peta hak akses lintas role. Sumber: `src/types/index.ts` (`UserRole`), `src/comp
 
 ## Peran Platform (bukan tenant-scoped)
 Peran ini **tidak** termasuk hierarki RBAC tenant — mereka berada di level SaaS/platform.
-- `SUPER_ADMIN` — akses penuh lintas semua tenant; **mem-bypass** seluruh pengecekan `rbacMatrix`/`isSubTabAllowed` (`ServicesTab.tsx:432`, `Sidebar.tsx:313`, `HorizontalNavbar.tsx:295`).
+- `SUPER_ADMIN` — hanya akses control-plane SaaS (`saas-dashboard`, `saas-tenants`, `saas-billing`, `saas-operations`, `saas-audits`). Akses tenant hanya melalui sesi impersonasi server; role platform tidak menjadi role tenant dan tidak memakai bypass `rbacMatrix`.
 - `CUSTOMER` — hanya akses portal publik via `customer_portal` (lihat `CUSTOMER_PORTAL_RULES.md`).
 - `ANONYMOUS` — belum login; hanya route publik & onboarding.
 
-> Catatan: `SUPER_ADMIN` tetap ditampilkan di tabel matriks di bawah murni untuk kelengkapan (semua kolom ✓), tapi secara konseptual dipisah dari peran tenant.
+> Catatan: `SUPER_ADMIN` tidak dimasukkan ke matriks modul tenant. Hak akses tenant saat impersonasi ditentukan oleh sesi server dan mode `READ_ONLY`/`FULL`.
 
 ## Peran Tenant (scoped ke `tenant_id`)
 `OWNER`, `ADMIN`, `MANAGER`, `KASIR`, `TEKNISI`, `SALES`, `HR`.
@@ -24,7 +24,7 @@ Modul: **POS · Service · Inventory · Finance · Tenant · Recovery**
 | KASIR | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | TEKNISI | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ |
 
-*(Baris `SUPER_ADMIN` = ✓ di semua kolom, tetapi termasuk peran platform — lihat atas.)*
+*`SUPER_ADMIN` tidak memiliki baris modul tenant; control-plane dan workspace tenant dipisahkan.*
 
 ## Permission Keys (granular)
 Diambil dari seed data: `dashboard`, `accounting`, `settings`, `crm`, `pos`, `service`, `pos_entry`, `shift_control`, `customer_view`, `service_view`, `service_diagnose`, `service_repair`, `customer_portal`.

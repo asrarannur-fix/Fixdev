@@ -86,5 +86,14 @@ Tiga spec lama gagal sebelum alur modul karena memakai password test kosong dan 
 - Migration `027_superadmin_audit_scope.sql` menyiapkan audit event platform tanpa tenant dan seed permission route aktif. Penerapan migration tertahan karena runner mendeteksi checksum `000_baseline.sql` telah berubah; checksum lama tidak diubah atau dilewati.
 - Verifikasi akhir: `npm run validate` — PASS termasuk build produksi; `git diff --check` — PASS; `npm run test:unit` — 15/15 PASS. `npm run check:hardening` belum dapat dijalankan karena `scripts/validate-hardening.cjs` tidak tersedia di repository.
 
+## Pemisahan Super Admin dan Owner — 22 Juli 2026
+- Mobile bottom navigation tenant tidak lagi dirender pada control-plane Super Admin; file terkait: `src/App.tsx`.
+- Tenant switcher global dihapus dari Topbar Super Admin; pemilihan tenant tetap dilakukan pada modul SaaS dan akses workspace tenant wajib melalui impersonasi; file terkait: `src/components/layout/Topbar.tsx`.
+- Request `/api/superadmin/*` dan `/api/platform/*` tidak lagi menerima injeksi `tenant_id`, `branch_id`, atau header scope tenant; file terkait: `src/context/SaaSContext.tsx`.
+- Platform bootstrap berhenti sebelum pipeline data tenant sehingga tidak membuat branch/gudang semu atau mengisi state operasional tenant pada control-plane; file terkait: `src/context/SaaSContext.tsx`.
+- OWNER tidak lagi memakai permission default SUPER_ADMIN pada navigasi horizontal; izin berasal dari `rbacMatrix` tenant atau default OWNER; file terkait: `src/components/layout/HorizontalNavbar.tsx`.
+- Dokumentasi role menyatakan SUPER_ADMIN sebagai role platform terpisah dan bukan bypass RBAC tenant; file terkait: `ROLE_MENU_MATRIX.md`.
+- Verifikasi: `npm run lint` — PASS; `npm run test:unit` — 15/15 PASS; `git diff --check` — PASS.
+
 ## Status
 Database lokal berhasil dimigrasikan: 26 migration termasuk baseline. Migrasi idempoten dan schema auth terverifikasi.

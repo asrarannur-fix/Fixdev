@@ -175,8 +175,8 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
   );
 
   const userPermissions = useMemo(() => {
-    if (isSuperAdmin || isOwner) {
-      return DEFAULT_ROLE_PERMISSIONS.SUPER_ADMIN;
+    if (isSuperAdmin) {
+      return [];
     }
     const currentTenant = tenants.find((t) => t.id === currentTenantId);
     if (
@@ -190,7 +190,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
 
 
   const isSubmenuAllowed = (modId: string, subId: string) => {
-    if (isSuperAdmin || isOwner) return true;
+    if (isSuperAdmin) return false;
 
     // Tier-based feature gating untuk settings subtabs
     if (modId === "settings") {

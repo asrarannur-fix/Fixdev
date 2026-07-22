@@ -584,11 +584,13 @@ const MainAppContent: React.FC = () => {
             />
           </div>
 
-          <BottomNav
-            activeTab={activeTab}
-            onSetTab={handleSetTab}
-            onOpenMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-          />
+          {!isSuperAdmin && (
+            <BottomNav
+              activeTab={activeTab}
+              onSetTab={handleSetTab}
+              onOpenMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            />
+          )}
 
           {/* Top Horizontal Module & Subtab Navigation Ribbon */}
           {navigationMode === "horizontal" &&

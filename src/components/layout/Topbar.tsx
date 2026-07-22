@@ -296,24 +296,6 @@ export const Topbar: React.FC<TopbarProps> = ({
           </svg>
         </button>
 
-        {/* Tenant Switcher - Super Admin only */}
-        {currentUser.role === UserRole.SUPER_ADMIN && (
-          <div className="flex items-center gap-1 bg-slate-100/50 dark:bg-slate-900/40 border border-slate-200/40 dark:border-slate-800/80 rounded-lg px-1.5 sm:px-2 py-1 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-all shrink-0">
-            <Globe className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0 hidden sm:block" />
-            <select
-              value={currentTenantId}
-              onChange={(e) => switchTenant(e.target.value)}
-              className="text-[10px] sm:text-xs font-bold bg-transparent border-none outline-none text-slate-800 dark:text-slate-100 cursor-pointer pr-1 max-w-[100px] sm:max-w-[160px] truncate [&>option]:bg-white dark:[&>option]:bg-slate-900 [&>option]:text-slate-800 dark:[&>option]:text-slate-100"
-              id="tenant-switcher-select"
-              aria-label="Switch tenant"
-            >
-              {tenants.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {/* Branch Switcher */}
         {currentUser.role !== UserRole.SUPER_ADMIN && tenantBranches.length > 0 && (
           <div className="flex items-center gap-1 bg-slate-100/50 dark:bg-slate-900/40 border border-slate-200/40 dark:border-slate-800/80 rounded-lg px-1.5 sm:px-2 py-1 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-all shrink-0">
