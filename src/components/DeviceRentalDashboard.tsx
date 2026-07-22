@@ -19,7 +19,6 @@ import {
   RotateCcw,
   CheckCircle,
   TrendingUp,
-  Sparkles,
   ShieldCheck,
   AlertCircle,
   Search,
@@ -573,7 +572,7 @@ export const DeviceRentalDashboard: React.FC = () => {
         <div className="xl:col-span-5 p-5 border-r border-slate-100 dark:border-zinc-800 space-y-5">
           <div className="border-b border-slate-100 dark:border-zinc-800 pb-2">
             <h4 className="font-bold text-xs uppercase text-slate-700 dark:text-zinc-200 tracking-wider flex items-center gap-1">
-              <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" /> Buat
+              <Smartphone className="w-4 h-4 text-blue-600" /> Buat
               Kontrak Sewa Perangkat
             </h4>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">

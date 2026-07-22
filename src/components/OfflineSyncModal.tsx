@@ -26,7 +26,6 @@ import {
   Clock,
   Database,
   ArrowRight,
-  Sparkles,
   MapPin,
   Cpu,
   Layers,
@@ -710,7 +709,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
         {successMsg ? (
           <div className="p-8 text-center space-y-4 animate-scaleUp my-auto">
             <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center">
-              <Sparkles className="w-8 h-8 animate-pulse" />
+              <RefreshCw className="w-8 h-8 animate-spin" />
             </div>
             <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
               Penyelarasan Selesai!

@@ -56,7 +56,6 @@ const timeAgo = (s?: string): string => {
   return `${Math.floor(h / 24)}h lalu`;
 };
 
-/* ── AI engine (mock) ───────────────────────────────────────── */
 const runAI = (complaints: string, brand: string) => {
   const q = `${complaints} ${brand}`.toLowerCase();
   const r: { cause: string; pct: number; parts: string[]; action: string }[] = [];

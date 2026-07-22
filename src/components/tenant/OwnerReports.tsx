@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useSaaS } from "../../context/SaaSContext";
-import { Settings, Sparkles, Calendar, ChevronDown, Printer, Search } from "lucide-react";
+import { Settings,  Calendar, ChevronDown, Printer, Search } from "lucide-react";
 import { ServiceStatus } from "../../types";
 import { WidgetLayout, loadWidgetLayout } from "../dashboard/widgetTypes";
 import { WIDGET_REGISTRY } from "../dashboard/widgetRegistry";
@@ -103,7 +103,7 @@ export const OwnerReports: React.FC<{ activeSubTab?: string; onSetTab?: (tab: st
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-violet-500 dark:from-pink-600 dark:to-violet-600 flex items-center justify-center shadow-lg shadow-pink-200 dark:shadow-pink-900/30">
-            <Sparkles className="w-5 h-5 text-white" />
+            <Printer className="w-5 h-5 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-800 dark:text-zinc-100">Dashboard {activeTenant?.name || "Owner"}</h1>

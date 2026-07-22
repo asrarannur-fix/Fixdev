@@ -27,11 +27,11 @@ Modul: **POS · Service · Inventory · Finance · Tenant · Recovery**
 *(Baris `SUPER_ADMIN` = ✓ di semua kolom, tetapi termasuk peran platform — lihat atas.)*
 
 ## Permission Keys (granular)
-Diambil dari seed data: `dashboard`, `accounting`, `settings`, `crm`, `pos`, `service`, `pos_entry`, `shift_control`, `customer_view`, `service_view`, `service_diagnose`, `service_repair`, `ai_assistant`, `customer_portal`.
+Diambil dari seed data: `dashboard`, `accounting`, `settings`, `crm`, `pos`, `service`, `pos_entry`, `shift_control`, `customer_view`, `service_view`, `service_diagnose`, `service_repair`, `customer_portal`.
 
 Contoh pemetaan (seed):
 - **OWNER** → `dashboard, accounting, settings, crm, pos, service`
-- **TEKNISI** → `service_view, service_diagnose, service_repair` (+ `ai_assistant` untuk akun dg akses AI)
+- **TEKNISI** → `service_view, service_diagnose, service_repair`
 - **KASIR** → `pos_entry, shift_control, customer_view`
 - **CUSTOMER** → `customer_portal`
 

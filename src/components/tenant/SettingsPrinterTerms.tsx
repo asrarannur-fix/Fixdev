@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useToast } from "../ui/Toast";
-import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Download, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus, Sparkles, RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck } from "lucide-react";
+import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Download, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus,  RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck } from "lucide-react";
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
 
 export const SettingsPrinterTerms: React.FC<any> = (props) => {

@@ -16,7 +16,6 @@ import { readJsonResponse } from "../utils/apiResponse";
 import {
   Check,
   CreditCard,
-  Sparkles,
   RefreshCw,
   AlertCircle,
   Clock,
@@ -546,7 +545,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
 
   const getTierIcon = (tier: SubscriptionTier) => {
     if (tier === SubscriptionTier.ENTERPRISE)
-      return <Sparkles className="w-5 h-5 text-indigo-500" />;
+      return <FileText className="w-5 h-5 text-indigo-500" />;
     if (tier === SubscriptionTier.PRO)
       return <CreditCard className="w-5 h-5 text-teal-500" />;
     return <Building className="w-5 h-5 text-slate-500" />;
@@ -945,7 +944,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   {/* Hot Badge */}
                   {p.tier === "PRO" && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-teal-600 text-white text-[9px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider shadow-sm flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300" />{" "}
+                      <CheckCircle2 className="w-3 h-3 text-green-500" />{" "}
                       Pilihan Terpopuler
                     </span>
                   )}
@@ -1136,7 +1135,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
             <div>
               <div className="flex items-center gap-2">
                 <span className="p-2 bg-teal-50 dark:bg-teal-950/20 rounded-xl text-teal-600">
-                  <Sparkles className="w-5 h-5" />
+                  <FileText className="w-5 h-5" />
                 </span>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-zinc-200 uppercase tracking-wider">

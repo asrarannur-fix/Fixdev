@@ -18,7 +18,6 @@ import {
   Wrench,
   Search,
   MessageSquare,
-  Sparkles,
   Send,
   CheckCircle,
   FileText,
@@ -2199,7 +2198,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                     </h3>
                     <p className="text-[10.5px] text-slate-500 dark:text-zinc-400">
                       Terhubung langsung ke tim teknisi lab atau support CS
-                      kami, dipandu oleh asisten AI pintar.
+                      kami, dipandu oleh portal layanan.
                     </p>
                   </div>
 
@@ -2282,7 +2281,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                   {isChatLoading && (
                     <div className="flex flex-col items-start space-y-1">
                       <span className="text-[9px] text-indigo-400 font-mono font-bold uppercase animate-pulse">
-                        Sistem AI sedang mengetik...
+                        Sistem memuat data...
                       </span>
                       <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 text-xs px-3.5 py-2.5 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-xs">
                         <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />

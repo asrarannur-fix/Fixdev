@@ -19,7 +19,6 @@ import {
   Settings,
   FileText,
   Sliders,
-  Sparkles,
   CheckCircle2,
 } from "lucide-react";
 
@@ -939,7 +938,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
 
                 {thermalPrintedOutput && !isThermalPrinting && (
                   <div className="text-center pt-3 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-black uppercase tracking-wider animate-fadeIn flex items-center gap-1">
-                    <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />{" "}
+                    <CheckCircle2 className="w-4 h-4" />{" "}
                     Label Berhasil Dikeluarkan ({thermalTapeSize}mm Roll)
                   </div>
                 )}

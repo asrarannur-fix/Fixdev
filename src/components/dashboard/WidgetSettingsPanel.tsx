@@ -1,5 +1,5 @@
 import React from "react";
-import { Settings, RotateCcw, GripVertical, Eye, EyeOff, X, Sparkles } from "lucide-react";
+import { Settings, RotateCcw, GripVertical, Eye, EyeOff, X } from "lucide-react";
 import { WidgetConfig, WidgetLayout, saveWidgetLayout, resetWidgetLayout } from "./widgetTypes";
 
 interface WidgetSettingsPanelProps {
@@ -64,7 +64,7 @@ export const WidgetSettingsPanel: React.FC<WidgetSettingsPanelProps> = ({
         <div className="bg-gradient-to-r from-pink-500 to-violet-500 px-5 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-white" />
+              <Settings className="w-4 h-4 text-white" />
               <h3 className="text-sm font-black text-white">Widget Dashboard</h3>
             </div>
             <button onClick={onClose} className="p-1 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">

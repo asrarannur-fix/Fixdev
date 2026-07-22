@@ -27,7 +27,6 @@ import {
   Printer,
   Check,
   Calendar,
-  Sparkles,
   RefreshCw,
   Clock,
   UserCheck,
@@ -155,7 +154,7 @@ export const SmallPartsSearch: React.FC = () => {
     });
     const footerHtml = getPrintFooterHtml(
       printConfig,
-      "Generated automatically via AI Predictive Stock System",
+      "Dibuat otomatis oleh sistem prediksi stok",
     );
     const termsHtml = getPrintTermsHtml(printConfig, "general");
 
@@ -855,13 +854,13 @@ export const SmallPartsSearch: React.FC = () => {
         </div>
       )}
 
-      {/* SUB-TAB 2: AI Predictive Reorder Dashboard */}
+      {/* SUB-TAB 2: Predictive Reorder Dashboard */}
       {activeSubTab === "predictive" && (
         <div className="p-5 space-y-5 animate-fadeIn">
           <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/10 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
             <div className="space-y-1">
               <h4 className="font-extrabold text-amber-900 dark:text-amber-400 flex items-center gap-1.5 uppercase font-mono text-[11px] tracking-wide">
-                <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />{" "}
+                <TrendingUp className="w-4 h-4 text-amber-500" />{" "}
                 Algoritma Prediksi Pengisian Ulang Stok Otomatis
               </h4>
               <p className="text-amber-800 dark:text-amber-500 leading-relaxed text-[11px]">
@@ -1094,7 +1093,7 @@ export const SmallPartsSearch: React.FC = () => {
                     </div>
 
                     <div className="text-center text-[7.5px] text-slate-400 pt-2 border-t border-dashed border-slate-300 dark:border-zinc-800 leading-none">
-                      * Generated automatically via AI Predictive Stock System
+                      * Dibuat otomatis oleh sistem prediksi stok
                     </div>
                   </div>
 

@@ -2763,7 +2763,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       }),
     );
     addLog(
-      "AI & Technical Diagnose Completed",
+      "Diagnosis Teknis Selesai",
       `Diagnosa srv ID: ${id}, Est: Rp${(estCost ?? 0).toLocaleString()}`,
       "SERVICE",
     );

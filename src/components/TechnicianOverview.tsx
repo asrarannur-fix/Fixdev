@@ -27,7 +27,6 @@ import {
   Bell,
   Send,
   Volume2,
-  Sparkles,
 } from "lucide-react";
 import { ServiceStatus } from "../types";
 
@@ -706,7 +705,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                   {/* Admin Quick Pills */}
                   <div className="flex flex-wrap gap-1.5 items-center">
                     <span className="text-[8px] font-bold uppercase text-slate-400 mr-1 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-amber-500 animate-spin" />{" "}
+                      <AlertCircle className="w-3 h-3 text-amber-500" />{" "}
                       Respon Cepat Admin:
                     </span>
                     <button
@@ -994,7 +993,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                 {/* Badge Achievements */}
                 <div className="space-y-3">
                   <h4 className="font-extrabold text-xs uppercase text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 border-b pb-2 border-slate-100 dark:border-zinc-800">
-                    <Sparkles className="w-4 h-4 text-indigo-500" /> Medali
+                    <Trophy className="w-4 h-4 text-indigo-500" /> Medali
                     &amp; Lencana Prestasi Kerja
                   </h4>
                   <div className="grid grid-cols-2 gap-2.5">

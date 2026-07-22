@@ -11,7 +11,6 @@ import {
   Trash2,
   DollarSign,
   TrendingUp,
-  Sparkles,
   AlertCircle,
   FileSpreadsheet,
   Check,
@@ -388,7 +387,7 @@ export const B2BPipeline: React.FC = () => {
         </div>
         <div className="p-5 flex items-center gap-4 border-r border-slate-100 dark:border-zinc-800">
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl">
-            <Sparkles className="w-5 h-5" />
+            <Check className="w-5 h-5" />
           </div>
           <div>
             <p className="text-[9.5px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
@@ -713,7 +712,7 @@ export const B2BPipeline: React.FC = () => {
                                   </>
                                 ) : (
                                   <>
-                                    <Sparkles className="w-3 h-3 animate-pulse" />{" "}
+                                    <Plus className="w-3 h-3" />{" "}
                                     Buat Tiket
                                   </>
                                 )}

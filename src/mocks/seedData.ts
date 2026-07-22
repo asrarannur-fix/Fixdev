@@ -246,7 +246,6 @@ export const INITIAL_USERS: User[] = [
       "service_view",
       "service_diagnose",
       "service_repair",
-      "ai_assistant",
     ],
     mfaEnabled: false,
     loginHistory: [],

@@ -31,7 +31,6 @@ import {
   ToggleRight,
   Info,
   Layers,
-  Sparkles,
   Play,
   Pause as PauseIcon,
   PlusCircle,

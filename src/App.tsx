@@ -19,8 +19,9 @@ import { UserRole } from "./types";
 import { OfflineSyncModal } from "./components/OfflineSyncModal";
 import { LandingPage } from "./components/LandingPage";
 import { InvitationAcceptance } from "./components/InvitationAcceptance";
-import { Sparkles } from "lucide-react";
+
 import { isTrialActive } from "./lib/featureUtils";
+import { ShieldCheck } from "lucide-react";
 
 // Lazy-loaded components for optimal bundle chunking and code splitting
 const SuperAdminDashboard = React.lazy(() =>
@@ -445,7 +446,7 @@ const MainAppContent: React.FC = () => {
             className="bg-accent text-white p-2 text-center text-sm font-medium flex items-center justify-center gap-2 z-[9999] shrink-0 border-b border-accent/30"
             id="trial-banner-top"
           >
-            <Sparkles className="h-4 w-4" />
+            <ShieldCheck className="h-4 w-4" />
             <span>
               Masa percobaan {Math.ceil((new Date(activeTenant.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} hari tersisa.
               <button
@@ -458,7 +459,7 @@ const MainAppContent: React.FC = () => {
                 Upgrade Sekarang!
               </button>
             </span>
-            <Sparkles className="h-4 w-4" />
+            <ShieldCheck className="h-4 w-4" />
           </div>
         );
       })()}

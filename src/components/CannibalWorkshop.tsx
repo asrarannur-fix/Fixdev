@@ -3,7 +3,6 @@ import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import {
   Hammer,
-  Sparkles,
   Check,
   ListChecks,
   Coins,
@@ -299,7 +298,7 @@ export const CannibalWorkshop: React.FC = () => {
         <div className="xl:col-span-5 p-5 border-r border-slate-100 dark:border-zinc-800 space-y-5">
           <div className="border-b border-slate-100 dark:border-zinc-800 pb-2">
             <h4 className="font-bold text-xs uppercase text-slate-700 dark:text-zinc-200 tracking-wider flex items-center gap-1">
-              <Sparkles className="w-4 h-4 text-accent animate-pulse" />{" "}
+              <Hammer className="w-4 h-4 text-accent" />{" "}
               Form Dekonstruksi Suku Cadang
             </h4>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">

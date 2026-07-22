@@ -19,7 +19,6 @@ import {
   Package,
   ThumbsUp,
   ThumbsDown,
-  Sparkles,
   ArrowLeft,
   ShieldCheck,
   FileText,

@@ -27,8 +27,11 @@ Jalankan di server: `bash deploy.sh`
 - Server produksi listen port **3000**; development default **3001**.
 
 ## Catatan Perbaikan Deployment
+- Ikon `Sparkles` dan teks AI pada antarmuka dihapus agar visual tidak menyerupai Gemini; ikon konteks menggantikan ikon dekoratif bila tersedia. File terkait: `src/App.tsx`, `src/config/nav.config.ts`, `src/components`, `src/context/SaaSContext.tsx`.
 - Validasi `ALLOWED_ORIGINS` kini menerima host root `TENANT_ROOT_DOMAIN` dan subdomain tenant tanpa menolak `APP_URL` produksi.
-- File terkait: `server.ts`.
+- Environment development berada di `/home/ubuntu/fixdev` dengan `.env`, sedangkan production berada di `/var/www/fixdev` dengan `/etc/fixdev/fixdev.production.env` dan PM2. Build development tidak lagi menimpa artefak production.
+- Variabel Supabase lama dihapus dari environment development dan production karena aplikasi memakai PostgreSQL langsung melalui `DATABASE_URL`.
+- File terkait: `server.ts`, `deploy.sh`, `ecosystem.config.cjs`, `.env`, `/etc/fixdev/fixdev.production.env`, `DEPLOYMENT_PRODUCTION_CHECKLIST.md`.
 
 ## Post-Deploy
 - [ ] `pm2 logs fixdev-erp` tidak error.

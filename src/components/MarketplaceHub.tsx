@@ -26,7 +26,6 @@ import {
   Package,
   Clock,
   ArrowRight,
-  Sparkles,
   Search,
   Activity,
   Info,
@@ -1555,7 +1554,7 @@ export const MarketplaceHub: React.FC = () => {
                 Toko Dominan Bulan Ini
               </span>
               <p className="text-sm font-black text-indigo-950 dark:text-indigo-300 mt-1 flex items-center gap-1">
-                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <ShoppingBag className="w-4 h-4 text-indigo-500" />
                 <span>Shopee Store Makassar (67%)</span>
               </p>
             </div>

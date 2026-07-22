@@ -33,7 +33,6 @@ import {
   Truck,
   CheckSquare,
   ArrowRightLeft,
-  Sparkles,
   FileSpreadsheet,
   TrendingUp,
   Sliders,
@@ -164,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case "crm":
         return "Modul CRM & Promosi membantu Anda melakukan segmentasi pelanggan, mengelola penawaran B2B sales pipeline, serta menyebarkan voucher promo via WhatsApp Broadcast secara massal.";
       case "fraud":
-        return "Modul Keamanan & Audit (AI Fraud Detector) menggunakan analitik real-time untuk mendeteksi keanehan transaksi void kasir, melacak histori audit trail serta meminimalkan kerugian akibat kebocoran keuangan.";
+        return "Modul Keamanan & Audit menggunakan analitik real-time untuk mendeteksi keanehan transaksi void kasir, melacak histori audit trail serta meminimalkan kerugian akibat kebocoran keuangan.";
       default:
         return "Tingkatkan produktivitas bisnis Anda dengan mengaktifkan modul premium.";
     }
@@ -804,7 +803,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Requirement Alert Badge */}
               <div className="bg-indigo-500/10 border border-accent/20 rounded-2xl p-4 flex items-start gap-3">
-                <Sparkles className="w-4 h-4 text-accent dark:text-accent shrink-0 mt-0.5" />
+                <FolderLock className="w-4 h-4 text-accent dark:text-accent shrink-0 mt-0.5" />
                 <div>
                   <h5 className="text-[11px] font-bold text-indigo-900 dark:text-indigo-300">
                     Syarat Upgrade Paket

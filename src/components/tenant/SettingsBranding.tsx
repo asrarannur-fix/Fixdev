@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useToast } from "../ui/Toast";
-import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus, Sparkles, RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck, Download, Upload, RotateCcw, Moon, Sun, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus,  RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck, Download, Upload, RotateCcw, Moon, Sun, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
 import { BRANDING_PRESETS } from "../../config/BrandingPresets";
 import { applyTenantBranding } from "../../utils/branding";
@@ -76,7 +76,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-accent-lighter text-accent rounded-lg">
-            <Sparkles className="w-4 h-4 animate-pulse" />
+            <Settings className="w-4 h-4" />
           </div>
           <div>
             <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">

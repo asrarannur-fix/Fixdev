@@ -14,7 +14,6 @@ import {
   CheckCheck,
   AlertCircle,
   User,
-  Sparkles,
   Clock,
   Phone,
   Mail,

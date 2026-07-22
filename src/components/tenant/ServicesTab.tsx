@@ -55,7 +55,6 @@ import {
   ShieldCheck,
   Timer,
   PackagePlus,
-  Sparkles,
   ListChecks,
 } from "lucide-react";
 import { useSaaS } from "../../context/SaaSContext";

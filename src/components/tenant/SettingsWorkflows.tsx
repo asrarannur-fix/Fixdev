@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus, Sparkles, RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck } from "lucide-react";
+import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus,  RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck } from "lucide-react";
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
 
 export const SettingsWorkflows: React.FC<any> = (props) => {
@@ -31,10 +31,10 @@ export const SettingsWorkflows: React.FC<any> = (props) => {
     {showAddWorkflowModal && (
       <div className="bg-slate-50 border border-indigo-100 rounded-2xl p-5 animate-fadeIn space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-          <h4 className="font-extrabold text-xs text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-accent animate-pulse" />{" "}
-            Buat Alur Kerja Otomatis Baru
-          </h4>
+<h4 className="font-extrabold text-xs text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+             <FileText className="w-4 h-4 text-accent" />{" "}
+             Buat Alur Kerja Otomatis Baru
+           </h4>
           <button
             onClick={() => setShowAddWorkflowModal(false)}
             className="text-slate-400 hover:text-slate-600 font-extrabold text-xs"

@@ -7,7 +7,6 @@ import React, { useState } from "react";
 import {
   BookOpen,
   Search,
-  Sparkles,
   FileText,
   ExternalLink,
   HelpCircle,
@@ -170,16 +169,16 @@ export const KnowledgeBase: React.FC = () => {
         </div>
         <div className="relative z-10 max-w-2xl space-y-2">
           <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 border border-accent/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-            Pusat Pengetahuan & Asisten Diagnosis AI
+            <BookOpen className="w-3.5 h-3.5" />
+            Pusat Pengetahuan Teknis
           </div>
           <h2 className="text-xl md:text-2xl font-black tracking-tight">
-            Perpustakaan Skema & Diagnosis Asisten AI
+            Perpustakaan Skema & Panduan Diagnosis
           </h2>
           <p className="text-xs text-slate-300 leading-relaxed">
             Akses diagram boardview sirkuit cetak (PCB), skema kelistrikan
-            resmi, dan gunakan Asisten Diagnosis AI untuk memecahkan
-            masalah perangkat keras yang kompleks dalam hitungan detik.
+            resmi, dan gunakan panduan diagnosis untuk memecahkan masalah
+            perangkat keras yang kompleks.
           </p>
         </div>
       </div>

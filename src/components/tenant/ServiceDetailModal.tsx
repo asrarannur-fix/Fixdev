@@ -6,7 +6,7 @@ import { getStorageLocations } from "./StorageLocationManager";
 import { buildServiceReceptionPreview } from "../../utils/serviceReceptionUtils";
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from "../../types";
 import { useSaaS } from "../../context/SaaSContext";
-import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus, Sparkles, ListChecks } from "lucide-react";
+import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus,  ListChecks } from "lucide-react";
 
 const SERVICE_TRANSITIONS: Record<string, string[]> = {
   DITERIMA: ["ANTRIAN", "DIAGNOSA", "DIBATALKAN"],
@@ -1169,7 +1169,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2">
                         <div className="p-2 bg-accent-lighter rounded-lg text-accent">
-                          <Sparkles className="w-4 h-4" />
+                           <CheckCircle className="w-4 h-4" />
+
                         </div>
                         <div>
                           <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
