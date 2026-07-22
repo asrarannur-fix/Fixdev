@@ -68,8 +68,8 @@ export async function getManualPaymentConfig(req: Request, res: Response) {
     const config = await readManualConfig();
     let qrisImageUrl = "";
     if (config.manualQrisEnabled && config.qrisObjectPath) {
-      await ensureUploadTarget(config.qrisObjectPath);
-      qrisImageUrl = `/uploads/${config.qrisObjectPath}`;
+      const image = await fs.readFile(localUploadPath(config.qrisObjectPath));
+      qrisImageUrl = `data:${config.qrisObjectPath.endsWith(".png") ? "image/png" : "image/jpeg"};base64,${image.toString("base64")}`;
     }
     const isSuperAdmin = req.authActor?.role === "SUPER_ADMIN";
     res.json({
@@ -80,6 +80,7 @@ export async function getManualPaymentConfig(req: Request, res: Response) {
       accountHolder: config.accountHolder,
       instructions: config.instructions,
       qrisImageUrl,
+      qrisObjectPath: isSuperAdmin ? config.qrisObjectPath : undefined,
       qrisOriginalName: isSuperAdmin ? config.qrisOriginalName : undefined,
       qrisConfigured: Boolean(config.qrisObjectPath),
     });
@@ -275,8 +276,21 @@ export async function submitManualPayment(req: Request, res: Response) {
     return res.status(422).json({ error: "Lokasi bukti pembayaran tidak valid." });
   }
 
+  const objectName = objectPath.slice(expectedPrefix.length);
+  if (!new RegExp(`^[0-9a-f-]+\\.${extensionFor(contentType)}$`).test(objectName)) {
+    return res.status(422).json({ error: "Lokasi bukti pembayaran tidak valid." });
+  }
+
   try {
-    await fs.access(localUploadPath(objectPath));
+    const proofPath = localUploadPath(objectPath);
+    const proofStat = await fs.stat(proofPath);
+    if (proofStat.size !== sizeBytes || proofStat.size < 1 || proofStat.size > MAX_PROOF_BYTES) {
+      return res.status(422).json({ error: "Ukuran bukti pembayaran tidak sesuai." });
+    }
+    const proofBuffer = await fs.readFile(proofPath);
+    if (contentType !== "application/pdf" && !matchesImageSignature(proofBuffer, contentType)) {
+      return res.status(422).json({ error: "Isi bukti pembayaran tidak sesuai format." });
+    }
     const result = await dbTransaction(async (client) => {
       const locked = await client.query(`SELECT id, tenant_id, amount, status FROM saas_invoices WHERE id = $1 AND tenant_id = $2 FOR UPDATE`, [invoiceId, req.tenantId]);
       const invoice = locked.rows[0];
@@ -296,10 +310,15 @@ export async function submitManualPayment(req: Request, res: Response) {
       );
       await client.query(`UPDATE saas_invoices SET status = 'PENDING_VERIFICATION', version = version + 1 WHERE id = $1`, [invoiceId]);
       await audit(client, req, "MANUAL_PAYMENT_SUBMITTED", inserted.rows[0].id, invoice.tenant_id, { method, invoiceId });
-      await notify(client, `manual_submitted:${inserted.rows[0].id}`, req.tenantId!, "SUPER_ADMIN", "Pembayaran menunggu verifikasi", `Bukti pembayaran invoice ${invoiceId} telah dikirim.`, inserted.rows[0].id);
       return { request: inserted.rows[0] };
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
+    const request = (result as any).request;
+    try {
+      await dbTransaction((client) => notify(client, `manual_submitted:${request.id}`, req.tenantId!, "SUPER_ADMIN", "Pembayaran menunggu verifikasi", `Bukti pembayaran invoice ${invoiceId} telah dikirim.`, request.id));
+    } catch (err: any) {
+      logger.error({ err: err.message, requestId: request.id }, "Manual payment notification failed");
+    }
     return res.status(201).json({ success: true, ...(result as any) });
   } catch (err: any) {
     if (err.code === "ENOENT") return res.status(422).json({ error: "Bukti pembayaran belum diunggah." });

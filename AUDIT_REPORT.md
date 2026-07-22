@@ -147,6 +147,11 @@ Tiga spec lama gagal sebelum alur modul karena memakai password test kosong dan 
 - Verifikasi terbaru: billing/security 9/9 PASS; unit 15/15 PASS; lint PASS; migration 000–032 development PASS.
 - Residual eksplisit: external Midtrans reconciliation nyata, magic-byte file inspection, worker delivery staging, dan production migration rollout belum diverifikasi; status “sempurna” belum diklaim.
 
+## Perbaikan Penyimpanan Bukti Pembayaran Manual — 22 Juli 2026
+- Submit pembayaran manual kini memverifikasi nama file server-generated, ukuran file aktual, dan signature JPG/PNG sebelum transaksi database dijalankan.
+- File yang hanya lolos prefix path atau metadata browser tidak lagi dapat masuk sebagai bukti pembayaran.
+- File terkait: `src/server/controllers/manualPayment.controller.ts`.
+
 ## Rombak UI Billing Control Plane — 22 Juli 2026
 - Billing memiliki hero control-plane, metrik operasional, dan navigasi anchor Ringkasan/Paket/Invoice/Verifikasi/Konfigurasi.
 - Tenant selector, invoice history, review queue, serta konfigurasi diberi struktur section dan scroll target yang jelas.
@@ -170,6 +175,11 @@ Tiga spec lama gagal sebelum alur modul karena memakai password test kosong dan 
 - Plan, manual config, dan gateway memakai fieldset disabled nyata pada read-only; keyboard tidak dapat mengubah draft palsu.
 - Konfigurasi global tetap dapat dibuka tanpa tenant; cron action hanya tampil untuk Super Admin.
 - Verifikasi: lint PASS, unit 15/15 PASS, billing tests 5/5 PASS.
+
+## Perbaikan Penyimpanan Pembayaran Manual
+- Pengajuan pembayaran manual kini dikomit sebelum pengiriman notifikasi; kegagalan tabel/outbox notifikasi tidak lagi me-rollback bukti, request, dan status invoice.
+- Kegagalan notifikasi dicatat terpisah dengan ID pengajuan agar dapat ditindaklanjuti tanpa menghilangkan pembayaran.
+- File terkait: `src/server/controllers/manualPayment.controller.ts`, `tests/billing-security.test.ts`.
 
 ## Status
 Database lokal berhasil dimigrasikan: 33 migration termasuk immutable baseline. Migrasi idempoten dan schema auth terverifikasi.
