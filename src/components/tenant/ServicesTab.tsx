@@ -423,7 +423,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         "CRM",
         "WHATSAPP",
         "TELEGRAM",
-        "AI_DIAGNOSE",
       ],
       ENTERPRISE: [
         "POS",
@@ -433,7 +432,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         "CRM",
         "WHATSAPP",
         "TELEGRAM",
-        "AI_DIAGNOSE",
         "MARKETPLACE",
         "RENTAL",
         "SECURITY",

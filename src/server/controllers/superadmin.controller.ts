@@ -540,8 +540,8 @@ export async function registerTenant(req: Request, res: Response) {
 
   const planLimits: Record<string, { users: number; branches: number; storageMb: number; features: string[] }> = {
     BASIC: { users: 3, branches: 1, storageMb: 500, features: ["POS", "SERVICE"] },
-    PRO: { users: 15, branches: 5, storageMb: 2048, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE"] },
-    ENTERPRISE: { users: 100, branches: 20, storageMb: 10240, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE", "MARKETPLACE", "RENTAL", "SECURITY"] },
+    PRO: { users: 15, branches: 5, storageMb: 2048, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM"] },
+    ENTERPRISE: { users: 100, branches: 20, storageMb: 10240, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "MARKETPLACE", "RENTAL", "SECURITY"] },
   };
   const token = randomBytes(32).toString("base64url");
   const tokenHash = createHash("sha256").update(token).digest("hex");

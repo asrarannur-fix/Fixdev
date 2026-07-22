@@ -49,7 +49,6 @@ export const INITIAL_TENANTS: Tenant[] = [
         "CRM",
         "WHATSAPP",
         "TELEGRAM",
-        "AI_DIAGNOSE",
         "MARKETPLACE",
         "RENTAL",
       ],

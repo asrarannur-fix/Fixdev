@@ -26,6 +26,7 @@ import {
   createInvoice,
   toggleRenew,
   simulateRecurringCron,
+  simulateTrialExpiryCron,
   getGatewayConfig,
   updateGatewayConfig,
   notifyDueReminders,
@@ -53,6 +54,7 @@ router.post("/pay-invoice", (_req, res) => res.status(410).json({
 }));
 router.post("/toggle-renew", requireTenantOrSuperAdminPermission("billing:manage_subscription"), requireRoles("OWNER", "ADMIN", "SUPER_ADMIN"), toggleRenew);
 router.post("/simulate-recurring-cron", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, simulateRecurringCron);
+router.post("/simulate-trial-expiry", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, simulateTrialExpiryCron);
 router.post("/notify-due-reminders", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyDueReminders);
 router.post("/notify-overdue-alerts", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyOverdueAlerts);
 router.post("/notify-payment-confirmation", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, sendPaymentConfirmation);

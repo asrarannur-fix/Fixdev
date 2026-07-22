@@ -1,8 +1,13 @@
 import React from "react";
 import { useSaaS } from "../../context/SaaSContext";
-import { CreditCard, AlertTriangle, X } from "lucide-react";
+import { CreditCard, AlertTriangle, ExternalLink, X } from "lucide-react";
 
-export const TrialBanner: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
+interface TrialBannerProps {
+  onClose?: () => void;
+  onUpgrade?: () => void;
+}
+
+export const TrialBanner: React.FC<TrialBannerProps> = ({ onClose, onUpgrade }) => {
   const { tenants, currentTenantId, currentUser } = useSaaS();
   const activeTenant = tenants.find((t) => t.id === currentTenantId);
 
@@ -26,6 +31,15 @@ export const TrialBanner: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
           <p className="text-[11px] text-red-600 dark:text-red-300 mt-0.5">
             Masa trial telah berakhir. Segera upgrade untuk melanjutkan akses.
           </p>
+          {onUpgrade && (
+            <button
+              onClick={onUpgrade}
+              className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Upgrade Sekarang
+            </button>
+          )}
         </div>
         {onClose && (
           <button onClick={onClose} className="text-red-400 hover:text-red-600 shrink-0">
@@ -46,6 +60,9 @@ export const TrialBanner: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
   const subTextColor = isUrgent
     ? "text-red-600 dark:text-red-300"
     : "text-amber-600 dark:text-amber-300";
+  const btnColor = isUrgent
+    ? "bg-red-600 hover:bg-red-700 text-white"
+    : "bg-amber-600 hover:bg-amber-700 text-white";
 
   return (
     <div className={`${bgColor} border rounded-xl p-3 flex items-start gap-3`}>
@@ -62,6 +79,15 @@ export const TrialBanner: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
             year: "numeric",
           })}
         </p>
+        {onUpgrade && (
+          <button
+            onClick={onUpgrade}
+            className={`mt-2 inline-flex items-center gap-1 text-[11px] font-semibold ${btnColor} px-3 py-1.5 rounded-lg transition-colors`}
+          >
+            <ExternalLink className="w-3 h-3" />
+            Upgrade Sekarang
+          </button>
+        )}
       </div>
       {onClose && (
         <button onClick={onClose} className={`${subTextColor} hover:opacity-70 shrink-0`}>

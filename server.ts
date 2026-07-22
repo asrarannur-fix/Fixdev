@@ -42,7 +42,7 @@ import {
 import { auditMiddleware } from "./src/server/controllers/audit.controller.js";
 import auditRoutes from "./src/server/routes/audit.routes.js";
 import billingRoutes from "./src/server/routes/billing.routes.js";
-import aiRoutes from "./src/server/routes/ai.routes.js";
+
 import { createCrudRouter } from "./src/server/plugins/crudPlugin.js";
 import tenantRoutes from "./src/server/routes/tenant.routes.js";
 import serviceTrackerRoutes from "./src/server/routes/serviceTracker.routes.js";
@@ -224,7 +224,7 @@ app.post("/api/onboarding/extend-trial", requireJwt, requireTenantScope, require
 app.use("/api/admin", requireJwt, requireTenantScope, auditRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/superadmin", superadminRoutes);
-app.use("/api/ai", requireJwt, requireTenantScope, requireFeature("AI_DIAGNOSE"), aiRoutes);
+
 app.use("/api/tenant", requireJwt, requireTenantScope, tenantRoutes);
 app.post("/api/tenant/telegram/test", requireJwt, requireTenantScope, requireSettingsDomain("notification"), telegramTestHandler);
 app.post("/api/tenant/whatsapp/test", requireJwt, requireTenantScope, requireSettingsDomain("whatsapp"), whatsappTestHandler);

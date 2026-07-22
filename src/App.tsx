@@ -11,7 +11,6 @@ import { ConfirmProvider, useConfirm } from "./components/ui/ConfirmDialog";
 import {
   Sidebar,
   Topbar,
-  AICopilot,
   CommandPalette,
   HorizontalNavbar,
   BottomNav,
@@ -665,9 +664,6 @@ const MainAppContent: React.FC = () => {
           isOpen={showSyncModal}
           onClose={() => setShowSyncModal(false)}
         />
-
-        {/* Dynamic AI Copilot Assistant */}
-        <AICopilot />
 
         {/* Omni Command & Search Center Modal */}
         <CommandPalette

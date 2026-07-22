@@ -438,6 +438,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
 
   const defaultDays = parseInt(process.env.TRIAL_EXTENSION_DAYS || "7");
   const maxDays = parseInt(process.env.TRIAL_EXTENSION_MAX_DAYS || "14");
+  const maxExtensions = parseInt(process.env.TRIAL_MAX_EXTENSIONS || "3");
   const requestedDays = days === undefined ? defaultDays : Number(days);
   if (!Number.isInteger(requestedDays) || requestedDays < 1 || requestedDays > maxDays) {
     return res.status(422).json({ success: false, message: `days must be an integer between 1 and ${maxDays}.` });
@@ -448,7 +449,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
   try {
     await client.query("BEGIN");
     const tenantResult = await client.query(
-      `SELECT id, name, subdomain, status, trial_ends_at
+      `SELECT id, name, subdomain, status, trial_ends_at, settings
        FROM tenants WHERE id = $1`,
       [tenantId]
     );
@@ -467,12 +468,30 @@ export async function extendTrialHandler(req: Request, res: Response) {
     }
 
     const currentTrialEndsAt = new Date(tenant.trial_ends_at);
+    const now = new Date();
+    if (currentTrialEndsAt < now) {
+      return res.status(400).json({
+        success: false,
+        message: "Trial sudah expired, tidak dapat diperpanjang. Silakan upgrade ke paket berbayar."
+      });
+    }
+
+    const settings = tenant.settings || {};
+    const trialExtensionCount = settings.trialExtensionCount || 0;
+    if (trialExtensionCount >= maxExtensions) {
+      return res.status(400).json({
+        success: false,
+        message: `Batas maksimal perpanjangan trial (${maxExtensions}x) sudah tercapai. Silakan upgrade ke paket berbayar.`
+      });
+    }
+
     const newTrialEndsAt = new Date(currentTrialEndsAt);
     newTrialEndsAt.setDate(newTrialEndsAt.getDate() + extensionDays);
+    const newSettings = { ...settings, trialExtensionCount: trialExtensionCount + 1 };
 
     await client.query(
-      `UPDATE tenants SET trial_ends_at = $1 WHERE id = $2`,
-      [newTrialEndsAt, tenantId]
+      `UPDATE tenants SET trial_ends_at = $1, settings = $2::jsonb WHERE id = $3`,
+      [newTrialEndsAt, JSON.stringify(newSettings), tenantId]
     );
 
     const ownerEmailResult = await client.query(
@@ -499,6 +518,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
       oldTrialEndsAt: tenant.trial_ends_at,
       newTrialEndsAt: newTrialEndsAt.toISOString(),
       extensionDays,
+      extensionCount: trialExtensionCount + 1,
     });
   } catch (error: any) {
     await client.query("ROLLBACK");

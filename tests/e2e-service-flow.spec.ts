@@ -3,7 +3,7 @@ import * as path from "path";
 import { TEST_TENANT_EMAIL, TEST_TENANT_PASSWORD } from "./tenant-login-helper";
 
 const TID = "bd7725f3-02cf-4944-bdc9-80ba642a2c55";
-const ART = "C:/Users/Administrator/.gemini/antigravity-ide/brain/16c61fbf-05a3-4d42-9390-660edbf1cd18";
+const ART = "";
 
 async function login(page: Page) {
   await page.goto("http://localhost:3000");

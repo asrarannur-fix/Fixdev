@@ -134,8 +134,8 @@ const DEFAULT_PLANS = [
     name: "SaaS Professional ERP",
     priceMonthly: 250000,
     priceYearly: 2400000,
-    features: ["Semua Fitur Basic", "Double-Entry Accounting & Ledger", "WhatsApp Broadcast", "AI Repair Diagnostik", "Multi-Branch & Cabang (Maks 5)", "Maks 15 Staff User", "Penyimpanan 2GB"],
-    limits: { users: 15, branches: 5, storageMb: 2048, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE"] },
+    features: ["Semua Fitur Basic", "Double-Entry Accounting & Ledger", "WhatsApp Broadcast", "Multi-Branch & Cabang (Maks 5)", "Maks 15 Staff User", "Penyimpanan 2GB"],
+    limits: { users: 15, branches: 5, storageMb: 2048, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM"] },
   },
   {
     tier: "ENTERPRISE",
@@ -143,7 +143,7 @@ const DEFAULT_PLANS = [
     priceMonthly: 1500000,
     priceYearly: 15000000,
     features: ["Semua Fitur Pro", "Integrasi Marketplace Sync", "Workflow Builder (Automasi)", "Proteksi Keamanan & Fraud Detector", "Hingga 20 Cabang", "Hingga 100 Staff User", "Penyimpanan 10GB", "Custom Domain & White-Label"],
-    limits: { users: 100, branches: 20, storageMb: 10240, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE", "MARKETPLACE", "RENTAL", "SECURITY"] },
+    limits: { users: 100, branches: 20, storageMb: 10240, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "MARKETPLACE", "RENTAL", "SECURITY"] },
   },
 ];
 
@@ -479,6 +479,35 @@ export const toggleRenew = async (req: any, res: any) => {
     if (result.rowCount === 0) return res.status(404).json({ error: "Invoice not found" });
     res.json({ success: true, invoice: result.rows[0] });
   } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const simulateTrialExpiryCron = async (_req: any, res: any) => {
+  const logs: string[] = [];
+
+  try {
+    const expired = await dbQuery(
+      `UPDATE tenants
+       SET status = 'EXPIRED'
+       WHERE status = 'TRIAL'
+         AND trial_ends_at < now()
+       RETURNING id, name, trial_ends_at`,
+    );
+
+    for (const row of expired.rows) {
+      logs.push(`Tenant [${row.id}] ${row.name}: TRIAL expired (berakhir ${row.trial_ends_at}) → EXPIRED.`);
+      logger.info({ tenantId: row.id, trialEndsAt: row.trial_ends_at }, "[trial-expiry] Tenant expired");
+    }
+
+    res.json({
+      success: true,
+      processedAt: new Date().toISOString(),
+      expired: expired.rowCount || 0,
+      logs: logs.length > 0 ? logs : ["Tidak ada tenant TRIAL yang perlu di-expire hari ini."],
+    });
+  } catch (err: any) {
+    logger.error({ err: err.message }, "[billing] simulateTrialExpiryCron failed");
     res.status(500).json({ error: err.message });
   }
 };

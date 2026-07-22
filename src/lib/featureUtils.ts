@@ -7,13 +7,13 @@ import { SubscriptionTier } from "../types";
 
 export const ALL_FEATURES: string[] = [
   "POS", "SERVICE", "INVENTORY", "ACCOUNTING", "HRM", "CRM",
-  "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE", "MARKETPLACE",
+  "WHATSAPP", "TELEGRAM", "MARKETPLACE",
   "RENTAL", "SECURITY"
 ];
 
 export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
   BASIC: ["POS", "SERVICE", "INVENTORY"],
-  PRO: ["POS", "SERVICE", "INVENTORY", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "AI_DIAGNOSE"],
+  PRO: ["POS", "SERVICE", "INVENTORY", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM"],
   ENTERPRISE: [...ALL_FEATURES]
 };
 
