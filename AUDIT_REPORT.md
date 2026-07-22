@@ -61,6 +61,10 @@ Tiga spec lama gagal sebelum alur modul karena memakai password test kosong dan 
 - Upgrade dan perpanjangan trial dibatasi ke role OWNER/ADMIN, memakai transaksi database nyata, serta memvalidasi tier, siklus billing, dan jumlah hari; file terkait: `server.ts`, `src/server/controllers/auth.controller.ts`.
 - Error onboarding tidak lagi membocorkan detail database. Contoh environment kini mendokumentasikan `JWT_SECRET` dan memakai mode development untuk `npm run dev`; file terkait: `src/server/controllers/auth.controller.ts`, `.env.example`.
 - Login production owner kembali berfungsi setelah PM2 diarahkan dari path lama `/home/ubuntu/barufix` ke workspace aktif `/home/ubuntu/fixdev`; health, login, dan profil OWNER terverifikasi HTTP 200; file terkait: `ecosystem.config.cjs`.
+- Deep-link `/login` kini langsung menampilkan form login dan sinkron dengan tombol kembali browser; sebelumnya helper Playwright menunggu form yang tidak pernah muncul; file terkait: `src/components/LandingPage.tsx`, `tests/tenant-login-helper.ts`, `tests/new-login-helper.ts`.
+- Audit owner memverifikasi dashboard, Servis, POS, dan Inventory tanpa error console/API.
+- Status tenant owner dikoreksi dari `ACTIVE` menjadi `TRIAL` karena `trial_ends_at` masih aktif sampai 21 Juli 2027; Keuangan, CRM, dan HR kini terbuka sesuai aturan trial penuh.
+- Bootstrap tenant tidak lagi mengirim `password_hash` pengguna ke browser; query user kini memakai whitelist kolom; file terkait: `src/server/controllers/bootstrap.controller.ts`.
 
 ## Status
 Database lokal berhasil dimigrasikan: 26 migration termasuk baseline. Migrasi idempoten dan schema auth terverifikasi.

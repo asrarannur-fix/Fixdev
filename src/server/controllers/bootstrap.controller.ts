@@ -35,7 +35,7 @@ export async function bootstrapHandler(req: Request, res: Response) {
     const pool = getPool();
     const data = await Promise.allSettled([
       pool.query(`select * from tenants where id = $1`, [tenantId]),
-      pool.query(`select * from users where tenant_id = $1`, [tenantId]),
+      pool.query(`select id, tenant_id, email, name, role, permissions, mfa_enabled, auth_id, created_at, superadmin_role from users where tenant_id = $1`, [tenantId]),
       pool.query(`select ub.* from user_branches ub join branches b on b.id = ub.branch_id where b.tenant_id = $1`, [tenantId]),
       pool.query(`select * from branches where tenant_id = $1`, [tenantId]),
       pool.query(`select * from warehouses where branch_id in (select id from branches where tenant_id = $1)`, [tenantId]),
