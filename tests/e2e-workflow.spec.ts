@@ -10,7 +10,7 @@ test.describe("FIXDEV Production E2E Smoke", () => {
   });
 
   test("1. Loads without runtime crash", async ({ page }) => {
-    await expect(page).toHaveTitle(/Komputer Makassar Service/);
+    await expect(page).toHaveTitle(/FixDev ERP/);
   });
 
   test("2. Sidebar navigation renders ≥5 buttons", async ({ page }) => {

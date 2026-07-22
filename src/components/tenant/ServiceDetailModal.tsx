@@ -2461,7 +2461,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               };
                               txt =
                                 renderTenantWaTemplate("SERVICE_UPDATE", ctx) ||
-                                `Halo *${customer?.name || "Pelanggan"}*,\n\nUnit *${ticket.deviceName}* Anda telah berhasil terdaftar di Repair Hub dengan No. Tiket *${ticket.ticketNo}*.\n\nTerima kasih telah mempercayakan perbaikan Anda kepada kami. Tim teknisi kami akan segera melakukan diagnosa secara mendalam.`;
+                                `Halo *${customer?.name || "Pelanggan"}*,\n\nUnit *${ticket.deviceName}* Anda telah berhasil terdaftar dengan No. Tiket *${ticket.ticketNo}*.\n\nTerima kasih telah mempercayakan perbaikan Anda kepada kami. Tim teknisi kami akan segera melakukan diagnosa secara mendalam.`;
                             } else if (val === "diagnose") {
                               const ctx = {
                                 customer_name: customer?.name || "Pelanggan",

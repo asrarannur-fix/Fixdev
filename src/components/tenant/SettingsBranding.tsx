@@ -63,26 +63,14 @@ export const SettingsBranding: React.FC<any> = (props) => {
   };
 
   const handleLogoUpload = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      showToast("File harus gambar", "error");
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 1024 * 1024) {
+      showToast("Logo harus PNG, JPEG, atau WebP maksimal 1 MB", "error");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const next = { ...branding, logoUrl: e.target?.result as string };
-      setBranding(next);
-      applyTenantBranding(next, activeTenant?.name);
-    };
-    reader.readAsDataURL(file);
+    showToast("Unggah logo ke storage tenant, lalu masukkan URL HTTPS hasil unggahan.", "error");
   };
    return (
      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn">
-    {/* Dynamic Font Loader */}
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
     {/* LEFT COLUMN: Config Panels */}
     <div className="xl:col-span-6 space-y-6">
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -179,7 +167,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
             <option value="outfit">Outfit</option>
           </select>
           <p className="text-[10px] text-slate-500 italic" style={{ fontFamily: branding.fontFamily === "grotesk" ? "Space Grotesk" : branding.fontFamily === "serif" ? "Playfair Display" : branding.fontFamily === "outfit" ? "Outfit" : "Inter" }}>
-            Contoh: Teknisi Komputer Makassar
+            Contoh: Teknisi Nama Toko
           </p>
         </label>
 
@@ -517,7 +505,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
                   {activeTenant?.name || "Budi Gadget"}
                 </h6>
                 <p className="text-[8px] text-slate-500">
-                  {activeTenant?.address || "Tamalanrea, Makassar"}
+                  {activeTenant?.address || "Alamat bisnis belum diatur"}
                 </p>
                 <p className="text-[8px] text-slate-500">
                   Telp: 0811445588

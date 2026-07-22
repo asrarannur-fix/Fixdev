@@ -24,7 +24,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
   const [activeSection, setActiveSection] = useState<AppSectionKey>("general");
 
   // General
-  const [appName, setAppName] = useState(s.generalSettings?.appName || tenantObj?.name || "FIXDEV ERP");
+  const [appName, setAppName] = useState(s.generalSettings?.appName || tenantObj?.name || "ERP");
   const [timezone, setTimezone] = useState(s.generalSettings?.timezone || "Asia/Jakarta");
   const [dateFormat, setDateFormat] = useState(s.generalSettings?.dateFormat || "DD/MM/YYYY");
   const [language, setLanguage] = useState(s.generalSettings?.language || "id");
@@ -87,7 +87,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
         },
         settings: {
           ...s,
-          generalSettings: { appName: appName.trim() || "FIXDEV ERP", timezone, dateFormat, language, maintenanceMode },
+          generalSettings: { appName: appName.trim() || "ERP", timezone, dateFormat, language, maintenanceMode },
           customerPortalSettings: { enableStatusCheck, enableEstimateApproval: enableEstApprove, enableInvoiceView, enableWarrantyView, enableTicketTracking, hideInternalNotes, hideProfit },
           emailSettings: { smtpHost: smtpHost.trim(), smtpPort: clamp(smtpPort, 1, 65535), smtpUser: smtpUser.trim(), smtpPass, defaultFromEmail: cleanFromEmail, enablePushNotifications: enablePush, enableRealtimeNotifications: enableRealtime },
           fileUploadSettings: { maxUploadSizeMb: clamp(maxUploadMb, 1, 100), allowedFileTypes: allowedTypes.trim(), retentionDays: clamp(retentionDays, 30, 3650), fileVisibility },
@@ -126,7 +126,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
 
   const sectionDefaults = {
     general: {
-      appName: tenantObj?.name || "FIXDEV ERP",
+      appName: tenantObj?.name || "ERP",
       timezone: s.generalSettings?.timezone || "Asia/Jakarta",
       dateFormat: s.generalSettings?.dateFormat || "DD/MM/YYYY",
       language: s.generalSettings?.language || "id",
@@ -284,7 +284,7 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
             </div>
           </div>
           <div className="space-y-1"><Label text="Default From Email" />
-            <input type="email" value={defaultFrom} onChange={(e) => setDefaultFrom(e.target.value)} placeholder="noreply@fixdev.com" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
+            <input type="email" value={defaultFrom} onChange={(e) => setDefaultFrom(e.target.value)} placeholder="noreply@namatoko.com" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-accent" />
           </div>
           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] font-bold text-slate-600 uppercase">Push Notification Aktif</span><Toggle val={enablePush} onToggle={() => toggle(enablePush, setEnablePush)} /></div>
           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] font-bold text-slate-600 uppercase">Realtime Notification</span><Toggle val={enableRealtime} onToggle={() => toggle(enableRealtime, setEnableRealtime)} /></div>

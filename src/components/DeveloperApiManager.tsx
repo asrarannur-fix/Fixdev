@@ -140,7 +140,7 @@ export function DeveloperApiManager() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: "owner@komputermakassar.com", // Seed tenant owner credential
+          email: "owner@example.com", // Seed tenant owner credential
           tokenName: tokenName.trim(),
           abilities: selectedAbilities,
         }),
@@ -303,7 +303,7 @@ export function DeveloperApiManager() {
       desc: "Buat personal access token baru menggunakan email pemilik / staff bisnis yang terdaftar.",
       scopes: ["None (Public Exchange)"],
       sampleBody: {
-        email: "owner@komputermakassar.com",
+        email: "owner@example.com",
         tokenName: "Aplikasi Mobile POS",
         abilities: ["*"],
       },

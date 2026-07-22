@@ -35,9 +35,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
 
   const tenantServices = services.filter((s) => s.tenantId === currentTenantId);
   const activeTenant = tenants.find((t) => t.id === currentTenantId);
-  const businessName = activeTenant
-    ? activeTenant.name
-    : "Repair Hub Indonesia";
+  const businessName = activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name || "Toko Servis";
 
   const {
     selectedTicketId,

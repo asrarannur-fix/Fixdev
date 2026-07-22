@@ -414,12 +414,12 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
                   <div className="flex items-center gap-1.5">
                     <Wrench className="w-5 h-5 text-accent" />
                     <span className="font-black text-sm uppercase tracking-tight text-slate-900">
-                      {activeTenant?.name || "REPAIR SERVICE CENTER"}
+                      {activeTenant?.name || "Nama Bisnis"}
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400 font-mono">OFFICIAL SERVICE QUOTATION SHEET</p>
                   <p className="text-[10px] text-slate-500 max-w-xs leading-relaxed">
-                    {activeTenant?.address || "Kawasan Tamalanrea Utama, Makassar, ID"}
+                    {activeTenant?.address || "Alamat bisnis belum diatur"}
                   </p>
                 </div>
                 <div className="md:text-right font-mono text-[10px] space-y-0.5 bg-slate-50 border border-slate-100 p-3 rounded-xl">

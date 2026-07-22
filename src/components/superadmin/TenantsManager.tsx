@@ -563,7 +563,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
             </label>
             <input
               type="text"
-              placeholder="cth: Mac Repair Center"
+              placeholder="cth: Nama Toko Servis"
               value={newTenantName}
               onChange={(e) => handleTenantNameChange(e.target.value)}
               className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"

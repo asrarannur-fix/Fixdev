@@ -22,7 +22,7 @@ export async function telegramTestHandler(req: Request, res: Response) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: String(req.body?.message || "Tes integrasi FIXDEV ERP berhasil dikirim."),
+        text: String(req.body?.message || "Tes integrasi ERP berhasil dikirim."),
       }),
     });
     const payload = await response.json().catch(() => ({}));

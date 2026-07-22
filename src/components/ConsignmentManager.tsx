@@ -222,7 +222,7 @@ export const ConsignmentManager: React.FC = () => {
               <span className="font-bold text-slate-800 font-mono">0 Item</span>
             </div>
             <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center text-xs">
-              <span className="text-slate-500">Komisi Fixdev (Pendapatan)</span>
+              <span className="text-slate-500">Komisi Konsinyasi (Pendapatan)</span>
               <span className="font-bold text-emerald-600 font-mono">Rp 0</span>
             </div>
             <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center text-xs">

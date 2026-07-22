@@ -1014,17 +1014,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // === TENANT BRANDING INJECTION ===
   useEffect(() => {
-    const root = document.documentElement;
     const active = tenants.find((t) => t.id === currentTenantId);
-    if (!active?.branding) {
-      // Reset to CSS defaults when no branding
-      root.style.removeProperty("--accent");
-      root.style.removeProperty("--accent-hover");
-      root.style.removeProperty("--accent-light");
-      root.style.removeProperty("--accent-lighter");
-      return;
-    }
-    applyTenantBranding(active.branding, active.name);
+    const displayName = active?.settings?.generalSettings?.appName || active?.name;
+    applyTenantBranding(active?.branding || {}, displayName);
   }, [tenants, currentTenantId, theme]);
 
   // Public refreshData — reload page to re-fetch all data from DB

@@ -10,7 +10,8 @@ import {
   Share2,
 } from "lucide-react";
 import { ServiceTicket, Customer, Employee, User, TenantSettings } from "../../../types";
-import { escapeHtml, getPaperWidthStyle } from "../../../utils/print";
+import { escapeHtml, getPaperWidthStyle, getSafePrintImageUrl } from "../../../utils/print";
+import { useSaaS } from "../../../context/SaaSContext";
 import { printJob, printJobAsync } from "../../../utils/printJob";
 
 type PrintConfig = NonNullable<TenantSettings["printConfig"]>;
@@ -85,6 +86,14 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   showToast,
   printConfig,
 }) => {
+  const { currentTenantId, tenants } = useSaaS();
+  const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
+  const businessName = activeTenant?.name || "Layanan Servis";
+  const logoUrl = getSafePrintImageUrl(activeTenant?.branding?.logoUrl);
+  const logoHtml = printConfig?.printHeaderLogo && logoUrl
+    ? `<img src="${logoUrl}" alt="logo" style="height: 40px; max-width: 160px; object-fit: contain; margin-bottom: 10px;"/>`
+    : "";
+
   const printReceptionTicket = (ticketId: string) => {
     const source = document.getElementById(`reception-print-${ticketId}`);
     if (!source) {
@@ -133,8 +142,8 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     {/* Receipt Layout */}
                     <div className="border border-dashed border-slate-300 p-4 rounded-xl space-y-3.5 bg-white">
                   <div className="text-center space-y-0.5">
-                    {printConfig?.printHeaderLogo && (
-                      <img src="/logo.png" alt="Logo usaha" className="h-9 mx-auto mb-2 object-contain" />
+                    {printConfig?.printHeaderLogo && logoUrl && (
+                      <img src={logoUrl} alt="Logo usaha" className="h-9 max-w-40 mx-auto mb-2 object-contain" />
                     )}
                     <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">
                       {printConfig?.customHeaderTitle || "SURAT PERINTAH KERJA (SPK)"}
@@ -380,7 +389,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   {/* Warranty Period details */}
                   <div className="bg-accent-lighter border border-indigo-100 p-2.5 rounded-lg text-[8.5px] text-accent text-center">
                     <p className="font-bold">
-                      GARANSI PROTEKSI REPAIR HUB TERJAMIN
+                      GARANSI PROTEKSI {businessName.toUpperCase()}
                     </p>
                     <p className="mt-0.5">
                       Masa garansi komponen selama{" "}
@@ -452,9 +461,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         </head>
                         <body>
                           <div class="header">
-                             ${printConfig?.printHeaderLogo ? '<img src="/logo.png" alt="logo" style="height: 40px; margin-bottom: 10px;"/>' : ""}
+                             ${logoHtml}
                             <h4>${escapeHtml(printConfig?.customHeaderTitle || "NOTA PELUNASAN / INVOICE SERVIS")}</h4>
-                            <p>REPAIR SHOP SYSTEM - COMPLETED WORK ORDER</p>
+                            <p>${escapeHtml(businessName)} - COMPLETED WORK ORDER</p>
                           </div>
                           <div class="meta">
                             <div>
@@ -778,9 +787,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         </head>
                         <body>
                           <div class="header">
-                            ${printConfig?.printHeaderLogo ? '<img src="/logo.png" alt="logo" style="height: 40px; margin-bottom: 10px;"/>' : ""}
+                            ${logoHtml}
                             <h4>${escapeHtml(printConfig?.customHeaderTitle || "SURAT PENAWARAN BIAYA REPARASI")}</h4>
-                            <p>ESTIMASI BIAYA SEMENTARA / QUOTE REQUEST</p>
+                            <p>${escapeHtml(businessName)} - ESTIMASI BIAYA SEMENTARA / QUOTE REQUEST</p>
                           </div>
                           <div class="meta">
                             <div>
@@ -952,7 +961,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     KARTU GARANSI DIGITAL
                   </h4>
                   <p className="text-[9px] text-accent font-mono font-bold uppercase tracking-widest bg-accent-lighter px-2 py-0.5 rounded-full inline-block">
-                    REPAIR HUB VERIFIED
+{businessName.toUpperCase()} VERIFIED
                   </p>
                 </div>
 
@@ -1115,9 +1124,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                           </head>
                           <body>
                             <div class="header">
-                              ${printConfig?.printHeaderLogo ? '<img src="/logo.png" alt="logo" style="height: 40px; margin-bottom: 10px;"/>' : ""}
+                              ${logoHtml}
                               <h4>${escapeHtml(printConfig?.customHeaderTitle || "KARTU GARANSI DIGITAL")}</h4>
-                              <p>REPAIR HUB VERIFIED WARRANTY</p>
+                              <p>${escapeHtml(businessName.toUpperCase())} VERIFIED WARRANTY</p>
                             </div>
                              <div class="card">
                               <div class="card-title">Digital Warranty Certificate</div>

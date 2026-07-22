@@ -34,7 +34,9 @@ export const getPublicTicketStatus = async (req: any, res: any) => {
   }
   ticketNo = ticketNo.split("?")[0]; // remove query params
   if (!ticketNo) ticketNo = String(req.params.ticketNo || "").trim();
+  const tenantId = String(req.query?.tenantId || "").trim();
   if (!ticketNo) return res.status(400).json({ error: "Missing ticket number." });
+  if (!tenantId) return res.status(400).json({ error: "Missing tenantId parameter." });
   try {
     const result = await dbQuery(
       `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
@@ -43,8 +45,8 @@ export const getPublicTicketStatus = async (req: any, res: any) => {
         s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
         s.created_at AS "createdAt",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
-       WHERE UPPER(s.ticket_no)=UPPER($1) LIMIT 1`,
-      [ticketNo],
+       WHERE UPPER(s.ticket_no)=UPPER($1) AND s.tenant_id=$2 LIMIT 1`,
+      [ticketNo, tenantId],
     );
     if (!result.rows[0]) return res.status(404).json({ error: "Service ticket not found" });
     res.json(publicTicketRow(result.rows[0]));
@@ -83,14 +85,16 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
 
 export const verifyWarrantyQr = async (req: any, res: any) => {
   const ticketNo = String(req.body?.ticketNo || "").trim();
+  const tenantId = String(req.body?.tenantId || "").trim();
   if (!ticketNo) return res.status(400).json({ error: "Missing ticketNo parameter." });
+  if (!tenantId) return res.status(400).json({ error: "Missing tenantId parameter." });
   try {
     const result = await dbQuery(
       `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.warranty_months AS "warrantyMonths",
         s.warranty_ends_at AS "warrantyEndsAt",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
-       WHERE UPPER(s.ticket_no)=UPPER($1) LIMIT 1`,
-      [ticketNo],
+       WHERE UPPER(s.ticket_no)=UPPER($1) AND s.tenant_id=$2 LIMIT 1`,
+      [ticketNo, tenantId],
     );
     const ticket = result.rows[0];
     if (!ticket) return res.status(404).json({ error: "Ticket not found." });

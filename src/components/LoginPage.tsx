@@ -3,7 +3,7 @@ import { useSaaS } from "../context/SaaSContext";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft, ArrowRight, Banknote, Building, Lock, Mail, Store,
-  User, Wrench, ShieldCheck, CheckCircle, Palette, Briefcase,
+  User, ShieldCheck, CheckCircle, Palette, Briefcase, Wrench,
 } from "lucide-react";
 
 interface LoginPageProps {
@@ -26,6 +26,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   const [ownerPassword, setOwnerPassword] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("var(--accent)");
   const [registrationSuccess, setRegistrationSuccess] = useState<any | null>(null);
+  const displayName = activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name?.trim() || "Toko Servis";
+  const initials = displayName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase();
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  useEffect(() => setLogoFailed(false), [activeTenant?.branding?.logoUrl]);
 
   const themePresets = [
     { name: "Indigo Cyber", color: "#4f46e5" },
@@ -72,7 +77,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
     }
     if (!cleanOwnerEmail.includes("@")) { setErrorMsg("Format email owner tidak valid."); return; }
     if (submittedOwnerPassword.length < 6) { setErrorMsg("Password owner minimal 6 karakter."); return; }
-    const cleanSubdomain = (subdomain || "toko-utama").trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const cleanSubdomain = subdomain.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
     if (!cleanSubdomain) { setErrorMsg("Identitas subdomain tidak valid."); return; }
     setLoading(true);
     setErrorMsg("");
@@ -119,17 +124,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
         <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <button onClick={onBack} className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-accent"><ArrowLeft className="h-4 w-4" /> Kembali</button>
           <div className="flex items-center gap-2 font-black">
-            <span className="grid h-8 w-8 place-items-center rounded-xl text-white font-bold text-sm shadow-md transition-all duration-200" style={{ 
-              backgroundColor: activeTenant?.branding?.primaryColor || "#4f46e5" 
-            }}>
-              <Wrench className="h-4 w-4" />
+            <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-xl text-white font-bold text-sm shadow-md transition-all duration-200" style={{ backgroundColor: activeTenant?.branding?.primaryColor || "#4f46e5" }}>
+              {activeTenant?.branding?.logoUrl && !logoFailed ? <img src={activeTenant.branding.logoUrl} alt="Logo" className="h-full w-full object-cover" onError={() => setLogoFailed(true)} /> : initials}
             </span>
-            <span style={{ color: activeTenant?.branding?.primaryColor || "#1e293b" }}>
-              {activeTenant?.branding?.whiteLabelEnabled && activeTenant?.branding?.customDomain
-                ? activeTenant.branding.customDomain
-                : activeTenant?.name || "KM"
-              }
-            </span>
+            <span style={{ color: activeTenant?.branding?.primaryColor || "#1e293b" }}>{displayName}</span>
           </div>
         </header>
 

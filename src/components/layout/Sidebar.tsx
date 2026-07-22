@@ -417,42 +417,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="w-52 flex flex-col h-full shrink-0">
           {/* 1. Header with Brand Launcher */}
           <div className="p-5 border-b border-slate-200/40 dark:border-zinc-900 flex items-center justify-between bg-white dark:bg-zinc-900/20 shrink-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative group shrink-0">
-                <WhiteLabelGate>
-                   <div className="absolute -inset-1 rounded-xl opacity-75 blur-xs group-hover:opacity-100 transition duration-300 animate-pulse" style={{ background: activeTenant?.branding?.primaryColor || "var(--accent)" }} />
-                </WhiteLabelGate>
-                <div className="relative w-8 h-8 rounded-xl bg-slate-950 dark:bg-zinc-900 flex items-center justify-center text-white font-syne font-black text-sm shadow-md cursor-pointer transform group-hover:scale-105 transition-all duration-200">
-                  {activeTenant?.branding?.logoUrl ? (
-                    <img src={activeTenant.branding.logoUrl} alt="Logo" className="w-6 h-6 rounded" onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.nextElementSibling?.classList.remove('hidden');
-                    }} />
-                  ) : (
-                    <span className="hidden">
-                      {(activeTenant?.name || "S").substring(0, 2).toUpperCase()}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative group shrink-0">
+                  <WhiteLabelGate>
+                     <div className="absolute -inset-1 rounded-xl opacity-75 blur-xs group-hover:opacity-100 transition duration-300 animate-pulse" style={{ background: activeTenant?.branding?.primaryColor || "var(--accent)" }} />
+                  </WhiteLabelGate>
+                  <div className="relative w-8 h-8 rounded-xl overflow-hidden bg-slate-950 dark:bg-zinc-900 flex items-center justify-center text-white font-syne font-black text-sm shadow-md cursor-pointer transform group-hover:scale-105 transition-all duration-200">
+                    {activeTenant?.branding?.logoUrl && <img src={activeTenant.branding.logoUrl} alt="Logo" className="absolute inset-0 w-8 h-8 object-cover" onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }} />}
+                    <span>
+                      {(activeTenant?.settings?.generalSettings?.appName || activeTenant?.name || "Toko").trim().split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()}
                     </span>
-                  )}
+                  </div>
+                </div>
+                <div className="min-w-0 transition-opacity duration-300 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+                  <div className="flex items-center gap-1">
+                    <h3 className="font-syne font-black text-[13px] tracking-tight truncate uppercase leading-tight" style={{ color: activeTenant?.branding?.primaryColor || "#1e293b" }}>
+                      {activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name?.trim() || "Toko"}
+                    </h3>
+                  </div>
                 </div>
               </div>
-              <div className="min-w-0 transition-opacity duration-300 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
-                <div className="flex items-center gap-1">
-                  <h3 className="font-syne font-black text-[13px] tracking-tight truncate uppercase leading-tight" style={{ color: activeTenant?.branding?.primaryColor || "#1e293b" }}>
-                    {activeTenant?.name || "Komputer Makassar"}
-                  </h3>
-                </div>
-                <span className="text-[8px] font-mono rounded-full px-2 py-0.5 font-extrabold flex items-center gap-1 mt-1 w-max shadow-xs transition-all duration-200" style={{ 
-                   color: activeTenant?.branding?.primaryColor || "var(--accent)",
-                  backgroundColor: activeTenant?.branding?.whiteLabelEnabled ? "#f3f4f6" : (activeTenant?.branding?.secondaryColor ? activeTenant.branding.secondaryColor + '20' : "#dbeafe"),
-                  borderColor: activeTenant?.branding?.whiteLabelEnabled ? "#e5e7eb" : (activeTenant?.branding?.secondaryColor ? activeTenant.branding.secondaryColor + '40' : "#93c5fd")
-                }}
-                >
-                   <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: activeTenant?.branding?.primaryColor || "var(--accent)" }} />
-                  {activeTenant?.branding?.whiteLabelEnabled ? "CUSTOM" : "CRM INTEGRATED"}
-                </span>
-              </div>
-            </div>
             {onClose && (
               <button
                 onClick={onClose}

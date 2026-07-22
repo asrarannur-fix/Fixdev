@@ -100,7 +100,9 @@ export const TenantDashboard = ({
   } = useSaaS();
   const { showToast } = useToast();
   const printConfig = usePrintConfig();
-  const tenantName = tenants.find((t) => t.id === currentTenantId)?.name || "REPAIR HUB";
+  const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
+  const tenantName = activeTenant?.name || "Toko";
+  const tenantLogoUrl = activeTenant?.branding?.logoUrl;
 
   const tenantProducts = products.filter((p) => p.tenantId === currentTenantId);
   const tenantWhs = warehouses.filter((w) => w.tenantId === currentTenantId);
@@ -165,6 +167,7 @@ export const TenantDashboard = ({
     const headerHtml = getPrintHeaderHtml(printConfig, {
       businessName: tenantName,
       subtitle: "STRUK TRANSAKSI POS",
+      logoUrl: tenantLogoUrl,
     });
     const footerHtml = getPrintFooterHtml(printConfig, "Terima kasih telah berbelanja di " + tenantName);
     const termsHtml = getPrintTermsHtml(printConfig, "sales");

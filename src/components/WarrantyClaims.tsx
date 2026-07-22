@@ -172,7 +172,7 @@ export const WarrantyClaims: React.FC = () => {
       printIframe.contentWindow?.document || printIframe.contentDocument;
     if (!printDoc) return;
 
-    const businessName = activeTenant?.name || "Repair Hub ERP";
+    const businessName = activeTenant?.name || "Layanan Servis";
     const customer = customers.find((c) => c.id === ticket.customerId && c.tenantId === currentTenantId);
     const escapeHtml = (value: string) => value
       .replace(/&/g, "&amp;")
@@ -186,8 +186,9 @@ export const WarrantyClaims: React.FC = () => {
     const safeDeviceName = escapeHtml(ticket.deviceName || "-");
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
-      businessName: businessName,
+      businessName,
       subtitle: "DIGITAL WARRANTY CARD",
+      logoUrl: activeTenant?.branding?.logoUrl,
     });
     const footerHtml = getPrintFooterHtml(
       printConfig,

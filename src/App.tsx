@@ -397,14 +397,12 @@ const MainAppContent: React.FC = () => {
                   }} />
                 ) : null}
                 <span className={`font-bold text-sm font-syne ${activeTenant?.branding?.logoUrl ? 'hidden' : ''}`}>
-                  {(activeTenant?.name || "KM").substring(0, 2).toUpperCase()}
+                  {(activeTenant?.settings?.generalSettings?.appName || activeTenant?.name || "Toko").substring(0, 2).toUpperCase()}
                 </span>
               </div>
               <div>
                 <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-                  {activeTenant?.branding?.whiteLabelEnabled && activeTenant?.branding?.customDomain
-                    ? activeTenant.branding.customDomain
-                    : activeTenant?.name || "KM"}
+                  {activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name || "Toko"}
                 </span>
                 <span className="text-[10px] text-slate-400 block -mt-1 font-mono">
                   Customer Portal

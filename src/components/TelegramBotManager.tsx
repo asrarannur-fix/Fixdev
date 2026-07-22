@@ -86,7 +86,7 @@ export const TelegramBotManager: React.FC = () => {
     try {
       const response = await apiFetch("/api/tenant/telegram/test", {
         method: "POST",
-        body: JSON.stringify({ message: "Tes integrasi FIXDEV ERP berhasil dikirim." }),
+        body: JSON.stringify({ message: `Tes integrasi ${activeTenant?.name || "sistem ERP"} berhasil dikirim.` }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Telegram gagal mengirim pesan.");

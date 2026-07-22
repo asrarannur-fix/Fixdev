@@ -31,7 +31,7 @@ import {
 export const INITIAL_TENANTS: Tenant[] = [
   {
     id: "tenant-owner-1",
-    name: "FIXDEV Demo Utama",
+    name: "Demo Servis Utama",
     subdomain: "demo-utama",
     status: TenantStatus.ACTIVE,
     tier: SubscriptionTier.ENTERPRISE,
@@ -58,7 +58,7 @@ export const INITIAL_TENANTS: Tenant[] = [
       primaryColor: "#1e3a8a",
       accentColor: "#3b82f6",
       whiteLabelEnabled: true,
-      customDomain: "demo.fixdev.id",
+      customDomain: "demo.example.com",
     },
     settings: {
       authSettings: {
@@ -81,7 +81,7 @@ export const INITIAL_TENANTS: Tenant[] = [
   },
   {
     id: "tenant-b-demo",
-    name: "FIXDEV Demo Pembanding",
+    name: "Demo Servis Pembanding",
     subdomain: "demo-pembanding",
     status: TenantStatus.ACTIVE,
     tier: SubscriptionTier.PRO,
@@ -195,7 +195,7 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: "user-super-admin",
-    email: "z.komputermakassar@gmail.com",
+    email: "owner@example.com",
     name: "Zaki Super Admin",
     role: UserRole.SUPER_ADMIN,
     branchIds: [],
@@ -219,7 +219,7 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: "user-owner-1",
-    email: "owner@komputermakassar.com",
+    email: "owner@example.com",
     name: "Andi Owner",
     role: UserRole.OWNER,
     tenantId: "tenant-owner-1",
@@ -238,7 +238,7 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: "user-teknisi-1",
-    email: "budi.tech@komputermakassar.com",
+    email: "budi.tech@example.com",
     name: "Budi Teknisi Laptop",
     role: UserRole.TEKNISI,
     tenantId: "tenant-owner-1",
@@ -255,7 +255,7 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: "user-teknisi-2",
-    email: "teknisi2@komputermakassar.com",
+    email: "teknisi2@example.com",
     name: "Eko Teknisi Printer",
     role: UserRole.TEKNISI,
     tenantId: "tenant-owner-1",
@@ -271,7 +271,7 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: "user-kasir-1",
-    email: "siti.kasir@komputermakassar.com",
+    email: "siti.kasir@example.com",
     name: "Siti Rahma Kasir",
     role: UserRole.KASIR,
     tenantId: "tenant-owner-1",
@@ -283,7 +283,7 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: "user-admin-1",
-    email: "admin.toko@komputermakassar.com",
+    email: "admin.toko@example.com",
     name: "Ahmad Admin Toko",
     role: UserRole.ADMIN,
     tenantId: "tenant-owner-1",
@@ -295,7 +295,7 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: "user-manager-1",
-    email: "manager.cabang@komputermakassar.com",
+    email: "manager.cabang@example.com",
     name: "Rian Manager Cabang",
     role: UserRole.MANAGER,
     tenantId: "tenant-owner-1",
@@ -751,7 +751,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     division: "Technical Repair",
     contractStatus: "PERMANENT",
     basicSalary: 4500000,
-    email: "budi.tech@komputermakassar.com",
+    email: "budi.tech@example.com",
     phone: "08129999111",
     attendanceHistory: [
       {
@@ -805,7 +805,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     division: "Operations",
     contractStatus: "PERMANENT",
     basicSalary: 3200000,
-    email: "siti.kasir@komputermakassar.com",
+    email: "siti.kasir@example.com",
     phone: "08129999222",
     attendanceHistory: [
       {
@@ -850,7 +850,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     division: "Technical Repair",
     contractStatus: "CONTRACT",
     basicSalary: 2800000,
-    email: "andi.phone@komputermakassar.com",
+    email: "andi.phone@example.com",
     phone: "08129999333",
     attendanceHistory: [
       {
@@ -895,7 +895,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     division: "Operations",
     contractStatus: "CONTRACT",
     basicSalary: 2500000,
-    email: "rian.kurir@komputermakassar.com",
+    email: "rian.kurir@example.com",
     phone: "08129999444",
     attendanceHistory: [
       {
@@ -939,7 +939,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     division: "Technical Repair",
     contractStatus: "PERMANENT",
     basicSalary: 5000000,
-    email: "fajar.apple@komputermakassar.com",
+    email: "fajar.apple@example.com",
     phone: "08129999555",
     attendanceHistory: [
       {
@@ -960,7 +960,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     division: "Operations",
     contractStatus: "PERMANENT",
     basicSalary: 3100000,
-    email: "aulia.alauddin@komputermakassar.com",
+    email: "aulia.alauddin@example.com",
     phone: "08129999666",
     attendanceHistory: [
       {

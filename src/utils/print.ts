@@ -48,16 +48,32 @@ export const getPrintBaseCss = (pc?: PrintConfig): string => {
   `;
 };
 
+export const getSafePrintImageUrl = (value?: string): string => {
+  const source = value?.trim();
+  if (!source) return "";
+  if (/^data:image\/(?:png|jpe?g|gif|webp|bmp);base64,[a-z0-9+/=\s]+$/i.test(source)) {
+    return escapeHtml(source);
+  }
+  try {
+    const url = new URL(source, window.location.origin);
+    if ((url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password) {
+      return escapeHtml(url.href);
+    }
+  } catch {}
+  return "";
+};
+
 export const getPrintHeaderHtml = (
   pc: PrintConfig | undefined,
-  opts: { businessName: string; subtitle?: string },
+  opts: { businessName: string; subtitle?: string; logoUrl?: string },
 ): string => {
   const title = escapeHtml(
     (pc?.customHeaderTitle || "").trim() ||
     (opts.businessName || "").toUpperCase()
   );
-  const logo = pc?.printHeaderLogo
-    ? `<div style="text-align:center;margin-bottom:6px;"><img src="/logo.png" alt="logo" style="height:34px;"/></div>`
+  const logoUrl = getSafePrintImageUrl(opts.logoUrl);
+  const logo = pc?.printHeaderLogo && logoUrl
+    ? `<div style="text-align:center;margin-bottom:6px;"><img src="${logoUrl}" alt="logo" style="height:34px;max-width:160px;object-fit:contain;"/></div>`
     : "";
   const subtitle = opts.subtitle
     ? `<div style="font-size:9px;color:#64748b;margin-top:2px;font-family:'JetBrains Mono',monospace;">${escapeHtml(opts.subtitle)}</div>`

@@ -430,7 +430,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
           </label>
           <input
             type="text"
-            placeholder={`Nama toko Anda (Kosongkan untuk memakai "${activeTenant?.name || "Repair Hub"}")`}
+            placeholder={`Nama toko Anda (Kosongkan untuk memakai "${activeTenant?.name || "Nama Toko"}")`}
             value={customHeaderTitle}
             onChange={(e) =>
               savePrinterSettings({ customHeaderTitle: e.target.value })
@@ -690,7 +690,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
               <h1 className="font-extrabold tracking-tight text-slate-900 text-sm uppercase leading-tight">
                 {customHeaderTitle.trim() ||
                   activeTenant?.name ||
-                  "REPAIR HUB"}
+                  "NAMA TOKO"}
               </h1>
               <p className="text-[9px] text-slate-400 font-mono mt-0.5 uppercase tracking-wide">
                 BUKTI PENERIMAAN UNIT SERVIS
@@ -857,7 +857,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
               >
                 {customHeaderTitle.trim() ||
                   activeTenant?.name ||
-                  "REPAIR HUB"}
+                  "NAMA TOKO"}
               </span>
               <span className="text-[10px] font-mono font-extrabold bg-slate-950 text-white px-1.5 py-0.5 rounded">
                 #SVC-TEST-LABEL

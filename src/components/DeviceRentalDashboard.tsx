@@ -47,9 +47,13 @@ export const DeviceRentalDashboard: React.FC = () => {
     addJournalEntry,
     addLog,
     customers,
+    tenants,
   } = useSaaS();
 
   const { showToast } = useToast();
+  const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
+  const businessName = activeTenant?.name || "Layanan Penyewaan Perangkat";
+  const logoUrl = activeTenant?.branding?.logoUrl;
   const printConfig = usePrintConfig();
 
   // Scoped customers
@@ -273,8 +277,9 @@ export const DeviceRentalDashboard: React.FC = () => {
 
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
-      businessName: "REPAIR HUB RENTAL",
+      businessName,
       subtitle: "Kontrak Sewa Perangkat",
+      logoUrl,
     });
     const footerHtml = getPrintFooterHtml(
       printConfig,
@@ -361,8 +366,9 @@ export const DeviceRentalDashboard: React.FC = () => {
 
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
-      businessName: "REPAIR HUB RENTAL",
+      businessName,
       subtitle: "Bukti Pengembalian & Refund Deposit",
+      logoUrl,
     });
     const footerHtml = getPrintFooterHtml(
       printConfig,

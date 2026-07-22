@@ -157,7 +157,7 @@ export const CRMTab: React.FC<CRMTabProps> = ({
                 </label>
                 <textarea
                   rows={4}
-                  defaultValue={`Halo Kak! Kami dari Mac Repair Center Makassar punya kabar gembira. Dapatkan diskon spesial 15% untuk pembersihan debu, ganti thermal paste laptop, atau ganti baterai menggunakan kode kupon KOMPUTERSERVICE. Berlaku hingga akhir bulan ini ya Kak! Sampai jumpa di toko kami.`}
+                  defaultValue={`Halo Kak! Kami punya kabar gembira. Dapatkan diskon spesial 15% untuk pembersihan debu, ganti thermal paste laptop, atau ganti baterai menggunakan kode kupon SERVIS15. Berlaku hingga akhir bulan ini. Sampai jumpa di toko kami.`}
                   className="w-full px-3 py-2 border border-slate-200 bg-white rounded-lg outline-none leading-relaxed font-sans"
                 />
               </div>

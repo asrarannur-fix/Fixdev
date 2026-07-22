@@ -18,7 +18,7 @@ export async function platformBootstrapHandler(req: Request, res: Response) {
   try {
     const pool = getPool();
     const [tenants, users, auditLogs] = await Promise.all([
-      pool.query(`select * from tenants order by created_at desc`),
+      pool.query(`select id, name, subdomain, status, tier, trial_ends_at, created_at, version, status_reason, scheduled_reactivation_at, storage_used_bytes, storage_measured_at from tenants order by created_at desc`),
       pool.query(`select id, tenant_id, email, name, role, permissions, mfa_enabled, auth_id, created_at from users order by created_at desc`),
       pool.query(`select * from audit_logs order by created_at desc limit 500`).catch(() => ({ rows: [] })),
     ]);

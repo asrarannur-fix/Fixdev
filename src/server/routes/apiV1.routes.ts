@@ -195,13 +195,13 @@ router.get("/openapi.json", (req, res) => {
   res.json({
     openapi: "3.0.3",
     info: {
-      title: "KM FixFlow ERP - Unified REST API Specification",
+      title: "FixDev ERP - Unified REST API Specification",
       description:
-        "Comprehensive REST API for the KM FixFlow CRM & POS ERP SaaS platform. Integrate and orchestrate operations including customers, service ticketing, warehouses inventory, and cash/POS sales data with enterprise security rules.",
+        "Comprehensive REST API for the FixDev ERP platform. Integrate and orchestrate operations including customers, service ticketing, warehouses inventory, and cash/POS sales data with enterprise security rules.",
       version: "1.0.0",
       contact: {
         name: "SaaS Dev Team",
-        email: "z.komputermakassar@gmail.com",
+        email: "support@fixdev.web.id",
       },
     },
     servers: [
@@ -336,7 +336,7 @@ router.get("/openapi.json", (req, res) => {
             email: {
               type: "string",
               format: "email",
-              example: "owner@komputermakassar.com",
+              example: "owner@example.com",
             },
             tokenName: { type: "string", example: "Mobile CRM Key" },
             abilities: {
@@ -840,7 +840,7 @@ router.get("/docs", (req, res) => {
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>KM FixFlow ERP - Developer REST API documentation</title>
+          <title>FixDev ERP - Developer REST API documentation</title>
       <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
       <style>
         html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
@@ -874,7 +874,7 @@ router.get("/docs", (req, res) => {
     <body>
       <div class="branding-header">
         <div>
-          <h1>KM FixFlow REST API documentation</h1>
+          <h1>FixDev ERP REST API documentation</h1>
           <p>Multi-Tenant SaaS Gateway • Laravel Sanctum Token Authorization</p>
         </div>
         <a href="/" class="back-btn">&larr; Back to ERP Workspace</a>

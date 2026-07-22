@@ -14,6 +14,8 @@ Cek regresi visual sebelum rilis. Fokus pada konsistensi UI lintas modul.
 - [ ] **Empty states** — pesan kosong (mis. "Ketik pesan...") tampil benar.
 - [ ] **Modal & drawer** — backdrop, animasi `fadeIn`/`scaleUp` halus.
 - [ ] **Warna brand** — `branding.primaryColor` teraplikasi di header/akses.
+- [ ] **White-label tenant** — login, sidebar, portal pelanggan, WhatsApp/Telegram, email, invoice, struk, PO, rental, garansi, QR, title, dan favicon memakai nama/logo tenant tanpa fallback vendor.
+- [ ] **Pergantian tenant** — title, favicon, font, dan variabel warna reset saat tenant berganti atau logout.
 
 ## Aturan
 - Jangan ubah `tailwindcss` config tanpa review (dampak global).

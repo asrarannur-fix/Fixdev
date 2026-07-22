@@ -53,9 +53,12 @@ interface MicroComponent {
 }
 
 export const SmallPartsSearch: React.FC = () => {
-  const { addLog, microComponents, microComponentsLoading, microComponentsError, loadMicroComponents, createMicroComponent, consumeMicroComponentForService, scopedServices, scopedWarehouses, currentBranchId } = useSaaS();
+  const { addLog, microComponents, microComponentsLoading, microComponentsError, loadMicroComponents, createMicroComponent, consumeMicroComponentForService, scopedServices, scopedWarehouses, currentBranchId, currentTenantId, tenants } = useSaaS();
   const { showToast } = useToast();
   const printConfig = usePrintConfig();
+  const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
+  const businessName = activeTenant?.name || "Sistem Inventaris";
+  const logoUrl = activeTenant?.branding?.logoUrl;
 
   // Backend is the source of truth; map shared pricing fields to this screen's view model.
   const components = useMemo<MicroComponent[]>(() => microComponents.map((item) => ({
@@ -146,8 +149,9 @@ export const SmallPartsSearch: React.FC = () => {
     const widthStyle = is80 ? "76mm" : "54mm";
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
-      businessName: "REPAIR HUB ERP",
+      businessName,
       subtitle: "SISTEM PREDIKTIF REORDER PO",
+      logoUrl,
     });
     const footerHtml = getPrintFooterHtml(
       printConfig,
@@ -1045,7 +1049,7 @@ export const SmallPartsSearch: React.FC = () => {
                   <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200/60 dark:border-zinc-800/60 p-4.5 rounded-xl font-mono text-[9.5px] text-slate-700 dark:text-slate-300 max-w-xs mx-auto text-left space-y-2 leading-tight">
                     <div className="text-center border-b border-dashed border-slate-300 dark:border-zinc-800 pb-2">
                       <p className="font-extrabold uppercase">
-                        REPAIR HUB ERP - PO SYSTEM
+                        {businessName} - PO SYSTEM
                       </p>
                       <p className="text-[8px] text-slate-400">
                         Pemesanan Suku Cadang Mikro

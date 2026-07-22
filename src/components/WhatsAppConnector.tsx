@@ -89,7 +89,7 @@ const DEFAULT_TEMPLATES: WhatsAppTemplate[] = [
     name: "Pemberitahuan Servis Selesai",
     category: "SERVICE_UPDATE",
     content:
-      "Halo *{customer_name}*, unit servis Anda *{device_name}* dengan Tiket *{ticket_no}* saat ini berstatus: *{ticket_status}*.\n\nCatatan: {status_note}\n\nTerima kasih telah memercayai Mac Repair Center Makassar.",
+      "Halo *{customer_name}*, unit servis Anda *{device_name}* dengan Tiket *{ticket_no}* saat ini berstatus: *{ticket_status}*.\n\nCatatan: {status_note}\n\nTerima kasih telah memercayai {business_name}.",
   },
   {
     id: "tpl-2",
@@ -161,7 +161,7 @@ const getSeedLogs = () => [
     recipientPhone: "+62 812-3456-7890",
     type: "SERVICE_UPDATE" as const,
     message:
-      "Halo *Budi Santoso*, unit servis Anda *MacBook Pro 13 2017* dengan Tiket *TKT-001* saat ini berstatus: *SELESAI QC*.\n\nCatatan: Lolos uji rendering GPU selama 2 jam. Suhu stabil 65°C.\n\nTerima kasih telah memercayai Mac Repair Center Makassar.",
+      "Halo *Budi Santoso*, unit servis Anda *MacBook Pro 13 2017* dengan Tiket *TKT-001* saat ini berstatus: *SELESAI QC*.\n\nCatatan: Lolos uji rendering GPU selama 2 jam. Suhu stabil 65°C.\n\nTerima kasih telah memercayai {business_name}.",
     status: "READ" as const,
     senderName: "Sistem Otomatis",
     channel: "Meta Cloud API",
@@ -440,8 +440,7 @@ export const WhatsAppConnector: React.FC = () => {
             `👤 [SaaS CRM] Relasi pelanggan ditemukan: ${cust?.name || "Unregistered"}`,
           ]);
         } else if (q.includes("halo") || q.includes("hi") || q.includes("p")) {
-          responseText =
-            "Halo! Selamat datang di bot layanan otomatis *Komputer Makassar Service*. Kirimkan nomor tiket servis Anda (contoh: *TKT/2606/0001*) untuk cek status otomatis.";
+          responseText = `Halo! Selamat datang di bot layanan otomatis *${activeTenant?.name || "toko kami"}*. Kirimkan nomor tiket servis Anda (contoh: *TKT/2606/0001*) untuk cek status otomatis.`;
           setSimWaWebhookLogs((prev) => [
             ...prev,
             `ℹ️ [CRM Parser] Trigger pencarian tidak spesifik. Mengembalikan template Welcome Greeting.`,

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ServiceTicket } from "../types";
 import { useToast } from "../components/ui/Toast";
 import { usePrintConfig } from "./usePrintConfig";
+import { useSaaS } from "../context/SaaSContext";
 import { printFrame } from "../utils/printJob";
 import {
   getPrintPageSize,
@@ -19,7 +20,11 @@ export function useServiceTrackerQr(
   apiFetch: (url: string, init?: RequestInit) => Promise<Response>,
 ) {
   const { showToast } = useToast();
+  const { tenants } = useSaaS();
   const printConfig = usePrintConfig();
+  const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
+  const tenantName = activeTenant?.name || "Layanan Servis";
+  const logoUrl = activeTenant?.branding?.logoUrl;
   const [selectedTicketId, setSelectedTicketId] = useState<string>("");
   const [selectedTicket, setSelectedTicket] = useState<ServiceTicket | null>(
     null,
@@ -105,7 +110,7 @@ export function useServiceTrackerQr(
    */
   const handlePrintReceipt = (
     ticket: ServiceTicket,
-    businessName = "Repair Hub",
+    businessName = tenantName,
   ) => {
     const qrUrl = getQrCodeUrl(ticket.ticketNo);
     const trackingUrl = getTrackingUrl(ticket.ticketNo);
@@ -260,8 +265,9 @@ export function useServiceTrackerQr(
           <div class="receipt-card">
             ${getPrintHeaderHtml(printConfig, {
               businessName: businessName,
-              subtitle: "Layanan Service & Solusi Gadget Terpercaya",
-            })}
+               subtitle: "Layanan Service & Solusi Gadget Terpercaya",
+               logoUrl,
+             })}
 
             <div class="row">
               <span class="label">Tanggal Diterima:</span>
@@ -342,7 +348,7 @@ const getLabelSizeMm = (pc: any): string => {
   return `${Math.max(30, wmm)}mm ${Math.max(20, hmm)}mm`;
 };
 
-  const handleDirectPrintLabel = (ticket: ServiceTicket, businessName = "Repair Hub") => {
+  const handleDirectPrintLabel = (ticket: ServiceTicket, businessName = tenantName) => {
     const qrUrl = getQrCodeUrl(ticket.ticketNo);
     const dateStr = ticket.createdAt
       ? new Date(ticket.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })

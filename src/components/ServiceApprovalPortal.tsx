@@ -209,13 +209,16 @@ export const ServiceApprovalPortal: React.FC = () => {
           }}>
             <span className="font-bold text-sm">
               {activeTenant?.branding?.logoUrl ? (
-                <img src={activeTenant.branding.logoUrl} alt="Logo" className="h-6 w-6" onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
-                }} />
+                <>
+                  <img src={activeTenant.branding.logoUrl} alt="Logo" className="h-6 w-6" onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }} />
+                  <span className="hidden">{(activeTenant?.settings?.generalSettings?.appName || activeTenant?.name || "To").substring(0, 2).toUpperCase()}</span>
+                </>
               ) : (
-                <span className="hidden">KM</span>
+                <span>{(activeTenant?.settings?.generalSettings?.appName || activeTenant?.name || "To").substring(0, 2).toUpperCase()}</span>
               )}
             </span>
           </div>
@@ -223,10 +226,7 @@ export const ServiceApprovalPortal: React.FC = () => {
             <span className="text-sm font-black tracking-tight transition-all duration-300" style={{ 
               color: activeTenant?.branding?.primaryColor || "#1e293b"
             }}>
-              {activeTenant?.branding?.whiteLabelEnabled && activeTenant?.branding?.customDomain
-                ? activeTenant.branding.customDomain
-                : activeTenant?.name || "KM"
-              }
+              {activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name || "Toko"}
             </span>
             <span className="text-[10px] text-slate-400 block -mt-1 font-mono">Persetujuan Estimasi</span>
           </div>

@@ -23,7 +23,7 @@ export const EmailSettingsPanel: React.FC<EmailSettingsPanelProps> = ({
     secure: tenantObj?.settings?.email?.smtp?.secure || false,
     username: tenantObj?.settings?.email?.smtp?.username || "",
     password: tenantObj?.settings?.email?.smtp?.password || "",
-    fromName: tenantObj?.settings?.email?.fromName || tenantObj?.name || "FIXDEV",
+    fromName: tenantObj?.settings?.email?.fromName || tenantObj?.name || "",
     fromEmail: tenantObj?.settings?.email?.fromEmail || "",
     replyTo: tenantObj?.settings?.email?.replyTo || "",
   });

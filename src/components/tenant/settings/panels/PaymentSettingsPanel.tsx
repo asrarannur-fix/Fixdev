@@ -146,7 +146,7 @@ export const PaymentSettingsPanel: React.FC<PaymentSettingsPanelProps> = ({
               <Input
                 value={qrisLabel}
                 onChange={(e) => setQrisLabel(e.target.value)}
-                placeholder="cth: QRIS Komputer Makassar Service"
+                placeholder="cth: QRIS Nama Toko"
               />
             </Field>
             <p className="text-[10px] text-slate-400">Format PNG/JPG, maksimal 1MB.</p>
@@ -209,7 +209,7 @@ export const PaymentSettingsPanel: React.FC<PaymentSettingsPanelProps> = ({
                 <Input
                   value={bank.accountHolder}
                   onChange={(e) => updateBank(bank.id, { accountHolder: e.target.value })}
-                  placeholder="PT Komputer Makassar"
+                  placeholder="PT Nama Usaha"
                 />
               </Field>
               <button

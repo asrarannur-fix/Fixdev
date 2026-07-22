@@ -149,11 +149,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     slogan: tenantObj?.branding?.slogan || "",
     fontFamily: tenantObj?.branding?.fontFamily || BRANDING_PRESETS.blue.fontFamily,
     portalHelpTitle: tenantObj?.branding?.portalHelpTitle || "Pusat Bantuan & Garansi",
-    portalContactText: tenantObj?.branding?.portalContactText || "0812-3456-7890 | support@fixdev.com",
+    portalContactText: tenantObj?.branding?.portalContactText || "Hubungi toko untuk bantuan dan informasi garansi.",
 
     accentColor: tenantObj?.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
     whiteLabelEnabled: tenantObj?.branding?.whiteLabelEnabled || false,
-    logo: tenantObj?.branding?.logo || "",
   });
 
   const verifyDomain = (domain: string) => {
@@ -259,7 +258,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   };
   const testConfiguredPrinter = async () => {
     const config = printConfigRef.current;
-    const result = await printJobAsync({ title: "Tes Printer FIXDEV", printConfig: config, html: `<div style="font-family:Arial;text-align:center;padding:20px"><b>TES PRINTER FIXDEV</b><br/>Printer: ${config.printerName || "Browser"}<br/>${new Date().toLocaleString("id-ID")}</div>` });
+    const result = await printJobAsync({ title: "Tes Printer", printConfig: config, html: `<div style="font-family:Arial;text-align:center;padding:20px"><b>TES PRINTER</b><br/>Printer: ${config.printerName || "Browser"}<br/>${new Date().toLocaleString("id-ID")}</div>` });
     showToast(result.transport === "qz" ? "Test print QZ Tray berhasil dikonfirmasi." : result.transport === "browser" ? "QZ tidak aktif. Browser print dialog dibuka." : result.error || "Test print gagal.", result.ok ? "success" : "error");
   };
 
@@ -376,11 +375,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       slogan: tenantObj.branding?.slogan || "",
       fontFamily: tenantObj.branding?.fontFamily || BRANDING_PRESETS.blue.fontFamily,
       portalHelpTitle: tenantObj.branding?.portalHelpTitle || "Pusat Bantuan & Garansi",
-      portalContactText: tenantObj.branding?.portalContactText || "0812-3456-7890 | support@fixdev.com",
+      portalContactText: tenantObj.branding?.portalContactText || "Hubungi toko untuk bantuan dan informasi garansi.",
 
       accentColor: tenantObj.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
       whiteLabelEnabled: tenantObj.branding?.whiteLabelEnabled || false,
-      logo: tenantObj.branding?.logo || "",
     });
     const pc = tenantObj?.settings?.printConfig || {};
     printConfigRef.current = { ...pc };

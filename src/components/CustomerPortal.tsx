@@ -138,7 +138,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Resolve active tenant details
-  const tenantId = searchedTicket?.tenantId || currentTenantId || "default";
+  const tenantId = searchedTicket?.tenantId || currentTenantId || "";
   const activeTenant = tenants.find((t) => t.id === tenantId);
   const portalHelpTitle =
     activeTenant?.branding?.portalHelpTitle || "Pusat Bantuan & S&K";
@@ -283,7 +283,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
     // Fallback search online on server
     try {
-      const res = await fetch(`/api/service-tracking/status/${trimmed}`);
+      const res = await fetch(`/api/service-tracking/status/${trimmed}?tenantId=${encodeURIComponent(currentTenantId || "")}`);
       if (!res.ok) throw new Error("Ticket not found on server");
       const data = await res.json();
       setSearchedTicket({
@@ -568,7 +568,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     });
 
     const tenantName =
-      activeTenant?.name?.toUpperCase() || "KOMPUTER MAKASSAR SERVICE ERP";
+      (activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name || "Toko Servis").toUpperCase();
     const invoiceNumber = tx.invoiceNo || tx.ticketNo || "INV/ERP/GUEST";
 
     const content = `==================================================================
@@ -667,7 +667,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
       }));
 
       // Append technical system guidance to keep responses contextual to this repair shop
-      const systemContext = `Anda adalah teknisi senior dan CS di gerai 'Komputer Makassar Service'. 
+      const systemContext = `Anda adalah teknisi senior dan CS di gerai '${activeTenant?.name || "toko kami"}'.
       Pelanggan bernama ${activeCustomer ? activeCustomer.name : "Guest"}.
       Unit pengerjaan aktif mereka adalah ${selectedChatTopic !== "general" ? selectedChatTopic : "beberapa perangkat elektronik"}.
       Berikan tanggapan yang ramah, sopan, mendalam, bernada teknis namun mudah dimengerti dalam Bahasa Indonesia.`;
@@ -1914,11 +1914,10 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                       <div className="space-y-4 font-mono text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
                         <div className="text-center py-2 border-b dark:border-zinc-800">
                           <h5 className="font-black text-sm text-slate-900 dark:text-white">
-                            {activeTenant?.name?.toUpperCase() ||
-                              "KOMPUTER MAKASSAR SERVICE"}
+                            {(activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name || "Toko Servis").toUpperCase()}
                           </h5>
                           <p className="text-[10px] text-slate-500 mt-1">
-                            Makassar, Sulawesi Selatan, Indonesia
+                            {activeTenant?.address || "Alamat bisnis belum diatur"}
                           </p>
                         </div>
 
@@ -2414,7 +2413,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                 activeTenant?.settings?.notificationSettings?.whatsappNumber ||
                 "+628123456789";
               const cleanNum = whatsappNum.replace(/[^0-9]/g, "");
-              const text = `Halo Admin ${activeTenant?.name || "Repair Hub"}, saya ingin menanyakan tentang kelanjutan perbaikan unit saya di customer portal.`;
+              const text = `Halo Admin, saya ingin menanyakan tentang kelanjutan perbaikan unit saya di customer portal.`;
 
               if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard
