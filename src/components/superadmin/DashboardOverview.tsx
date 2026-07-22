@@ -17,7 +17,6 @@ interface DashboardOverviewProps {
   r2StorageCount: number;
   gcsStorageCount: number;
   offlineQueueLength: number;
-  supabaseConfig: unknown;
   tenants: Tenant[];
   readOnlyMode?: boolean;
   onNavigate?: (tab: string, filter?: string) => void;

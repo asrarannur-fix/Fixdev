@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
 
-test("login production asrarannur@gmail.com", async ({ page }) => {
-  const email = "asrarannur@gmail.com";
-  const password = "asrar778877";
+test("login production as owner", async ({ page }) => {
+  const email = process.env.TEST_TENANT_EMAIL || "";
+  const password = process.env.TEST_TENANT_PASSWORD || "";
+  test.skip(!email || !password, "TEST_TENANT_EMAIL and TEST_TENANT_PASSWORD are required");
 
   console.log("Navigating to production site https://fixdev.web.id ...");
   await page.goto("https://fixdev.web.id", { waitUntil: "networkidle", timeout: 45000 });

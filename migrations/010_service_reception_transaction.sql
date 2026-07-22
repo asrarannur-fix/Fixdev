@@ -1,4 +1,3 @@
-BEGIN;
 
 ALTER TABLE customers
   ADD COLUMN IF NOT EXISTS normalized_phone TEXT;
@@ -45,4 +44,3 @@ ALTER TABLE service_tickets
 
 CREATE SEQUENCE IF NOT EXISTS service_ticket_number_seq;
 
-COMMIT;

@@ -13,7 +13,7 @@
 import express from "express";
 import { dbQuery } from "../../lib/db.js";
 import { toApiResponse } from "../utils/responseTransform.js";
-import { requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
+import { requireJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 import { requireFeature } from "../../middleware/feature.middleware.js";
 import { getTableColumns, sanitizePayloadForTable } from "../controllers/data.controller.js";
 
@@ -256,7 +256,7 @@ export async function deleteCrud(req: express.Request, res: express.Response) {
 
 export function createCrudRouter(): express.Router {
   const router = express.Router();
-  router.use(requireSupabaseJwt, requireTenantScope, resolveResource);
+  router.use(requireJwt, requireTenantScope, resolveResource);
 
   router.get("/:table", listCrud);
   router.get("/:table/:id", getCrud);

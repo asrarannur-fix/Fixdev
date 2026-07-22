@@ -3,7 +3,6 @@
 -- Safe additive/backfill changes only. Applied via POST /api/supabase/migrate.
 -- All checks are IF NOT EXISTS / idempotent.
 
-BEGIN;
 
 -- 1. whatsapp_queue: the codebase consistently writes scheduled_time (queueNotification
 --    in serviceWorkflow.controller.ts, whatsapp.controller.ts, and the index
@@ -48,4 +47,3 @@ END $$;
 --    corrected to match. The legacy nullable ref_no column is retained for compatibility.
 --    No live ALTER required; documented here for schema-file parity.
 
-COMMIT;

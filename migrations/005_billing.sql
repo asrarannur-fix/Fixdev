@@ -106,17 +106,7 @@ CREATE TRIGGER app_settings_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_app_settings_updated_at();
 
--- 7. RLS (Row Level Security)
-ALTER TABLE saas_invoices ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Tenants can view their own invoices" ON saas_invoices
-    FOR SELECT USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-
-CREATE POLICY "Tenants can insert their own invoices" ON saas_invoices
-    FOR INSERT WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-
-CREATE POLICY "Tenants can update their own invoices" ON saas_invoices
-    FOR UPDATE USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
+-- 7. Tenant isolation enforced by application middleware
 
 -- 8. Function to check and update overdue invoices
 CREATE OR REPLACE FUNCTION update_overdue_invoices()
@@ -147,13 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_billing_notifications_tenant ON billing_notificat
 CREATE INDEX IF NOT EXISTS idx_billing_notifications_invoice ON billing_notifications(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_billing_notifications_status ON billing_notifications(status);
 
-ALTER TABLE billing_notifications ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Tenants can view their own billing notifications" ON billing_notifications
-    FOR SELECT USING (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-
-CREATE POLICY "Tenants can insert their own billing notifications" ON billing_notifications
-    FOR INSERT WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true)::uuid);
+-- Tenant isolation enforced by application middleware.
 
 -- 10. Cron job helper function
 CREATE OR REPLACE FUNCTION get_expiring_invoices(days_ahead INTEGER DEFAULT 3)

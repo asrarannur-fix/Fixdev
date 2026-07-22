@@ -13,29 +13,10 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor to add auth token from Supabase session
+// Request interceptor to add auth token from local storage
 api.interceptors.request.use(
   (config) => {
-    // Supabase v2 stores session under sb-<ref>-auth-token; try multiple keys
-    const token = (() => {
-      // 1. Try Directus-style key (legacy)
-      const legacy = localStorage.getItem("supabase.auth.token");
-      if (legacy) try { return JSON.parse(legacy)?.currentSession?.access_token; } catch {}
-
-      // 2. Try all sb-* keys to find an active session
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith("sb-") && key.endsWith("-auth-token")) {
-          try {
-            const parsed = JSON.parse(localStorage.getItem(key)!);
-            if (parsed?.access_token) return parsed.access_token;
-          } catch {}
-        }
-      }
-
-      return null;
-    })();
-
+    const token = localStorage.getItem("fixdev_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -52,14 +33,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !isRedirecting) {
       isRedirecting = true;
       console.error("Unauthorized request — session expired. Redirecting to login.");
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith("sb-") && key.endsWith("-auth-token")) {
-          localStorage.removeItem(key);
-        }
-      }
-      localStorage.removeItem("supabase.auth.token");
-      window.location.href = "/login";
+      localStorage.removeItem("fixdev_token");
+      window.location.href = "/";
     }
     if (error.response?.status === 403) {
       console.error("Forbidden: Insufficient permissions");

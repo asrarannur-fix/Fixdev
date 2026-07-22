@@ -81,17 +81,4 @@ CREATE TRIGGER complaint_templates_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_complaint_templates_updated_at();
 
--- 5. RLS (Row Level Security) - if using Supabase
-ALTER TABLE complaint_templates ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Tenants can view their own templates" ON complaint_templates
-    FOR SELECT USING (tenant_id = auth.uid() OR tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-
-CREATE POLICY "Tenants can insert their own templates" ON complaint_templates
-    FOR INSERT WITH CHECK (tenant_id = auth.uid() OR tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-
-CREATE POLICY "Tenants can update their own templates" ON complaint_templates
-    FOR UPDATE USING (tenant_id = auth.uid() OR tenant_id = current_setting('app.current_tenant_id', true)::uuid);
-
-CREATE POLICY "Tenants can delete their own templates" ON complaint_templates
-    FOR DELETE USING (tenant_id = auth.uid() OR tenant_id = current_setting('app.current_tenant_id', true)::uuid);
+-- Tenant isolation is enforced by application middleware and explicit SQL predicates.

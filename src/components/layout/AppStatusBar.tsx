@@ -19,12 +19,14 @@ export const AppStatusBar: React.FC = () => {
     currentBranchId,
     tenants,
     branches,
-    supabaseConfig,
+    platformHealth,
   } = useSaaS();
 
   const tenant = tenants.find((t) => t.id === currentTenantId);
   const branch = branches.find((b) => b.id === currentBranchId);
   const role = roleLabel[currentUser.role] ?? currentUser.role;
+
+  const isHealthy = platformHealth.status === "ok";
 
   return (
     <footer
@@ -50,10 +52,10 @@ export const AppStatusBar: React.FC = () => {
       <div className="flex items-center gap-1.5 shrink-0">
         <span
           className={`w-1.5 h-1.5 rounded-full ${
-            supabaseConfig.isConfigured ? "bg-emerald-500" : "bg-amber-500"
+            isHealthy ? "bg-emerald-500" : "bg-amber-500"
           }`}
         />
-        {supabaseConfig.isConfigured ? "Cloud" : "Lokal"}
+        {isHealthy ? "Online" : "Offline"}
       </div>
     </footer>
   );

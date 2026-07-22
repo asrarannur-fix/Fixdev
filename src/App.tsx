@@ -291,7 +291,6 @@ const MainAppContent: React.FC = () => {
     "saas-billing",
     "saas-operations",
     "saas-audits",
-    "saas-supabase",
   ];
 
   const handleSetTab = (tab: string, subTab?: string) => {

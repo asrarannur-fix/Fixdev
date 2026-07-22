@@ -179,8 +179,4 @@ VALUES (
 )
 ON CONFLICT (key) DO NOTHING;
 
-ALTER TABLE manual_payment_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE billing_transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE billing_internal_notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE billing_notification_outbox ENABLE ROW LEVEL SECURITY;
-ALTER TABLE billing_audit_events ENABLE ROW LEVEL SECURITY;
+-- Access control enforced by application middleware.

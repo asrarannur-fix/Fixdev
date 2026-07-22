@@ -1,8 +1,8 @@
 import { type Page } from "@playwright/test";
 
 export async function loginAsOwner(page: Page): Promise<boolean> {
-  const email = "asrarannur@gmail.com";
-  const password = "asrar778877";
+  const email = process.env.TEST_TENANT_EMAIL || "";
+  const password = process.env.TEST_TENANT_PASSWORD || "";
   const timeout = 30000;
 
   console.log("Navigating to /login for UI login...");

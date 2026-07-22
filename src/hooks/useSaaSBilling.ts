@@ -122,7 +122,7 @@ export function useSaaSBilling(
         const detail = await subRes.text();
         if (requestId !== latestRequestId.current) return;
         const migrationHint = /relation|saas_invoices|app_settings/i.test(detail)
-          ? " Schema billing belum diterapkan. Jalankan migration 005 dan 006 dari menu Supabase."
+          ? " Schema billing belum diterapkan. Jalankan migration 005 dan 006 dari menu Database."
           : "";
         setBillingError(`Riwayat billing gagal dimuat (HTTP ${subRes.status}).${migrationHint} ${detail.slice(0, 180)}`);
         setInvoices([]);

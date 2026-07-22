@@ -1,5 +1,5 @@
 import express from "express";
-import { requireRoles, requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
+import { requireRoles, requireJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 import {
   listSuppliers, createSupplier, updateSupplier,
   listPurchaseOrders, createPurchaseOrder, cancelPurchaseOrder,

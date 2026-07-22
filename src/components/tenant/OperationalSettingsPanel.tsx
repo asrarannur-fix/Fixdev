@@ -1,7 +1,7 @@
 /**
  * Operational Settings Panel
  * Covers: Service, POS & Kasir, Stok & Pembelian, Keuangan & Accounting, HRM
- * All settings persist via updateTenant -> syncToSupabase (PostgreSQL)
+ * All settings persist via updateTenant -> syncToApi (PostgreSQL)
  */
 import React, { useState } from "react";
 import { Wrench, ShoppingCart, Package, Calculator, Users, Save, RefreshCw } from "lucide-react";

@@ -654,7 +654,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/10 transition-all"
           >
             <Play className="w-3.5 h-3.5" /> Daftarkan & Setup Database
-            (Supabase Sync)
+            (DB Sync)
           </button>}
         </form>
       </div>

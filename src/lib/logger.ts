@@ -15,7 +15,7 @@ export const logger = pino(
     redact: {
       paths: [
         "req.headers.authorization",
-        "req.headers['x-supabase-admin-token']",
+        "req.headers['x-admin-token']",
         "*.password",
         "*.serverKey",
         "*.apiToken",

@@ -44,7 +44,6 @@ import {
   TransferItem,
   WorkShift,
   InternalMessage,
-  SupabaseConfig,
   PlatformHealth,
 } from "../types";
 
@@ -78,9 +77,9 @@ import {
 } from "../utils/saasUtils";
 import {
   cleanUserForDb,
-  isSupabaseConfigured,
-  getSupabase,
-} from "../utils/supabaseUtils";
+  isBackendConfigured,
+  getAuthClient,
+} from "../utils/authClient";
 import { useSaaSPOS } from "../hooks/useSaaSPOS";
 import { useSaaSInventory } from "../hooks/useSaaSInventory";
 import { readJsonResponse } from "../utils/apiResponse";
@@ -104,7 +103,7 @@ const STATE_TO_TABLE_MAP: Record<string, string> = {
   auditLogs: "audit_logs",
 };
 
-let syncToSupabase: (
+let syncToApi: (
   tableKey: string,
   action: "insert" | "update" | "delete",
   data: any,
@@ -464,19 +463,12 @@ interface SaaSContextType {
   }) => void;
   clearOfflineQueue: () => void;
   removeOfflineAction: (id: string) => void;
-  supabaseConfig: SupabaseConfig;
   platformHealth: PlatformHealth;
   refreshPlatformHealth: () => Promise<void>;
-  updateSupabaseConfig: (config: Partial<SupabaseConfig>) => void;
-  testSupabaseConnection: (
-    config: Partial<SupabaseConfig>,
-  ) => Promise<{ success: boolean; message: string; details?: any }>;
-  runSupabaseMigration: () => Promise<{ success: boolean; logs: string[] }>;
   isAuthenticated: boolean;
   loginUser: (email: string, password?: string) => Promise<boolean>;
   logoutUser: () => Promise<void> | void;
   updateCurrentUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
-  sendPasswordReset: (email: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -770,7 +762,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   } catch (_) {}
 
   const [tenants, setTenants] = useState<Tenant[]>(() =>
-    parseArray<Tenant>("saas_tenants", isSupabaseConfigured() ? [] : INITIAL_TENANTS),
+    parseArray<Tenant>("saas_tenants", isBackendConfigured() ? [] : INITIAL_TENANTS),
   );
 
   const [currentTenantId, setCurrentTenantId] = useState<string>(() => {
@@ -791,13 +783,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         if (parsed && typeof parsed === "object" && parsed.id) return parsed;
       }
     } catch (_) {}
-    return isSupabaseConfigured()
+    return isBackendConfigured()
       ? ({ id: "", name: "", email: "", role: UserRole.ANONYMOUS, permissions: [], branchIds: [], loginHistory: [], activeSessions: [], mfaEnabled: false } as User)
       : INITIAL_USERS[0];
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() =>
-    !isSupabaseConfigured() &&
+    !isBackendConfigured() &&
     localStorage.getItem("saas_is_authenticated") === "true" &&
     !!localStorage.getItem("saas_curr_user"),
   );
@@ -824,7 +816,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
           if (!hasCachedData) {
             setApiStatus("Mengambil data via backend bootstrap...");
           }
-          const client = getSupabase();
+          const client = getAuthClient();
           let accessToken = "";
           if (client) {
             const { data: sessionData } = await client.auth.getSession();
@@ -987,13 +979,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
           setWorkflows(modulePayloads<ERPWorkflow>("workflows"));
 
           addLog(
-            "Supabase Initial Loaded",
-            "Berhasil memuat data nyata dari seluruh tabel Supabase Cloud.",
+            "Initial Data Loaded",
+            "Berhasil memuat data dari seluruh tabel database.",
             "SYSTEM",
             "LOW",
           );
         } catch (err: any) {
-          console.error("Gagal sinkronisasi data Supabase:", err);
+          console.error("Gagal sinkronisasi data:", err);
           showToast(
             "Database tidak dapat dimuat. Data demo tidak digunakan; silakan coba lagi.",
             "error",
@@ -1040,17 +1032,15 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     window.location.reload();
   };
 
-// Supabase restores persisted sessions through onAuthStateChange below.
 // Do not sign out a valid server-verified session just because local UI cache is absent.
 
   // Check existing session on mount
   useEffect(() => {
     const token = localStorage.getItem("fixdev_token");
     if (!token) {
-      const storedAuth = localStorage.getItem("saas_is_authenticated");
-      if (storedAuth === "true") {
-        setIsAuthenticated(true);
-      }
+      setIsAuthenticated(false);
+      localStorage.setItem("saas_is_authenticated", "false");
+      localStorage.removeItem("saas_curr_user");
       return;
     }
 
@@ -1093,11 +1083,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     password: string,
   ): Promise<boolean> => {
     const cleanInput = email.trim().toLowerCase();
-    const client = getSupabase();
+    const client = getAuthClient();
 
     if (client) {
       setApiLoading(true);
-      setApiStatus("Melakukan autentikasi di Supabase...");
+      setApiStatus("Melakukan autentikasi...");
       try {
         let authResult;
         try {
@@ -1166,7 +1156,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
-    // No Supabase configured — reject login
+    // Backend auth unavailable — reject login
     showToast("Autentikasi tidak tersedia. Silakan hubungi administrator.", "error");
     return false;
   };
@@ -1176,13 +1166,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setApiStatus("Memperbarui password...");
     try {
       const token = localStorage.getItem("fixdev_token");
-      const res = await fetch("/api/auth/profile", {
-        method: "PUT",
+      const res = await fetch("/api/auth/profile/password", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: "Bearer " + token } : {}),
         },
-        body: JSON.stringify({ password: newPassword }),
+        body: JSON.stringify({ currentPassword: _currentPassword, newPassword }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -1201,27 +1191,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // ==========================================
-  // RESET PASSWORD VIA API
-  // ==========================================
-  const sendPasswordReset = async (email: string): Promise<void> => {
-    const res = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || "Gagal mengirim email reset password.");
-    }
-    addLog(
-      "Password Reset Requested",
-      `Permintaan reset password untuk email: ${email}`,
-      "SECURITY",
-      "LOW",
-    );
-  };
-
   const logoutUser = async () => {
     try {
       addLog("Logout", "User melakukan logout", "AUTH");
@@ -1230,11 +1199,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     let keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith("saas_") || k.startsWith("sb-") || k.startsWith("supabase."))) {
+      if (k && (k.startsWith("saas_") || k.startsWith("sb-"))) {
         keysToRemove.push(k);
       }
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.removeItem("fixdev_token");
     localStorage.setItem("saas_is_authenticated", "false");
 
     sessionStorage.clear();
@@ -1242,12 +1212,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsAuthenticated(false);
     setCurrentUser(INITIAL_USERS[0]);
 
-    const client = getSupabase();
+    const client = getAuthClient();
     if (client) {
       Promise.race([
         client.auth.signOut(),
         new Promise((resolve) => setTimeout(resolve, 1000)),
-      ]).catch((e) => console.error("Error signing out from Supabase Auth:", e));
+      ]).catch((e) => console.error("Error signing out from auth:", e));
     }
 
     const url = new URL(window.location.href);
@@ -1258,7 +1228,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const [users, setUsers] = useState<User[]>(() => {
-    return parseArray<User>("saas_users", isSupabaseConfigured() ? [] : INITIAL_USERS);
+    return parseArray<User>("saas_users", isBackendConfigured() ? [] : INITIAL_USERS);
   });
 
   const [workflows, setWorkflows] = useState<ERPWorkflow[]>(() =>
@@ -1306,19 +1276,19 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const [branches, setBranches] = useState<Branch[]>(() => {
-    return parseArray<Branch>("saas_branches", isSupabaseConfigured() ? [] : INITIAL_BRANCHES);
+    return parseArray<Branch>("saas_branches", isBackendConfigured() ? [] : INITIAL_BRANCHES);
   });
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>(() => {
-    return parseArray<Warehouse>("saas_warehouses", isSupabaseConfigured() ? [] : INITIAL_WAREHOUSES);
+    return parseArray<Warehouse>("saas_warehouses", isBackendConfigured() ? [] : INITIAL_WAREHOUSES);
   });
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
-    return parseArray<Customer>("saas_customers", isSupabaseConfigured() ? [] : INITIAL_CUSTOMERS);
+    return parseArray<Customer>("saas_customers", isBackendConfigured() ? [] : INITIAL_CUSTOMERS);
   });
 
   const [products, setProducts] = useState<InventoryProduct[]>(() => {
-    return parseArray<InventoryProduct>("saas_products", isSupabaseConfigured() ? [] : INITIAL_PRODUCTS);
+    return parseArray<InventoryProduct>("saas_products", isBackendConfigured() ? [] : INITIAL_PRODUCTS);
   });
 
   const [microComponents, setMicroComponents] = useState<MicroComponent[]>([]);
@@ -1326,7 +1296,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   const [microComponentsError, setMicroComponentsError] = useState("");
 
   const [services, setServices] = useState<ServiceTicket[]>(() => {
-    return parseArray<ServiceTicket>("saas_services", isSupabaseConfigured() ? [] : INITIAL_SERVICES);
+    return parseArray<ServiceTicket>("saas_services", isBackendConfigured() ? [] : INITIAL_SERVICES);
   });
 
   const [fieldVisits, setFieldVisits] = useState<FieldServiceVisit[]>(() => {
@@ -1338,11 +1308,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const [transactions, setTransactions] = useState<POSTransaction[]>(() => {
-    return parseArray<POSTransaction>("saas_transactions", isSupabaseConfigured() ? [] : INITIAL_TRANSACTIONS);
+    return parseArray<POSTransaction>("saas_transactions", isBackendConfigured() ? [] : INITIAL_TRANSACTIONS);
   });
 
   const [accounts, setAccounts] = useState<COAAccount[]>(() => {
-    return parseArray<COAAccount>("saas_accounts", isSupabaseConfigured() ? [] : INITIAL_COA);
+    return parseArray<COAAccount>("saas_accounts", isBackendConfigured() ? [] : INITIAL_COA);
   });
 
   const [journals, setJournals] = useState<JournalEntry[]>(() => {
@@ -1351,16 +1321,16 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>(
     () => {
-      return parseArray<CashTransaction>("saas_cash_tx", isSupabaseConfigured() ? [] : seedCashTransactions("tenant-owner-1"));
+      return parseArray<CashTransaction>("saas_cash_tx", isBackendConfigured() ? [] : seedCashTransactions("tenant-owner-1"));
     },
   );
 
   const [employees, setEmployees] = useState<Employee[]>(() => {
-    return parseArray<Employee>("saas_employees", isSupabaseConfigured() ? [] : INITIAL_EMPLOYEES);
+    return parseArray<Employee>("saas_employees", isBackendConfigured() ? [] : INITIAL_EMPLOYEES);
   });
 
   const [workShifts, setWorkShifts] = useState<WorkShift[]>(() => {
-    return parseArray<WorkShift>("saas_work_shifts", isSupabaseConfigured() ? [] : INITIAL_WORK_SHIFTS);
+    return parseArray<WorkShift>("saas_work_shifts", isBackendConfigured() ? [] : INITIAL_WORK_SHIFTS);
   });
 
   const [payroll, setPayroll] = useState<Payroll[]>(() => {
@@ -1372,7 +1342,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const [vouchers, setVouchers] = useState<Voucher[]>(() => {
-    return parseArray<Voucher>("saas_vouchers", isSupabaseConfigured() ? [] : INITIAL_VOUCHERS);
+    return parseArray<Voucher>("saas_vouchers", isBackendConfigured() ? [] : INITIAL_VOUCHERS);
   });
 
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(() => {
@@ -1408,17 +1378,17 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    if (isSupabaseConfigured()) return [];
+    if (isBackendConfigured()) return [];
     return parseArray<AuditLog>("saas_audit_logs", INITIAL_AUDITS);
   });
 
   const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>(() => {
-    if (isSupabaseConfigured()) return [];
+    if (isBackendConfigured()) return [];
     return parseArray<FraudAlert>("saas_fraud", []);
   });
 
   const [stockMovements, setStockMovements] = useState<StockMovement[]>(() => {
-    if (isSupabaseConfigured()) return [];
+    if (isBackendConfigured()) return [];
     return parseArray<StockMovement>("saas_stock_movements", [
       {
         id: "mov-init-1",
@@ -1459,7 +1429,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   const [inventoryTransfers, setInventoryTransfers] = useState<
     InventoryTransfer[]
   >(() => {
-    if (isSupabaseConfigured()) return [];
+    if (isBackendConfigured()) return [];
     return parseArray<InventoryTransfer>("saas_inventory_transfers", [
       {
         id: "trf-seed-1",
@@ -1555,8 +1525,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem("saas_curr_branch_id", currentBranchId);
     localStorage.setItem("saas_curr_user", JSON.stringify(currentUser));
 
-    // Jika Supabase aktif, skip cache data — pakai DB sebagai source of truth
-    if (isSupabaseConfigured()) return;
+      // If backend active, skip cache data — use DB as source of truth
+    if (isBackendConfigured()) return;
 
     // Fallback offline: cache semua data ke localStorage
     localStorage.setItem("saas_tenants", JSON.stringify(tenants));
@@ -1793,10 +1763,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       headers.set("Content-Type", "application/json");
     }
 
-    // Inject Supabase JWT for backend auth (requireSupabaseJwt middleware)
+    // Inject JWT for backend auth (requireJwt middleware)
     if (!headers.has("Authorization")) {
       try {
-        const client = getSupabase();
+        const client = getAuthClient();
         if (client) {
           const sessionData = await Promise.race([
             client.auth.getSession(),
@@ -1864,13 +1834,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setAuditLogs((prev) => [newLog, ...prev]);
   };
 
-  const syncModuleRecordToSupabase = async (
+  const syncModuleRecord = async (
     module: string,
     recordId: string,
     payload: Record<string, any>,
     action: "insert" | "update" | "delete" = "insert",
   ) => {
-    if (!isSupabaseConfigured()) throw new Error("Supabase belum terkonfigurasi; perubahan tidak disimpan.");
+    if (!isBackendConfigured()) throw new Error("Backend belum terkonfigurasi; perubahan tidak disimpan.");
     const response = await apiFetch("/api/module-records", {
       method: "POST",
       body: JSON.stringify({ tenantId: currentTenantId, module, recordId, payload, action }),
@@ -1878,15 +1848,15 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!response.ok) throw new Error(`Module record sync HTTP ${response.status}`);
   };
 
-  const syncToSupabase = async (
+  const syncToApi = async (
     tableKey: string,
     action: "insert" | "update" | "delete",
     data: any,
     idField: string = "id",
   ) => {
     try {
-      if (!isSupabaseConfigured()) {
-        throw new Error("Supabase belum terkonfigurasi; perubahan tidak disimpan.");
+      if (!isBackendConfigured()) {
+        throw new Error("Backend belum terkonfigurasi; perubahan tidak disimpan.");
       }
 
       if (["users", "auditLogs"].includes(tableKey)) return;
@@ -1910,10 +1880,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error(`Database sync HTTP ${response.status}${detail ? `: ${detail.slice(0, 200)}` : ""}`);
       }
     } catch (err: any) {
-      console.error(`Supabase sync execution failed for ${tableKey}:`, err);
+      console.error(`Sync execution failed for ${tableKey}:`, err);
       addLog(
         "Database Sync Exception",
-        `Error replikasi data ke Supabase: ${err.message}`,
+        `Error replikasi data: ${err.message}`,
         "SYSTEM",
         "HIGH",
       );
@@ -1994,11 +1964,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const [platformHealth, setPlatformHealth] = useState<PlatformHealth>(() => ({
-    status: isSupabaseConfigured() ? "checking" : "local",
+    status: isBackendConfigured() ? "checking" : "local",
   }));
 
   const refreshPlatformHealth = async () => {
-    if (!isSupabaseConfigured()) {
+    if (!isBackendConfigured()) {
       setPlatformHealth({ status: "local", checkedAt: new Date().toISOString() });
       return;
     }
@@ -2022,273 +1992,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     refreshPlatformHealth();
     const timer = window.setInterval(refreshPlatformHealth, 60_000);
     return () => window.clearInterval(timer);
-  }, [isAuthenticated, currentUser.role]);
-
-  const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(() => {
-    const envUrl = (import.meta as any).env.VITE_SUPABASE_URL || "";
-    const envAnon = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || "";
-    // ponytail: dbUrl contains password — only read from server environment (process.env), not VITE_ env
-
-    const saved = localStorage.getItem("saas_supabase_config");
-    const parsedConfig = saved ? JSON.parse(saved) : null;
-    // Ignore stale secrets from older localStorage payloads
-    if (parsedConfig?.serviceRoleKey) delete parsedConfig.serviceRoleKey;
-    if (parsedConfig?.dbUrl) delete parsedConfig.dbUrl;
-    const localConfig = parsedConfig?.url?.startsWith("http") ? parsedConfig : null;
-
-    return {
-      url: envUrl || (localConfig ? localConfig.url : ""),
-      anonKey: envAnon || (localConfig ? localConfig.anonKey : ""),
-      serviceRoleKey: "", // Never from localStorage
-      dbUrl: "", // Never from localStorage
-      isConfigured:
-        !!(envUrl && envAnon) ||
-        (localConfig ? !!(localConfig.url && localConfig.anonKey) : false),
-      lastConnectedAt: localConfig ? localConfig.lastConnectedAt : undefined,
-    };
-  });
-
-  const updateSupabaseConfig = (newConfig: Partial<SupabaseConfig>) => {
-    setSupabaseConfig((prev) => {
-      const updated = {
-        ...prev,
-        ...newConfig,
-        isConfigured:
-          !!(newConfig.url || prev.url) &&
-          !!(newConfig.anonKey || prev.anonKey),
-      };
-      // Strip secrets before writing to localStorage
-      const { serviceRoleKey, dbUrl, ...safeConfig } = updated;
-      localStorage.setItem("saas_supabase_config", JSON.stringify(safeConfig));
-      return updated;
-    });
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    const syncRuntimeSupabaseStatus = async () => {
-      try {
-        const response = await fetch("/api/supabase/env-status");
-        if (!response.ok) return;
-        const status = await response.json();
-        if (cancelled) return;
-        setSupabaseConfig((prev) => ({
-          ...prev,
-          url: status.url || prev.url,
-          isConfigured: Boolean(status.url && status.hasAnonKey) || Boolean(status.hasDbUrl),
-          lastConnectedAt:
-            Boolean(status.url && status.hasAnonKey) || Boolean(status.hasDbUrl)
-              ? new Date().toISOString()
-              : prev.lastConnectedAt,
-        }));
-      } catch (err) {
-        console.warn("Runtime Supabase status check failed:", err);
-      }
-    };
-    syncRuntimeSupabaseStatus();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const testSupabaseConnection = async (
-    configToCheck: Partial<SupabaseConfig>,
-  ) => {
-    const urlToCheck =
-      configToCheck.url !== undefined ? configToCheck.url : supabaseConfig.url;
-    const anonKeyToCheck =
-      configToCheck.anonKey !== undefined
-        ? configToCheck.anonKey
-        : supabaseConfig.anonKey;
-    const serviceRoleKeyToCheck =
-      configToCheck.serviceRoleKey !== undefined
-        ? configToCheck.serviceRoleKey
-        : supabaseConfig.serviceRoleKey;
-    const dbUrlToCheck =
-      configToCheck.dbUrl !== undefined
-        ? configToCheck.dbUrl
-        : supabaseConfig.dbUrl;
-
-    let restSuccess = false;
-    let restMessage = "";
-    let dbSuccess = false;
-    let dbMessage = "";
-
-    // 1. Test REST API
-    if (urlToCheck) {
-      try {
-        const cleanUrl = urlToCheck.trim().replace(/\/$/, "");
-        let isUrlHealthy = false;
-
-        const keyToUse = serviceRoleKeyToCheck || anonKeyToCheck;
-        if (keyToUse) {
-          const testUrl = `${cleanUrl}/rest/v1/`;
-          const headers: Record<string, string> = {
-                apikey: keyToUse,
-                Authorization: `Bearer ${keyToUse}`,
-              };
-
-          const res = await fetch(testUrl, { method: "GET", headers });
-          if (res.ok) {
-            restSuccess = true;
-            restMessage = serviceRoleKeyToCheck
-              ? "Koneksi REST API OK (200) menggunakan Service Role Key."
-              : "Koneksi REST API OK (200) menggunakan Anon Key.";
-          } else {
-            const errorText = await res.text();
-            let isJSON = false;
-            let errObj: any = {};
-            try {
-              errObj = JSON.parse(errorText);
-              isJSON = true;
-            } catch (_) {}
-
-            if (
-              isJSON &&
-              (errObj.message?.includes("service_role") ||
-                errObj.hint?.includes("service_role")) &&
-              !serviceRoleKeyToCheck
-            ) {
-              restSuccess = true;
-              restMessage =
-                "Koneksi REST API terverifikasi! (Anon Key valid, pembatasan skema root adalah normal).";
-            } else if (isUrlHealthy) {
-              restSuccess = true;
-              restMessage =
-                "Koneksi REST API parsial (Endpoint auth aktif, URL Supabase terbukti valid).";
-            } else {
-              restMessage = `REST API merespon dengan status ${res.status}: ${errorText}`;
-            }
-          }
-        } else {
-          restMessage = "Anon Key atau Service Role Key tidak disediakan.";
-        }
-      } catch (err: any) {
-        restMessage = `REST API gagal terhubung: ${err.message}`;
-      }
-    }
-
-    // 2. Test PostgreSQL Direct DB Connection
-    if (dbUrlToCheck) {
-      try {
-        const res = await fetch("/api/supabase/test", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ dbUrl: dbUrlToCheck }),
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          dbSuccess = true;
-          dbMessage = `Koneksi PostgreSQL Direct Berhasil! ${data.details}`;
-        } else {
-          dbMessage = `Koneksi PostgreSQL Direct Gagal: ${data.message || ""} ${data.details || ""}`;
-        }
-      } catch (err: any) {
-        dbMessage = `Gagal menghubungi backend server untuk pengujian PostgreSQL: ${err.message}`;
-      }
-    }
-
-    const isConfigured = restSuccess || dbSuccess;
-
-    const updated = {
-      ...supabaseConfig,
-      ...configToCheck,
-      isConfigured,
-      lastConnectedAt: isConfigured
-        ? new Date().toISOString()
-        : supabaseConfig.lastConnectedAt,
-    };
-    setSupabaseConfig(updated);
-    const { serviceRoleKey, dbUrl, ...safeConfig } = updated;
-    localStorage.setItem("saas_supabase_config", JSON.stringify(safeConfig));
-
-    if (isConfigured) {
-      addLog(
-        "Supabase Connection Tested",
-        `Koneksi Supabase berhasil dihubungkan. REST: ${restSuccess ? "OK" : "GAGAL"}, DB: ${dbSuccess ? "OK" : "GAGAL"}`,
-        "SECURITY",
-        "LOW",
-      );
-
-      let finalMsg = "Koneksi Supabase berhasil terhubung!";
-      if (restSuccess && dbSuccess) {
-        finalMsg =
-          "Luar biasa! Koneksi REST API Supabase dan PostgreSQL Direct Database berhasil dihubungkan secara nyata.";
-      } else if (restSuccess) {
-        finalMsg =
-          "Koneksi REST API Supabase berhasil terhubung! Namun, koneksi Direct PostgreSQL belum dikonfigurasi atau gagal.";
-      } else {
-        finalMsg =
-          "Koneksi PostgreSQL Direct Database berhasil terhubung ke server! Namun, koneksi REST API belum dikonfigurasi atau gagal.";
-      }
-
-      return {
-        success: true,
-        message: finalMsg,
-        details: `[REST API Status]: ${restMessage || "Tidak diuji"}\n[PostgreSQL DB Status]: ${dbMessage || "Tidak diuji"}`,
-      };
-    } else {
-      return {
-        success: false,
-        message:
-          "Pengujian koneksi Supabase gagal. Harap periksa kembali URL, kunci API, dan PostgreSQL URI Anda.",
-        details: `[REST API Detail]: ${restMessage || "Tidak diuji"}\n[PostgreSQL DB Detail]: ${dbMessage || "Tidak diuji"}`,
-      };
-    }
-  };
-
-  const runSupabaseMigration = async (): Promise<{
-    success: boolean;
-    logs: string[];
-  }> => {
-    const logs: string[] = [];
-    const addLogLine = (line: string) => {
-      logs.push(`[${new Date().toLocaleTimeString()}] ${line}`);
-    };
-
-    if (!supabaseConfig.dbUrl) {
-      addLogLine(
-        "⚠️ ERROR: Database Connection String (Direct PostgreSQL URI) belum diatur!",
-      );
-      addLogLine("Silakan masukkan database URL di panel konfigurasi.");
-      return { success: false, logs };
-    }
-
-    addLogLine("Mengirim permintaan migrasi ke backend server...");
-    try {
-      const res = await fetch("/api/supabase/migrate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ dbUrl: supabaseConfig.dbUrl }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        addLog(
-          "Supabase Schema Synced",
-          `Migrasi skema database berhasil dieksekusi secara nyata pada database Supabase!`,
-          "SYSTEM",
-          "LOW",
-        );
-        return { success: true, logs: data.logs };
-      } else {
-        return {
-          success: false,
-          logs: data.logs || [
-            ...logs,
-            `❌ Gagal bermigrasi: ${data.error || "Gagal menghubungi database atau mengeksekusi SQL."}`,
-          ],
-        };
-      }
-    } catch (err: any) {
-      addLogLine(`❌ Gagal menghubungi server: ${err.message}`);
-      return { success: false, logs };
-    }
-  };
+}, [isAuthenticated, currentUser.role]);
 
   const addTenant = async (
     t: Omit<Tenant, "id" | "createdAt" | "billingHistory">,
@@ -2301,7 +2005,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       billingHistory: [],
     };
     setTenants((prev) => [...prev, newTenant]);
-    await syncToSupabase("tenants", "insert", newTenant);
+    await syncToApi("tenants", "insert", newTenant);
 
     // Bootstrap basic branches & warehouses
     const newBranch: Branch = {
@@ -2313,7 +2017,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       isActive: true,
     };
     setBranches((prev) => [...prev, newBranch]);
-    await syncToSupabase("branches", "insert", newBranch);
+    await syncToApi("branches", "insert", newBranch);
 
     const newWH: Warehouse = {
       id: generateUUID(),
@@ -2323,7 +2027,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       location: "Lt. 1",
     };
     setWarehouses((prev) => [...prev, newWH]);
-    await syncToSupabase("warehouses", "insert", newWH);
+    await syncToApi("warehouses", "insert", newWH);
 
     // Setup standard COA for new tenant
     const coaSeed = INITIAL_COA.map((c) => ({
@@ -2338,7 +2042,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     }));
     setAccounts((prev) => [...prev, ...coaSeed]);
     for (const coa of coaSeed) {
-      await syncToSupabase("accounts", "insert", coa);
+      await syncToApi("accounts", "insert", coa);
     }
 
     addLog(
@@ -2354,7 +2058,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setTenants((prev) => {
       const next = prev.map((t) => (t.id === id ? { ...t, status } : t));
       const updated = next.find((t) => t.id === id);
-      if (updated) syncToSupabase("tenants", "update", updated);
+      if (updated) syncToApi("tenants", "update", updated);
       return next;
     });
     addLog(
@@ -2369,7 +2073,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     const current = tenants.find((tenant) => tenant.id === id);
     if (!current) throw new Error("Tenant tidak ditemukan.");
     const updated = { ...current, ...updates };
-    await syncToSupabase("tenants", "update", updated);
+    await syncToApi("tenants", "update", updated);
     setTenants((prev) => prev.map((tenant) => (tenant.id === id ? updated : tenant)));
     addLog(
       "Update Tenant Settings",
@@ -2467,7 +2171,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     const { customerData, ...ticketData } = ticket;
 
     let newTicket: ServiceTicket;
-    if (isSupabaseConfigured()) {
+    if (isBackendConfigured()) {
       const response = await apiFetch("/api/service-receptions", {
         method: "POST",
         body: JSON.stringify({
@@ -2633,7 +2337,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     const updatedTicket = { ...existing, ...updates, timeline };
 
     setServices((prev) => prev.map((s) => (s.id === id ? updatedTicket : s)));
-    syncToSupabase("services", "update", updatedTicket);
+    syncToApi("services", "update", updatedTicket);
     addLog(
       "Update Service Ticket",
       `Memperbarui detail tiket servis ID: ${id}`,
@@ -2778,7 +2482,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setMicroComponentsLoading(true);
     setMicroComponentsError("");
     try {
-      if (!isSupabaseConfigured()) return microComponents;
+      if (!isBackendConfigured()) return microComponents;
       const response = await apiFetch("/api/micro-components");
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Gagal memuat komponen mikro.");
@@ -2862,7 +2566,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const requestServicePart = async (id: string, part: { productId: string; warehouseId: string; quantity: number; serialNumber?: string }) => {
-    if (!isSupabaseConfigured()) return;
+    if (!isBackendConfigured()) return;
     const response = await apiFetch(`/api/service-receptions/${id}/parts`, { method: "POST", body: JSON.stringify(part) });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Gagal menambahkan spare part.");
@@ -2870,7 +2574,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const cancelServicePart = async (id: string, partId: string) => {
-    if (!isSupabaseConfigured()) return;
+    if (!isBackendConfigured()) return;
     const response = await apiFetch(`/api/service-receptions/${id}/parts/${partId}`, { method: "DELETE" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Gagal membatalkan spare part.");
@@ -2878,7 +2582,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const patchServiceWork = async (id: string, updates: Record<string, any>) => {
-    if (!isSupabaseConfigured()) {
+    if (!isBackendConfigured()) {
       updateServiceTicket(id, updates);
       return;
     }
@@ -2892,7 +2596,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     description: string; amount: number; approvalMethod: "WHATSAPP" | "PHONE" | "IN_PERSON";
     approvedByName?: string; note?: string; proofName?: string; idempotencyKey: string;
   }) => {
-    if (!isSupabaseConfigured()) {
+    if (!isBackendConfigured()) {
       const ticket = services.find((item) => item.id === id);
       if (!ticket) throw new Error("Tiket tidak ditemukan.");
       updateServiceTicket(id, {
@@ -2914,7 +2618,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const servicePartOrderRequest = async (id: string, path: string, method: string, data?: any) => {
-    if (!isSupabaseConfigured()) throw new Error("Permintaan spare part memerlukan backend aktif.");
+    if (!isBackendConfigured()) throw new Error("Permintaan spare part memerlukan backend aktif.");
     const response = await apiFetch(`/api/service-receptions/${id}/part-orders${path}`, {
       method, body: data ? JSON.stringify(data) : undefined,
     });
@@ -2933,7 +2637,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     status: ServiceStatus,
     note: string,
   ) => {
-    if (isSupabaseConfigured()) {
+    if (isBackendConfigured()) {
       await runServiceWorkflow(id, "transition", { status, note });
       return;
     }
@@ -2979,7 +2683,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     estCost: number,
     parts: any[],
   ) => {
-    if (isSupabaseConfigured()) {
+    if (isBackendConfigured()) {
       await runServiceWorkflow(id, "diagnosis", { diagnosis, estimatedCost: estCost, parts });
       return;
     }
@@ -3030,7 +2734,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     signatureName?: string,
     signatureText?: string,
   ) => {
-    if (isSupabaseConfigured()) {
+    if (isBackendConfigured()) {
       await runServiceWorkflow(id, "approval", { approved, signatureName, signature: signatureText });
       return;
     }
@@ -3090,7 +2794,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     notes: string,
     passed: boolean,
   ) => {
-    if (isSupabaseConfigured()) {
+    if (isBackendConfigured()) {
       const ticket = services.find((item) => item.id === id);
       await runServiceWorkflow(id, "qc", {
         score,
@@ -3148,7 +2852,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     paymentMethod: PaymentMethod,
     details?: { refNo?: string; proofName?: string; tempoDays?: number },
   ) => {
-    if (isSupabaseConfigured()) {
+    if (isBackendConfigured()) {
       await runServiceWorkflow(id, "handover", {
         paymentMethod,
         referenceNo: details?.refNo,
@@ -3426,7 +3130,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setTransactions,
     setProducts,
     setCashTransactions,
-    syncToSupabase,
+    syncToApi,
     addLog,
     triggerFraudAlert,
     addJournalEntry,
@@ -3454,7 +3158,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setProducts,
     setStockMovements,
     setInventoryTransfers,
-    syncToSupabase,
+    syncToApi,
     addLog,
     verifyScope,
   });
@@ -3477,7 +3181,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       leaves: [],
     };
     setEmployees((prev) => [...prev, newEmp]);
-    syncModuleRecordToSupabase("employees", newEmp.id, newEmp, "insert");
+    syncModuleRecord("employees", newEmp.id, newEmp, "insert");
     addLog(
       "Add Employee",
       `Menambahkan karyawan baru: ${emp.name} (${emp.position})`,
@@ -3498,7 +3202,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       tenantId: currentTenantId,
     };
     setCustomers((prev) => [...prev, newCust]);
-    syncToSupabase("customers", "insert", newCust);
+    syncToApi("customers", "insert", newCust);
     addLog(
       "Add Customer",
       `Menambahkan pelanggan baru: ${cust.name}`,
@@ -3512,7 +3216,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       const next = prev.map((cust) => {
         if (cust.id !== customerId) return cust;
         const updated = { ...cust, ...data };
-        syncToSupabase("customers", "update", updated);
+        syncToApi("customers", "update", updated);
         return updated;
       });
       return next;
@@ -3524,7 +3228,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((emp) => {
         if (emp.id !== employeeId) return emp;
         const updated = { ...emp, ...data };
-        syncModuleRecordToSupabase("employees", employeeId, updated, "update");
+        syncModuleRecord("employees", employeeId, updated, "update");
         return updated;
       }),
     );
@@ -3539,7 +3243,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const id = "ca-" + Math.random().toString(36).substr(2, 9);
     const cashAdvance = { id, employeeId, ...data, status: "PENDING" as const };
-    syncModuleRecordToSupabase("cash_advances", id, cashAdvance, "insert");
+    syncModuleRecord("cash_advances", id, cashAdvance, "insert");
     setEmployees((prev) =>
       prev.map((emp) => {
         if (emp.id !== employeeId) return emp;
@@ -3579,7 +3283,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         const updatedAdvances = advances.map((a) => {
           if (a.id !== advanceId) return a;
           const updatedAdvance = { ...a, status, approvedBy };
-          syncModuleRecordToSupabase("cash_advances", advanceId, { ...updatedAdvance, employeeId }, "update");
+          syncModuleRecord("cash_advances", advanceId, { ...updatedAdvance, employeeId }, "update");
           return updatedAdvance;
         });
         return {
@@ -3603,7 +3307,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       tenantId: currentTenantId,
     };
     setWorkShifts((prev) => [...prev, newShift]);
-    syncModuleRecordToSupabase("work_shifts", newShift.id, newShift, "insert");
+    syncModuleRecord("work_shifts", newShift.id, newShift, "insert");
     addLog(
       "Add Work Shift",
       `Menambahkan shift kerja baru: ${shift.name} (${shift.startTime}-${shift.endTime})`,
@@ -3613,7 +3317,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const deleteWorkShift = (id: string) => {
     setWorkShifts((prev) => prev.filter((s) => s.id !== id));
-    syncModuleRecordToSupabase("work_shifts", id, { id }, "delete");
+    syncModuleRecord("work_shifts", id, { id }, "delete");
     addLog("Delete Work Shift", `Menghapus shift kerja ID: ${id}`, "SYSTEM");
   };
 
@@ -3622,7 +3326,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((s) => {
         if (s.id !== id) return s;
         const updated = { ...s, ...data };
-        syncModuleRecordToSupabase("work_shifts", id, updated, "update");
+        syncModuleRecord("work_shifts", id, updated, "update");
         return updated;
       }),
     );
@@ -3997,7 +3701,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     setJournals((prev) => [newEntry, ...prev]);
-    syncToSupabase("journals", "insert", newEntry);
+    syncToApi("journals", "insert", newEntry);
 
     // Update balance of the COA accounts
     setAccounts((prev) =>
@@ -4012,7 +3716,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
             ...acc,
             balance: acc.balance + impact,
           };
-          syncToSupabase("accounts", "update", updated);
+          syncToApi("accounts", "update", updated);
           return updated;
         }
         return acc;
@@ -4097,7 +3801,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       setPayroll((prev) => [newPayroll, ...prev]);
-      syncModuleRecordToSupabase("payroll", newPayroll.id, newPayroll, "insert");
+      syncModuleRecord("payroll", newPayroll.id, newPayroll, "insert");
 
       // Update cash advances to PAID
       if (approvedKasbon.length > 0) {
@@ -4157,7 +3861,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   // ==========================================
 
   const claimWarranty = async (ticketId: string, complaints: string) => {
-    if (isSupabaseConfigured()) {
+    if (isBackendConfigured()) {
       try {
         await runServiceWorkflow(ticketId, "transition", { status: "KLAIM_GARANSI", note: `Garansi diklaim: ${complaints}` });
         addLog("Warranty Claim Log", `Klaim garansi pada tiket servis ID: ${ticketId}`, "SERVICE", "MEDIUM");
@@ -4339,7 +4043,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     setTransactions((prev) => [newTx, ...prev]);
-    syncToSupabase("transactions", "insert", newTx);
+    syncToApi("transactions", "insert", newTx);
 
     // 3. Create accounting journal lines
     const bankWalletAccountId = getCOAAccount("cash", currentTenantId); // Kas Utama
@@ -4646,7 +4350,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       id: "wf-" + Math.random().toString(36).substr(2, 9),
       executionCount: wf.executionCount ?? 0,
     };
-    await syncModuleRecordToSupabase("workflows", newWf.id, newWf, "insert");
+    await syncModuleRecord("workflows", newWf.id, newWf, "insert");
     setWorkflows((prev) => [...prev, newWf]);
     addLog(
       "Add Workflow",
@@ -4659,7 +4363,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     const current = workflows.find((w) => w.id === id);
     if (!current) throw new Error("Workflow tidak ditemukan.");
     const updated = { ...current, ...updates };
-    await syncModuleRecordToSupabase("workflows", id, updated, "update");
+    await syncModuleRecord("workflows", id, updated, "update");
     setWorkflows((prev) => prev.map((w) => (w.id === id ? updated : w)));
     addLog(
       "Update Workflow",
@@ -4669,7 +4373,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const deleteWorkflow = async (id: string) => {
-    await syncModuleRecordToSupabase("workflows", id, { id }, "delete");
+    await syncModuleRecord("workflows", id, { id }, "delete");
     setWorkflows((prev) => prev.filter((w) => w.id !== id));
     addLog(
       "Delete Workflow",
@@ -4682,7 +4386,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     const current = workflows.find((w) => w.id === id);
     if (!current) throw new Error("Workflow tidak ditemukan.");
     const updated = { ...current, executionCount: current.executionCount + 1, lastTriggeredAt: new Date().toISOString() };
-    await syncModuleRecordToSupabase("workflows", id, updated, "update");
+    await syncModuleRecord("workflows", id, updated, "update");
     setWorkflows((prev) => prev.map((w) => (w.id === id ? updated : w)));
     // We can fetch the name for the audit log
     const targetWf = workflows.find((w) => w.id === id);
@@ -4698,7 +4402,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const updateUserPermissions = (userId: string, permissions: string[]) => {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, permissions } : u)));
-    syncToSupabase("users", "update", { id: userId, permissions });
+    syncToApi("users", "update", { id: userId, permissions });
     const targetUser = users.find((u) => u.id === userId);
     if (targetUser) {
       addLog(
@@ -4713,7 +4417,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateUserRole = (userId: string, role: UserRole) => {
     const newPermissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role, permissions: newPermissions } : u)));
-    syncToSupabase("users", "update", { id: userId, role, permissions: newPermissions });
+    syncToApi("users", "update", { id: userId, role, permissions: newPermissions });
     const targetUser = users.find((u) => u.id === userId);
     if (targetUser) {
       addLog(
@@ -4764,7 +4468,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const deleteUser = async (userId: string) => {
     try {
-      if (isSupabaseConfigured()) {
+      if (isBackendConfigured()) {
         setApiLoading(true);
         setApiStatus("Menghapus pengguna dari database...");
         await apiFetch("/api/data/sync", {
@@ -4814,7 +4518,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       tenantId: currentTenantId,
     };
     setBranches((prev) => [...prev, newBranch]);
-    syncToSupabase("branches", "insert", newBranch);
+    syncToApi("branches", "insert", newBranch);
     addLog(
       "Create Branch",
       `Membuat cabang baru: ${newBranch.name}`,
@@ -4856,7 +4560,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       const updated = prev.map((b) => {
         if (b.id === branchId) {
           const u = { ...b, ...branchData };
-          syncToSupabase("branches", "update", u);
+          syncToApi("branches", "update", u);
           return u;
         }
         return b;
@@ -4897,7 +4601,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     // Soft delete: set isActive = false alih-alih hapus permanen
     setBranches((prev) => prev.map((b) => (b.id === branchId ? { ...b, isActive: false } : b)));
-    syncToSupabase("branches", "update", { id: branchId, is_active: false });
+    syncToApi("branches", "update", { id: branchId, is_active: false });
     addLog(
       "Delete Branch",
       `Menonaktifkan cabang ID: ${branchId} (${branch.name}) — soft delete, data tetap aman.`,
@@ -5065,17 +4769,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         addOfflineAction,
         clearOfflineQueue,
         removeOfflineAction,
-        supabaseConfig,
         platformHealth,
         refreshPlatformHealth,
-        updateSupabaseConfig,
-        testSupabaseConnection,
-        runSupabaseMigration,
         isAuthenticated,
         loginUser,
         logoutUser,
         updateCurrentUserPassword,
-        sendPasswordReset,
         refreshData,
       }}
     >

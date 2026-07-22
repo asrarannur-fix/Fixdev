@@ -1,6 +1,5 @@
 -- Canonical stock movement columns used by current API controllers.
 -- Additive and idempotent; preserves legacy quantity_change/reference_id/notes columns.
-BEGIN;
 
 ALTER TABLE stock_movements
   ADD COLUMN IF NOT EXISTS quantity NUMERIC NOT NULL DEFAULT 0,
@@ -40,4 +39,3 @@ BEGIN
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_stock_movements_reference_no ON stock_movements(reference_no);
-COMMIT;

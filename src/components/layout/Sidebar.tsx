@@ -79,7 +79,6 @@ const getModuleColorClass = (modId: string) => {
     case "saas-tenants":
       return "text-purple-500 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-400";
     case "settings":
-    case "saas-supabase":
       return "text-teal-500 bg-teal-50 dark:bg-teal-950/20 dark:text-teal-400";
     case "fraud":
       return "text-slate-500 bg-slate-100 dark:bg-zinc-900/80 dark:text-slate-400";
@@ -398,12 +397,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Audit & Keamanan",
       icon: FolderLock,
       color: "text-amber-500 bg-amber-50",
-    },
-    {
-      id: "saas-supabase",
-      label: "Integrasi Supabase",
-      icon: Database,
-      color: "text-teal-500 bg-teal-50",
     },
   ];
 

@@ -6,8 +6,13 @@ import jwt from "jsonwebtoken";
 import { logger } from "../../lib/logger.js";
 import nodemailer from "nodemailer";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fixdev_jwt_secret_2026_min_32_chars_secure";
 const JWT_EXPIRES_IN = "24h";
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET is required");
+  return secret;
+}
 
 async function withDb<T>(fn: (client: any) => Promise<T>): Promise<T> {
   const pool = getPool();
@@ -97,6 +102,9 @@ export async function loginHandler(req: Request, res: Response) {
     if (!valid) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
+    if (user.mfa_enabled) {
+      return res.status(403).json({ error: "MFA verification is required. Contact administrator." });
+    }
 
     const payload = {
       userId: user.id,
@@ -105,7 +113,7 @@ export async function loginHandler(req: Request, res: Response) {
       tenantId: user.tenant_id,
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN });
 
     res.json({
       token,
@@ -121,44 +129,7 @@ export async function loginHandler(req: Request, res: Response) {
     });
   } catch (err: any) {
     logger.error({ err: err.message }, "[login] Failed");
-    res.status(500).json({ error: err.message });
-  }
-}
-
-export async function registerHandler(req: Request, res: Response) {
-  const { email, password, name, tenantId, role } = req.body || {};
-  if (!email || !password || !name) {
-    return res.status(422).json({ error: "email, password, and name are required." });
-  }
-  if (String(password).length < 6) {
-    return res.status(422).json({ error: "Password must be at least 6 characters." });
-  }
-
-  try {
-    const passwordHash = await bcrypt.hash(String(password), 10);
-    const userId = randomUUID();
-
-    await withDb(async (c) => {
-      await c.query(
-        `INSERT INTO users (id, tenant_id, email, name, role, permissions, password_hash, mfa_enabled, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, false, now())`,
-        [userId, tenantId || null, String(email).toLowerCase().trim(), name, role || "TEKNISI", [], passwordHash]
-      );
-    });
-
-    const payload = { userId, email: String(email).toLowerCase().trim(), role: role || "TEKNISI", tenantId: tenantId || null };
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-
-    res.status(201).json({
-      token,
-      user: { id: userId, email: String(email).toLowerCase().trim(), name, role: role || "TEKNISI", tenantId: tenantId || null, permissions: [], mfaEnabled: false },
-    });
-  } catch (err: any) {
-    if (err.code === "23505") {
-      return res.status(409).json({ error: "Email already registered." });
-    }
-    logger.error({ err: err.message }, "[register] Failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Authentication service error." });
   }
 }
 
@@ -188,7 +159,33 @@ export async function authProfileHandler(req: Request, res: Response) {
     const branchIds = branchRows.map((row: any) => row.branch_id);
     res.json({ id: user.id, name: user.name, email: user.email, role: user.role, tenantId: user.tenant_id, branchIds, permissions: user.permissions || [], mfaEnabled: user.mfa_enabled || false });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err: err.message }, "[profile] Failed");
+    res.status(500).json({ error: "User profile service error." });
+  }
+}
+
+export async function authPasswordUpdateHandler(req: Request, res: Response) {
+  const userId = req.authActor?.userId;
+  const { currentPassword, newPassword } = req.body || {};
+  if (!userId) return res.status(401).json({ error: "Invalid or expired token." });
+  if (!currentPassword || !newPassword || String(newPassword).length < 8) {
+    return res.status(422).json({ error: "Current password and new password (min 8 chars) are required." });
+  }
+
+  try {
+    const passwordHash = await withDb(async (c) => {
+      const result = await c.query("SELECT password_hash FROM users WHERE id = $1 LIMIT 1", [userId]);
+      return result.rows[0]?.password_hash;
+    });
+    if (!passwordHash || !(await bcrypt.compare(String(currentPassword), passwordHash))) {
+      return res.status(401).json({ error: "Current password is incorrect." });
+    }
+    const newPasswordHash = await bcrypt.hash(String(newPassword), 10);
+    await withDb((c) => c.query("UPDATE users SET password_hash = $1 WHERE id = $2", [newPasswordHash, userId]));
+    return res.json({ success: true });
+  } catch (err: any) {
+    logger.error({ err: err.message, userId }, "[profile-password] Failed");
+    return res.status(500).json({ error: "Failed to update password." });
   }
 }
 
@@ -217,7 +214,8 @@ export async function adminResetPasswordHandler(req: Request, res: Response) {
 
     return res.json({ success: true, message: "Password updated.", userId: result[0].id, email: result[0].email });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message || "Failed to reset password." });
+    logger.error({ err: error.message }, "[password-reset] Failed");
+    return res.status(500).json({ success: false, message: "Failed to reset password." });
   }
 }
 
@@ -226,7 +224,7 @@ export async function adminResetPasswordHandler(req: Request, res: Response) {
 // ---------------------------------------------------------------------------
 
 export async function onboardingRegisterHandler(req: Request, res: Response) {
-  const { shopName, subdomain, ownerName, ownerEmail, ownerPassword, themeColor, tier } = req.body || {};
+  const { shopName, subdomain, ownerName, ownerEmail, ownerPassword, themeColor } = req.body || {};
   if (!shopName || !ownerName || !ownerEmail || !ownerPassword) {
     return res.status(422).json({ success: false, message: "shopName, ownerName, ownerEmail, ownerPassword are required." });
   }
@@ -243,7 +241,7 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     await client.query(
       `INSERT INTO tenants (id, name, subdomain, status, tier, trial_ends_at, settings, branding, created_at)
        VALUES ($1, $2, $3, 'TRIAL', $4, now() + interval '30 days', $5, $6, now())`,
-      [tenantId, shopName, subdomain || shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-"), tier || "BASIC",
+      [tenantId, shopName, subdomain || shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-"), "BASIC",
        JSON.stringify({ baseCurrency: "IDR", taxSettings: { taxRate: 11, taxEnabled: true, taxInclusive: false }, authSettings: { requireMfa: false, passwordPolicy: "medium" } }),
        JSON.stringify({ primaryColor: themeColor || "#4f46e5", accentColor: "#6366f1", portalHelpTitle: `Pusat Bantuan ${shopName}` })]
     );
@@ -291,7 +289,8 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     });
   } catch (error: any) {
     await client.query("ROLLBACK");
-    return res.status(500).json({ success: false, message: error.message });
+    logger.error({ err: error.message }, "[onboarding-register] Failed");
+    return res.status(500).json({ success: false, message: "Registration failed." });
   } finally {
     client.release();
   }
@@ -312,8 +311,16 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
     });
   }
 
+  if (!["BASIC", "PRO", "ENTERPRISE"].includes(tier)) {
+    return res.status(400).json({ success: false, message: "Invalid subscription tier." });
+  }
+  if (!["monthly", "yearly"].includes(billingCycle)) {
+    return res.status(400).json({ success: false, message: "Invalid billing cycle. Must be monthly or yearly." });
+  }
+
   const client = await getPool().connect();
   try {
+    await client.query("BEGIN");
     const tenantResult = await client.query(
       `SELECT id, name, subdomain, status, tier, trial_ends_at, settings->>'limits' as limits
        FROM tenants WHERE id = $1`,
@@ -425,10 +432,15 @@ export async function extendTrialHandler(req: Request, res: Response) {
 
   const defaultDays = parseInt(process.env.TRIAL_EXTENSION_DAYS || "7");
   const maxDays = parseInt(process.env.TRIAL_EXTENSION_MAX_DAYS || "14");
-  const extensionDays = Math.min(days || defaultDays, maxDays);
+  const requestedDays = days === undefined ? defaultDays : Number(days);
+  if (!Number.isInteger(requestedDays) || requestedDays < 1 || requestedDays > maxDays) {
+    return res.status(422).json({ success: false, message: `days must be an integer between 1 and ${maxDays}.` });
+  }
+  const extensionDays = requestedDays;
 
   const client = await getPool().connect();
   try {
+    await client.query("BEGIN");
     const tenantResult = await client.query(
       `SELECT id, name, subdomain, status, trial_ends_at
        FROM tenants WHERE id = $1`,

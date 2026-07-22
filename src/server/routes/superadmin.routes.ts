@@ -4,7 +4,7 @@ import {
   requireSuperAdminConsoleSession,
   requireSuperAdmin,
   requireSuperAdminPermission,
-  requireSupabaseJwt,
+  requireJwt,
 } from "../../middleware/auth.middleware.js";
 import {
   changeTenantStatus,
@@ -40,7 +40,7 @@ import {
 } from "../controllers/superadmin.controller.js";
 
 const router = express.Router();
-router.use(requireSupabaseJwt, requireSuperAdmin, enforceSuperAdminWriteMode);
+router.use(requireJwt, requireSuperAdmin, enforceSuperAdminWriteMode);
 
 router.post("/sessions", startConsoleSession);
 router.post("/sessions/:id/end", endConsoleSession);

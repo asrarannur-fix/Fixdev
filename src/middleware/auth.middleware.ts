@@ -2,9 +2,9 @@
  * Authentication & authorization middleware.
  *
  * requireJwt            — validates local JWT from Authorization header.
- *                        Attaches req.supabaseUser and req.tenantId.
+ *                        Attaches req.authActor and req.tenantId.
  * requireAdminToken    — validates x-admin-token header (server-to-server ops).
- * requireSuperAdmin    — checks supabaseUser has superadmin role in DB.
+ * requireSuperAdmin    — checks authActor has superadmin role in DB.
  */
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
@@ -57,10 +57,11 @@ declare global {
 }
 
 /**
- * Validates the Bearer JWT issued by our local auth system.
+ * Express authentication middleware.
+ * Validates Bearer JWT issued by our local auth system.
  * On success, attaches req.authActor with user profile from DB.
  */
-export const requireSupabaseJwt = async (
+export const requireJwt = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -71,7 +72,10 @@ export const requireSupabaseJwt = async (
   }
 
   const token = authHeader.split(" ")[1];
-  const jwtSecret = process.env.JWT_SECRET || "your-secret-key-32-chars-minimum";
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return res.status(503).json({ error: "Authentication is not configured." });
+  }
 
   try {
     const decoded = jwt.verify(token, jwtSecret) as any;
@@ -114,8 +118,8 @@ export const requireSupabaseJwt = async (
 
     next();
   } catch (err: any) {
-    logger.error({ err: err.message }, "JWT validation error");
-    return res.status(500).json({ error: "Authentication service error." });
+    logger.warn({ err: err.message }, "JWT validation error");
+    return res.status(401).json({ error: "Invalid or expired token." });
   }
 };
 
@@ -125,14 +129,18 @@ export const requireSupabaseJwt = async (
 
 /**
  * Validates x-admin-token header.
- * Used for /api/supabase/*, /api/admin/audit-trail/clear, billing gateway config.
+ * Used for /api/database/*, /api/admin/audit-trail/clear, billing gateway config.
  */
 export const requireAdminToken = (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const expected = process.env.ADMIN_TOKEN || "admin-secret-token";
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    logger.error("ADMIN_TOKEN is not configured");
+    return res.status(503).json({ error: "Admin operations are not configured." });
+  }
   const provided = (req.headers["x-admin-token"] as string) || "";
   if (!provided || !timingSafeEqual(expected, provided)) {
     logger.warn({ ip: req.ip, path: req.path }, "Unauthorized admin token attempt");
@@ -147,7 +155,7 @@ export const requireAdminToken = (
 
 /**
  * Ensures the authenticated user can only access their own tenant's data.
- * Must be used AFTER requireSupabaseJwt.
+ * Must be used AFTER requireJwt.
  */
 export const requireTenantScope = async (
   req: Request,

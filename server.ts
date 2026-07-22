@@ -9,7 +9,7 @@ import path from "path";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { logger } from "./src/lib/logger.js";
-import { requireAdminToken, requireSuperAdmin, requireSupabaseJwt, requireTenantScope } from "./src/middleware/auth.middleware.js";
+import { requireAdminToken, requireSuperAdmin, requireJwt, requireTenantScope, requireRoles } from "./src/middleware/auth.middleware.js";
 import { requireFeature } from "./src/middleware/feature.middleware.js";
 import {
   bootstrapHandler,
@@ -17,12 +17,12 @@ import {
 } from "./src/server/controllers/bootstrap.controller.js";
 import {
   authProfileHandler,
+  authPasswordUpdateHandler,
   adminResetPasswordHandler,
   onboardingRegisterHandler,
   upgradeTrialHandler,
   extendTrialHandler,
-  loginHandler,
-  registerHandler
+  loginHandler
 } from "./src/server/controllers/auth.controller.js";
 import {
   moduleRecordsGetHandler,
@@ -30,9 +30,9 @@ import {
   dataSyncHandler,
 } from "./src/server/controllers/data.controller.js";
 import {
-  supabaseTestHandler,
-  supabaseMigrateHandler,
-} from "./src/server/controllers/supabase.controller.js";
+  databaseTestHandler,
+  databaseMigrateHandler,
+} from "./src/server/controllers/database.controller.js";
 import {
   whatsappGetLogsHandler,
   whatsappPostLogsHandler,
@@ -114,7 +114,7 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Tenant-ID,X-Branch-ID,X-SuperAdmin-Mode,X-SuperAdmin-Permissions,x-supabase-admin-token");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Tenant-ID,X-Branch-ID,X-SuperAdmin-Mode,X-SuperAdmin-Permissions,x-admin-token");
   res.setHeader("Access-Control-Allow-Credentials", "true");
   
   if (req.method === "OPTIONS") {
@@ -144,6 +144,15 @@ const adminBillingLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 15,
+  message: { error: "Too many login attempts. Try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
+
 // Apply rate limiting
 app.use("/api/", (req, res, next) => {
   const path = req.path;
@@ -168,60 +177,50 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
-app.get("/api/supabase/env-status", (req, res) => {
-  // Public client needs only its public project URL and readiness state.
-  // Never expose server credential or database topology metadata.
-  const url = process.env.VITE_SUPABASE_URL || "";
-  const isConfigured = Boolean(url && process.env.VITE_SUPABASE_ANON_KEY);
-  res.json({ url, hasAnonKey: isConfigured, hasDbUrl: Boolean(url && process.env.SUPABASE_SERVICE_ROLE_KEY) });
-});
+app.post("/api/admin/auth/reset-password", requireAdminToken, adminResetPasswordHandler);
 
-const requireSupabaseAdmin = requireAdminToken;
+app.get("/api/whatsapp/logs", requireJwt, requireTenantScope, whatsappGetLogsHandler);
+app.post("/api/whatsapp/logs", requireJwt, requireTenantScope, whatsappPostLogsHandler);
+app.get("/api/whatsapp/queue", requireJwt, requireTenantScope, whatsappGetQueueHandler);
+app.post("/api/whatsapp/queue", requireJwt, requireTenantScope, whatsappPostQueueHandler);
 
-app.post("/api/admin/auth/reset-password", requireSupabaseAdmin, adminResetPasswordHandler);
+app.get("/api/auth/profile", requireJwt, authProfileHandler);
 
-app.get("/api/whatsapp/logs", requireSupabaseJwt, requireTenantScope, whatsappGetLogsHandler);
-app.post("/api/whatsapp/logs", requireSupabaseJwt, requireTenantScope, whatsappPostLogsHandler);
-app.get("/api/whatsapp/queue", requireSupabaseJwt, requireTenantScope, whatsappGetQueueHandler);
-app.post("/api/whatsapp/queue", requireSupabaseJwt, requireTenantScope, whatsappPostQueueHandler);
+app.get("/api/platform/bootstrap", requireJwt, requireSuperAdmin, platformBootstrapHandler);
+app.get("/api/platform/health", requireJwt, requireSuperAdmin, platformHealthHandler);
+app.get("/api/bootstrap", requireJwt, requireTenantScope, bootstrapHandler);
+app.get("/api/module-records", requireJwt, requireTenantScope, moduleRecordsGetHandler);
+app.post("/api/module-records", requireJwt, requireTenantScope, moduleRecordsPostHandler);
 
-app.get("/api/auth/profile", requireSupabaseJwt, authProfileHandler);
-
-app.get("/api/platform/bootstrap", requireSupabaseJwt, requireSuperAdmin, platformBootstrapHandler);
-app.get("/api/platform/health", requireSupabaseJwt, requireSuperAdmin, platformHealthHandler);
-app.get("/api/bootstrap", requireSupabaseJwt, requireTenantScope, bootstrapHandler);
-app.get("/api/module-records", requireSupabaseJwt, requireTenantScope, moduleRecordsGetHandler);
-app.post("/api/module-records", requireSupabaseJwt, requireTenantScope, moduleRecordsPostHandler);
-
-app.post("/api/data/sync", requireSupabaseJwt, requireTenantScope, dataSyncHandler);
+app.post("/api/data/sync", requireJwt, requireTenantScope, dataSyncHandler);
 app.get("/api/qz/certificate", qzPublicCertHandler);
 app.get("/api/qz/certificate/download", qzCertDownloadHandler);
 app.get("/api/qz/installer.bat", qzInstallerBatHandler);
-app.post("/api/qz/sign", requireSupabaseJwt, requireTenantScope, qzSignHandler);
+app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
 
-app.post("/api/auth/login", loginHandler);
-app.post("/api/auth/register", registerHandler);
+app.post("/api/auth/login", loginLimiter, loginHandler);
+app.post("/api/auth/profile/password", requireJwt, authPasswordUpdateHandler);
 app.post("/api/onboarding/register", onboardingRegisterHandler);
 app.get("/api/invitations/validate", validateInvitation);
 app.post("/api/invitations/accept", acceptInvitation);
-app.post("/api/onboarding/upgrade-trial", requireSupabaseJwt, requireTenantScope, upgradeTrialHandler);
-app.post("/api/onboarding/extend-trial", requireSupabaseJwt, requireTenantScope, extendTrialHandler);
+app.post("/api/onboarding/upgrade-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), upgradeTrialHandler);
+app.post("/api/onboarding/extend-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), extendTrialHandler);
 
 // Mounted Modular Routes (Secured)
-app.use("/api/admin", requireSupabaseJwt, requireTenantScope, auditRoutes);
+app.use("/api/admin", requireJwt, requireTenantScope, auditRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/superadmin", superadminRoutes);
-app.use("/api/ai", requireSupabaseJwt, requireTenantScope, requireFeature("AI_DIAGNOSE"), aiRoutes);
-app.use("/api/tenant", requireSupabaseJwt, requireTenantScope, tenantRoutes);
-app.post("/api/tenant/telegram/test", requireSupabaseJwt, requireTenantScope, telegramTestHandler);
-app.post("/api/tenant/whatsapp/test", requireSupabaseJwt, requireTenantScope, whatsappTestHandler);
+app.use("/api/ai", requireJwt, requireTenantScope, requireFeature("AI_DIAGNOSE"), aiRoutes);
+app.use("/api/tenant", requireJwt, requireTenantScope, tenantRoutes);
+app.post("/api/tenant/telegram/test", requireJwt, requireTenantScope, telegramTestHandler);
+app.post("/api/tenant/whatsapp/test", requireJwt, requireTenantScope, whatsappTestHandler);
 app.use("/api/service-receptions", serviceReceptionRoutes);
 app.use("/api/services", serviceWorkflowRoutes);
 app.use("/api/micro-components", microComponentsRoutes);
 app.use("/api/pos", posRoutes);
-app.use("/api/accounting", requireSupabaseJwt, requireTenantScope, requireFeature("ACCOUNTING"), accountingRoutes);
-app.use("/api/purchasing", requireSupabaseJwt, requireTenantScope, purchasingRoutes);
-app.use("/api/complaint-templates", requireSupabaseJwt, requireTenantScope, complaintTemplateRoutes);
+app.use("/api/accounting", requireJwt, requireTenantScope, requireFeature("ACCOUNTING"), accountingRoutes);
+app.use("/api/purchasing", requireJwt, requireTenantScope, purchasingRoutes);
+app.use("/api/complaint-templates", requireJwt, requireTenantScope, complaintTemplateRoutes);
 
 // Public / Service routes
 app.use("/api/service-tracking", serviceTrackerRoutes);
@@ -231,8 +230,8 @@ app.use("/api/monitoring", monitoringRoutes);
 // Generic CRUD API plugin (tenant-isolated, column-whitelisted)
 app.use("/api/crud", createCrudRouter());
 
-app.post("/api/supabase/test", requireSupabaseAdmin, supabaseTestHandler);
-app.post("/api/supabase/migrate", requireSupabaseAdmin, supabaseMigrateHandler);
+app.post("/api/database/test", requireAdminToken, databaseTestHandler);
+app.post("/api/database/migrate", requireAdminToken, databaseMigrateHandler);
 
 // API requests must never fall through to Vite's SPA HTML fallback.
 app.use("/api", (req, res) => {

@@ -4,7 +4,7 @@ import {
   requireSuperAdminConsoleSession,
   requireSuperAdminPermission,
   requireTenantOrSuperAdminPermission,
-  requireSupabaseJwt,
+  requireJwt,
   requireTenantScope,
 } from "../../middleware/auth.middleware.js";
 import {
@@ -41,8 +41,8 @@ const router = express.Router();
 router.post("/midtrans-webhook", handleMidtransWebhook);
 router.get("/public-plans", getPublicBillingPlans);
 
-// Everything else requires an authenticated Supabase session.
-router.use(requireSupabaseJwt);
+// Everything else requires an authenticated session.
+router.use(requireJwt);
 
 router.get("/plans", requireTenantOrSuperAdminPermission("billing:view_plans"), getBillingPlans);
 router.post("/plans", requireSuperAdminPermission("billing:manage_plans"), requireSuperAdminConsoleSession, updateBillingPlans);

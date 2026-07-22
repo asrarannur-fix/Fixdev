@@ -2,8 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Local auth client — replaces Supabase JS client.
- * All auth calls now go through our own Express API endpoints.
+ * Local auth client for Express API endpoints.
  */
 import { safeLocalStorage } from "./safeStorage";
 import { toSnakeCase } from "./saasUtils";
@@ -23,13 +22,12 @@ export const cleanUserForDb = (user: any) => {
   };
 };
 
-export const isSupabaseConfigured = (): boolean => {
+export const isBackendConfigured = (): boolean => {
   return true;
 };
 
 /**
  * Local auth client that talks to our Express backend.
- * API shape matches Supabase JS client for easy migration.
  */
 function getBaseUrl(): string {
   if (typeof window !== "undefined") {
@@ -38,7 +36,7 @@ function getBaseUrl(): string {
   return "http://localhost:8083";
 }
 
-export const getSupabase = () => {
+export const getAuthClient = () => {
   return {
     auth: {
       signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
@@ -121,7 +119,10 @@ export const getSupabase = () => {
           const res = await fetch(`${getBaseUrl()}/api/auth/profile`, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          if (!res.ok) return { data: { user: null }, error: null };
+          if (!res.ok) {
+            localStorage.removeItem("fixdev_token");
+            return { data: { user: null }, error: null };
+          }
           const profile = await res.json();
           return { data: { user: profile }, error: null };
         } catch {

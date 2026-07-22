@@ -1,4 +1,3 @@
-BEGIN;
 
 ALTER TABLE products ADD COLUMN IF NOT EXISTS item_type TEXT NOT NULL DEFAULT 'RETAIL_PRODUCT';
 ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
@@ -92,4 +91,3 @@ ALTER TABLE micro_components ALTER COLUMN product_id SET NOT NULL;
 CREATE INDEX IF NOT EXISTS products_tenant_item_type_idx ON products(tenant_id,item_type,is_active);
 CREATE INDEX IF NOT EXISTS micro_component_movements_product_idx ON micro_component_movements(tenant_id,product_id,created_at);
 
-COMMIT;

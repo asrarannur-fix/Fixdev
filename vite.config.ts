@@ -20,19 +20,18 @@ export default defineConfig(() => {
       // allow any host (quick tunnels / public demos). tighten for prod.
       allowedHosts: ['fixdev.web.id', 'www.fixdev.web.id', 'dev.fixdev.web.id'],
     },
-    build: {
-      chunkSizeWarningLimit: 700,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            react: ['react', 'react-dom'],
-            charts: ['recharts'],
-            supabase: ['@supabase/supabase-js'],
-            icons: ['lucide-react'],
-            motion: ['motion'],
-          },
+  build: {
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          charts: ['recharts'],
+          icons: ['lucide-react'],
+          motion: ['motion'],
         },
       },
     },
+  },
   };
 });

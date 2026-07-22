@@ -1,4 +1,3 @@
-BEGIN;
 
 ALTER TABLE service_tickets
   ADD COLUMN IF NOT EXISTS tech_diagnosis TEXT,
@@ -116,4 +115,3 @@ ALTER TABLE whatsapp_queue
   ADD COLUMN IF NOT EXISTS last_error TEXT,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
 
-COMMIT;

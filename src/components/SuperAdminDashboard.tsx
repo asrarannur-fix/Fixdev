@@ -14,7 +14,6 @@ import SaaSSubscription from "./SaaSSubscription";
 import { DashboardOverview } from "./superadmin/DashboardOverview";
 import { TenantsManager } from "./superadmin/TenantsManager";
 import { AuditRecovery } from "./superadmin/AuditRecovery";
-import { SupabaseSettings } from "./superadmin/SupabaseSettings";
 import { InfrastructureConfigModal } from "./superadmin/InfrastructureConfigModal";
 import OperationsCenter from "./superadmin/OperationsCenter";
 
@@ -32,10 +31,6 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
     triggerBackup,
     restoreBackup,
     updateTenant,
-    supabaseConfig,
-    updateSupabaseConfig,
-    testSupabaseConnection,
-    runSupabaseMigration,
     branches = [],
     warehouses = [],
     users = [],
@@ -243,11 +238,9 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
                 ? "SaaS Tenant & Registrasi Hub"
                 : currentTab === "saas-operations"
                 ? "Operasional Platform & Antrean"
-              : currentTab === "saas-audits"
+                : currentTab === "saas-audits"
                   ? "SaaS Keamanan & Recovery Console"
-                  : currentTab === "saas-supabase"
-                    ? "SaaS Integrasi Cloud Supabase"
-                    : "Global SaaS & Multi-Tenant Management"}
+                  : "Global SaaS & Multi-Tenant Management"}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">
             Super Admin Console · Cluster Node Running Online
@@ -295,7 +288,6 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
           r2StorageCount={r2StorageCount}
           gcsStorageCount={gcsStorageCount}
           offlineQueueLength={offlineQueue.length}
-          supabaseConfig={supabaseConfig}
           tenants={tenants}
           readOnlyMode={readOnlyMode}
           onNavigate={onSetTab}
@@ -341,30 +333,6 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
           auditLogs={auditLogs}
           handleExportBackup={handleExportBackup}
           handleImportBackup={handleImportBackup}
-          readOnlyMode={readOnlyMode}
-        />
-      )}
-
-      {/* 5. Supabase Settings Tab */}
-      {currentTab === "saas-supabase" && (
-        <SupabaseSettings
-          supabaseConfig={supabaseConfig}
-          updateSupabaseConfig={updateSupabaseConfig}
-          testSupabaseConnection={testSupabaseConnection}
-          runSupabaseMigration={runSupabaseMigration}
-          showToast={showToast}
-          tenants={tenants}
-          branches={branches}
-          warehouses={warehouses}
-          users={users}
-          products={products}
-          services={services}
-          shifts={shifts}
-          transactions={transactions}
-          accounts={accounts}
-          journals={journals}
-          workflows={workflows}
-          auditLogs={auditLogs}
           readOnlyMode={readOnlyMode}
         />
       )}

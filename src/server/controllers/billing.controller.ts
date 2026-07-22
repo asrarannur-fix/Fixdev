@@ -6,7 +6,7 @@
  * - gatewayConfig       → table: app_settings (key: midtrans_config)
  * - billing-plans.json  → table: app_settings (key: billing_plans)
  *
- * Required migration (add to supabase-schema.sql or run manually):
+ * Required migration (add to postgresql-schema.sql or run manually):
  *
  *   CREATE TABLE IF NOT EXISTS saas_invoices (
  *     id TEXT PRIMARY KEY,

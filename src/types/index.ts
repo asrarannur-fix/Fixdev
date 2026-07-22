@@ -1123,11 +1123,4 @@ export interface SuperAdminAuditEvent {
   createdAt: string;
 }
 
-export interface SupabaseConfig {
-  url: string;
-  anonKey: string;
-  serviceRoleKey: string;
-  dbUrl: string;
-  lastConnectedAt?: string;
-  isConfigured: boolean;
-}
+

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS superadmin_console_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_superadmin_console_actor_active
   ON superadmin_console_sessions(actor_user_id, ended_at, expires_at DESC);
-ALTER TABLE superadmin_console_sessions ENABLE ROW LEVEL SECURITY;
+-- Access control enforced by application middleware.
 
 ALTER TABLE tenant_invitations
   ADD COLUMN IF NOT EXISTS provisioning_status TEXT NOT NULL DEFAULT 'PENDING'
@@ -41,7 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_platform_incident_events
   ON platform_incident_events(incident_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_platform_incident_events_actor
   ON platform_incident_events(actor_user_id) WHERE actor_user_id IS NOT NULL;
-ALTER TABLE platform_incident_events ENABLE ROW LEVEL SECURITY;
+-- Access control enforced by application middleware.
 
 INSERT INTO superadmin_role_permissions(role, permission) VALUES
   ('OPERATIONS_ADMIN', 'incidents:manage'),

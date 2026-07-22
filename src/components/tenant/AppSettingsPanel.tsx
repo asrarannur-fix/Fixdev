@@ -1,7 +1,7 @@
 /**
  * App Settings Panel
  * Covers: General, Customer Portal, Email/Push, File Upload, Tampilan & Tema
- * All settings persist via updateTenant -> syncToSupabase (PostgreSQL)
+ * All settings persist via updateTenant -> syncToApi (PostgreSQL)
  */
 import React, { useState } from "react";
 import { Settings, Globe, Mail, Upload, Palette, Save, RefreshCw, Shield } from "lucide-react";

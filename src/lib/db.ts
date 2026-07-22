@@ -1,7 +1,6 @@
 /**
  * Shared PostgreSQL connection pool.
  * Single instance reused across all controllers and routes.
- * Uses Supabase Transaction Pooler (port 5432) for production (supports multi-statement transactions).
  */
 import pg from "pg";
 import { logger } from "./logger.js";

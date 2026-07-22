@@ -1,6 +1,6 @@
 import type { PrintConfig } from "./print";
 import { escapeHtml, getPrintBaseCss, getPaperWidthStyle } from "./print";
-import { getSupabase } from "./supabaseUtils";
+import { getAuthClient } from "./authClient";
 
 type PrintJob = {
   title: string;
@@ -20,9 +20,9 @@ declare global {
 
 let qzSigningConfigured = false;
 
-const getSupabaseToken = async (): Promise<string | null> => {
+const getAuthToken = async (): Promise<string | null> => {
   try {
-    const client = getSupabase();
+    const client = getAuthClient();
     if (!client) return null;
     const sessionData = await Promise.race([
       client.auth.getSession(),
@@ -53,7 +53,7 @@ const configureQzSigning = async (): Promise<void> => {
   });
 
   qz.security.setSignaturePromise((toSign: string) => (resolve: (sig: string) => void, reject: (error: unknown) => void) => {
-    void getSupabaseToken().then((token) => fetch("/api/qz/sign", {
+    void getAuthToken().then((token) => fetch("/api/qz/sign", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) },

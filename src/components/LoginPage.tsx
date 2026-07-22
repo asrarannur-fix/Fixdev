@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { useSaaS } from "../context/SaaSContext";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -12,18 +11,13 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
-  const { loginUser, addTenant, addUser, users, isAuthenticated, sendPasswordReset, activeTenant } = useSaaS();
+  const { loginUser, addUser, isAuthenticated, activeTenant } = useSaaS();
 
   const [activeTab, setActiveTab] = useState<"register" | "manual">("manual");
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotSuccess, setForgotSuccess] = useState(false);
-  const [forgotError, setForgotError] = useState("");
   const [shopName, setShopName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [businessSector, setBusinessSector] = useState("IT & Servis Komputer");
@@ -66,21 +60,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
     }
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!forgotEmail.trim()) { setForgotError("Masukkan alamat email Anda."); return; }
-    setForgotLoading(true);
-    setForgotError("");
-    try {
-      await sendPasswordReset(forgotEmail.trim());
-      setForgotSuccess(true);
-    } catch (err: any) {
-      setForgotError(err.message || "Gagal mengirim email reset password.");
-    } finally {
-      setForgotLoading(false);
-    }
-  };
-
   const handleTenantRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanShopName = shopName.trim();
@@ -95,8 +74,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
     if (submittedOwnerPassword.length < 6) { setErrorMsg("Password owner minimal 6 karakter."); return; }
     const cleanSubdomain = (subdomain || "toko-utama").trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
     if (!cleanSubdomain) { setErrorMsg("Identitas subdomain tidak valid."); return; }
-    const emailExist = users.some((u) => u.email.toLowerCase() === cleanOwnerEmail);
-    if (emailExist) { setErrorMsg("Email owner sudah terdaftar dalam sistem. Gunakan email unik lainnya."); return; }
     setLoading(true);
     setErrorMsg("");
     try {
@@ -110,7 +87,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
           ownerEmail: cleanOwnerEmail,
           ownerPassword: submittedOwnerPassword,
           themeColor: selectedTheme,
-          tier: "BASIC",
         }),
       });
       const result = await response.json();
@@ -212,32 +188,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
                   <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Alamat email</span><input required type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="nama@toko.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
                   <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase text-slate-500">Password</span><input required type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="••••••••" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" /></label>
                   <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-xs font-black text-white hover:bg-accent-hover disabled:opacity-50">{loading ? "Memeriksa..." : <>Masuk <ArrowRight className="h-4 w-4" /></>}</button>
-                  <button type="button" onClick={() => { setShowForgotPassword(true); setForgotSuccess(false); setForgotError(""); setForgotEmail(""); }} className="block w-full text-center text-[11px] font-bold text-accent hover:underline">Lupa password?</button>
                 </motion.form>
               )}
             </AnimatePresence>
           </div>
         </section>
       </div>
-
-      {showForgotPassword && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={() => setShowForgotPassword(false)}>
-          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-black">Reset password</h3><button onClick={() => setShowForgotPassword(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><span className="text-lg">×</span></button></div>
-            {forgotSuccess ? (
-              <div className="space-y-3 py-2 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle className="h-6 w-6" /></div><p className="text-xs text-slate-600">Link reset dikirim ke <strong>{forgotEmail}</strong>. Cek kotak masuk.</p><button onClick={() => setShowForgotPassword(false)} className="w-full rounded-xl bg-accent py-2.5 text-xs font-black text-white">Kembali</button></div>
-            ) : (
-              <form onSubmit={handleForgotPassword} className="space-y-3">
-                <p className="text-xs text-slate-600">Masukkan email terdaftar. Kami kirim link untuk membuat password baru.</p>
-                <input required type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="contoh@email.com" className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
-                {forgotError && <p className="text-[11px] text-rose-600">{forgotError}</p>}
-                <div className="flex gap-2"><button type="button" onClick={() => setShowForgotPassword(false)} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600">Batal</button><button type="submit" disabled={forgotLoading} className="flex-1 rounded-xl bg-accent py-2.5 text-xs font-black text-white disabled:opacity-50">Kirim link</button></div>
-              </form>
-            )}
-          </div>
-        </div>,
-        document.body,
-      )}
     </main>
   );
 };

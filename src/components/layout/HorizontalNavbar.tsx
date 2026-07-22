@@ -171,18 +171,6 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
           { id: "saas-audits", label: "Audit Trails", icon: FolderLock },
         ],
       },
-      {
-        id: "saas-supabase",
-        label: "Infrastruktur",
-        desc: "Database & Integrasi",
-        icon: Database,
-        color: "hover:text-teal-500",
-        activeColor:
-          "bg-teal-600 text-white dark:bg-teal-500 shadow-teal-500/10",
-        subtabs: [
-          { id: "saas-supabase", label: "Supabase Settings", icon: Database },
-        ],
-      },
     ],
     [],
   );

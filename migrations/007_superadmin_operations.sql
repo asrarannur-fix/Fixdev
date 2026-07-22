@@ -128,10 +128,4 @@ CREATE INDEX IF NOT EXISTS idx_superadmin_audit_actor
 CREATE INDEX IF NOT EXISTS idx_superadmin_audit_impersonation
   ON superadmin_audit_events(impersonation_session_id) WHERE impersonation_session_id IS NOT NULL;
 
-ALTER TABLE tenant_invitations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tenant_status_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE impersonation_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE backup_jobs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE platform_incidents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE superadmin_role_permissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE superadmin_audit_events ENABLE ROW LEVEL SECURITY;
+-- Access control enforced by application middleware.

@@ -2,7 +2,7 @@
  * Audit Controller — DB-backed (Postgres).
  * Replaces the previous in-memory array which was lost on every restart.
  *
- * Table expected (already in supabase-schema.sql):
+ * Table expected (already in postgresql-schema.sql):
  *   audit_logs(id, timestamp, endpoint, method, tenant_id, branch_id,
  *              is_valid_tenant, is_valid_branch, verified, client_ip)
  */

@@ -149,24 +149,5 @@ FOR EACH ROW
 EXECUTE FUNCTION sync_account_balance();
 
 -- ==========================================
--- 5. ROW LEVEL SECURITY
+-- 5. Tenant isolation enforced by application middleware
 -- ==========================================
-
-ALTER TABLE coa_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE journal_lines ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Tenant isolation for coa_accounts" ON coa_accounts;
-CREATE POLICY "Tenant isolation for coa_accounts" ON coa_accounts FOR ALL USING (tenant_id = current_tenant_id());
-
-DROP POLICY IF EXISTS "Tenant isolation for journal_entries" ON journal_entries;
-CREATE POLICY "Tenant isolation for journal_entries" ON journal_entries FOR ALL USING (tenant_id = current_tenant_id());
-
--- journal_lines: isolated via journal_entries.tenant_id (joined)
-DROP POLICY IF EXISTS "Tenant isolation for journal_lines" ON journal_lines;
-CREATE POLICY "Tenant isolation for journal_lines" ON journal_lines
-FOR ALL USING (
-    journal_entry_id IN (
-        SELECT id FROM journal_entries WHERE tenant_id = current_tenant_id()
-    )
-);

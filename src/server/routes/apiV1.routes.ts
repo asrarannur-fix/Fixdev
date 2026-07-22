@@ -4,7 +4,7 @@
  */
 
 import express from "express";
-import { requireRoles, requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
+import { requireRoles, requireJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 import {
   sanctumAuthMiddleware,
   checkAbilities,
@@ -49,7 +49,7 @@ const router = express.Router();
 // Token issuance requires a verified application identity and tenant scope.
 router.post(
   "/auth/token",
-  requireSupabaseJwt,
+  requireJwt,
   requireTenantScope,
   requireRoles("OWNER", "ADMIN", "SUPER_ADMIN"),
   createToken,

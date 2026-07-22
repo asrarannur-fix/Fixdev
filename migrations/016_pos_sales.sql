@@ -99,20 +99,5 @@ CREATE INDEX IF NOT EXISTS idx_stock_movements_type ON stock_movements(type);
 CREATE INDEX IF NOT EXISTS idx_stock_movements_created ON stock_movements(created_at DESC);
 
 -- ==========================================
--- 4. ROW LEVEL SECURITY (RLS)
+-- 4. Tenant isolation enforced by application middleware
 -- ==========================================
-
--- Enable RLS
-ALTER TABLE pos_shifts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pos_transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE stock_movements ENABLE ROW LEVEL SECURITY;
-
--- Policies
-DROP POLICY IF EXISTS "Tenant isolation for pos_shifts" ON pos_shifts;
-CREATE POLICY "Tenant isolation for pos_shifts" ON pos_shifts FOR ALL USING (tenant_id = current_tenant_id());
-
-DROP POLICY IF EXISTS "Tenant isolation for pos_transactions" ON pos_transactions;
-CREATE POLICY "Tenant isolation for pos_transactions" ON pos_transactions FOR ALL USING (tenant_id = current_tenant_id());
-
-DROP POLICY IF EXISTS "Tenant isolation for stock_movements" ON stock_movements;
-CREATE POLICY "Tenant isolation for stock_movements" ON stock_movements FOR ALL USING (tenant_id = current_tenant_id());

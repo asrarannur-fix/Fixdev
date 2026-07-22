@@ -1,6 +1,5 @@
 -- Purchasing: suppliers, purchase orders, goods receipts + AP accounting.
 -- Additive and idempotent.
-BEGIN;
 
 -- ==========================================
 -- 1. SUPPLIERS
@@ -85,31 +84,6 @@ CREATE TABLE IF NOT EXISTS goods_receipt_items (
 CREATE INDEX IF NOT EXISTS idx_gr_items_gr ON goods_receipt_items(goods_receipt_id);
 
 -- ==========================================
--- 4. ROW LEVEL SECURITY
+-- 4. Tenant isolation enforced by application middleware
 -- ==========================================
-ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE purchase_order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE goods_receipts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE goods_receipt_items ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Tenant isolation for suppliers" ON suppliers;
-CREATE POLICY "Tenant isolation for suppliers" ON suppliers FOR ALL USING (tenant_id = current_tenant_id());
-
-DROP POLICY IF EXISTS "Tenant isolation for purchase_orders" ON purchase_orders;
-CREATE POLICY "Tenant isolation for purchase_orders" ON purchase_orders FOR ALL USING (tenant_id = current_tenant_id());
-
-DROP POLICY IF EXISTS "Tenant isolation for goods_receipts" ON goods_receipts;
-CREATE POLICY "Tenant isolation for goods_receipts" ON goods_receipts FOR ALL USING (tenant_id = current_tenant_id());
-
-DROP POLICY IF EXISTS "Child isolation for purchase_order_items" ON purchase_order_items;
-CREATE POLICY "Child isolation for purchase_order_items" ON purchase_order_items FOR ALL USING (
-  EXISTS (SELECT 1 FROM purchase_orders po WHERE po.id = purchase_order_id AND po.tenant_id = current_tenant_id())
-);
-
-DROP POLICY IF EXISTS "Child isolation for goods_receipt_items" ON goods_receipt_items;
-CREATE POLICY "Child isolation for goods_receipt_items" ON goods_receipt_items FOR ALL USING (
-  EXISTS (SELECT 1 FROM goods_receipts gr WHERE gr.id = goods_receipt_id AND gr.tenant_id = current_tenant_id())
-);
-
-COMMIT;

@@ -1,4 +1,3 @@
-BEGIN;
 
 CREATE TABLE IF NOT EXISTS service_cost_adjustments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -22,4 +21,3 @@ CREATE TABLE IF NOT EXISTS service_cost_adjustments (
 CREATE INDEX IF NOT EXISTS service_cost_adjustments_ticket_idx
   ON service_cost_adjustments(tenant_id, ticket_id, created_at DESC);
 
-COMMIT;

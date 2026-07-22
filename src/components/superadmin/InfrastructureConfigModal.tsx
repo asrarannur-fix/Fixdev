@@ -241,7 +241,7 @@ export const InfrastructureConfigModal: React.FC<
             </div>
 
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-[10px] leading-relaxed text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300">
-              Credential cloud kustom belum didukung dan sengaja tidak dapat diedit agar tidak memberi kesan konfigurasi tersimpan. Bukti pembayaran menggunakan bucket Supabase privat yang dikelola platform; credential service tidak pernah dikirim ke browser.
+              Credential cloud kustom belum didukung dan sengaja tidak dapat diedit agar tidak memberi kesan konfigurasi tersimpan. Bukti pembayaran menggunakan bucket privat yang dikelola platform; credential service tidak pernah dikirim ke browser.
             </div>
 
             {configStorageMode !== "SYSTEM" && (

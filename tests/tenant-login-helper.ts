@@ -1,7 +1,7 @@
 import { type Page } from "@playwright/test";
 
-export const TEST_TENANT_EMAIL = "asrarannur@gmail.com";
-export const TEST_TENANT_PASSWORD = "asrar778877";
+export const TEST_TENANT_EMAIL = process.env.TEST_TENANT_EMAIL || "";
+export const TEST_TENANT_PASSWORD = process.env.TEST_TENANT_PASSWORD || "";
 
 export async function loginTenant(page: Page): Promise<boolean> {
   const email = TEST_TENANT_EMAIL;

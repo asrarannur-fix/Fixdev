@@ -6,7 +6,7 @@
  * Cash Transactions, and Financial Reports.
  */
 import express from "express";
-import { requireRoles, requireSupabaseJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
+import { requireRoles, requireJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
 import {
   createAccountSchema, updateAccountSchema, createJournalEntrySchema, createCashTxSchema, validateBody,
   getAccounts, createAccount, updateAccount, createJournalEntry, createCashTransaction,
@@ -16,7 +16,7 @@ import {
 const router = express.Router();
 const accViewer = requireRoles("OWNER", "ADMIN", "MANAGER");
 const accWriter = requireRoles("OWNER", "ADMIN");
-const auth = requireSupabaseJwt;
+const auth = requireJwt;
 const scope = requireTenantScope;
 
 router.get("/accounts", auth, scope, accViewer, getAccounts);

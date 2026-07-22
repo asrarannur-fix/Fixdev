@@ -1,4 +1,4 @@
--- FIXDEV Supabase PostgreSQL Database Schema
+-- FIXDEV PostgreSQL Database Schema
 -- SPDX-License-Identifier: Apache-2.0
 
 CREATE TABLE IF NOT EXISTS tenants (
@@ -17,13 +17,14 @@ CREATE INDEX IF NOT EXISTS idx_tenants_tier ON tenants(tier);
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'TEKNISI',
     permissions TEXT[] DEFAULT '{}',
+    password_hash TEXT,
     mfa_enabled BOOLEAN DEFAULT FALSE,
-    auth_id UUID,
+    superadmin_role TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
@@ -314,54 +315,6 @@ EXECUTE FUNCTION calculate_warranty_ends_at();
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- -----------------------------------------------------------------------------
 
--- Helper function to get current user's tenant_id based on Supabase auth.uid()
-CREATE OR REPLACE FUNCTION current_tenant_id() RETURNS UUID AS $$
-  SELECT tenant_id FROM public.users WHERE auth_id = auth.uid() LIMIT 1;
-$$ LANGUAGE sql STABLE;
-
--- Enable RLS on all tables
-ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_branches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE warehouses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE product_stock ENABLE ROW LEVEL SECURITY;
-ALTER TABLE service_tickets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pos_shifts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pos_transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE coa_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE journal_lines ENABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE module_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE whatsapp_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE service_status_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE whatsapp_queue ENABLE ROW LEVEL SECURITY;
-
--- Tenants: user can only see and update their own tenant
-CREATE POLICY "Tenant isolation for tenants" ON tenants FOR ALL USING (id = current_tenant_id());
-
--- Tables with direct tenant_id
-CREATE POLICY "Tenant isolation for users" ON users FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for branches" ON branches FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for warehouses" ON warehouses FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for customers" ON customers FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for products" ON products FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for service_tickets" ON service_tickets FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for pos_shifts" ON pos_shifts FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for pos_transactions" ON pos_transactions FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for coa_accounts" ON coa_accounts FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for journal_entries" ON journal_entries FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for audit_logs" ON audit_logs FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for module_records" ON module_records FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for whatsapp_logs" ON whatsapp_logs FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for service_status_events" ON service_status_events FOR ALL USING (tenant_id = current_tenant_id());
-CREATE POLICY "Tenant isolation for whatsapp_queue" ON whatsapp_queue FOR ALL USING (tenant_id = current_tenant_id());
-
--- Tables without direct tenant_id (using joins)
-CREATE POLICY "Tenant isolation for user_branches" ON user_branches FOR ALL USING (user_id IN (SELECT id FROM users WHERE tenant_id = current_tenant_id()));
-CREATE POLICY "Tenant isolation for product_stock" ON product_stock FOR ALL USING (warehouse_id IN (SELECT id FROM warehouses WHERE tenant_id = current_tenant_id()));
-CREATE POLICY "Tenant isolation for journal_lines" ON journal_lines FOR ALL USING (account_id IN (SELECT id FROM coa_accounts WHERE tenant_id = current_tenant_id()));
+-- Tenant isolation is enforced at the application layer via middleware and SQL queries.
+-- RLS is not used; all queries include explicit tenant_id predicates.
 

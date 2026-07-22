@@ -13,7 +13,7 @@ export interface UseSaaSInventoryProps {
   setProducts: React.Dispatch<React.SetStateAction<InventoryProduct[]>>;
   setStockMovements: React.Dispatch<React.SetStateAction<StockMovement[]>>;
   setInventoryTransfers: React.Dispatch<React.SetStateAction<InventoryTransfer[]>>;
-  syncToSupabase: (table: string, action: string, data: any) => void;
+  syncToApi: (table: string, action: string, data: any) => void;
   addLog: (title: string, desc: string, type: string) => void;
   verifyScope: (tenantId?: string) => { tenantId: string; branchId: string };
 }
@@ -24,7 +24,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
     setProducts,
     setStockMovements,
     setInventoryTransfers,
-    syncToSupabase,
+    syncToApi,
     addLog,
     verifyScope,
   } = props;
@@ -56,7 +56,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
     const id = generateUUID();
     const newProd: InventoryProduct = { ...prod, id, tenantId };
     setProducts((prev) => [...prev, newProd]);
-    syncToSupabase("products", "insert", newProd);
+    syncToApi("products", "insert", newProd);
     addLog("Add Inventory Product", `Menambahkan produk baru ke persediaan: ${prod.name} (SKU: ${prod.sku})`, "INVENTORY");
   };
 
@@ -69,7 +69,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
       prev.map((p) => {
         if (p.id !== productId || !canMutateProduct(p, tenantId)) return p;
         const updated = { ...p, ...data, tenantId };
-        syncToSupabase("products", "update", updated);
+        syncToApi("products", "update", updated);
         addLog("Update Inventory Product", `Memperbarui data produk: ${updated.name} (Harga: Rp ${(updated.sellPrice ?? 0).toLocaleString()})`, "INVENTORY");
         return updated;
       }),
@@ -103,7 +103,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
           warehouseStock: updatedWarehouseStock,
           stockQty: recalculateStockQty(p, updatedWarehouseStock),
         };
-        syncToSupabase("products", "update", updatedProd);
+        syncToApi("products", "update", updatedProd);
         addLog("Stock Transfer", `Transfer ${quantity} ${p.unit} dari ${fromWarehouseId} ke ${toWarehouseId}: ${p.name}`, "INVENTORY");
         return updatedProd;
       }),
@@ -171,7 +171,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
         }
 
         const updatedProd = { ...p, warehouseStock: updatedWarehouseStock, stockQty: newTotalStock };
-        syncToSupabase("products", "update", updatedProd);
+        syncToApi("products", "update", updatedProd);
         addLog("Stock Adjustment", `Penyesuaian stok (${type}) di ${warehouseId} sebanyak ${adjustmentQty} ${p.unit}: ${p.name}`, "INVENTORY");
         return updatedProd;
       }),
@@ -248,7 +248,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
               const destStock = addDestination ? Number(currentWarehouseStock[t.destinationWarehouseId] || 0) + item.quantity : Number(currentWarehouseStock[t.destinationWarehouseId] || 0);
               const updatedWarehouseStock = { ...currentWarehouseStock, [t.originWarehouseId]: originStock, [t.destinationWarehouseId]: destStock };
               const updatedProd = { ...p, warehouseStock: updatedWarehouseStock, stockQty: recalculateStockQty(p, updatedWarehouseStock) };
-              syncToSupabase("products", "update", updatedProd);
+              syncToApi("products", "update", updatedProd);
               return updatedProd;
             }),
           );

@@ -7,7 +7,7 @@ function key(secret: string) {
   return createHash("sha256").update(secret).digest();
 }
 
-export function encryptScreenLockPin(pin: string, secret = process.env.SERVICE_PIN_ENCRYPTION_KEY || process.env.SUPABASE_ADMIN_TOKEN || ""): string {
+export function encryptScreenLockPin(pin: string, secret = process.env.SERVICE_PIN_ENCRYPTION_KEY || ""): string {
   if (!pin) return "";
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key(secret), iv);
@@ -15,7 +15,7 @@ export function encryptScreenLockPin(pin: string, secret = process.env.SERVICE_P
   return [VERSION, iv.toString("base64url"), cipher.getAuthTag().toString("base64url"), ciphertext.toString("base64url")].join(".");
 }
 
-export function decryptScreenLockPin(value: string, secret = process.env.SERVICE_PIN_ENCRYPTION_KEY || process.env.SUPABASE_ADMIN_TOKEN || ""): string {
+export function decryptScreenLockPin(value: string, secret = process.env.SERVICE_PIN_ENCRYPTION_KEY || ""): string {
   if (!value) return "";
   const [version, iv, tag, ciphertext] = value.split(".");
   if (version !== VERSION || !iv || !tag || !ciphertext) return value;

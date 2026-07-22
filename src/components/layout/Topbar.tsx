@@ -135,7 +135,6 @@ export const Topbar: React.FC<TopbarProps> = ({
     theme,
     toggleTheme,
     logoutUser,
-    supabaseConfig,
     platformHealth,
     refreshPlatformHealth,
     refreshData,
@@ -182,9 +181,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const cloudStatus = currentUser.role === UserRole.SUPER_ADMIN
     ? platformHealth.status
-    : supabaseConfig.isConfigured
-      ? "ok"
-      : "local";
+    : platformHealth.status;
   const cloudActive = cloudStatus === "ok";
   const cloudChecking = cloudStatus === "checking";
   const cloudLabel = cloudChecking

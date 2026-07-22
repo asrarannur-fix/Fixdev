@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Accounting API Hook — Server-side accounting operations.
- * Replaces client-side syncToSupabase for accounting data.
+ * Replaces client-side syncToApi for accounting data.
  */
 import api from "../lib/api/client";
 import type { COAAccount, JournalEntry } from "../types";

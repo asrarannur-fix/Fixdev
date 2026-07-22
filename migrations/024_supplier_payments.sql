@@ -1,6 +1,5 @@
 -- Accounts Payable settlement: track paid amount per goods receipt + payment history.
 -- Additive and idempotent.
-BEGIN;
 
 ALTER TABLE goods_receipts
   ADD COLUMN IF NOT EXISTS amount_paid NUMERIC(15,2) NOT NULL DEFAULT 0;
@@ -23,8 +22,5 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_tenant ON supplier_payments(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_receipt ON supplier_payments(goods_receipt_id);
 
-ALTER TABLE supplier_payments ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Tenant isolation for supplier_payments" ON supplier_payments;
-CREATE POLICY "Tenant isolation for supplier_payments" ON supplier_payments FOR ALL USING (tenant_id = current_tenant_id());
+-- Access control enforced by application middleware.
 
-COMMIT;

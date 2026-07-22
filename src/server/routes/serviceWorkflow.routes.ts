@@ -4,7 +4,7 @@
  * Handles: reception → diagnosis → approval → work → QC → handover
  */
 import express from "express";
-import { requireSupabaseJwt, requireTenantScope, requireRoles } from "../../middleware/auth.middleware.js";
+import { requireJwt, requireTenantScope, requireRoles } from "../../middleware/auth.middleware.js";
 import {
   listServiceTickets,
   getServiceTicket,
@@ -26,7 +26,7 @@ import {
 const router = express.Router();
 
 // All workflow routes require authentication + tenant scope
-router.use(requireSupabaseJwt, requireTenantScope);
+router.use(requireJwt, requireTenantScope);
 
 // List & get
 router.get("/", listServiceTickets);

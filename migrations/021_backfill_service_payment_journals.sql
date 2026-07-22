@@ -1,6 +1,5 @@
 -- Backfill missing double-entry journals for completed service payments.
 -- Idempotent: source_id + source_type prevents duplicates.
-BEGIN;
 
 INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, source_id, created_by)
 SELECT gen_random_uuid(), sp.tenant_id, sp.branch_id,
@@ -37,4 +36,3 @@ JOIN LATERAL (
 ) revenue ON TRUE
 WHERE NOT EXISTS (SELECT 1 FROM journal_lines jl WHERE jl.journal_entry_id=je.id AND jl.credit > 0);
 
-COMMIT;

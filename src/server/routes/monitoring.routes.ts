@@ -31,7 +31,7 @@ router.get("/health", async (req, res) => {
     poolStatus = "disconnected";
   }
 
-  const dbUrl = process.env.SUPABASE_DB_URL || "";
+  const dbUrl = process.env.DATABASE_URL || "";
 
   res.json({
     status: poolStatus === "connected" ? "healthy" : "degraded",

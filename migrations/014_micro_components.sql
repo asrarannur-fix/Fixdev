@@ -1,4 +1,3 @@
-BEGIN;
 
 CREATE TABLE IF NOT EXISTS micro_components (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -33,4 +32,3 @@ CREATE TABLE IF NOT EXISTS micro_component_movements (
 
 ALTER TABLE service_tickets ADD COLUMN IF NOT EXISTS micro_component_usages JSONB NOT NULL DEFAULT '[]'::jsonb;
 
-COMMIT;
