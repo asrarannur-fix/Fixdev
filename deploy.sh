@@ -8,6 +8,7 @@ set -euo pipefail
 
 APP_DIR="/var/www/fixdev"
 PM2_NAME="fixdev-erp"
+ENV_FILE="/etc/fixdev/fixdev.production.env"
 
 echo "=== 🚀 FIXDEV DEPLOYMENT START ==="
 
@@ -18,6 +19,14 @@ if [ ! -d "$APP_DIR" ]; then
 fi
 
 cd "$APP_DIR"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "❌ Error: Production environment file $ENV_FILE does not exist."
+    exit 1
+fi
+set -a
+source "$ENV_FILE"
+set +a
 
 # Pull latest code
 echo "📦 Pulling latest code from git..."
@@ -41,11 +50,8 @@ if ! command -v pm2 >/dev/null 2>&1; then
     echo "❌ Error: pm2 is not installed or not in PATH."
     exit 1
 fi
-if pm2 list | grep -q "$PM2_NAME"; then
-    pm2 restart "$PM2_NAME"
-else
-    pm2 start dist/server.cjs --name "$PM2_NAME"
-fi
+mkdir -p logs
+pm2 startOrRestart ecosystem.config.cjs --env production
 
 # Save PM2 state
 pm2 save

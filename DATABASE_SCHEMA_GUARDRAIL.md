@@ -15,6 +15,11 @@ Tabel: `tenants`, `users`, `branches`, `warehouses`, `customers`, `products`, `s
 6. **Unique constraint** — `tenants.subdomain` UNIQUE, `coa_accounts(tenant_id, code)` UNIQUE, `module_records(tenant_id, module, record_id)` UNIQUE.
 7. **Jangan drop tabel `module_records`** — digunakan sebagai store generik lintas modul (`POST/GET /api/module-records`).
 
+## Domain Kustom Tenant
+- `tenants.custom_domain` menyimpan hostname kustom tanpa protokol dan `tenants.custom_domain_verified_at` menjadi bukti verifikasi server.
+- Domain hanya aktif untuk resolusi host bila `custom_domain_verified_at` terisi; indeks unik parsial `uq_tenants_custom_domain` mencegah domain terverifikasi dipakai lebih dari satu tenant.
+- File terkait: `migrations/026_tenant_custom_domains.sql`, `postgresql-schema.sql`, `src/server/lib/tenantHost.ts`.
+
 ## Trigger Otomatis
 `trigger_calculate_warranty` (BEFORE INSERT/UPDATE on `service_tickets`): bila `status IN ('SELESAI','DIAMBIL')` dan `warranty_ends_at IS NULL`, set `warranty_months` default **3** dan hitung `warranty_ends_at = NOW() + warranty_months`.
 → Jangan menonaktifkan trigger ini; pastikan kolom `warranty_months` ada bila ingin durasi selain 3 bulan.

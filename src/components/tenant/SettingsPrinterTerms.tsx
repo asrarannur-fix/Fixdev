@@ -4,7 +4,7 @@ import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCir
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
 
 export const SettingsPrinterTerms: React.FC<any> = (props) => {
-  const { DataImporter, DeveloperApiManager, MaintenanceContractManager, VoucherManager, activeTenant, customFooterText, customHeaderTitle, effectiveActiveSubTab, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printMode, printerName, qzStatus, qzPrinters, qzChecking, checkPrinterConnection, testConfiguredPrinter, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText } = props;
+  const { DataImporter, DeveloperApiManager, MaintenanceContractManager, VoucherManager, activeTenant, customFooterText, customHeaderTitle, effectiveActiveSubTab, publicBaseUrl, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printMode, printerName, qzStatus, qzPrinters, qzChecking, checkPrinterConnection, testConfiguredPrinter, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText } = props;
   return (
   <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn">
     {/* Left Configuration Column */}
@@ -802,7 +802,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                   PINDAI QR UNTUK LACAK STATUS
                 </span>
                 <span className="text-[8px] text-slate-400 block font-mono mt-0.5 truncate max-w-full">
-                  {window.location.origin}/?ticket=SVC-2026-0099
+                  {publicBaseUrl}/?ticket=SVC-2026-0099
                 </span>
               </div>
             )}

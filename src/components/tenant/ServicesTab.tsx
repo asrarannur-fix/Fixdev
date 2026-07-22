@@ -148,6 +148,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     employees,
     products,
     currentTenantId: contextTenantId,
+    publicBaseUrl,
   } = useSaaS();
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
@@ -578,7 +579,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
           )
           .join("\n")
       : "• Tidak ada penggantian spare part";
-    const approvalLink = `${window.location.origin}/?tab=service&sub=approve-quote&ticket=${encodeURIComponent(ticket.ticketNo)}`;
+    const approvalLink = `${publicBaseUrl}/?tab=service&sub=approve-quote&ticket=${encodeURIComponent(ticket.ticketNo)}`;
     const ctx = {
       customer_name: customer?.name || "Pelanggan",
       ticket_no: ticket.ticketNo,

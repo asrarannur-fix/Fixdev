@@ -108,6 +108,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     currentBranchId,
     services,
     apiFetch,
+    publicBaseUrl,
   } = useSaaS();
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
@@ -138,7 +139,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [skActiveTab, setSkActiveTab] = useState("general");
   const [brandingPreviewTab, setBrandingPreviewTab] = useState("login");
-  const [domainVerified, setDomainVerified] = useState(false);
+  const [domainVerified, setDomainVerified] = useState(!!tenantObj?.customDomainVerifiedAt);
   const [isVerifyingDomain, setIsVerifyingDomain] = useState(false);
   
   // Single branding state object
@@ -680,7 +681,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
         )}
 
-        {effectiveActiveSubTab === "printer-terms" && <SettingsPrinterTerms {...{activeTenant, customFooterText, customHeaderTitle, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printMode, printerName, qzStatus, qzPrinters, qzChecking, checkPrinterConnection, testConfiguredPrinter, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText}} />}
+        {effectiveActiveSubTab === "printer-terms" && <SettingsPrinterTerms {...{activeTenant, publicBaseUrl, customFooterText, customHeaderTitle, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printMode, printerName, qzStatus, qzPrinters, qzChecking, checkPrinterConnection, testConfiguredPrinter, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText}} />}
 
         {effectiveActiveSubTab === "developer-api" && (
           <div className="animate-fadeIn"><DeveloperApiManager /></div>

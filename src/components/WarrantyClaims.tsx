@@ -44,6 +44,7 @@ export const WarrantyClaims: React.FC = () => {
     currentUser,
     currentTenantId,
     tenants,
+    publicBaseUrl,
   } = useSaaS();
 
   const { showToast } = useToast();
@@ -221,7 +222,7 @@ export const WarrantyClaims: React.FC = () => {
           <p>Warranty Ends: ${ticket.warrantyEndsAt?.split("T")[0]}</p>
           <p>Status: VALID / REGISTERED</p>
           <div class="text-center">
-            <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + "/?ticket=" + safeTicketNo)}" />
+            <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent((publicBaseUrl) + "/?ticket=" + safeTicketNo)}" />
             <p style="font-size: 8px;">Scan to verify warranty status</p>
           </div>
           <div class="hr"></div>

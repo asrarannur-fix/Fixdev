@@ -5,6 +5,7 @@ import { DocumentPrintouts } from "./services/DocumentPrintouts";
 import { getStorageLocations } from "./StorageLocationManager";
 import { buildServiceReceptionPreview } from "../../utils/serviceReceptionUtils";
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from "../../types";
+import { useSaaS } from "../../context/SaaSContext";
 import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus, Sparkles, ListChecks } from "lucide-react";
 
 const SERVICE_TRANSITIONS: Record<string, string[]> = {
@@ -65,10 +66,8 @@ const sanitizeWhatsAppPhone = (phone?: string): string => {
   return digits;
 };
 
-const buildPublicTicketLink = (ticketNo: string): string =>
-  `${window.location.origin}/?ticket=${encodeURIComponent(ticketNo)}`;
-
 export const ServiceDetailModal: React.FC<any> = (props) => {
+  const { publicBaseUrl } = useSaaS();
   const { activeTenantId, addServiceDiagnostic, approveServiceEstimate, cameraActive, cancelServicePart, completeServiceQC, currentTenantId, currentUser, customWaMessageText, customers, employees, handoverChecklist, handoverPaymentMethod, handoverProofName, handoverRefNo, handoverServiceDevice, handoverTempoDays, internalCommentText, liveTimerSeconds, manualDiagCost, manualDiagNotes, openManualEstimateWhatsApp, openMicroComponentModal, products, qcNotes, qcScore, renderTenantWaTemplate, requestPartMode, requestServicePart, requestedPartId, requestedPartQty, selectedSparepartId, setAdditionalCostApprovedBy, setAdditionalCostTicket, setCustomWaMessageText, setHandoverChecklist, setHandoverPaymentMethod, setHandoverProofName, setHandoverRefNo, setHandoverTempoDays, setInternalCommentText, setManualDiagCost, setManualDiagNotes, setPartOrderTicket, setQcNotes, setQcScore, setRequestPartMode, setRequestedPartId, setRequestedPartQty, setSelectedSparepartId, setShowInvoicePrintout, setShowProvisionalQuote, setShowSpkPrintout, setShowWarrantyPrintout, setSparepartQty, setSparepartSN, setViewingServiceTicketId, showToast, sparepartQty, sparepartSN, startCamera, stopCamera, tenantObj, tenantServices, updateServiceStatus, updateServiceTicket, videoRef, viewingServiceTicketId } = props;
   if (!viewingServiceTicketId) return null;
   const ticket = tenantServices.find(
@@ -2447,7 +2446,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             const estTotal =
                               Number(ticket.estimatedCost) || 0;
                             const portalLink =
-                              window.location.origin +
+                              (publicBaseUrl) +
                               "/?tab=service&sub=approve-quote&ticket=" +
                               ticket.ticketNo;
                             let txt = "";

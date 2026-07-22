@@ -86,7 +86,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   showToast,
   printConfig,
 }) => {
-  const { currentTenantId, tenants } = useSaaS();
+  const { currentTenantId, tenants, publicBaseUrl } = useSaaS();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
   const businessName = activeTenant?.name || "Layanan Servis";
   const logoUrl = getSafePrintImageUrl(activeTenant?.branding?.logoUrl);
@@ -316,7 +316,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   {printConfig?.printQrCode && (
                     <div className="flex flex-col items-center justify-center py-2 border-t border-dashed border-slate-200">
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${window.location.origin}/?ticket=${ticket.ticketNo}`)}`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${publicBaseUrl}/?ticket=${ticket.ticketNo}`)}`}
                         alt={`QR tracking ${ticket.ticketNo}`}
                         className="w-20 h-20"
                       />
@@ -546,7 +546,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                             printConfig?.printQrCode
                               ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(window.location.origin + "/?ticket=" + ticket.ticketNo)}" alt="QR Code" />
+                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + "/?ticket=" + ticket.ticketNo)}" alt="QR Code" />
                           </div>
                           `
                               : ""
@@ -878,7 +878,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                              printConfig?.printQrCode
                                ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(window.location.origin + "/?tab=service&sub=approve-quote&ticket=" + ticket.ticketNo)}" alt="QR Code" />
+                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + "/?tab=service&sub=approve-quote&ticket=" + ticket.ticketNo)}" alt="QR Code" />
                           </div>
                           `
                                : ""
@@ -905,7 +905,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      const link = `${window.location.origin}/?tab=service&sub=approve-quote&ticket=${ticket.ticketNo}`;
+                      const link = `${publicBaseUrl}/?tab=service&sub=approve-quote&ticket=${ticket.ticketNo}`;
                       navigator.clipboard.writeText(link);
                       showToast(
                         "Link Persetujuan Digital disalin ke clipboard!",
@@ -939,7 +939,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
             month: "long",
             year: "numeric",
           });
-          const claimUrl = `${window.location.origin}/?tab=service&sub=warranty-claim&ticket=${ticket.ticketNo}`;
+          const claimUrl = `${publicBaseUrl}/?tab=service&sub=warranty-claim&ticket=${ticket.ticketNo}`;
 
           return createPortal(
             <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-55 p-4 overflow-y-auto">

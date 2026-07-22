@@ -33,7 +33,7 @@ function getBaseUrl(): string {
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
-  return "http://localhost:8083";
+  return process.env.TEST_BASE_URL || "http://localhost:3001";
 }
 
 export const getAuthClient = () => {

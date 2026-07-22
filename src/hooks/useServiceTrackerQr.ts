@@ -20,7 +20,7 @@ export function useServiceTrackerQr(
   apiFetch: (url: string, init?: RequestInit) => Promise<Response>,
 ) {
   const { showToast } = useToast();
-  const { tenants } = useSaaS();
+  const { tenants, publicBaseUrl } = useSaaS();
   const printConfig = usePrintConfig();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
   const tenantName = activeTenant?.name || "Layanan Servis";
@@ -94,7 +94,7 @@ export function useServiceTrackerQr(
    * Generates the public tracking URL for a given ticket.
    */
   const getTrackingUrl = (ticketNo: string) => {
-    return `${window.location.origin}/?ticket=${encodeURIComponent(ticketNo)}`;
+    return `${publicBaseUrl}/?ticket=${encodeURIComponent(ticketNo)}`;
   };
 
   /**

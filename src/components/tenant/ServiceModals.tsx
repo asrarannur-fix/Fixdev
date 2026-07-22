@@ -5,9 +5,11 @@ import { DocumentPrintouts } from "./services/DocumentPrintouts";
 import { getStorageLocations } from "./StorageLocationManager";
 import { buildServiceReceptionPreview, sanitizeWhatsAppPhone, isValidIndonesianPhone } from "../../utils/serviceReceptionUtils";
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from "../../types";
+import { useSaaS } from "../../context/SaaSContext";
 import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus, Sparkles, ListChecks } from "lucide-react";
 
 export const ServiceModals: React.FC<any> = (props) => {
+  const { publicBaseUrl } = useSaaS();
   const {
     viewingServiceTicketId, tenantServices, customers, employees, products,
     currentTenantId, currentUser, showToast, setCurrentActiveSubTab, setPreviewReceptionTicket,
@@ -67,12 +69,12 @@ export const ServiceModals: React.FC<any> = (props) => {
               year: "numeric",
             })
           : "3 Hari",
-        tracking_link: `${window.location.origin}/?ticket=${ticket.ticketNo}`,
+        tracking_link: `${publicBaseUrl}/?ticket=${ticket.ticketNo}`,
       };
       const welcomeTemplated = renderTenantWaTemplate("SERVICE_UPDATE", welcomeCtx);
       const welcomeMessage =
         welcomeTemplated ||
-        `Halo Kak *${customerName}*,\n\nTerima kasih telah mempercayakan perbaikan perangkat Anda kepada kami.\n\nBerikut rincian tanda terima unit Anda:\n• *Nomor Tiket*: ${ticket.ticketNo}\n• *Tipe Unit*: ${ticket.deviceName} (${ticket.deviceBrandModel || "-"})\n• *Kerusakan/Keluhan*: ${ticket.customerComplaints}\n• *Metode*: ${ticket.isCheckOnly ? "Hanya Cek & Diagnosis" : "Pendaftaran Servis"}\n• *Uang Muka (DP)*: Rp ${(ticket.downPayment || 0).toLocaleString()}\n• *Est. Selesai*: ${ticket.estimatedCompletionDate ? new Date(ticket.estimatedCompletionDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "3 Hari"}\n\nKami akan segera mengabarkan diagnosa teknis dan estimasi biaya lanjutan.\n\nAnda dapat memantau status servis secara live di tautan berikut:\n${window.location.origin}/?ticket=${ticket.ticketNo}\n\nTerima kasih!`;
+        `Halo Kak *${customerName}*,\n\nTerima kasih telah mempercayakan perbaikan perangkat Anda kepada kami.\n\nBerikut rincian tanda terima unit Anda:\n• *Nomor Tiket*: ${ticket.ticketNo}\n• *Tipe Unit*: ${ticket.deviceName} (${ticket.deviceBrandModel || "-"})\n• *Kerusakan/Keluhan*: ${ticket.customerComplaints}\n• *Metode*: ${ticket.isCheckOnly ? "Hanya Cek & Diagnosis" : "Pendaftaran Servis"}\n• *Uang Muka (DP)*: Rp ${(ticket.downPayment || 0).toLocaleString()}\n• *Est. Selesai*: ${ticket.estimatedCompletionDate ? new Date(ticket.estimatedCompletionDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "3 Hari"}\n\nKami akan segera mengabarkan diagnosa teknis dan estimasi biaya lanjutan.\n\nAnda dapat memantau status servis secara live di tautan berikut:\n${publicBaseUrl}/?ticket=${ticket.ticketNo}\n\nTerima kasih!`;
 
       return createPortal(
         <div className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-fadeIn">

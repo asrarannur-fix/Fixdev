@@ -2,6 +2,7 @@ import * as React from "react";
 import { MessageSquare, Share2 } from "lucide-react";
 import { renderTenantWaTemplate } from "../../../utils/waTemplate";
 import { sanitizeWhatsAppPhone, isValidIndonesianPhone } from "../../../utils/serviceReceptionUtils";
+import { useSaaS } from "../../../context/SaaSContext";
 
 type WaTemplate = { category?: string; content?: string };
 
@@ -27,6 +28,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
     renderTenantWaTemplate(templates, category, ctx);
   const recipientPhone = sanitizeWhatsAppPhone(customer?.phone || "");
   const canSendWhatsApp = isValidIndonesianPhone(recipientPhone);
+  const { publicBaseUrl } = useSaaS();
 
   const getDefaultMessage = () => {
     const ctx = {
@@ -41,7 +43,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
 
   const selectTemplate = (value: string) => {
     const estTotal = ticket.estimatedCost || 0;
-    const portalLink = `${window.location.origin}/?tab=service&sub=approve-quote&ticket=${encodeURIComponent(ticket.ticketNo || "")}`;
+    const portalLink = `${publicBaseUrl}/?tab=service&sub=approve-quote&ticket=${encodeURIComponent(ticket.ticketNo || "")}`;
     const common = {
       customer_name: customer?.name || "Pelanggan",
       ticket_no: ticket.ticketNo,

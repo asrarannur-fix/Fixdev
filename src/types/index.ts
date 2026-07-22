@@ -274,6 +274,8 @@ export interface Tenant {
   id: string;
   name: string;
   subdomain: string;
+  customDomain?: string;
+  customDomainVerifiedAt?: string;
   status: TenantStatus;
   tier: SubscriptionTier;
   trialEndsAt: string;

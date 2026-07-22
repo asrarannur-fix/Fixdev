@@ -8,6 +8,7 @@ import { safeLocalStorage } from "../utils/safeStorage";
 import { applyTenantBranding } from "../utils/branding";
 import {
   Tenant,
+  TenantBranding,
   SubscriptionTier,
   TenantStatus,
   User,
@@ -110,9 +111,20 @@ let syncToApi: (
   idField?: string,
 ) => Promise<void> = async () => {};
 
+interface PublicTenant {
+  id: string;
+  name: string;
+  subdomain: string;
+  branding: TenantBranding;
+  publicBaseUrl: string;
+}
+
 interface SaaSContextType {
   // Config & State
   tenants: Tenant[];
+  publicTenant: PublicTenant | null;
+  publicTenantLoading: boolean;
+  publicBaseUrl: string;
   currentTenantId: string;
   currentBranchId: string;
   currentUser: User;
@@ -719,12 +731,22 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   // Config & State variables
   const [apiLoading, setApiLoading] = useState<boolean>(false);
   const [apiStatus, setApiStatus] = useState<string>("");
+  const [publicTenant, setPublicTenant] = useState<PublicTenant | null>(null);
+  const [publicTenantLoading, setPublicTenantLoading] = useState(true);
 
 
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     return (localStorage.getItem("saas_theme") as "light" | "dark") || "light";
   });
+
+  useEffect(() => {
+    fetch("/api/public/tenant-context")
+      .then((response) => response.json())
+      .then((data) => setPublicTenant(data.tenant || null))
+      .catch(() => setPublicTenant(null))
+      .finally(() => setPublicTenantLoading(false));
+  }, []);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -4609,10 +4631,15 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const publicBaseUrl = publicTenant?.publicBaseUrl || window.location.origin;
+
   return (
     <SaaSContext.Provider
       value={{
         tenants,
+        publicTenant,
+        publicTenantLoading,
+        publicBaseUrl,
         currentTenantId,
         currentBranchId,
         currentUser,

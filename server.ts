@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import "dotenv/config";
 import http from "http";
 import express from "express";
 import path from "path";
-import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { logger } from "./src/lib/logger.js";
 import { requireAdminToken, requireSuperAdmin, requireJwt, requireTenantScope, requireRoles } from "./src/middleware/auth.middleware.js";
@@ -62,8 +62,30 @@ import { telegramTestHandler } from "./src/server/controllers/telegram.controlle
 import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.controller.js";
 import { qzPublicCertHandler, qzSignHandler } from "./src/server/controllers/qz.controller.js";
 import { qzCertDownloadHandler, qzInstallerBatHandler } from "./src/server/controllers/qzinstaller.controller.js";
+import { tenantHostResolver } from "./src/middleware/tenantHost.middleware.js";
+import { publicTenantContextHandler } from "./src/server/controllers/publicTenant.controller.js";
 
-dotenv.config({ override: false });
+const runtimeMode = process.env.NODE_ENV || "development";
+if (!["development", "production", "test"].includes(runtimeMode)) throw new Error(`Invalid NODE_ENV: ${runtimeMode}`);
+const isProduction = runtimeMode === "production";
+const portValue = isProduction ? process.env.PORT || "3000" : process.env.DEV_PORT || "3001";
+const PORT = Number(portValue);
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error(`Invalid server port: ${portValue}`);
+const appUrl = process.env.APP_URL || (isProduction ? "https://fixdev.web.id" : `http://localhost:${PORT}`);
+const parsedAppUrl = new URL(appUrl);
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || appUrl).split(",").map((value) => value.trim().replace(/\/$/, "")).filter(Boolean);
+if (isProduction) {
+  const required = ["DATABASE_URL", "JWT_SECRET", "ADMIN_TOKEN", "APP_URL", "ALLOWED_ORIGINS", "TENANT_ROOT_DOMAIN"];
+  const missing = required.filter((key) => !process.env[key]?.trim());
+  if (missing.length) throw new Error(`Missing production environment variables: ${missing.join(", ")}`);
+  if (parsedAppUrl.protocol !== "https:") throw new Error("Production APP_URL must use HTTPS.");
+  if (process.env.ALLOW_DEV_API_TOKENS === "true") throw new Error("ALLOW_DEV_API_TOKENS must be false in production.");
+  const rootDomain = process.env.TENANT_ROOT_DOMAIN;
+  const allowedList = (process.env.ALLOWED_ORIGINS || "").split(",").map((v) => v.trim());
+  const platformHost = rootDomain ? `.${rootDomain}` : "";
+  const cleaned = allowedList.map((origin) => new URL(origin).hostname).filter((host) => host.endsWith(platformHost)).filter((host) => host !== "localhost");
+  if (!cleaned.includes(parsedAppUrl.hostname) && !cleaned.includes(rootDomain)) throw new Error(`APP_URL host ${parsedAppUrl.hostname} is not allowed by ALLOWED_ORIGINS.`);
+}
 
 const app = express();
 // Cloudflare Tunnel is the only public proxy hop. Trust its forwarded client IP
@@ -75,7 +97,7 @@ app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "0");  // Deprecated; modern browsers ignore it.
-  res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  if (isProduction) res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   next();
@@ -95,33 +117,23 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
   next(err);
 });
 
-const PORT = Number(
-  process.env.NODE_ENV !== "production"
-    ? (process.env.DEV_PORT || 3001)
-    : (process.env.PORT || 3000)
-);
-
 // ==========================================
 // SECURITY: Manual CORS Configuration
 // ==========================================
 app.use((req, res, next) => {
-  const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(",") 
-    : [process.env.APP_URL || "https://fixdev.web.id"];
-  
-  const origin = req.headers.origin;
+  const origin = req.headers.origin?.replace(/\/$/, "");
+  res.setHeader("Vary", "Origin");
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Tenant-ID,X-Branch-ID,X-SuperAdmin-Mode,X-SuperAdmin-Permissions,x-admin-token");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
+  if (req.method === "OPTIONS") return origin && !allowedOrigins.includes(origin) ? res.sendStatus(403) : res.sendStatus(204);
   next();
 });
+
+app.use(tenantHostResolver);
 
 // ==========================================
 // SECURITY: Rate Limiting
@@ -171,6 +183,8 @@ app.use(auditMiddleware);
 // ==========================================
 // API ROUTES
 // ==========================================
+
+app.get("/api/public/tenant-context", publicTenantContextHandler);
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -244,7 +258,7 @@ app.use("/api", (req, res) => {
 // ==========================================
 
 async function startServer() {
-  const isDev = process.env.NODE_ENV !== "production";
+  const isDev = runtimeMode === "development";
   const distPath = path.join(process.cwd(), "dist");
 
   // Create HTTP server first so we can share it with Vite's HMR WebSocket

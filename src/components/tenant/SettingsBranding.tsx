@@ -383,9 +383,9 @@ export const SettingsBranding: React.FC<any> = (props) => {
               </div>
 
               <div className="border-t border-slate-100 pt-3 text-[8px] text-slate-400">
-                Domain Terverifikasi:{" "}
-                <span className="font-mono text-accent font-bold underline">
-                  {branding.customDomain}
+                {domainVerified ? "Domain Terverifikasi: " : "Domain Belum Terverifikasi: "}
+                <span className={`font-mono font-bold underline ${domainVerified ? "text-emerald-600" : "text-amber-600"}`}>
+                  {branding.customDomain || "Belum diatur"}
                 </span>
               </div>
             </div>

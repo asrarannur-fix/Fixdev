@@ -111,6 +111,12 @@ export const requireJwt = async (
         }),
         superadminRole: profile.superadmin_role || undefined,
       };
+      if (req.hostTenant && req.authActor.role !== "SUPER_ADMIN" && profile.tenant_id !== req.hostTenant.id) {
+        return res.status(403).json({ error: "Access to this tenant is forbidden." });
+      }
+      if (req.hostTenant && req.authActor.role === "SUPER_ADMIN") {
+        logger.info({ userId: req.authActor.userId, hostTenantId: req.hostTenant.id }, "Super Admin accessing tenant host");
+      }
     } catch (dbErr: any) {
       logger.error({ err: dbErr.message }, "Could not resolve authenticated user profile");
       return res.status(503).json({ error: "User profile service is unavailable." });

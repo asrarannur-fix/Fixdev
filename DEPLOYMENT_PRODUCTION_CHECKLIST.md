@@ -12,16 +12,19 @@ Jalankan di server: `bash deploy.sh`
 1. `git pull --ff-only origin main`
 2. `npm ci` (atau `npm install`)
 3. `npm run build` → `dist/server.cjs` + `dist/assets`
-4. `pm2 restart fixdev-erp` (atau `pm2 start dist/server.cjs --name fixdev-erp`)
-5. `pm2 save`
+4. Muat env eksternal `/etc/fixdev/fixdev.production.env`.
+5. `pm2 startOrRestart ecosystem.config.cjs --env production`
+6. `pm2 save`
 
 ## Nginx
 `nginx-default.conf` proxy ke `http://127.0.0.1:3000` dengan header `Host`, `X-Real-IP`, `X-Forwarded-*`, dan `Upgrade/Connection` untuk WebSocket. Pastikan `server_name` & TLS (port 443) di-set di host asli.
 
 ## App Config
 - `vite.config.ts` `server.allowedHosts: ['fixdev.web.id']` — tambahkan domain prod di sini bila ganti host.
-- Env via `.env` (lihat `.env.example`): Supabase URL/key, API tokens.
-- Server listen port **3000** (cocok dengan proxy nginx).
+- `.env` hanya untuk development lokal. Produksi memakai `/etc/fixdev/fixdev.production.env` berizin `0600`, tidak disimpan di repo.
+- Produksi wajib mengatur `NODE_ENV=production`, `PORT=3000`, `APP_URL=https://fixdev.web.id`, `ALLOWED_ORIGINS`, `TENANT_ROOT_DOMAIN`, `DATABASE_URL`, `JWT_SECRET`, `ADMIN_TOKEN`, dan `ALLOW_DEV_API_TOKENS=false`.
+- Development memakai `NODE_ENV=development`, `DEV_PORT=3001`, serta Vite middleware/HMR.
+- Server produksi listen port **3000**; development default **3001**.
 
 ## Post-Deploy
 - [ ] `pm2 logs fixdev-erp` tidak error.

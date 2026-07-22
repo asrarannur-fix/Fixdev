@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS tenants (
     trial_ends_at TIMESTAMP,
     settings JSONB DEFAULT '{}'::jsonb,
     branding JSONB DEFAULT '{}'::jsonb,
+    custom_domain TEXT,
+    custom_domain_verified_at TIMESTAMPTZ,
     created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_tenants_status ON tenants(status);

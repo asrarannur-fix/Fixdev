@@ -34,7 +34,7 @@ export const getPublicTicketStatus = async (req: any, res: any) => {
   }
   ticketNo = ticketNo.split("?")[0]; // remove query params
   if (!ticketNo) ticketNo = String(req.params.ticketNo || "").trim();
-  const tenantId = String(req.query?.tenantId || "").trim();
+  const tenantId = req.hostTenant?.id || String(req.query?.tenantId || "").trim();
   if (!ticketNo) return res.status(400).json({ error: "Missing ticket number." });
   if (!tenantId) return res.status(400).json({ error: "Missing tenantId parameter." });
   try {
@@ -68,12 +68,12 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
         s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
         s.estimated_cost AS "estimatedCost",s.down_payment AS "downPayment",
         s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
-        s.created_at AS "createdAt",c.name AS "customerName"
+        s.created_at AS "createdAt",s.tenant_id AS "tenantId",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
        WHERE s.public_tracking_token=$1 LIMIT 1`,
       [token],
     );
-    if (!result.rows[0]) return res.status(404).json({ error: "Service ticket not found" });
+    if (!result.rows[0] || (req.hostTenant && result.rows[0].tenantId !== req.hostTenant.id)) return res.status(404).json({ error: "Service ticket not found" });
     res.json(publicTicketRow(result.rows[0]));
   } catch (error: any) {
     if (error.message?.includes("does not exist") || error.message?.includes("relation")) {
@@ -85,7 +85,7 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
 
 export const verifyWarrantyQr = async (req: any, res: any) => {
   const ticketNo = String(req.body?.ticketNo || "").trim();
-  const tenantId = String(req.body?.tenantId || "").trim();
+  const tenantId = req.hostTenant?.id || String(req.body?.tenantId || "").trim();
   if (!ticketNo) return res.status(400).json({ error: "Missing ticketNo parameter." });
   if (!tenantId) return res.status(400).json({ error: "Missing tenantId parameter." });
   try {
