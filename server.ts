@@ -82,9 +82,9 @@ if (isProduction) {
   if (process.env.ALLOW_DEV_API_TOKENS === "true") throw new Error("ALLOW_DEV_API_TOKENS must be false in production.");
   const rootDomain = process.env.TENANT_ROOT_DOMAIN;
   const allowedList = (process.env.ALLOWED_ORIGINS || "").split(",").map((v) => v.trim());
-  const platformHost = rootDomain ? `.${rootDomain}` : "";
-  const cleaned = allowedList.map((origin) => new URL(origin).hostname).filter((host) => host.endsWith(platformHost)).filter((host) => host !== "localhost");
-  if (!cleaned.includes(parsedAppUrl.hostname) && !cleaned.includes(rootDomain)) throw new Error(`APP_URL host ${parsedAppUrl.hostname} is not allowed by ALLOWED_ORIGINS.`);
+  const cleaned = allowedList.map((origin) => new URL(origin).hostname).filter((host) => host !== "localhost");
+  const isTenantHost = (host: string) => host === rootDomain || host.endsWith(`.${rootDomain}`);
+  if (!cleaned.some(isTenantHost) || !cleaned.includes(parsedAppUrl.hostname)) throw new Error(`APP_URL host ${parsedAppUrl.hostname} is not allowed by ALLOWED_ORIGINS.`);
 }
 
 const app = express();

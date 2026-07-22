@@ -26,6 +26,10 @@ Jalankan di server: `bash deploy.sh`
 - Development memakai `NODE_ENV=development`, `DEV_PORT=3001`, serta Vite middleware/HMR.
 - Server produksi listen port **3000**; development default **3001**.
 
+## Catatan Perbaikan Deployment
+- Validasi `ALLOWED_ORIGINS` kini menerima host root `TENANT_ROOT_DOMAIN` dan subdomain tenant tanpa menolak `APP_URL` produksi.
+- File terkait: `server.ts`.
+
 ## Post-Deploy
 - [ ] `pm2 logs fixdev-erp` tidak error.
 - [ ] `curl http://localhost:3000/api/health` → 200.
