@@ -7,7 +7,7 @@ import { ServiceDetailModal } from "./ServiceDetailModal";
 import { getStorageLocations } from "./StorageLocationManager";
 import { buildServiceReceptionPreview } from "../../utils/serviceReceptionUtils";
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from "../../types";
-import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus, Sparkles, ListChecks } from "lucide-react";
+import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Fingerprint, MapPin, Search, CheckSquare, Activity, Camera, Maximize, Check, Calendar, ArrowRight, Printer, AlertCircle, RefreshCw, MessageSquare, Wrench, Upload, Minus, Eye, Edit, MoreVertical, SearchIcon, CheckCircle, Package, Send, Filter, ChevronLeft, QrCode, Cpu, Share2, Barcode, ShieldCheck, Timer, PackagePlus, ListChecks } from "lucide-react";
 
 export const ServiceList: React.FC<any> = (props) => {
   const { activeTenantId, activeWaModal, additionalCostAmount, additionalCostApprovedBy, additionalCostDescription, additionalCostMethod, additionalCostNote, additionalCostProof, additionalCostTicket, aiLoading, aiResult, approveServiceEstimate, cameraActive, completeServiceQC, currentUserPermissions, customWaMessageText, filteredMicroComponents, handleApplyAiRecommendation, handlePrintReceptionReceipt, handoverChecklist, handoverPaymentMethod, handoverProofName, handoverRefNo, handoverServiceDevice, handoverTempoDays, internalCommentText, isSubTabAllowed, justCreatedTicket, liveTimerSeconds, manualDiagCost, manualDiagNotes, microChargeable, microNote, microQty, microSearch, microTicket, microUnitPrice, openManualEstimateWhatsApp, openMicroComponentModal, partOrderCost, partOrderCostApproved, partOrderEta, partOrderName, partOrderNote, partOrderQty, partOrderReason, partOrderSupplier, partOrderTicket, previewReceptionTicket, qcNotes, qcScore, renderTenantWaTemplate, requestPartMode, requestedPartId, requestedPartQty, savingAdditionalCost, savingMicroUsage, savingPartOrder, selectedMicro, selectedMicroId, selectedServiceId, selectedServiceIds, selectedSparepartId, setActiveSubTab, setActiveWaModal, setAdditionalCostAmount, setAdditionalCostApprovedBy, setAdditionalCostDescription, setAdditionalCostMethod, setAdditionalCostNote, setAdditionalCostProof, setAdditionalCostTicket, setAiResult, setCustomWaMessageText, setHandoverChecklist, setHandoverPaymentMethod, setHandoverProofName, setHandoverRefNo, setHandoverTempoDays, setInternalCommentText, setJustCreatedTicket, setManualDiagCost, setManualDiagNotes, setMicroChargeable, setMicroNote, setMicroQty, setMicroSearch, setMicroTicket, setMicroUnitPrice, setPartOrderCost, setPartOrderCostApproved, setPartOrderEta, setPartOrderName, setPartOrderNote, setPartOrderQty, setPartOrderReason, setPartOrderSupplier, setPartOrderTicket, setPreviewReceptionTicket, setQcNotes, setQcScore, setRequestPartMode, setRequestedPartId, setRequestedPartQty, setSavingAdditionalCost, setSavingMicroUsage, setSavingPartOrder, setSelectedMicroId, setSelectedServiceId, setSelectedServiceIds, setSelectedSparepartId, setShowInvoicePrintout, setShowProvisionalQuote, setShowSpkPrintout, setShowWarrantyPrintout, setSparepartQty, setSparepartSN, setSrvSearchQuery, setSrvSort, setStatusFilter, setViewingServiceTicketId, showInvoicePrintout, showProvisionalQuote, showSpkPrintout, showWarrantyPrintout, sparepartQty, sparepartSN, srvSearchQuery, srvSort, startCamera, statusFilter, stopCamera, tenantObj, tenantServices, updateServiceStatus, videoRef, viewingServiceTicketId, currentUser, showConfirm, updateServiceTicket, showToast, customers, employees, products, currentTenantId, microComponentsLoading, microComponentsError, loadMicroComponents, consumeMicroComponentForService, addServiceDiagnostic, requestServicePart, cancelServicePart, createServicePartOrder, addApprovedAdditionalCost } = props;
@@ -507,97 +507,6 @@ export const ServiceList: React.FC<any> = (props) => {
     </div>
   )}
 
-  {/* AI diagnostic recommendations widget (when active) */}
-  {selectedServiceId && aiLoading && (
-    <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center shadow-inner">
-      <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-accent animate-spin" />
-      <p className="text-xs font-semibold text-slate-600 font-mono mt-3">
-        Sedang merumuskan diagnosa terbaik...
-      </p>
-    </div>
-  )}
-
-  {selectedServiceId && aiResult && (
-    <div className="p-5 bg-gradient-to-r from-amber-50 to-indigo-50/30 border border-amber-200 rounded-xl space-y-4 shadow-sm">
-      <div className="flex items-center justify-between border-b border-amber-100 pb-2.5">
-        <h4 className="font-bold text-xs text-amber-800 flex items-center gap-2 uppercase font-mono">
-          <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />{" "}
-          Hasil Diagnosa AI
-        </h4>
-        <div className="flex gap-2">
-          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[9px] font-mono uppercase">
-            Tingkat Kesulitan: {aiResult.difficulty}
-          </span>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-        <div className="space-y-2.5">
-          <div>
-            <p className="font-bold text-slate-700">
-              Analisa Inti Masalah:
-            </p>
-            <p className="text-slate-600 leading-relaxed bg-white/70 p-2.5 rounded-lg border border-slate-100 mt-1">
-              {aiResult.coreIssue}
-            </p>
-          </div>
-          <div>
-            <p className="font-bold text-slate-700 mt-2">
-              Catatan Perbaikan:
-            </p>
-            <p className="text-slate-600 italic leading-relaxed bg-white/70 p-2.5 rounded-lg border border-slate-100 mt-1">
-              {aiResult.diagnosticNotes}
-            </p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <p className="font-bold text-slate-700">
-              Estimasi Rentang Jasa:
-            </p>
-            <p className="text-sm font-extrabold text-accent font-mono mt-0.5">
-              Rp {(aiResult.estimatedCostMin ?? 0).toLocaleString()} -
-              Rp {(aiResult.estimatedCostMax ?? 0).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <p className="font-bold text-slate-700">
-              Suku Cadang yang Diperlukan:
-            </p>
-            <ul className="list-disc pl-4 space-y-1 text-slate-600 mt-1 bg-white/70 p-2.5 rounded-lg border border-slate-100">
-              {aiResult.requiredParts?.map(
-                (part: any, index: number) => (
-                  <li key={index} className="font-medium">
-                    {part?.partName} (~Rp{" "}
-                    {(part?.estPrice ?? 0).toLocaleString()})
-                  </li>
-                ),
-              )}
-            </ul>
-          </div>
-        </div>
-      </div>
-      <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-        <button
-          onClick={() => {
-            setSelectedServiceId(null);
-            setAiResult(null);
-          }}
-          className="px-4 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-        >
-          Abaikan
-        </button>
-        <button
-          onClick={() =>
-            handleApplyAiRecommendation(selectedServiceId!)
-          }
-          className="px-4 py-1.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg text-xs cursor-pointer shadow-md shadow-accent/10 flex items-center gap-1"
-        >
-          <Check className="w-3.5 h-3.5" /> Terapkan Diagnosa &
-          Estimasikan Biaya
-        </button>
-      </div>
-    </div>
-  )}
   <ServiceDetailModal {...props} />
   <DocumentPrintouts
     showSpkPrintout={showSpkPrintout}

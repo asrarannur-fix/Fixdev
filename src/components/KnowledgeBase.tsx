@@ -7,18 +7,12 @@ import React, { useState } from "react";
 import {
   BookOpen,
   Search,
-  Cpu,
   Sparkles,
   FileText,
   ExternalLink,
-  Wrench,
   HelpCircle,
   ArrowRight,
-  CheckCircle,
-  RefreshCw,
   TrendingUp,
-  AlertTriangle,
-  Lightbulb,
   MessageSquare,
   Send,
 } from "lucide-react";
@@ -149,18 +143,6 @@ export const KnowledgeBase: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
-  // AI Troubleshooter State
-  const [deviceModel, setDeviceModel] = useState("");
-  const [symptoms, setSymptoms] = useState("");
-  const [aiResult, setAiResult] = useState<{
-    possibleCauses: string[];
-    diagnosticSteps: string[];
-    recommendedParts: string[];
-    difficultyLevel: string;
-    proTips: string;
-  } | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
   const categories = [
     "All",
     "Smartphone",
@@ -178,75 +160,6 @@ export const KnowledgeBase: React.FC = () => {
       selectedCategory === "All" || guide.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
-
-  const handleAskAI = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanModel = deviceModel.trim().slice(0, 100);
-    const cleanSymptoms = symptoms.trim().slice(0, 500);
-    if (!cleanModel || !cleanSymptoms) return;
-
-    setIsAnalyzing(true);
-    setAiResult(null);
-
-    try {
-      // Connect to server AI API route
-      const response = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userRole: currentUser.role,
-          messages: [
-            {
-              role: "user",
-              text: `Analisis masalah perbaikan teknis untuk:\nPerangkat: ${cleanModel}\nGejala kerusakan: ${cleanSymptoms}\n\nBerikan instruksi troubleshooting, kemungkinan penyebab, komponen yang perlu diganti, tingkat kesulitan, dan pro-tips dalam format JSON yang valid. Gunakan kunci properti berikut secara ketat:\n- possibleCauses: array of string\n- diagnosticSteps: array of string\n- recommendedParts: array of string\n- difficultyLevel: string (Easy/Medium/Hard/Expert)\n- proTips: string`,
-            },
-          ],
-        }),
-      });
-
-      const resData = await response.json();
-
-      // Attempt to parse JSON from response.text
-      let parsedJson;
-      try {
-        const textContent = resData.text || "";
-        // Clean markdown blocks if returned
-        const cleanText = textContent
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim();
-        parsedJson = JSON.parse(cleanText);
-      } catch (err) {
-        // Fallback structured generation
-        parsedJson = {
-          possibleCauses: [
-            "Kerusakan pada konektor daya internal atau flex charging",
-            "IC Power Management Unit (PMU) mengalami short-circuit",
-            "Baterai rusak total atau controller BMS terkunci",
-          ],
-          diagnosticSteps: [
-            "Lakukan pengecekan tegangan VBUS (5V) pada konektor input.",
-            "Ukur nilai resistansi pada kapasitor di sekitar IC PMU untuk mencari jalur yang short.",
-            "Coba ganti baterai tester yang terisi daya penuh.",
-          ],
-          recommendedParts: [
-            "Charging Port Flex Cable",
-            "IC Power Management PMU",
-            "Baterai Pengganti Berkualitas OEM",
-          ],
-          difficultyLevel: "Medium",
-          proTips:
-            "Selalu lepaskan konektor baterai utama sebelum melakukan pengukuran resistansi atau solder sirkuit motherboard untuk menghindari hubungan arus pendek tidak sengaja.",
-        };
-      }
-
-      setAiResult(parsedJson);
-    } catch (error) {
-      console.error("Troubleshooter AI Error:", error);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
 
   return (
     <div className="space-y-6 overflow-y-auto max-h-full pr-1 animate-fadeIn pb-12">
@@ -271,157 +184,7 @@ export const KnowledgeBase: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* KOLOM KIRI: DIAGNOSIS ASISTEN AI (Takes up 5 columns on xl) */}
-        <div className="xl:col-span-5 space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
-              <div className="p-2 bg-accent-lighter text-accent rounded-xl">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-tight">
-                  Asisten Troubleshooter AI
-                </h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  AI Spesialis Mikro-Solder & Elektronika
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleAskAI} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  Model Perangkat
-                </label>
-                <input
-                  type="text"
-                  value={deviceModel}
-                  onChange={(e) => setDeviceModel(e.target.value)}
-                  placeholder="Misal: iPhone 11 Pro, ASUS TUF FX506"
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-accent text-slate-800 placeholder-slate-400"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  Gejala / Masalah Kerusakan
-                </label>
-                <textarea
-                  rows={3}
-                  value={symptoms}
-                  onChange={(e) => setSymptoms(e.target.value)}
-                  placeholder="Deskripsikan masalah (Contoh: Tidak bisa ngecas, arus di ammeter cuma 0.05A tidak naik, atau layar kedip-kedip hijau)"
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-accent text-slate-800 placeholder-slate-400 resize-none leading-relaxed"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isAnalyzing}
-                className="w-full py-3 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-accent/10 cursor-pointer disabled:opacity-75"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Menganalisis masalah...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    Analisis Masalah via AI
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* AI DIAGNOSIS RESULT DISPLAY */}
-            {aiResult && (
-              <div className="mt-6 border-t border-slate-100 pt-5 space-y-4 animate-fadeIn">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4 text-emerald-500" /> Hasil
-                    Rekomendasi AI
-                  </span>
-                  <span
-                    className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-full ${
-                      aiResult.difficultyLevel === "Expert"
-                        ? "bg-rose-100 text-rose-700 border border-rose-200"
-                        : aiResult.difficultyLevel === "Hard"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-emerald-100 text-emerald-700"
-                    }`}
-                  >
-                    Tingkat Kesulitan: {aiResult.difficultyLevel}
-                  </span>
-                </div>
-
-                <div className="space-y-3.5">
-                  <div className="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <h5 className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />{" "}
-                      Kemungkinan Penyebab Utama
-                    </h5>
-                    <ul className="list-disc pl-4 text-xs text-slate-700 space-y-1 pt-1">
-                      {aiResult.possibleCauses.map((cause, idx) => (
-                        <li key={idx} className="leading-relaxed">
-                          {cause}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <h5 className="text-[10px] font-black uppercase text-indigo-500 tracking-wider flex items-center gap-1">
-                      <Wrench className="w-3.5 h-3.5" /> Langkah-Langkah
-                      Pengukuran & Diagnosis
-                    </h5>
-                    <ol className="list-decimal pl-4 text-xs text-slate-700 space-y-1 pt-1">
-                      {aiResult.diagnosticSteps.map((step, idx) => (
-                        <li key={idx} className="leading-relaxed">
-                          {step}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-
-                  <div className="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <h5 className="text-[10px] font-black uppercase text-emerald-600 tracking-wider flex items-center gap-1">
-                      <Cpu className="w-3.5 h-3.5" /> Estimasi Komponen yang
-                      Dibutuhkan
-                    </h5>
-                    <ul className="list-disc pl-4 text-xs text-slate-700 space-y-1 pt-1">
-                      {aiResult.recommendedParts.map((part, idx) => (
-                        <li key={idx} className="leading-relaxed">
-                          {part}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {aiResult.proTips && (
-                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 text-amber-900 text-xs flex items-start gap-2">
-                      <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                      <div className="space-y-0.5">
-                        <span className="font-bold block text-[10px] uppercase tracking-wider text-amber-800">
-                          Pro-Tip Keamanan
-                        </span>
-                        <p className="leading-relaxed text-[11px] text-amber-700">
-                          {aiResult.proTips}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* KOLOM KANAN: PERPUSTAKAAN SKEMA & DIAGRAM BOARDVIEW (Takes up 7 columns on xl) */}
-        <div className="xl:col-span-7 space-y-6">
+      <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
               <div>
@@ -572,7 +335,6 @@ export const KnowledgeBase: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
         </div>
       </div>
     </div>

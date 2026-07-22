@@ -659,55 +659,15 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
       "LOW",
     );
 
-    try {
-      // Format messages history for the server API call to prevent frontend key exposure
-      const formattedHistory = updatedMessages.map((m) => ({
-        role: m.role,
-        text: m.text,
-      }));
-
-      // Append technical system guidance to keep responses contextual to this repair shop
-      const systemContext = `Anda adalah teknisi senior dan CS di gerai '${activeTenant?.name || "toko kami"}'.
-      Pelanggan bernama ${activeCustomer ? activeCustomer.name : "Guest"}.
-      Unit pengerjaan aktif mereka adalah ${selectedChatTopic !== "general" ? selectedChatTopic : "beberapa perangkat elektronik"}.
-      Berikan tanggapan yang ramah, sopan, mendalam, bernada teknis namun mudah dimengerti dalam Bahasa Indonesia.`;
-
-      const response = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "user", text: systemContext },
-            ...formattedHistory,
-          ],
-          userRole: "CUSTOMER",
-        }),
-      });
-
-      if (!response.ok) throw new Error("Gagal memperoleh respon server.");
-      const data = await response.json();
-
       const replyMsg = {
         id: "ai-" + Date.now().toString(36),
         sender: selectedChatTopic === "general" ? "Support CS" : "Teknisi Lab",
         role: "model" as const,
-        text: data.text,
-        timestamp: new Date().toISOString(),
-      };
-
-      setChatMessages((prev) => [...prev, replyMsg]);
-    } catch (err: any) {
-      const replyMsg = {
-        id: "ai-error-" + Date.now().toString(36),
-        sender: "Support CS",
-        role: "model" as const,
-        text: "Layanan chat sedang tidak tersedia. Silakan coba lagi beberapa saat atau hubungi outlet langsung.",
+        text: "Terima kasih telah menghubungi kami. Pesan Anda telah tercatat. Tim kami akan merespon segera melalui WhatsApp atau telepon. Saat ini layanan chat sedang dalam pemeliharaan.",
         timestamp: new Date().toISOString(),
       };
       setChatMessages((prev) => [...prev, replyMsg]);
-    } finally {
       setIsChatLoading(false);
-    }
   };
 
   // Helper values for active/expired warranties count

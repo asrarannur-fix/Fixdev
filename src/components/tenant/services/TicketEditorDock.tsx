@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Laptop, User, Wrench, Clock, DollarSign, CheckCircle2,
-  AlertCircle, Bot, Shield, MessageSquare, Package, X,
+  AlertCircle, Shield, MessageSquare, Package, X,
   Plus, Zap, ChevronRight, Image as ImageIcon, Hash
 } from 'lucide-react';
 import { ServiceStatus } from '../../../types';
@@ -107,11 +107,10 @@ const selectCls =
   'focus:border-accent transition-all cursor-pointer';
 
 /* ── main component ──────────────────────────────────────────── */
-type TabKey = 'info' | 'ai' | 'edit' | 'qc' | 'history';
+type TabKey = 'info' | 'edit' | 'qc' | 'history';
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'info',    label: 'Detail',      icon: <Laptop className="w-3.5 h-3.5" /> },
-  { key: 'ai',      label: 'AI Diagnosa', icon: <Bot className="w-3.5 h-3.5" /> },
   { key: 'edit',    label: 'Perbaikan',   icon: <Wrench className="w-3.5 h-3.5" /> },
   { key: 'qc',      label: 'QC',          icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
   { key: 'history', label: 'Riwayat',     icon: <Clock className="w-3.5 h-3.5" /> },
@@ -125,8 +124,7 @@ export const TicketEditorDock: React.FC<{
   onDeleteRepair?: (id: string) => Promise<void>;
   technicians?: any[];
   branches?: any[];
-  apiFetch?: (url: string, init?: RequestInit) => Promise<Response>;
-}> = ({ repairs = [], selectedTicketIdForEdit, setSelectedTicketIdForEdit, onModifyRepair, onDeleteRepair, technicians = [], apiFetch }) => {
+}> = ({ repairs = [], selectedTicketIdForEdit, setSelectedTicketIdForEdit, onModifyRepair, onDeleteRepair, technicians = [] }) => {
   const ticket = repairs.find(r => r.id === selectedTicketIdForEdit);
 
   const [tab,       setTab      ] = useState<TabKey>('info');
@@ -139,8 +137,6 @@ export const TicketEditorDock: React.FC<{
   const [msg,       setMsg      ] = useState<{ ok: boolean; text: string } | null>(null);
   const [showQC,    setShowQC   ] = useState(false);
   const [qcItems,   setQcItems  ] = useState<any[]>(ticket?.qcChecklist ?? []);
-  const [aiResult,  setAiResult ] = useState<any[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
   const [parts,     setParts    ] = useState<{ name: string; qty: number; cost: number }[]>(ticket?.spareParts ?? []);
   const [newPart,   setNewPart  ] = useState({ name: '', qty: 1, cost: 0 });
   const [waSent,    setWaSent   ] = useState(false);
@@ -155,7 +151,6 @@ export const TicketEditorDock: React.FC<{
     setWDays(ticket.warrantyDays?.toString() ?? '30');
     setQcItems(ticket.qcChecklist ?? []);
     setParts(ticket.spareParts ?? []);
-    setAiResult([]);
     setWaSent(false);
     setMsg(null);
   }, [selectedTicketIdForEdit]);
@@ -177,20 +172,6 @@ export const TicketEditorDock: React.FC<{
   const qcRate    = qcItems.length ? Math.round((qcPass / qcItems.length) * 100) : 0;
   const priority  = PRIORITY_CONFIG[ticket.priority ?? 'NORMAL'] ?? PRIORITY_CONFIG.NORMAL;
   const hasWarranty = ticket.warrantyExpiry && new Date(ticket.warrantyExpiry) > new Date();
-
-  const handleRunAI = async () => {
-    if (!apiFetch) { setAiResult([]); return; }
-    setAiLoading(true);
-    try {
-      const response = await apiFetch("/api/ai/diagnose", { method: "POST", body: JSON.stringify({ complaint: ticket.customerComplaints ?? "", device: ticket.deviceBrandModel ?? "" }) });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || `AI HTTP ${response.status}`);
-      setAiResult(body.diagnoses || body.result || []);
-    } catch (error: any) {
-      setAiResult([]);
-      setMsg({ ok: false, text: error?.message || "AI diagnosis gagal." });
-    } finally { setAiLoading(false); }
-  };
 
   const addPart = () => {
     if (!newPart.name.trim()) return;
@@ -474,93 +455,6 @@ export const TicketEditorDock: React.FC<{
             <Wrench className="w-4 h-4" />
             Update Status & Perbaikan
           </button>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════
-          TAB: AI Diagnosa
-      ══════════════════════════════════════════════════════ */}
-      {tab === 'ai' && (
-        <div className="space-y-4">
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20 border border-violet-200 dark:border-violet-800/40 p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-11 h-11 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-600/25">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-900 dark:text-white">AI Service Assistant</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Analisis kerusakan otomatis dari keluhan & model laptop</p>
-              </div>
-            </div>
-
-            <div className="bg-white/70 dark:bg-slate-800/40 backdrop-blur-sm rounded-xl p-3.5 mb-4 border border-violet-100 dark:border-violet-900/30">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Input Analisis</p>
-              <div className="space-y-1.5 text-xs">
-                <p><span className="text-slate-500">Unit: </span><span className="font-bold text-slate-900 dark:text-white">{ticket.deviceBrandModel ?? '–'}</span></p>
-                <p><span className="text-slate-500">Keluhan: </span><span className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-2">{ticket.customerComplaints ?? '–'}</span></p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleRunAI}
-              disabled={aiLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 hover:bg-violet-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl cursor-pointer transition-all shadow-lg shadow-violet-600/20"
-            >
-              {aiLoading ? (
-                <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Menganalisis...</>
-              ) : (
-                <><Bot className="w-4 h-4" /> {aiResult.length ? 'Ulangi AI Diagnosis' : 'Jalankan AI Diagnosis'}</>
-              )}
-            </button>
-          </div>
-
-          {aiResult.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hasil Diagnosa</h4>
-                <span className="text-[10px] bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 px-2 py-0.5 rounded-full font-bold">{aiResult.length} temuan</span>
-              </div>
-
-              {aiResult.map((d, i) => (
-                <div key={i} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0 mt-0.5 ${i === 0 ? 'bg-rose-500' : i === 1 ? 'bg-amber-500' : 'bg-blue-500'}`}>
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <p className="font-bold text-sm text-slate-900 dark:text-white">{d.cause}</p>
-                        <span className={`text-xs font-black px-2 py-0.5 rounded-lg shrink-0 ${d.pct >= 70 ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'}`}>
-                          {d.pct}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-3">
-                        <div
-                          className={`h-full rounded-full ${i === 0 ? 'bg-rose-500' : i === 1 ? 'bg-amber-500' : 'bg-blue-500'}`}
-                          style={{ width: `${d.pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl px-3.5 py-2.5 leading-relaxed mb-3">
-                    {d.action}
-                  </p>
-                  {d.parts.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {d.parts.map((p: string, pi: number) => (
-                        <span key={pi} className="text-[10px] font-semibold bg-accent-lighter dark:bg-indigo-950/30 text-accent dark:text-accent px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
-                          {p}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-              <p className="text-[10px] text-slate-400 text-center italic pt-1">
-                * Hasil AI bersifat estimasi. Wajib dikonfirmasi teknisi sebelum tindakan.
-              </p>
-            </div>
-          )}
         </div>
       )}
 
