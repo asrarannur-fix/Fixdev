@@ -32,3 +32,8 @@ Cek regresi visual sebelum rilis. Fokus pada konsistensi UI lintas modul.
 - Paket dan harga dimuat dinamis dari endpoint `/api/billing/plans`; tidak ada hardcode paket di komponen.
 - Ditambahkan bagian testimoni pengguna bergaya lokal Makassar tanpa gambar atau aset eksternal.
 - File terkait: `src/components/LandingPage.tsx`.
+
+## Catatan Perbaikan Responsif
+- Tinggi panel tetap disesuaikan untuk viewport kecil, modal memakai batas viewport aman dan overflow vertikal, serta Kanban B2B memakai kolom geser dengan snap pada mobile.
+- Tabel akuntansi, matriks hak akses, dan transfer inventaris kini dapat digeser horizontal; grafik, panel teknisi, GPS, portal pelanggan, dan target sentuh disesuaikan untuk layar kecil.
+- File terkait: `src/components/B2BPipeline.tsx`, `src/components/CustomerPortal.tsx`, `src/components/TechnicianOverview.tsx`, `src/components/FieldServiceGps.tsx`, `src/components/superadmin/RolePermissionMatrix.tsx`, `src/components/tenant/accounting/ChartOfAccounts.tsx`, `src/components/tenant/accounting/FinancialStatements.tsx`, `src/components/tenant/InventoryTransferPanel.tsx`, dan `src/components/tenant/inventory/TransferPanel.tsx`.

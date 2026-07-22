@@ -1055,7 +1055,7 @@ export const MarketplaceHub: React.FC = () => {
 
         <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800/60">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-850 text-slate-400 text-[10px] font-mono uppercase">
+            <thead className="bg-slate-50 dark:bg-slate-900 text-slate-400 text-[10px] font-mono uppercase">
               <tr>
                 <th className="px-4 py-3">No Invoice</th>
                 <th className="px-4 py-3">Marketplace</th>
@@ -1077,7 +1077,7 @@ export const MarketplaceHub: React.FC = () => {
                 return (
                   <tr
                     key={err.id}
-                    className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20"
+                    className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
                   >
                     <td className="px-4 py-3.5 font-bold text-slate-700 dark:text-slate-300">
                       {err.invoiceNo}
@@ -1617,7 +1617,7 @@ export const MarketplaceHub: React.FC = () => {
                       {ret.sku}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-center font-mono font-bold text-slate-700 dark:text-zinc-350">
+                  <td className="px-4 py-3.5 text-center font-mono font-bold text-slate-700 dark:text-zinc-400">
                     {ret.qty} pcs
                   </td>
                   <td className="px-4 py-3.5 text-slate-500 dark:text-slate-400 italic max-w-xs truncate">

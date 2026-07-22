@@ -229,7 +229,7 @@ export const InfrastructureConfigModal: React.FC<
               <select
                 value={configStorageMode}
                 onChange={(e) => setConfigStorageMode(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none text-xs bg-slate-50/50 dark:bg-zinc-950 text-slate-700 dark:text-slate-350 cursor-pointer font-medium"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none text-xs bg-slate-50/50 dark:bg-zinc-950 text-slate-700 dark:text-slate-400 cursor-pointer font-medium"
               >
                 <option value="SYSTEM">
                   System Managed Storage (Bawaan Platform SaaS)
@@ -245,9 +245,9 @@ export const InfrastructureConfigModal: React.FC<
             </div>
 
             {configStorageMode !== "SYSTEM" && (
-              <div className="space-y-2.5 p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-xl">
+              <div className="space-y-2.5 p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-xl">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase mb-1">
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
                     Bucket Name
                   </label>
                   <input
@@ -356,7 +356,7 @@ export const InfrastructureConfigModal: React.FC<
             <h4 className="font-bold text-[11px] uppercase text-blue-700 dark:text-blue-400 tracking-wider font-mono">
               3. Manajemen Fitur & Modul Aktif
             </h4>
-            <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-xl p-3.5 space-y-3">
+            <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-xl p-3.5 space-y-3">
               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal font-medium">
                 Pilih fitur/modul yang boleh diakses oleh tenant ini. Modul yang
                 tidak dicentang akan otomatis terkunci dengan dialog upgrade di
@@ -422,7 +422,7 @@ export const InfrastructureConfigModal: React.FC<
                       className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
                         isChecked
                           ? "bg-blue-50/40 border-blue-200 dark:bg-blue-950/10 dark:border-blue-900/40"
-                          : "bg-white border-slate-200 dark:bg-zinc-900 dark:border-zinc-800/60 hover:bg-slate-50 dark:hover:bg-zinc-850"
+                          : "bg-white border-slate-200 dark:bg-zinc-900 dark:border-zinc-800/60 hover:bg-slate-50 dark:hover:bg-zinc-900"
                       }`}
                     >
                       <input

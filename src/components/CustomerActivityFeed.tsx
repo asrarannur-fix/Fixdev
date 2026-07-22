@@ -361,7 +361,7 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
       <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
         <button
           onClick={onBack}
-          className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-150 cursor-pointer text-slate-500 hover:text-slate-800"
+          className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-200 cursor-pointer text-slate-500 hover:text-slate-800"
           title="Kembali ke Daftar Pelanggan"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -584,7 +584,7 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
                       </span>
 
                       {/* Event Details Bubble */}
-                      <div className="bg-slate-50 hover:bg-slate-100/50 border border-slate-200/60 rounded-2xl p-4 transition duration-150 space-y-2">
+                      <div className="bg-slate-50 hover:bg-slate-100/50 border border-slate-200/60 rounded-2xl p-4 transition duration-200 space-y-2">
                         {/* Event header row */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                           <div className="flex items-center gap-2">

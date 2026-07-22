@@ -119,7 +119,7 @@ export const SHADOW = {
 /* ── Transition Tokens ──────────────────────────────── */
 
 export const TRANSITION = {
-  fast: "transition-all duration-150",
+  fast: "transition-all duration-200",
   normal: "transition-all duration-200",
   slow: "transition-all duration-300",
   color: "transition-colors duration-200",

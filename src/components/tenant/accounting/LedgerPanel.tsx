@@ -73,7 +73,7 @@ export const LedgerPanel: React.FC<LedgerPanelProps> = ({ journals, tenantId, ac
               Jenis Transaksi
             </label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setTxType("CASH_IN")} className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 ${ txType === "CASH_IN" ? "bg-emerald-550 border-emerald-500 text-white shadow-sm" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50" }`}>
+              <button type="button" onClick={() => setTxType("CASH_IN")} className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 ${ txType === "CASH_IN" ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50" }`}>
                 ?? Kas Masuk (Pemasukan)
               </button>
               <button type="button" onClick={() => setTxType("CASH_OUT")} className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 ${ txType === "CASH_OUT" ? "bg-rose-600 border-rose-500 text-white shadow-sm" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50" }`}>
@@ -131,7 +131,7 @@ export const LedgerPanel: React.FC<LedgerPanelProps> = ({ journals, tenantId, ac
             </div>
           </div>
 
-          <button type="submit" className={`w-full py-2.5 text-xs font-bold rounded-lg transition-all text-white shadow flex items-center justify-center gap-1.5 cursor-pointer ${ txType === "CASH_IN" ? "bg-slate-900 hover:bg-slate-850" : "bg-slate-900 hover:bg-slate-850" }`}>
+          <button type="submit" className={`w-full py-2.5 text-xs font-bold rounded-lg transition-all text-white shadow flex items-center justify-center gap-1.5 cursor-pointer ${ txType === "CASH_IN" ? "bg-slate-900 hover:bg-slate-900" : "bg-slate-900 hover:bg-slate-900" }`}>
             <Check className="w-4 h-4" /> Simpan Transaksi Ke Kas
           </button>
         </form>

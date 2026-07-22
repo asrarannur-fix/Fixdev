@@ -219,7 +219,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
               <div className="space-y-6 animate-fadeIn">
                 {/* 1. Threshold-Based Proactive Suggestions Banner */}
                 {proactiveSuggestions.length > 0 && (
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-r-xl p-5 shadow-xs space-y-3 dark:from-slate-850 dark:to-slate-800 dark:border-amber-600">
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-r-xl p-5 shadow-xs space-y-3 dark:from-slate-800 dark:to-slate-800 dark:border-amber-600">
                     <div className="flex items-center gap-2">
                       <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 animate-bounce" />
                       <h4 className="font-bold text-xs text-amber-800 dark:text-amber-300 uppercase tracking-wider">
@@ -308,7 +308,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                   {/* Form Builder Section */}
                   <div className="lg:col-span-7 space-y-6">
                     <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden dark:bg-slate-900 dark:border-slate-800">
-                      <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-850 dark:border-slate-800 flex items-center justify-between">
+                      <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-800 flex items-center justify-between">
                         <div>
                           <h3 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                             <Truck className="w-4 h-4 text-accent" />{" "}
@@ -416,9 +416,9 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                 menambahkan.
                               </div>
                             ) : (
-                              <div className="border border-slate-200 rounded-xl overflow-hidden dark:border-slate-800">
-                                <table className="w-full text-left text-xs">
-                                  <thead className="bg-slate-50 dark:bg-slate-850 text-slate-400 font-mono text-[9px] uppercase">
+<div className="border border-slate-200 rounded-xl overflow-x-auto dark:border-slate-800">
+                                 <table className="w-full min-w-[600px] text-left text-xs">
+                                  <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 font-mono text-[9px] uppercase">
                                     <tr>
                                       <th className="px-3 py-2">Nama Barang</th>
                                       <th
@@ -439,7 +439,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                       ></th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+                                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                     {bulkTrfItems.map((item, idx) => {
                                       const activeProd = tenantProducts.find(
                                         (p) => p.id === item.productId,
@@ -536,7 +536,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                             )}
                           </div>
                         ) : (
-                          <div className="bg-slate-50 dark:bg-slate-850 p-6 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-center text-slate-400">
+                          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-center text-slate-400">
                             Pilih Gudang Pengirim terlebih dahulu untuk mulai
                             menambahkan barang & memvalidasi stok real-time.
                           </div>
@@ -634,7 +634,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                       <div className="space-y-3">
                         <label className="block text-[11px] text-slate-500 font-semibold leading-normal">
                           Format:{" "}
-                          <code className="bg-slate-100 dark:bg-slate-850 px-1 py-0.5 rounded font-mono font-bold">
+                          <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono font-bold">
                             [SKU],[Quantity]
                           </code>{" "}
                           <br />
@@ -655,7 +655,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                           onClick={handleParseBulkInput}
                           className={`w-full py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] cursor-pointer transition shadow-xs flex items-center justify-center gap-1.5 ${
                             !selectedTrfFromWarehouse
-                              ? "bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-850 dark:border-slate-800 dark:text-slate-600"
+                              ? "bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:border-slate-800 dark:text-slate-600"
                               : "bg-emerald-600 hover:bg-emerald-700 text-white"
                           }`}
                         >
@@ -664,7 +664,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                         </button>
                       </div>
 
-                      <div className="bg-slate-50 dark:bg-slate-850 border border-slate-150 dark:border-slate-800 rounded-xl p-3.5 space-y-2 text-[10px] text-slate-500">
+                      <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2 text-[10px] text-slate-500">
                         <p className="font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                           Petunjuk Upload:
                         </p>
@@ -691,7 +691,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                 {/* 3. Stepper Progress Visualizer (If active) */}
                 {activeTransfer && (
                   <div className="bg-white border border-slate-200 rounded-xl shadow-xs p-6 space-y-6 dark:bg-slate-900 dark:border-slate-800 animate-slideUp">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4 gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 gap-4">
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-mono font-bold text-xs dark:bg-indigo-950/40 dark:text-indigo-400">
@@ -722,7 +722,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                     {/* Stepper Steps UI */}
                     <div className="relative py-4">
                       {/* Connector Line */}
-                      <div className="absolute top-1/2 left-[5%] right-[5%] h-1 bg-slate-150 -translate-y-1/2 dark:bg-slate-800" />
+                      <div className="absolute top-1/2 left-[5%] right-[5%] h-1 bg-slate-200 -translate-y-1/2 dark:bg-slate-800" />
 
                       {/* Active Progress Connector */}
                       <div
@@ -865,7 +865,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                         <h4 className="font-bold text-slate-700 dark:text-slate-300">
                           Catatan Aktivitas / Audit Trail Pengiriman:
                         </h4>
-                        <div className="border border-slate-100 dark:border-slate-850 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-850/40 space-y-3.5 max-h-[160px] overflow-y-auto">
+                        <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/40 space-y-3.5 max-h-[160px] overflow-y-auto">
                           {activeTransfer.history.map((hist, hIdx) => (
                             <div
                               key={hIdx}
@@ -893,7 +893,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                         <h4 className="font-bold text-slate-700 dark:text-slate-300">
                           Otorisasi Tindakan Logistik (Perbarui Status):
                         </h4>
-                        <div className="border border-slate-100 dark:border-slate-850 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-850/40 space-y-4">
+                        <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/40 space-y-4">
                           <div>
                             <label className="block text-[10px] text-slate-500 font-bold mb-1 uppercase">
                               Catatan Status Baru (Catatan kurir/kondisi barang)
@@ -991,7 +991,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
 
                 {/* 4. Historical Ledger View for Inventory Transfers */}
                 <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden dark:bg-slate-900 dark:border-slate-800">
-                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-850 dark:border-slate-800 flex items-center justify-between">
+                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-800 flex items-center justify-between">
                     <div>
                       <h3 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                         <History className="w-4 h-4 text-accent" /> Buku
@@ -1004,9 +1004,9 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="responsive-table-container max-h-[500px]">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 dark:bg-slate-850 text-slate-400 uppercase text-[9px] font-mono">
+                  <div className="responsive-table-container overflow-x-auto">
+<table className="w-full min-w-[900px] text-left text-xs">
+                       <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 uppercase text-[9px] font-mono">
                         <tr>
                           <th className="px-4 py-3">No. Mutasi</th>
                           <th className="px-4 py-3">Tanggal Pengajuan</th>
@@ -1098,7 +1098,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                     onClick={() => {
                                       setSelectedTrfIdForStepper(t.id);
                                     }}
-                                    className="px-2 py-1 text-[10px] uppercase tracking-wide bg-accent-lighter hover:bg-indigo-100 text-accent font-bold rounded-lg cursor-pointer transition border border-indigo-150 dark:bg-indigo-950/40 dark:text-accent dark:border-indigo-900"
+                                    className="px-2 py-1 text-[10px] uppercase tracking-wide bg-accent-lighter hover:bg-indigo-100 text-accent font-bold rounded-lg cursor-pointer transition border border-indigo-200 dark:bg-indigo-950/40 dark:text-accent dark:border-indigo-900"
                                   >
                                     Lacak / Atur
                                   </button>
@@ -1128,7 +1128,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                 {/* 5. Warehouse Sebaran Breakdown Panel */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden dark:bg-slate-900 dark:border-slate-800">
-                    <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-850 dark:border-slate-800 flex items-center justify-between">
+                    <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-800 flex items-center justify-between">
                       <h3 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                         <Layers className="w-4 h-4 text-emerald-600" />{" "}
                         Distribusi Stok Multi-Cabang Saat Ini
@@ -1147,7 +1147,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                           return (
                             <div
                               key={p.id}
-                              className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-2 dark:bg-slate-850/50 dark:border-slate-800"
+                              className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 dark:bg-slate-800/50 dark:border-slate-800"
                             >
                               <div className="flex justify-between items-start">
                                 <div>
@@ -1162,7 +1162,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                                   Total: {p.stockQty} {p.unit}
                                 </span>
                               </div>
-                              <div className="divide-y divide-slate-150 text-[10px] bg-white rounded-lg p-2 border border-slate-100 space-y-1.5 dark:bg-slate-900 dark:border-slate-800 dark:divide-slate-800">
+                              <div className="divide-y divide-slate-200 text-[10px] bg-white rounded-lg p-2 border border-slate-100 space-y-1.5 dark:bg-slate-900 dark:border-slate-800 dark:divide-slate-800">
                                 {whs.map((wh) => {
                                   const stockInWh =
                                     p.warehouseStock?.[wh.id] || 0;
@@ -1203,7 +1203,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                       & Kebijakan Transfer
                     </h4>
                     <div className="space-y-3.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                      <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                         <p className="font-bold text-slate-700 dark:text-slate-300">
                           1. Alur Siklus Hidup Transaksi (SOP):
                         </p>
@@ -1216,7 +1216,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                           terkonfirmasi, stok cabang penerima bertambah).
                         </p>
                       </div>
-                      <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                         <p className="font-bold text-slate-700 dark:text-slate-300">
                           2. Validasi Ketersediaan Stok Fisik:
                         </p>
@@ -1227,7 +1227,7 @@ export const TransferPanel: React.FC<TransferPanelProps> = ({
                           stok negatif.
                         </p>
                       </div>
-                      <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                         <p className="font-bold text-slate-700 dark:text-slate-300">
                           3. Audit Trail Otomatis:
                         </p>

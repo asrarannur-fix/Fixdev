@@ -35,6 +35,9 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="keyboard-shortcuts-title"
     >
       <div
         className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-md w-full shadow-2xl p-6 relative overflow-hidden"
@@ -44,12 +47,14 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
           <div className="w-10 h-10 rounded-2xl bg-accent-lighter dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center">
             <Keyboard className="w-5 h-5 text-accent dark:text-accent" />
           </div>
-          <h4 className="text-sm font-black text-slate-900 dark:text-white">
+          <h4 id="keyboard-shortcuts-title" className="text-sm font-black text-slate-900 dark:text-white">
             Pintasan Keyboard
           </h4>
           <button
+            type="button"
+            aria-label="Tutup pintasan keyboard"
             onClick={onClose}
-            className="ml-auto p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            className="ml-auto p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <X className="w-4 h-4 text-slate-400" />
           </button>

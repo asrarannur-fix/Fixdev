@@ -85,7 +85,7 @@ export const AttendanceLogPanel: React.FC<any> = (props) => {
                                       {emp.name.charAt(0)}
                                     </div>
                                     <div>
-                                      <p className="font-bold text-slate-850 leading-tight">
+                                      <p className="font-bold text-slate-800 leading-tight">
                                         {emp.name}
                                       </p>
                                       <p className="text-[10px] text-slate-400 mt-0.5">

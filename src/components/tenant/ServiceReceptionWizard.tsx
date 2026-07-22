@@ -357,7 +357,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-150">
+        <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
           <div>
             <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
               Uang Muka / DP (Rp)
@@ -648,7 +648,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             ))}
           </select>
           {autoAssignReason && (
-            <div className="text-[9.5px] text-indigo-800 leading-relaxed bg-white border border-indigo-150 p-2 rounded-lg font-medium shadow-2xs">
+            <div className="text-[9.5px] text-indigo-800 leading-relaxed bg-white border border-indigo-200 p-2 rounded-lg font-medium shadow-2xs">
               {autoAssignReason}
             </div>
           )}
@@ -696,7 +696,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex gap-2 pb-1 border-b border-slate-150">
+          <div className="flex gap-2 pb-1 border-b border-slate-200">
             <button
               type="button"
               onClick={() => {

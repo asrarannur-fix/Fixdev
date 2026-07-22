@@ -499,7 +499,7 @@ export const KnowledgeBase: React.FC = () => {
                         {guide.keyTroubleshoots.map((node, i) => (
                           <span
                             key={i}
-                            className="text-[8.5px] font-semibold bg-white border border-slate-150 text-slate-600 px-2 py-0.5 rounded-md"
+                            className="text-[8.5px] font-semibold bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md"
                           >
                             💡 {node}
                           </span>

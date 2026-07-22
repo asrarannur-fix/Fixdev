@@ -128,7 +128,7 @@ export const AssetManager: React.FC = () => {
           },
           {
             id: "AST-1003",
-            name: "Stasiun Solder Inframerah Jovy RE-7500",
+            name: "Stasiun Solder Inframerah Jovy RE-7000",
             category: "TECH_TOOL",
             serialNo: "JVY-RE7500-291",
             purchaseDate: "2023-03-01",
@@ -864,7 +864,7 @@ export const AssetManager: React.FC = () => {
       </div>
 
       {/* EAM Inner Sub-nav */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-zinc-850 pb-0.5 overflow-x-auto scrollbar-none">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-zinc-900 pb-0.5 overflow-x-auto scrollbar-none">
         <button
           onClick={() => {
             setActiveSubView("DIRECTORY");
@@ -986,7 +986,7 @@ export const AssetManager: React.FC = () => {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-550 text-[10px] font-mono uppercase">
+                  <thead className="bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-500 text-[10px] font-mono uppercase">
                     <tr>
                       <th className="px-3 py-2">ID & Nama Aset</th>
                       <th className="px-3 py-2">Kategori</th>
@@ -1142,7 +1142,7 @@ export const AssetManager: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-550 uppercase mb-1">
+                      <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                         Nilai Sisa (Residual)
                       </label>
                       <input
@@ -1205,7 +1205,7 @@ export const AssetManager: React.FC = () => {
                   className="mt-3 space-y-3 text-xs"
                 >
                   <div>
-                    <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-550 uppercase mb-1">
+                    <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                       Pilih Unit Aset Standby
                     </label>
                     <select
@@ -1226,7 +1226,7 @@ export const AssetManager: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-550 uppercase mb-1">
+                    <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                       Pilih Staff Penanggung Jawab
                     </label>
                     <select
@@ -1256,7 +1256,7 @@ export const AssetManager: React.FC = () => {
                   </div>
                   <button
                     type="submit"
-                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-850 dark:hover:bg-slate-800 text-white dark:text-zinc-200 font-bold rounded-xl shadow transition-all cursor-pointer"
+                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 text-white dark:text-zinc-200 font-bold rounded-xl shadow transition-all cursor-pointer"
                   >
                     Serahkan Tanggung Jawab Aset
                   </button>
@@ -1280,7 +1280,7 @@ export const AssetManager: React.FC = () => {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-550 text-[10px] font-mono uppercase">
+                  <thead className="bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-500 text-[10px] font-mono uppercase">
                     <tr>
                       <th className="px-3 py-2">ID Servis</th>
                       <th className="px-3 py-2">Aset / Unit</th>
@@ -1407,7 +1407,7 @@ export const AssetManager: React.FC = () => {
                 className="mt-3 space-y-3"
               >
                 <div>
-                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-550 uppercase mb-1">
+                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                     Pilih Peralatan / Aset
                   </label>
                   <select
@@ -1423,7 +1423,7 @@ export const AssetManager: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-550 uppercase mb-1">
+                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                     Jenis Perawatan
                   </label>
                   <select
@@ -1443,7 +1443,7 @@ export const AssetManager: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-550 uppercase mb-1">
+                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                     Estimasi Biaya (Rp)
                   </label>
                   <input
@@ -1455,7 +1455,7 @@ export const AssetManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-550 uppercase mb-1">
+                  <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                     Tanggal Rencana Servis
                   </label>
                   <input
@@ -1808,7 +1808,7 @@ export const AssetManager: React.FC = () => {
                   <span className="text-[9px] font-mono text-blue-500 dark:text-blue-400 uppercase font-bold">
                     Laptops & PCs
                   </span>
-                  <p className="text-base font-black text-slate-800 dark:text-zinc-250 mt-1">
+                  <p className="text-base font-black text-slate-800 dark:text-zinc-200 mt-1">
                     2 Unit
                   </p>
                   <span className="text-[9px] text-slate-400 dark:text-slate-500">
@@ -1819,7 +1819,7 @@ export const AssetManager: React.FC = () => {
                   <span className="text-[9px] font-mono text-amber-500 dark:text-amber-400 uppercase font-bold">
                     Printers POS
                   </span>
-                  <p className="text-base font-black text-slate-800 dark:text-zinc-250 mt-1">
+                  <p className="text-base font-black text-slate-800 dark:text-zinc-200 mt-1">
                     1 Unit
                   </p>
                   <span className="text-[9px] text-slate-400 dark:text-slate-500">
@@ -1830,7 +1830,7 @@ export const AssetManager: React.FC = () => {
                   <span className="text-[9px] font-mono text-purple-500 dark:text-purple-400 uppercase font-bold">
                     Toolkit Repair
                   </span>
-                  <p className="text-base font-black text-slate-800 dark:text-zinc-250 mt-1">
+                  <p className="text-base font-black text-slate-800 dark:text-zinc-200 mt-1">
                     1 Unit
                   </p>
                   <span className="text-[9px] text-slate-400 dark:text-slate-500">
@@ -1841,7 +1841,7 @@ export const AssetManager: React.FC = () => {
                   <span className="text-[9px] font-mono text-rose-500 dark:text-rose-400 uppercase font-bold">
                     Vehicles
                   </span>
-                  <p className="text-base font-black text-slate-800 dark:text-zinc-250 mt-1">
+                  <p className="text-base font-black text-slate-800 dark:text-zinc-200 mt-1">
                     1 Unit
                   </p>
                   <span className="text-[9px] text-slate-400 dark:text-slate-500">
@@ -1996,7 +1996,7 @@ export const AssetManager: React.FC = () => {
                         <p className="font-bold text-slate-200 dark:text-zinc-100 font-mono">
                           ID Personel: {scannedAsset.custodianId}
                         </p>
-                        <p className="text-slate-400 dark:text-slate-550">
+                        <p className="text-slate-400 dark:text-slate-500">
                           Nama:{" "}
                           {employees.find(
                             (e) => e.id === scannedAsset.custodianId,
@@ -2007,7 +2007,7 @@ export const AssetManager: React.FC = () => {
                             l.assetId === scannedAsset.id &&
                             l.returnDate === null,
                         ) && (
-                          <p className="text-[9px] text-slate-500 dark:text-slate-550 italic mt-1">
+                          <p className="text-[9px] text-slate-500 dark:text-slate-500 italic mt-1">
                             Catatan: "
                             {
                               assignmentLogs.find(
@@ -2021,7 +2021,7 @@ export const AssetManager: React.FC = () => {
                         )}
                       </div>
                     ) : (
-                      <p className="text-slate-400 dark:text-slate-550 text-[10px] italic">
+                      <p className="text-slate-400 dark:text-slate-500 text-[10px] italic">
                         Standby di Gudang (Tidak ditugaskan ke personel)
                       </p>
                     )}
@@ -2053,7 +2053,7 @@ export const AssetManager: React.FC = () => {
                                 <span className="text-blue-400 dark:text-blue-300 font-bold">
                                   {record.id} ({record.type})
                                 </span>
-                                <span className="text-slate-500 dark:text-slate-550">
+                                <span className="text-slate-500 dark:text-slate-500">
                                   {record.maintenanceDate}
                                 </span>
                               </div>
@@ -2061,7 +2061,7 @@ export const AssetManager: React.FC = () => {
                                 "{record.notes}"
                               </p>
                               <div className="flex justify-between items-center text-[9px]">
-                                <span className="text-slate-400 dark:text-slate-550 font-mono">
+                                <span className="text-slate-400 dark:text-slate-500 font-mono">
                                   Biaya: Rp{" "}
                                   {(record.cost ?? 0).toLocaleString()}
                                 </span>
@@ -2078,7 +2078,7 @@ export const AssetManager: React.FC = () => {
                             </div>
                           ))
                       ) : (
-                        <p className="text-slate-400 dark:text-slate-550 text-[10px] italic font-mono">
+                        <p className="text-slate-400 dark:text-slate-500 text-[10px] italic font-mono">
                           Belum ada histori pemeliharaan terdaftar.
                         </p>
                       )}

@@ -77,7 +77,7 @@ export interface ButtonProps {
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "primary", size = "md", disabled = false, className = "", type = "button" }) => {
-  const base = "inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer select-none";
+  const base = "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950";
   const sizes = { sm: "px-3 py-1.5 text-[10px]", md: "px-4 py-2", lg: "px-5 py-2.5" };
   const styles = {
     primary: "bg-accent hover:bg-accent-hover text-white shadow-sm hover:shadow-md",
@@ -86,7 +86,7 @@ export const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "pr
     ghost: "text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800",
   }[variant];
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${sizes[size]} ${styles} ${disabled ? "opacity-40 cursor-not-allowed" : ""} ${className}`}>
+    <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${sizes[size]} ${styles} ${disabled ? "opacity-60 cursor-not-allowed" : ""} ${className}`}>
       {children}
     </button>
   );

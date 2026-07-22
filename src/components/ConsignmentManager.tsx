@@ -108,7 +108,7 @@ export const ConsignmentManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6" id="consignment-pane">
+    <div className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_tr:hover]:bg-zinc-900" id="consignment-pane">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
         <div>
           <h2 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
@@ -246,9 +246,9 @@ export const ConsignmentManager: React.FC = () => {
       {/* Add Consignment Modal */}
       {showAddModal &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xl w-full max-w-md animate-scaleIn">
-              <h3 className="text-xs font-bold uppercase text-slate-800 tracking-wider mb-4 flex items-center gap-2">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="consignment-modal-title">
+            <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl p-6 shadow-xl w-full max-w-md animate-scaleIn dark:text-zinc-300 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_input]:border-zinc-800 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_select]:border-zinc-800 dark:[&_.hover\:bg-slate-100:hover]:bg-zinc-800">
+              <h3 id="consignment-modal-title" className="text-xs font-bold uppercase text-slate-800 tracking-wider mb-4 flex items-center gap-2">
                 <Truck className="w-4 h-4 text-amber-500" /> Daftarkan Barang
                 Titip Jual Baru
               </h3>

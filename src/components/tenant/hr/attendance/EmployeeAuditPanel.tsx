@@ -146,10 +146,10 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h4 className="font-extrabold text-base text-slate-850 dark:text-zinc-200">
+                              <h4 className="font-extrabold text-base text-slate-800 dark:text-zinc-200">
                                 {targetEmp.name}
                               </h4>
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 {targetEmp.contractStatus}
                               </span>
                             </div>
@@ -198,7 +198,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                             onClick={() => setEmployeeAuditTab(t.id as any)}
                             className={`px-4 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer ${
                               employeeAuditTab === t.id
-                                ? "border-accent text-accent dark:text-accent border-indigo-550"
+                                ? "border-accent text-accent dark:text-accent border-indigo-500"
                                 : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
                             }`}
                           >
@@ -239,7 +239,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
 
                             {/* Stats grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-150 dark:border-zinc-850 rounded-2xl">
+                              <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-2xl">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                   Hadir (On-Time)
                                 </p>
@@ -290,7 +290,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                             </div>
 
                             {/* KPI Metrics Breakdown */}
-                            <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-5 border border-slate-150 dark:border-zinc-850 space-y-4">
+                            <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-5 border border-slate-200 dark:border-zinc-900 space-y-4">
                               <h5 className="font-extrabold text-xs text-slate-800 dark:text-zinc-300 uppercase tracking-wider">
                                 Rincian KPI Disiplin & Produktivitas
                               </h5>
@@ -398,9 +398,9 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                               <h5 className="font-extrabold text-xs text-slate-800 dark:text-zinc-300 uppercase tracking-wider">
                                 Histori Kasbon & Pinjaman Staff
                               </h5>
-                              <div className="bg-white dark:bg-zinc-950 border border-slate-150 dark:border-zinc-850 rounded-2xl overflow-hidden shadow-xs">
+                              <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-xs">
                                 <table className="w-full text-left text-xs">
-                                  <thead className="bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-slate-500 font-mono text-[10px] uppercase border-b border-slate-100 dark:border-zinc-850">
+                                  <thead className="bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-slate-500 font-mono text-[10px] uppercase border-b border-slate-100 dark:border-zinc-900">
                                     <tr>
                                       <th className="px-4 py-3">
                                         Tanggal Pengajuan
@@ -441,7 +441,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                           <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-medium">
                                             {ca.reason}
                                           </td>
-                                          <td className="px-4 py-3 text-right font-mono font-bold text-slate-850 dark:text-zinc-200">
+                                          <td className="px-4 py-3 text-right font-mono font-bold text-slate-800 dark:text-zinc-200">
                                             Rp {ca.amount.toLocaleString()}
                                           </td>
                                           <td className="px-4 py-3">
@@ -493,9 +493,9 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                 <h5 className="font-extrabold text-xs text-slate-800 dark:text-zinc-300 uppercase tracking-wider">
                                   Histori Komisi Jasa Servis Teknisi
                                 </h5>
-                                <div className="bg-white dark:bg-zinc-950 border border-slate-150 dark:border-zinc-850 rounded-2xl overflow-hidden shadow-xs">
+                                <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-xs">
                                   <table className="w-full text-left text-xs">
-                                    <thead className="bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-slate-500 font-mono text-[10px] uppercase border-b border-slate-100 dark:border-zinc-850">
+                                    <thead className="bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-slate-500 font-mono text-[10px] uppercase border-b border-slate-100 dark:border-zinc-900">
                                       <tr>
                                         <th className="px-4 py-3">ID Tiket</th>
                                         <th className="px-4 py-3">
@@ -581,7 +581,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                   .map((h, i) => (
                                     <div
                                       key={i}
-                                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-slate-100 dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/40 gap-3 text-xs"
+                                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-slate-100 dark:border-zinc-900 bg-slate-50/50 dark:bg-zinc-950/40 gap-3 text-xs"
                                     >
                                       <div className="flex items-center gap-2.5">
                                         <span className="font-mono font-bold text-slate-800 dark:text-zinc-200">
@@ -610,7 +610,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                             {h.checkIn}
                                           </strong>
                                         </span>
-                                        <span className="text-slate-300 dark:text-zinc-850">
+                                        <span className="text-slate-300 dark:text-zinc-900">
                                           |
                                         </span>
                                         <span>
@@ -621,7 +621,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                         </span>
                                         {h.workHours !== undefined && (
                                           <>
-                                            <span className="text-slate-300 dark:text-zinc-850">
+                                            <span className="text-slate-300 dark:text-zinc-900">
                                               |
                                             </span>
                                             <span>
@@ -634,7 +634,7 @@ export const EmployeeAuditPanel: React.FC<any> = ({ employees, services, detailH
                                         )}
                                         {h.clockInDistance !== undefined && (
                                           <>
-                                            <span className="text-slate-300 dark:text-zinc-850">
+                                            <span className="text-slate-300 dark:text-zinc-900">
                                               |
                                             </span>
                                             <span

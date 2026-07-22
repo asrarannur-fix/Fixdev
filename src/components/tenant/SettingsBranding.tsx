@@ -70,7 +70,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
     showToast("Unggah logo ke storage tenant, lalu masukkan URL HTTPS hasil unggahan.", "error");
   };
    return (
-     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn">
+     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_.hover\:bg-slate-50:hover]:bg-zinc-900">
     {/* LEFT COLUMN: Config Panels */}
     <div className="xl:col-span-6 space-y-6">
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -322,7 +322,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
 
         {/* SANDBOX CONTAINER */}
         <div
-          className="bg-slate-850 rounded-xl border border-slate-800 p-6 min-h-[340px] flex items-center justify-center"
+          className="bg-slate-900 rounded-xl border border-slate-800 p-6 min-h-[340px] flex items-center justify-center"
           style={{
             fontFamily:
               branding.fontFamily === "grotesk"
@@ -476,7 +476,7 @@ export const SettingsBranding: React.FC<any> = (props) => {
                 </table>
               </div>
 
-              <div className="flex justify-between items-center pt-2 text-xs border-t border-slate-150">
+              <div className="flex justify-between items-center pt-2 text-xs border-t border-slate-200">
                 <span className="text-[8px] italic text-slate-400">
                   {branding.slogan}
                 </span>

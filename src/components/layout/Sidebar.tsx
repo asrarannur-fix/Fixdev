@@ -838,7 +838,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
               <button
                 onClick={() => setLockedFeatureInfo(null)}
-                className="w-full py-2.5 px-4 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700/80 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-2xl transition-all duration-150 text-center cursor-pointer border border-transparent dark:border-zinc-800/40"
+                className="w-full py-2.5 px-4 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700/80 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-2xl transition-all duration-200 text-center cursor-pointer border border-transparent dark:border-zinc-800/40"
               >
                 Nanti Saja
               </button>

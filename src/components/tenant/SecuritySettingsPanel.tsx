@@ -87,7 +87,7 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
   };
 
   return (
-    <div className="space-y-6" id="security-settings-pane">
+    <div className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_.hover\:bg-slate-50:hover]:bg-zinc-900" id="security-settings-pane">
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
         <h3 className="font-bold text-xs uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
           <Lock className="w-4 h-4 text-red-500" /> Kebijakan Sandi

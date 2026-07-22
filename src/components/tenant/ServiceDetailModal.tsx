@@ -123,7 +123,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   // Let's create an elegant tabs selector inside the modal
 
     return createPortal(
-        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4" onClick={() => setViewingServiceTicketId(null)}>
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4" onClick={() => setViewingServiceTicketId(null)} role="dialog" aria-modal="true" aria-labelledby="service-detail-title">
           <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -133,7 +133,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 </span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-sm text-slate-800">
+                    <h3 id="service-detail-title" className="font-bold text-sm text-slate-800">
                       Manajemen Perbaikan & Servis
                     </h3>
                     <span className="font-mono text-xs font-bold text-accent">
@@ -173,7 +173,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       onClick={() =>
                         setShowWarrantyPrintout(ticket.id)
                       }
-                      className="px-2.5 py-1.5 bg-accent-lighter border border-indigo-100 hover:bg-indigo-150 text-accent rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
+                      className="px-2.5 py-1.5 bg-accent-lighter border border-indigo-100 hover:bg-indigo-200 text-accent rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
                     >
                       <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />{" "}
                       Cetak Kartu Garansi
@@ -331,7 +331,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       </div>
                     )}
                     {ticket.downPayment && ticket.downPayment > 0 ? (
-                      <div className="mt-1 bg-emerald-50 border border-emerald-150 text-emerald-800 text-[10.5px] font-bold px-2 py-1 rounded-lg flex items-center justify-between">
+                      <div className="mt-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10.5px] font-bold px-2 py-1 rounded-lg flex items-center justify-between">
                         <span>💵 UANG MUKA (DP):</span>
                         <span>
                           Rp {ticket.downPayment.toLocaleString()}
@@ -1182,7 +1182,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           </p>
                         </div>
                       </div>
-                      <span className="text-[9px] font-mono bg-accent-lighter text-accent px-2.5 py-1 rounded-full font-bold border border-indigo-150">
+                      <span className="text-[9px] font-mono bg-accent-lighter text-accent px-2.5 py-1 rounded-full font-bold border border-indigo-200">
                         Teknisi:{" "}
                         {technician?.name || "Belum Ditugaskan"}
                       </span>
@@ -1415,7 +1415,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                       className={`flex items-center justify-between text-xs p-2 rounded-lg border cursor-pointer select-none transition-all duration-200 ${
                                         item.passed
                                           ? "bg-emerald-50/40 border-emerald-100 text-emerald-800 font-medium"
-                                          : "bg-rose-50/30 border-rose-150 text-rose-800"
+                                          : "bg-rose-50/30 border-rose-200 text-rose-800"
                                       }`}
                                     >
                                       <div className="flex items-center gap-2 truncate">
@@ -2188,7 +2188,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                             )
                                             ?.click();
                                         }}
-                                        className="border-2 border-dashed border-slate-200 hover:border-accent/60 hover:bg-accent-lighter/30 p-4 rounded-lg text-center cursor-pointer transition-all duration-150"
+                                        className="border-2 border-dashed border-slate-200 hover:border-accent/60 hover:bg-accent-lighter/30 p-4 rounded-lg text-center cursor-pointer transition-all duration-200"
                                       >
                                         <input
                                           type="file"
@@ -2369,7 +2369,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     !isHandoverValid) ||
                                   !isChecklistComplete
                                 }
-                                className={`w-full font-bold text-xs py-2.5 rounded-lg text-center transition-all duration-150 ${
+                                className={`w-full font-bold text-xs py-2.5 rounded-lg text-center transition-all duration-200 ${
                                   (isRefOrProofRequired &&
                                     !isHandoverValid) ||
                                   !isChecklistComplete

@@ -255,7 +255,7 @@ Jurnal double-entry telah tercatat.`,
 
   return (
     <>
-      <div className="space-y-6" id="hr-pane">
+      <div className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_tr:hover]:bg-zinc-900" id="hr-pane">
         <HRPayrollPanel generatePayroll={generatePayroll} />
 
                 <HRKasbonPanel

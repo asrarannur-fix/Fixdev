@@ -52,7 +52,7 @@ export const TicketListPanelV2: React.FC<{
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-zinc-700">
             {filtered.map((ticket) => (
-              <tr key={ticket.id} className="hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer" onClick={() => setSelectedTicketIdForEdit(ticket.id)}>
+              <tr key={ticket.id} className="hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors" onClick={() => setSelectedTicketIdForEdit(ticket.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedTicketIdForEdit(ticket.id); } }} tabIndex={0} role="row" aria-label={`Pilih tiket ${ticket.ticketNo}`}><td className="px-6 py-4 font-mono font-bold text-accent dark:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">#{ticket.ticketNo}</td>
                 <td className="px-6 py-4 font-mono font-bold text-accent dark:text-accent">#{ticket.ticketNo}</td>
                 <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{ticket.customerName}</td>
                 <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{ticket.deviceName}</td>

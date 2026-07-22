@@ -855,7 +855,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
 
             {/* Loyalty points & credit indicators */}
             <div className="flex flex-wrap items-center gap-4 z-10 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-zinc-800">
-              <div className="bg-slate-50 dark:bg-zinc-950/70 border border-slate-150 dark:border-zinc-850 rounded-xl px-4 py-2 text-center flex-1 sm:flex-none">
+              <div className="bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-900 rounded-xl px-4 py-2 text-center flex-1 sm:flex-none">
                 <p className="text-[9px] font-bold font-mono text-slate-400 dark:text-zinc-500 uppercase">
                   Loyalty Points
                 </p>
@@ -863,7 +863,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                   🌟 {activeCustomer.loyaltyPoints || 0}
                 </p>
               </div>
-              <div className="bg-slate-50 dark:bg-zinc-950/70 border border-slate-150 dark:border-zinc-850 rounded-xl px-4 py-2 text-center flex-1 sm:flex-none">
+              <div className="bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-900 rounded-xl px-4 py-2 text-center flex-1 sm:flex-none">
                 <p className="text-[9px] font-bold font-mono text-slate-400 dark:text-zinc-500 uppercase">
                   Store Credit
                 </p>
@@ -1005,7 +1005,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
           </nav>
 
           {/* Quick Help Box */}
-          <div className="bg-slate-50 dark:bg-zinc-950 p-4 border border-slate-150 dark:border-zinc-850 rounded-2xl space-y-2 text-xs">
+          <div className="bg-slate-50 dark:bg-zinc-950 p-4 border border-slate-200 dark:border-zinc-900 rounded-2xl space-y-2 text-xs">
             <h4 className="font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1">
               <Info className="w-3.5 h-3.5 text-blue-500" /> Butuh Bantuan?
             </h4>
@@ -1040,7 +1040,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         }}
                         className={`flex-1 rounded-lg py-2 text-center cursor-pointer transition-all ${
                           activeTrackMethod === "type"
-                            ? "bg-white dark:bg-zinc-900 text-blue-750 dark:text-blue-400 shadow-xs"
+                            ? "bg-white dark:bg-zinc-900 text-blue-700 dark:text-blue-400 shadow-xs"
                             : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                         }`}
                       >
@@ -1053,7 +1053,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         }}
                         className={`flex-1 rounded-lg py-2 text-center cursor-pointer transition-all ${
                           activeTrackMethod === "upload"
-                            ? "bg-white dark:bg-zinc-900 text-blue-750 dark:text-blue-400 shadow-xs"
+                            ? "bg-white dark:bg-zinc-900 text-blue-700 dark:text-blue-400 shadow-xs"
                             : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                         }`}
                       >
@@ -1066,7 +1066,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         }}
                         className={`flex-1 rounded-lg py-2 text-center cursor-pointer transition-all ${
                           activeTrackMethod === "scan"
-                            ? "bg-white dark:bg-zinc-900 text-blue-750 dark:text-blue-400 shadow-xs"
+                            ? "bg-white dark:bg-zinc-900 text-blue-700 dark:text-blue-400 shadow-xs"
                             : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                         }`}
                       >
@@ -1163,7 +1163,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           Scan QR via Kamera Web (Simulasi)
                         </h3>
 
-                        <div className="relative w-full h-44 bg-zinc-950 rounded-2xl overflow-hidden flex flex-col items-center justify-center border border-zinc-850">
+                        <div className="relative w-full h-44 bg-zinc-950 rounded-2xl overflow-hidden flex flex-col items-center justify-center border border-zinc-900">
                           {isScanningSim ? (
                             <>
                               <div className="absolute inset-8 border-2 border-emerald-500 rounded-lg animate-pulse" />
@@ -1228,7 +1228,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
 
                     {/* Error Alerts */}
                     {errorMsg && !searchedTicket && (
-                      <div className="p-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl text-xs text-rose-800 dark:text-rose-350 leading-relaxed font-medium space-y-1.5">
+                      <div className="p-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl text-xs text-rose-800 dark:text-rose-400 leading-relaxed font-medium space-y-1.5">
                         <p className="font-bold uppercase tracking-wider text-[10px] text-rose-900 dark:text-rose-400 flex items-center gap-1">
                           <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />{" "}
                           Gagal Melacak Tiket
@@ -1275,7 +1275,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                             className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                               ticketNo === ticket.ticketNo
                                 ? "bg-blue-50/50 border-blue-300 dark:bg-blue-950/20 dark:border-blue-900"
-                                : "bg-slate-50 dark:bg-zinc-950 border-slate-150 dark:border-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-900"
+                                : "bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-900"
                             }`}
                           >
                             <div className="flex items-center justify-between">
@@ -1334,7 +1334,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                       </div>
 
                       {/* Displaying approximate cost and downpayment if any */}
-                      <div className="bg-slate-50 dark:bg-zinc-950 p-3 border border-slate-150 dark:border-zinc-850 rounded-xl text-right">
+                      <div className="bg-slate-50 dark:bg-zinc-950 p-3 border border-slate-200 dark:border-zinc-900 rounded-xl text-right">
                         <p className="text-[9px] font-bold font-mono text-slate-400 dark:text-zinc-500 uppercase">
                           Estimasi Biaya Perbaikan
                         </p>
@@ -1365,17 +1365,17 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         </h4>
 
                         <div className="bg-white dark:bg-zinc-950 p-4 border border-amber-100 dark:border-amber-900/20 rounded-xl text-[11px] text-slate-700 dark:text-slate-300 space-y-2 font-mono leading-relaxed">
-                          <div className="flex justify-between border-b border-slate-100 dark:border-zinc-850 pb-1.5">
+                          <div className="flex justify-between border-b border-slate-100 dark:border-zinc-900 pb-1.5">
                             <span>No. Dokumen Penawaran:</span>
                             <span className="font-bold text-slate-900 dark:text-white">
                               QT-{searchedTicket.ticketNo}
                             </span>
                           </div>
-                          <div className="flex justify-between border-b border-slate-100 dark:border-zinc-850 pb-1.5">
+                          <div className="flex justify-between border-b border-slate-100 dark:border-zinc-900 pb-1.5">
                             <span>Perangkat Unit:</span>
                             <span>{searchedTicket.deviceName}</span>
                           </div>
-                          <div className="flex justify-between border-b border-slate-100 dark:border-zinc-850 pb-1.5">
+                          <div className="flex justify-between border-b border-slate-100 dark:border-zinc-900 pb-1.5">
                             <span>Biaya Estimasi Servis:</span>
                             <span className="text-blue-700 dark:text-blue-400 font-extrabold">
                               Rp{" "}
@@ -1397,7 +1397,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         </div>
 
                         {/* Signature input panel */}
-                        <div className="bg-white dark:bg-zinc-950 p-4 border border-slate-250 dark:border-zinc-850 rounded-2xl space-y-3">
+                        <div className="bg-white dark:bg-zinc-950 p-4 border border-slate-200 dark:border-zinc-900 rounded-2xl space-y-3">
                           <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold uppercase font-mono pl-1">
                             Isi Lembar Validasi Tanda Tangan:
                           </p>
@@ -1517,7 +1517,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                         Histori Perjalanan Unit (SLA Real-time)
                       </p>
 
-                      <div className="space-y-4 pl-4 border-l-2 border-slate-150 dark:border-zinc-800 relative">
+                      <div className="space-y-4 pl-4 border-l-2 border-slate-200 dark:border-zinc-800 relative">
                         {searchedTicket.timeline &&
                         searchedTicket.timeline.length > 0 ? (
                           searchedTicket.timeline.map(
@@ -1688,7 +1688,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           return (
                             <div
                               key={s.id}
-                              className="p-3.5 bg-slate-50 dark:bg-zinc-950/50 border border-slate-150 dark:border-zinc-850 rounded-xl text-xs flex items-start justify-between gap-3"
+                              className="p-3.5 bg-slate-50 dark:bg-zinc-950/50 border border-slate-200 dark:border-zinc-900 rounded-xl text-xs flex items-start justify-between gap-3"
                             >
                               <div className="space-y-1">
                                 <h5 className="font-extrabold text-slate-800 dark:text-zinc-200">
@@ -1766,10 +1766,10 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                       Belum ada invoice transaksi terekam untuk pelanggan ini.
                     </div>
                   ) : (
-                    <div className="border border-slate-150 dark:border-zinc-800 rounded-2xl overflow-hidden">
+                    <div className="border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-50 dark:bg-zinc-950 text-slate-500 dark:text-zinc-400 font-bold uppercase text-[9px] tracking-wider border-b border-slate-150 dark:border-zinc-800">
+                          <thead className="bg-slate-50 dark:bg-zinc-950 text-slate-500 dark:text-zinc-400 font-bold uppercase text-[9px] tracking-wider border-b border-slate-200 dark:border-zinc-800">
                             <tr>
                               <th className="px-4 py-3">No. Invoice</th>
                               <th className="px-4 py-3">Tanggal</th>
@@ -1781,7 +1781,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                               <th className="px-4 py-3 text-center">Aksi</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-150 dark:divide-zinc-800 font-medium">
+                          <tbody className="divide-y divide-slate-200 dark:divide-zinc-800 font-medium">
                             {/* Render POS transactions */}
                             {customerTransactions.map((tx) => (
                               <tr
@@ -1893,11 +1893,11 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
 
                 {/* POPUP DETAIL INVOICE MODAL VIEW */}
                 {selectedInvoice && createPortal(
-                  <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+                  <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
                     <motion.div
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+                      className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[calc(100dvh-1.5rem)] overflow-y-auto"
                     >
                       <div className="flex items-center justify-between border-b dark:border-zinc-800 pb-3">
                         <h4 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider font-mono">
@@ -2018,7 +2018,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                               </span>
                             </div>
                           )}
-                          <div className="flex justify-between font-bold text-slate-900 dark:text-white pt-1 text-xs border-t dark:border-zinc-850">
+                          <div className="flex justify-between font-bold text-slate-900 dark:text-white pt-1 text-xs border-t dark:border-zinc-900">
                             <span>Total Pembayaran:</span>
                             <span>
                               Rp{" "}
@@ -2177,7 +2177,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
-                        className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 dark:border-zinc-850 pt-4"
+                        className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 dark:border-zinc-900 pt-4"
                       >
                         <div className="space-y-1.5">
                           <label className="block text-[10px] font-extrabold text-amber-600 uppercase font-mono pl-1">
@@ -2227,11 +2227,11 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col h-[520px]"
+                className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col min-h-[420px] h-[min(520px,calc(100dvh-8rem))]"
                 id="live-chat-panel"
               >
                 {/* Chat header details */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-zinc-850 pb-3.5 mb-3 shrink-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-zinc-900 pb-3.5 mb-3 shrink-0">
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
                       <MessageSquare className="w-5 h-5 text-indigo-500 animate-pulse" />{" "}
@@ -2324,7 +2324,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                       <span className="text-[9px] text-indigo-400 font-mono font-bold uppercase animate-pulse">
                         Sistem AI sedang mengetik...
                       </span>
-                      <div className="bg-white dark:bg-zinc-900 border border-slate-150 dark:border-zinc-800 text-slate-400 text-xs px-3.5 py-2.5 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-xs">
+                      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 text-xs px-3.5 py-2.5 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-xs">
                         <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
                         <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]" />
                         <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]" />
@@ -2367,7 +2367,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
         className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs"
         id="faq-footer-block"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-zinc-850 pb-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-zinc-900 pb-3 mb-4">
           <h4 className="font-extrabold text-xs text-slate-800 dark:text-zinc-200 uppercase tracking-widest flex items-center gap-2 font-mono">
             <Info className="w-4 h-4 text-indigo-500" /> {portalHelpTitle}{" "}
             (Tanya Jawab Layanan)
@@ -2387,7 +2387,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
             return (
               <div
                 key={i}
-                className="p-3.5 bg-slate-50 dark:bg-zinc-950/40 border border-slate-150 dark:border-zinc-850 rounded-xl space-y-1"
+                className="p-3.5 bg-slate-50 dark:bg-zinc-950/40 border border-slate-200 dark:border-zinc-900 rounded-xl space-y-1"
               >
                 <p className="text-xs font-black text-slate-800 dark:text-zinc-200 font-mono">
                   💡 {title.replace(/^\?+/, "")}
@@ -2402,7 +2402,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
           })}
         </div>
 
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-zinc-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
           <p className="font-medium">
             Gerai Operasional: Senin - Sabtu (08:00 - 17:00 WITA). Minggu Libur.
           </p>

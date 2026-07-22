@@ -355,10 +355,10 @@ export const TenantDashboard = ({
           <SystemBackup />
         )}
         {showTechnicianModal && createPortal(
-          <div className="fixed inset-0 z-55 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowTechnicianModal(false)}>
+          <div className="fixed inset-0 z-55 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowTechnicianModal(false)} role="dialog" aria-modal="true" aria-label="Dashboard Teknisi">
             <div className="bg-white dark:bg-zinc-950 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-zinc-800 shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="sticky top-0 bg-white dark:bg-zinc-950 z-10 flex justify-between items-center p-4 border-b border-slate-200 dark:border-zinc-800">
-                <button onClick={() => setShowTechnicianModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer"><X className="w-4 h-4" /></button>
+                <button type="button" aria-label="Tutup dashboard teknisi" onClick={() => setShowTechnicianModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"><X className="w-4 h-4" /></button>
               </div>
               <div className="p-4"><TechnicianOverview /></div>
             </div>
@@ -369,6 +369,8 @@ export const TenantDashboard = ({
 
       {/* Floating Technician Button */}
       <button
+        type="button"
+        aria-label="Buka dashboard teknisi"
         onClick={() => setShowTechnicianModal(true)}
         className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 bg-accent hover:bg-accent-hover text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer"
         title="Dashboard Teknisi"

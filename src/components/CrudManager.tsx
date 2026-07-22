@@ -259,12 +259,12 @@ export const CrudManager: React.FC<CrudManagerProps> = ({
       )}
 
       {showModal && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="crud-modal-title">
           <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={() => !saving && setShowModal(false)} />
           <div className="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{editingId ? `Ubah ${title}` : `Tambah ${title}`}</h3>
-              <button onClick={() => !saving && setShowModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-4 h-4" /></button>
+              <h3 id="crud-modal-title" className="text-sm font-bold text-slate-900 dark:text-white">{editingId ? `Ubah ${title}` : `Tambah ${title}`}</h3>
+              <button type="button" aria-label="Tutup" onClick={() => !saving && setShowModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
               {fields.map((f) => (

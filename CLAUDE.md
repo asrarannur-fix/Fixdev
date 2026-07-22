@@ -2,6 +2,11 @@
 
 Dokumen ini berisi arsitektur sistem, aturan pengkodean, dan panduan integrasi keseluruhan untuk semua modul di proyek ini.
 
+## Catatan Perbaikan Aksesibilitas
+
+- Audit visual aksesibilitas melengkapi semantik modal, dukungan keyboard pada kartu antrean, label kontrol ikon, status dinamis, tipe tombol, dan indikator fokus.
+- File terkait: `src/components/CrudManager.tsx`, `src/components/TenantDashboard.tsx`, `src/components/tenant/ServiceDetailModal.tsx`, `src/components/tenant/services/QueuePanel.tsx`, `src/components/tenant/services/QCChecklistModal.tsx`, `src/components/ConsignmentManager.tsx`, `src/components/ui/ConfirmDialog.tsx`, `src/components/ui/KeyboardShortcutsModal.tsx`, dan `src/components/ui/PasswordChangeModal.tsx`.
+
 ## Arsitektur Sistem
 
 - **Frontend**: React 19 + TypeScript + Vite.
@@ -47,3 +52,8 @@ Dokumen ini berisi arsitektur sistem, aturan pengkodean, dan panduan integrasi k
 - **Unit & API Test**: `npx tsx --test tests/...`
 - **E2E Browser**: `npx playwright test`
 - **Database Rollback**: `npx tsx scripts/verify-service-transaction.ts`
+
+## Catatan Perbaikan Visual
+
+- Audit mode gelap diselesaikan pada komponen manager, HR, pengaturan tenant, dokumen servis, handover, WhatsApp, dan ledger sparepart.
+- File terkait: `src/components/DataImporter.tsx`, `src/components/PurchaseManager.tsx`, `src/components/SupplierManager.tsx`, `src/components/TelegramBotManager.tsx`, `src/components/ConsignmentManager.tsx`, `src/components/MaintenanceContractManager.tsx`, dan komponen tenant terkait di `src/components/tenant/`.

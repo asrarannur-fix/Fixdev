@@ -17,7 +17,7 @@ export const SparepartsLedger: React.FC<SparepartsLedgerProps> = ({
   setManualDiagCost,
 }) => {
   return (
-    <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
+    <div className="border border-slate-200 dark:border-zinc-800 rounded-xl p-4 space-y-3 bg-white dark:bg-zinc-950 dark:text-zinc-300 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.divide-slate-100]:divide-zinc-800 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_tr:hover]:bg-zinc-900">
       <div className="flex justify-between items-center">
         <h4 className="font-bold text-xs uppercase tracking-wide text-slate-500">
           Spareparts Used Ledger

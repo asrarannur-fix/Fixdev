@@ -864,14 +864,14 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => handleSyncIndividual(action)}
-                              className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl border border-slate-100 dark:border-zinc-850 hover:border-emerald-200 transition-all cursor-pointer"
+                              className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl border border-slate-100 dark:border-zinc-900 hover:border-emerald-200 transition-all cursor-pointer"
                               title="Setujui &amp; Sinkron"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDiscardIndividual(action.id)}
-                              className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-xl border border-slate-100 dark:border-zinc-850 hover:border-rose-200 transition-all cursor-pointer"
+                              className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-xl border border-slate-100 dark:border-zinc-900 hover:border-rose-200 transition-all cursor-pointer"
                               title="Buang"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -927,7 +927,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                               type="button"
                               onClick={handleGetCoordinates}
                               disabled={gpsLoading}
-                              className="px-2.5 py-1.5 bg-accent-lighter text-accent hover:bg-indigo-100 dark:bg-zinc-800 dark:text-accent text-xs font-bold rounded-lg border border-indigo-100 dark:border-zinc-750 shrink-0 cursor-pointer"
+                              className="px-2.5 py-1.5 bg-accent-lighter text-accent hover:bg-indigo-100 dark:bg-zinc-800 dark:text-accent text-xs font-bold rounded-lg border border-indigo-100 dark:border-zinc-700 shrink-0 cursor-pointer"
                             >
                               {gpsLoading ? "Mencari..." : "Dapatkan GPS"}
                             </button>
@@ -1066,7 +1066,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                       {idbStores.map((store) => (
                         <div
                           key={store.name}
-                          className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 p-3 rounded-xl space-y-1.5"
+                          className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 p-3 rounded-xl space-y-1.5"
                         >
                           <div className="flex justify-between items-center">
                             <span className="font-mono text-[9px] font-extrabold text-accent truncate max-w-[120px]">
@@ -1110,7 +1110,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
               {activeTab === "pwa_status" && (
                 <div className="space-y-4">
                   <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-4.5 rounded-2xl shadow-xs space-y-3 text-xs">
-                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-850 pb-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-900 pb-2.5">
                       <div className="flex items-center gap-2">
                         <HardDrive className="w-5 h-5 text-indigo-500" />
                         <div>
@@ -1151,16 +1151,16 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                       <span className="text-[9.5px] font-bold text-slate-400 font-mono uppercase tracking-wider block">
                         Daftar Bundle Aset Cached
                       </span>
-                      <div className="border border-slate-100 dark:border-zinc-850 rounded-xl overflow-hidden max-h-[140px] overflow-y-auto">
+                      <div className="border border-slate-100 dark:border-zinc-900 rounded-xl overflow-hidden max-h-[140px] overflow-y-auto">
                         <table className="w-full text-left font-mono text-[9px]">
                           <thead>
-                            <tr className="bg-slate-50 dark:bg-zinc-900 text-slate-400 border-b border-slate-100 dark:border-zinc-850 uppercase text-[8px]">
+                            <tr className="bg-slate-50 dark:bg-zinc-900 text-slate-400 border-b border-slate-100 dark:border-zinc-900 uppercase text-[8px]">
                               <th className="p-1.5">URL / Asset Path</th>
                               <th className="p-1.5">Type</th>
                               <th className="p-1.5 text-right">Size</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-zinc-850 text-slate-600 dark:text-zinc-300">
+                          <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-600 dark:text-zinc-300">
                             {[
                               {
                                 url: "/index.html",
@@ -1210,7 +1210,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="border-t border-slate-100 dark:border-zinc-850 pt-3 flex items-center justify-between">
+                    <div className="border-t border-slate-100 dark:border-zinc-900 pt-3 flex items-center justify-between">
                       <p className="text-[10px] text-slate-400 italic">
                         Service worker secara cerdas mengupdate aset statis saat
                         online.

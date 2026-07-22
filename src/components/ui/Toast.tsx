@@ -39,7 +39,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed inset-x-4 bottom-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none sm:left-auto sm:right-6">
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => (
             <motion.div
@@ -48,7 +48,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
               layout
-              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border min-w-[300px] max-w-md ${
+              role={toast.type === "error" ? "alert" : "status"}
+              className={`pointer-events-auto flex w-full min-w-0 items-center gap-3 rounded-xl border px-4 py-3 shadow-xl sm:w-auto sm:max-w-md ${
                 toast.type === "success"
                   ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/90 dark:border-emerald-800 dark:text-emerald-100"
                   : toast.type === "error"
@@ -73,10 +74,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 
               <p className="text-sm font-medium flex-grow">{toast.message}</p>
 
-              <button
-                onClick={() => removeToast(toast.id)}
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-              >
+               <button
+                 type="button"
+                 aria-label="Tutup notifikasi"
+                 onClick={() => removeToast(toast.id)}
+                 className="min-h-11 min-w-11 rounded-lg p-1 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current dark:hover:bg-white/5"
+               >
                 <X className="w-4 h-4 opacity-50" />
               </button>
             </motion.div>

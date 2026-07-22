@@ -628,7 +628,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
           {activePanelTab === "chat" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
               {/* KOLOM KIRI: DIRECT MESSAGING CHATBOX WITH ADMIN */}
-              <div className="border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 bg-slate-50 dark:bg-zinc-900/40 flex flex-col justify-between h-[420px]">
+              <div className="border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 bg-slate-50 dark:bg-zinc-900/40 flex flex-col justify-between min-h-[360px] md:h-[420px]">
                 <div>
                   <div className="flex items-center justify-between mb-3 border-b border-slate-200/60 dark:border-zinc-800 pb-2">
                     <div className="flex items-center gap-2">
@@ -779,7 +779,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
               </div>
 
               {/* KOLOM KANAN: REAL-TIME SERVICE TICKET STATUS UPDATES */}
-              <div className="border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 bg-white dark:bg-zinc-950 flex flex-col justify-between h-[420px]">
+              <div className="border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 bg-white dark:bg-zinc-950 flex flex-col justify-between min-h-[360px] md:h-[420px]">
                 <div className="mb-2">
                   <h4 className="font-extrabold text-xs text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 border-b border-slate-100 dark:border-zinc-800 pb-2">
                     <Bell className="w-4 h-4 text-amber-500" /> Riwayat
@@ -1029,7 +1029,7 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                         className={`p-3 rounded-2xl border text-center space-y-1 relative ${
                           badge.earned
                             ? "bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-zinc-900 border-indigo-200/60 dark:border-indigo-900/40"
-                            : "bg-slate-50/50 dark:bg-zinc-900/30 border-slate-100 dark:border-zinc-850 opacity-40"
+                            : "bg-slate-50/50 dark:bg-zinc-900/30 border-slate-100 dark:border-zinc-900 opacity-40"
                         }`}
                       >
                         <span className="text-2xl block">{badge.icon}</span>
@@ -1176,8 +1176,8 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
       </div>
 
       {showAttendanceModal && myEmployeeRecord && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[calc(100dvh-1.5rem)] overflow-y-auto shadow-2xl relative">
             <div className="bg-slate-50 p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black text-slate-800">
@@ -1314,8 +1314,8 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
         document.body
       )}
       {showKasbonModal && myEmployeeRecord && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[calc(100dvh-1.5rem)] overflow-y-auto shadow-2xl relative">
             <div className="bg-slate-50 p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black text-slate-800">

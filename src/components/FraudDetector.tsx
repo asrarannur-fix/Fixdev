@@ -381,11 +381,11 @@ export const FraudDetector: React.FC = () => {
                 di atas:
                 <br />
                 &bull; <strong>PIN Master:</strong>{" "}
-                <code className="font-mono bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-blue-100 dark:border-zinc-750 text-blue-700 dark:text-blue-400 font-bold">
+                <code className="font-mono bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-blue-100 dark:border-zinc-700 text-blue-700 dark:text-blue-400 font-bold">
                   1234
                 </code>{" "}
                 atau{" "}
-                <code className="font-mono bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-blue-100 dark:border-zinc-750 text-blue-700 dark:text-blue-400 font-bold">
+                <code className="font-mono bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-blue-100 dark:border-zinc-700 text-blue-700 dark:text-blue-400 font-bold">
                   2506
                 </code>
               </p>
@@ -420,7 +420,7 @@ export const FraudDetector: React.FC = () => {
                 placeholder="&bull; &bull; &bull; &bull;"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
-                className="w-full text-center tracking-[12px] font-black text-lg py-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-750 rounded-xl outline-none focus:border-accent dark:text-white"
+                className="w-full text-center tracking-[12px] font-black text-lg py-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:border-accent dark:text-white"
               />
 
               <div className="flex gap-2 pt-1">

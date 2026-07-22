@@ -23,7 +23,7 @@ export const AttendanceSummaryCards: React.FC<AttendanceSummaryCardsProps> = ({
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
           Total Karyawan
         </span>
-        <span className="text-2xl font-black text-slate-850 mt-1 block">
+        <span className="text-2xl font-black text-slate-800 mt-1 block">
           {branchEmployees.length} Orang
         </span>
         <span className="text-[10px] text-slate-400 block mt-1">

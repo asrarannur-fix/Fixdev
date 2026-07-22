@@ -425,9 +425,9 @@ export const B2BPipeline: React.FC = () => {
       {showAddLead && (
         <form
           onSubmit={handleCreateLead}
-          className="p-5 bg-blue-50/40 dark:bg-zinc-800/40 border-b border-blue-100 dark:border-zinc-750 animate-fadeIn space-y-4 text-xs"
+          className="p-5 bg-blue-50/40 dark:bg-zinc-800/40 border-b border-blue-100 dark:border-zinc-700 animate-fadeIn space-y-4 text-xs"
         >
-          <div className="flex items-center justify-between border-b border-blue-100/60 dark:border-zinc-750 pb-2">
+          <div className="flex items-center justify-between border-b border-blue-100/60 dark:border-zinc-700 pb-2">
             <h4 className="font-extrabold text-xs text-blue-950 dark:text-zinc-200 uppercase tracking-wide flex items-center gap-1.5">
               <Building className="w-4 h-4 text-blue-600" /> Formulir Proposal
               Penawaran B2B Baru
@@ -573,8 +573,8 @@ export const B2BPipeline: React.FC = () => {
       )}
 
       {/* Kanban Board Grid */}
-      <div className="p-6 overflow-x-auto">
-        <div className="flex gap-5 min-w-[1100px] items-stretch">
+      <div className="p-4 sm:p-6 overflow-x-auto snap-x snap-mandatory">
+        <div className="flex gap-4 sm:gap-5 min-w-max items-stretch">
           {columns.map((col) => {
             const colDeals = deals.filter((d) => d.stage === col.stage);
             const colSum = colDeals.reduce(
@@ -585,7 +585,7 @@ export const B2BPipeline: React.FC = () => {
             return (
               <div
                 key={col.stage}
-                className={`flex-1 rounded-2xl border ${col.border} ${col.bg} p-4 flex flex-col space-y-4 min-h-[480px]`}
+                className={`w-[calc(100vw-4rem)] sm:w-72 lg:w-[260px] shrink-0 snap-start rounded-2xl border ${col.border} ${col.bg} p-4 flex flex-col space-y-4 min-h-[480px]`}
               >
                 {/* Column Title */}
                 <div className="border-b border-slate-200/80 dark:border-zinc-800/80 pb-2.5 flex items-center justify-between">

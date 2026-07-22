@@ -331,7 +331,7 @@ export const POSTab: React.FC<POSTabProps> = ({
                     {heldCarts.map((hc) => {
                       const totalCartItems = (Array.isArray(hc.cart) ? hc.cart : []).reduce((sum: number, item: any) => sum + (item.qty ?? 0), 0);
                       return (
-                        <div key={hc.id} className="flex justify-between items-center text-[10px] bg-white p-2 border border-slate-150 rounded-lg shadow-2xs">
+                        <div key={hc.id} className="flex justify-between items-center text-[10px] bg-white p-2 border border-slate-200 rounded-lg shadow-2xs">
                           <div>
                             <p className="font-semibold text-slate-700">{totalCartItems} barang</p>
                             <p className="text-[8px] text-slate-400 font-mono">{new Date(Number(hc.id)).toLocaleTimeString()}</p>

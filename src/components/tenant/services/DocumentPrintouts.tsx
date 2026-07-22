@@ -116,7 +116,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
           return createPortal(
             <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-55 p-4 overflow-y-auto">
               <div
-                className="bg-white p-6 w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 font-sans text-slate-800 space-y-4"
+                className="bg-white dark:bg-zinc-950 p-6 w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 dark:border-zinc-800 font-sans text-slate-800 dark:text-zinc-100 space-y-4 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-100]:bg-zinc-900 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200"
                 style={{
                   maxWidth: printConfig?.paperSize === "thermal_58" ? "300px" : printConfig?.paperSize === "thermal_80" ? "390px" : "760px",
                   fontSize: `${printConfig?.printFontSize === "sm" ? 10 : printConfig?.printFontSize === "lg" ? 13 : 11}px`,

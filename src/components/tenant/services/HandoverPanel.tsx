@@ -90,7 +90,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
   const isChecklistComplete = Object.values(handoverChecklist).every(Boolean);
 
   return (
-    <div className="space-y-3.5 border border-slate-200/85 p-4 rounded-xl bg-slate-50/70 w-full text-left shadow-sm">
+    <div className="space-y-3.5 border border-slate-200/85 dark:border-zinc-800 p-4 rounded-xl bg-slate-50/70 dark:bg-zinc-900 w-full text-left shadow-sm dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100">
       <div className="flex justify-between items-center bg-accent-lighter/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
         <span className="text-slate-600">Total Tagihan Pelunasan (PPN 11%):</span>
         <span className="text-accent font-mono text-sm font-bold">

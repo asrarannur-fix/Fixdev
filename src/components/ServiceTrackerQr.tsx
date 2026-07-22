@@ -229,7 +229,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
         </div>
 
         {/* Tab Selection Switcher */}
-        <div className="flex bg-slate-100 dark:bg-zinc-850 p-0.5 rounded-xl text-xs font-black border border-slate-200/40 dark:border-zinc-800">
+        <div className="flex bg-slate-100 dark:bg-zinc-900 p-0.5 rounded-xl text-xs font-black border border-slate-200/40 dark:border-zinc-800">
           <button
             onClick={() => setActiveTab("print")}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
@@ -310,7 +310,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-zinc-400 pt-1.5 border-t border-slate-100 dark:border-zinc-850/80 leading-none">
+                    <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-zinc-400 pt-1.5 border-t border-slate-100 dark:border-zinc-900/80 leading-none">
                       <div className="flex items-center gap-1 font-semibold">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>Estimasi Selesai:</span>
@@ -432,7 +432,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
 
               {selectedTicket ? (
                 <div className="w-full max-w-xs bg-white dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-4.5 space-y-3 shadow-md text-xs text-slate-800 dark:text-zinc-200 transform hover:scale-[1.01] transition-transform animate-fadeIn">
-                  <div className="text-center border-b border-slate-100 dark:border-zinc-850 pb-2.5 space-y-1">
+                  <div className="text-center border-b border-slate-100 dark:border-zinc-900 pb-2.5 space-y-1">
                     <h3 className="font-extrabold text-accent dark:text-accent uppercase tracking-wide">
                       {businessName}
                     </h3>
@@ -473,7 +473,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                   </div>
 
                   {/* QR Display frame */}
-                  <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 p-3 rounded-2xl text-center space-y-2">
+                  <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 p-3 rounded-2xl text-center space-y-2">
                     <div className="w-32 h-32 mx-auto bg-white p-2 rounded-lg border border-slate-200 dark:border-zinc-800 flex items-center justify-center">
                       <img
                         src={getQrCodeUrl(selectedTicket.ticketNo)}
@@ -493,7 +493,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                     </div>
                   </div>
 
-                  <div className="text-[8px] text-slate-400 dark:text-zinc-500 text-center border-t border-slate-100 dark:border-zinc-850 pt-2 leading-none">
+                  <div className="text-[8px] text-slate-400 dark:text-zinc-500 text-center border-t border-slate-100 dark:border-zinc-900 pt-2 leading-none">
                     * Tunjukkan slip ini saat penyerahan &amp; pengambilan
                     barang.
                   </div>
@@ -547,7 +547,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
               </button>
 
               {/* Quick Input / Scan Barcode Test */}
-              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-850">
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-900">
                 <p className="text-[9px] font-mono text-slate-400 uppercase tracking-widest block font-bold">
                   Input Cepat Barcode QR Unit
                 </p>
@@ -732,7 +732,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                       className={`p-2.5 border rounded-xl flex items-start gap-2 cursor-pointer transition ${
                         stickerMode === item.id
                           ? "bg-accent-lighter/50 border-indigo-200"
-                          : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50/50"
+                          : "border-slate-100 dark:border-zinc-900 hover:bg-slate-50/50"
                       }`}
                     >
                       <input

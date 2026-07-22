@@ -102,7 +102,7 @@ export const QCChecklistModal: React.FC<{
     rate >= 50 ? 'bg-amber-500'   : 'bg-rose-500';
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="qc-checklist-title">
       <div className="bg-white dark:bg-zinc-950 w-full sm:max-w-2xl sm:rounded-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col border-0 sm:border border-slate-200 dark:border-slate-800 shadow-2xl rounded-t-2xl overflow-hidden">
 
         {/* ── Modal Header ─────────────────────────────── */}
@@ -113,7 +113,7 @@ export const QCChecklistModal: React.FC<{
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-base font-black text-slate-900 dark:text-white">
+                <h2 id="qc-checklist-title" className="text-base font-black text-slate-900 dark:text-white">
                   QC Checklist Laptop
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -123,6 +123,8 @@ export const QCChecklistModal: React.FC<{
               </div>
             </div>
             <button
+              type="button"
+              aria-label="Tutup checklist QC"
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
@@ -155,11 +157,11 @@ export const QCChecklistModal: React.FC<{
               />
             </div>
             <div className="flex gap-2 pt-0.5">
-              <button onClick={checkAll} className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
+              <button type="button" onClick={checkAll} className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
                 Tandai Semua OK
               </button>
               <span className="text-slate-300 dark:text-slate-600">·</span>
-              <button onClick={uncheckAll} className="text-[11px] font-semibold text-slate-400 hover:underline cursor-pointer">
+              <button type="button" onClick={uncheckAll} className="text-[11px] font-semibold text-slate-400 hover:underline cursor-pointer">
                 Reset Semua
               </button>
             </div>

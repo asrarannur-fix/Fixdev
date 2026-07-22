@@ -29,7 +29,7 @@ export const FinancialStatements: React.FC<FinancialStatementsProps> = ({
           </div>
         </div>
 
-        <div className="h-[280px] w-full pt-2">
+        <div className="h-[220px] sm:h-[280px] min-w-0 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

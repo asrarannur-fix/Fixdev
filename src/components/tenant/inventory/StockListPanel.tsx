@@ -390,7 +390,7 @@ export const StockListPanel: React.FC<StockListPanelProps> = ({
             {isAddProductOpen && createPortal(
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn overflow-y-auto my-auto" style={{ maxHeight: "90vh" }}>
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                       <PlusCircle className="w-5 h-5 text-accent animate-pulse" />{" "}
                       Tambah Barang Baru
@@ -575,10 +575,10 @@ export const StockListPanel: React.FC<StockListPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-850">
+                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <button
                       onClick={() => setIsAddProductOpen(false)}
-                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
+                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
                     >
                       Batal
                     </button>
@@ -657,7 +657,7 @@ export const StockListPanel: React.FC<StockListPanelProps> = ({
             {isEditProductOpen && selectedEditProduct && createPortal(
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn overflow-y-auto my-auto" style={{ maxHeight: "90vh" }}>
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                       <Pencil className="w-4 h-4 text-accent" /> Ubah Detail
                       & Harga Barang
@@ -791,10 +791,10 @@ export const StockListPanel: React.FC<StockListPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-850">
+                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <button
                       onClick={() => setIsEditProductOpen(false)}
-                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
+                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
                     >
                       Batal
                     </button>

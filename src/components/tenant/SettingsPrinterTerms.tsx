@@ -6,7 +6,7 @@ import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../ty
 export const SettingsPrinterTerms: React.FC<any> = (props) => {
   const { DataImporter, DeveloperApiManager, MaintenanceContractManager, VoucherManager, activeTenant, customFooterText, customHeaderTitle, effectiveActiveSubTab, publicBaseUrl, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printMode, printerName, qzStatus, qzPrinters, qzChecking, checkPrinterConnection, testConfiguredPrinter, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText } = props;
   return (
-  <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn">
+  <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_.hover\:bg-slate-50:hover]:bg-zinc-900">
     {/* Left Configuration Column */}
     <div className="xl:col-span-6 space-y-6">
       {/* Save Success Alert Indicator */}
@@ -786,7 +786,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
 
             {/* QR Code section */}
             {printQrCode && (
-              <div className="mt-4 p-3 bg-slate-50 border border-slate-150 rounded-lg text-center">
+              <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
                 <div className="w-24 h-24 bg-white border border-slate-200 p-1.5 mx-auto mb-2 rounded flex items-center justify-center">
                   {/* Simulated QR block art for realistic feel */}
                   <div className="grid grid-cols-4 gap-0.5 w-full h-full opacity-80">

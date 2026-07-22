@@ -60,7 +60,7 @@ export const QueuePanel: React.FC<{
       ) : (
         <div className="space-y-2">
           {queueTickets.map((ticket, i) => (
-            <div key={ticket.id} onClick={() => setSelectedTicketIdForEdit?.(ticket.id)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div key={ticket.id} onClick={() => setSelectedTicketIdForEdit?.(ticket.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedTicketIdForEdit?.(ticket.id); } }} role="button" tabIndex={0} aria-label={`Buka tiket ${ticket.ticketNo}`} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-500">
                 {i + 1}
               </div>

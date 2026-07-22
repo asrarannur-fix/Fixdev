@@ -310,7 +310,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
               <p className="text-xs text-red-500 italic text-center py-8">{journalsError}</p>
             )}
             {!journalsLoading && !journalsError && (
-            <div className="divide-y divide-slate-150">
+            <div className="divide-y divide-slate-200">
               {journals.length === 0 ? (
                 <p className="text-xs text-slate-400 italic text-center py-8">
                   Belum ada jurnal umum terposting.
@@ -612,7 +612,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                           className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all ${
                             selectedFinanceMonth === m
                               ? "bg-slate-900 text-white"
-                              : "bg-slate-150 text-slate-600 hover:bg-slate-200"
+                              : "bg-slate-200 text-slate-600 hover:bg-slate-200"
                           }`}
                         >
                           {m}
@@ -764,7 +764,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                           onClick={() => setTxType("CASH_IN")}
                           className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 ${
                             txType === "CASH_IN"
-                              ? "bg-emerald-550 border-emerald-500 text-white shadow-sm"
+                              ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
                               : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                           }`}
                         >
@@ -864,8 +864,8 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                       type="submit"
                       className={`w-full py-2.5 text-xs font-bold rounded-lg transition-all text-white shadow flex items-center justify-center gap-1.5 cursor-pointer ${
                         txType === "CASH_IN"
-                          ? "bg-slate-900 hover:bg-slate-850"
-                          : "bg-slate-900 hover:bg-slate-850"
+                          ? "bg-slate-900 hover:bg-slate-900"
+                          : "bg-slate-900 hover:bg-slate-900"
                       }`}
                     >
                       <Check className="w-4 h-4" /> Simpan Transaksi Ke Kas

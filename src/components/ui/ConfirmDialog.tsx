@@ -62,7 +62,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
       <AnimatePresence>
         {isOpen && options && createPortal(
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -94,13 +94,13 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
                     )}
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                    <h3 id="confirm-dialog-title" className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                       {options.title}
                     </h3>
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                <p id="confirm-dialog-message" className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                   {options.message}
                 </p>
 
@@ -119,12 +119,14 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
 
               <div className="flex items-center justify-end gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
                 <button
+                  type="button"
                   onClick={handleCancel}
                   className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
                 >
                   {options.cancelLabel || "Batal"}
                 </button>
                 <button
+                  type="button"
                   onClick={handleConfirm}
                   className={`px-5 py-2 text-xs font-bold text-white rounded-xl shadow-lg transition-all cursor-pointer active:scale-95 ${
                     options.type === "danger"

@@ -240,7 +240,7 @@ export const PaymentSettingsPanel: React.FC<PaymentSettingsPanelProps> = ({
             onChange={(e) => setPaymentNote(e.target.value)}
             rows={3}
             placeholder="cth: Konfirmasi pembayaran via WhatsApp setelah transfer."
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent resize-y"
+            className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-700 dark:text-zinc-100 rounded-lg text-xs outline-none focus:border-accent resize-y"
           />
         </Field>
       </SettingsSection>

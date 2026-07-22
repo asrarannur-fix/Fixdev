@@ -586,15 +586,15 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
               <div className="flex justify-between items-start">
                 <div className="space-y-2 flex-1">
                   <div className="h-5 bg-slate-200 dark:bg-zinc-800 rounded-lg w-2/3" />
-                  <div className="h-3 bg-slate-100 dark:bg-zinc-850 rounded w-1/3" />
+                  <div className="h-3 bg-slate-100 dark:bg-zinc-900 rounded w-1/3" />
                 </div>
                 <div className="h-6 w-20 bg-slate-200 dark:bg-zinc-800 rounded-full" />
               </div>
               
               {/* Price skeleton */}
               <div className="space-y-2 py-3">
-                <div className="h-8 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-zinc-800 dark:to-zinc-750 rounded-lg w-3/5" />
-                <div className="h-3 bg-slate-100 dark:bg-zinc-850 rounded w-2/5" />
+                <div className="h-8 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-zinc-800 dark:to-zinc-700 rounded-lg w-3/5" />
+                <div className="h-3 bg-slate-100 dark:bg-zinc-900 rounded w-2/5" />
               </div>
               
               {/* Divider */}
@@ -746,7 +746,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-indigo-500/20 text-indigo-300 text-[9px] md:text-[10px] font-extrabold uppercase px-2 md:px-2.5 py-1 rounded-full border border-accent/60/20 tracking-wider flex items-center gap-1 md:gap-1.5">
+              <span className="bg-indigo-500/20 text-indigo-300 text-[9px] md:text-[10px] font-extrabold uppercase px-2 md:px-2.5 py-1 rounded-full border border-accent/20 tracking-wider flex items-center gap-1 md:gap-1.5">
                 <ShieldCheck className="w-3 h-3 md:w-3.5 md:h-3.5" /> SECURE INTEGRATED QRIS
                 BILLING
               </span>
@@ -761,7 +761,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
           </div>
 
           <div className="bg-white/5 border border-white/10 rounded-lg md:rounded-xl p-3 md:p-4 flex items-center gap-3 md:gap-4 shrink-0 w-full md:w-auto">
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-accent/60/30">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-accent/30">
               {getTierIcon(activeTenant?.tier || SubscriptionTier.BASIC)}
             </div>
             <div className="flex-1 md:flex-none">
@@ -938,7 +938,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                     isCurrent
                       ? "border-2 border-accent dark:border-accent ring-4 ring-indigo-50 dark:ring-indigo-950/20"
                       : p.tier === "PRO"
-                        ? "border-teal-300 dark:border-teal-850"
+                        ? "border-teal-300 dark:border-teal-900"
                         : "border-slate-200 dark:border-zinc-800"
                   }`}
                 >
@@ -984,7 +984,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       )}
                     </div>
 
-                    <hr className="border-slate-100 dark:border-zinc-850 my-4" />
+                    <hr className="border-slate-100 dark:border-zinc-900 my-4" />
 
                     {/* Limits Spec Pill */}
                     <div className="grid grid-cols-2 gap-2 mb-4 bg-slate-50 dark:bg-zinc-950 p-2.5 md:p-3 rounded-xl border border-slate-100 dark:border-zinc-800 text-[11px] md:text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -1020,7 +1020,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                     disabled={!activeTenant || (isCurrent && billingCycle === "monthly")}
                     className={`w-full py-2.5 md:py-3 rounded-lg md:rounded-xl font-bold text-xs md:text-sm transition-all flex items-center justify-center gap-2 ${
                       isCurrent || !activeTenant
-                        ? "bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-slate-200 dark:border-zinc-800"
+                        ? "bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-slate-200 dark:border-zinc-800"
                         : p.tier === "PRO"
                           ? "bg-teal-600 hover:bg-teal-700 text-white hover:shadow-lg hover:shadow-teal-500/20 shadow-md cursor-pointer"
                           : "bg-accent hover:bg-accent-hover text-white hover:shadow-lg hover:shadow-accent/20 shadow-md cursor-pointer"
@@ -1297,7 +1297,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
               <label className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-2">
                 Modul / Fitur yang Aktif pada Paket Ini:
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-100 dark:border-zinc-850">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-100 dark:border-zinc-900">
                 {[
                   {
                     id: "SERVICE",
@@ -1357,7 +1357,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       className={`flex flex-col p-3 rounded-xl border text-left cursor-pointer transition-all ${
                         isChecked
                           ? "border-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/10 dark:border-emerald-700/50 text-emerald-950 dark:text-emerald-400"
-                          : "border-slate-200 hover:border-slate-300 dark:border-zinc-800 dark:hover:border-zinc-750 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-400"
+                          : "border-slate-200 hover:border-slate-300 dark:border-zinc-800 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-400"
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -1631,7 +1631,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
 
           {/* Edu section */}
           <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-4 border border-slate-100 dark:border-zinc-800 space-y-3">
-            <h4 className="font-extrabold text-xs text-slate-850 dark:text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
+            <h4 className="font-extrabold text-xs text-slate-900 dark:text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
               💡 Panduan Alur Pembayaran &amp; Pencairan Dana (SaaS Owner):
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -1811,7 +1811,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                         </button>
                         <button
                           onClick={() => handlePrintInvoice(inv)}
-                          className="p-1 text-slate-400 hover:text-slate-750 dark:text-zinc-400 dark:hover:text-zinc-200 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 rounded-lg transition-all"
+                          className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 rounded-lg transition-all"
                           title="Cetak Struk Transaksi PDF"
                         >
                           <Download className="w-3.5 h-3.5" />

@@ -181,9 +181,21 @@ export const ModuleParameterConfig: React.FC = () => {
             </div>
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
               <span className="text-[10px] font-bold text-slate-600 uppercase">Hitung Komisi Teknisi</span>
-              <div onClick={() => setEnableTechnicianCommission(!enableTechnicianCommission)} className={`w-10 h-5 rounded-full p-1 cursor-pointer transition-all ${enableTechnicianCommission ? "bg-emerald-500" : "bg-slate-300"}`}>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enableTechnicianCommission}
+                onClick={() => setEnableTechnicianCommission(!enableTechnicianCommission)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setEnableTechnicianCommission(!enableTechnicianCommission);
+                  }
+                }}
+                className={`w-10 h-5 rounded-full p-1 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${enableTechnicianCommission ? "bg-emerald-500" : "bg-slate-300"}`}
+              >
                 <div className={`w-3 h-3 bg-white rounded-full transition-all ${enableTechnicianCommission ? "ml-5" : "ml-0"}`} />
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -201,9 +213,21 @@ export const ModuleParameterConfig: React.FC = () => {
             </div>
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
               <span className="text-[10px] font-bold text-slate-600 uppercase">Aktifkan Modul Skema & Panduan Teknis</span>
-              <div onClick={() => setEnableKnowledgeBase(!enableKnowledgeBase)} className={`w-10 h-5 rounded-full p-1 cursor-pointer transition-all ${enableKnowledgeBase ? "bg-emerald-500" : "bg-slate-300"}`}>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enableKnowledgeBase}
+                onClick={() => setEnableKnowledgeBase(!enableKnowledgeBase)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setEnableKnowledgeBase(!enableKnowledgeBase);
+                  }
+                }}
+                className={`w-10 h-5 rounded-full p-1 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${enableKnowledgeBase ? "bg-emerald-500" : "bg-slate-300"}`}
+              >
                 <div className={`w-3 h-3 bg-white rounded-full transition-all ${enableKnowledgeBase ? "ml-5" : "ml-0"}`} />
-              </div>
+              </button>
             </div>
           </div>
         </div>

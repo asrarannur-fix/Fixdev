@@ -438,7 +438,7 @@ export const SmallPartsSearch: React.FC = () => {
       {/* Header */}
       <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="font-extrabold text-sm text-amber-950 dark:text-amber-250 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="font-extrabold text-sm text-amber-950 dark:text-amber-200 uppercase tracking-wider flex items-center gap-2">
             <Cpu className="w-5 h-5 text-amber-500" /> Suku Cadang Mikro &amp;
             Pengelolaan Inventaris
           </h3>
@@ -502,7 +502,7 @@ export const SmallPartsSearch: React.FC = () => {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Cth: IC Backlight LP8550"
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-750 rounded-lg dark:text-white outline-none"
+                className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
               />
             </div>
             <div>
@@ -514,7 +514,7 @@ export const SmallPartsSearch: React.FC = () => {
                 value={newSku}
                 onChange={(e) => setNewSku(e.target.value)}
                 placeholder="Cth: IC-LP8550-SMD"
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-750 rounded-lg dark:text-white outline-none"
+                className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -525,7 +525,7 @@ export const SmallPartsSearch: React.FC = () => {
                 <select
                   value={newCat}
                   onChange={(e) => setNewCat(e.target.value as any)}
-                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-750 rounded-lg dark:text-white outline-none"
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
                 >
                   <option value="IC">IC</option>
                   <option value="KAPASITOR">Kapasitor</option>
@@ -544,7 +544,7 @@ export const SmallPartsSearch: React.FC = () => {
                   value={newSupplier}
                   onChange={(e) => setNewSupplier(e.target.value)}
                   placeholder="Sinar Jaya Spareparts"
-                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-750 rounded-lg dark:text-white outline-none"
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
                 />
               </div>
             </div>
@@ -565,7 +565,7 @@ export const SmallPartsSearch: React.FC = () => {
                   placeholder="Ketik nama IC, seri laptop (Asus, Lenovo, Macbook), SKU, atau Laci..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-750 rounded-xl outline-none focus:border-amber-500 text-xs font-semibold text-slate-800 dark:text-zinc-100"
+                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:border-amber-500 text-xs font-semibold text-slate-800 dark:text-zinc-100"
                 />
               </div>
 
@@ -773,7 +773,7 @@ export const SmallPartsSearch: React.FC = () => {
                       <select
                         value={targetTicket}
                         onChange={(e) => setTargetTicket(e.target.value)}
-                        className="w-full px-2.5 py-1 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 focus:border-amber-500 text-slate-800 dark:text-zinc-100 rounded text-[10.5px] outline-none"
+                        className="w-full px-2.5 py-1 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-900 focus:border-amber-500 text-slate-800 dark:text-zinc-100 rounded text-[10.5px] outline-none"
                       >
                         <option value="">-- Pilih tiket --</option>
                         {scopedServices.filter((ticket) => ["DIAGNOSA", "SEDANG_DIKERJAKAN", "REWORK"].includes(ticket.status)).map((ticket) => <option key={ticket.id} value={ticket.id}>{ticket.ticketNo} · {ticket.deviceName}</option>)}
@@ -873,7 +873,7 @@ export const SmallPartsSearch: React.FC = () => {
             </div>
 
             <div className="flex gap-2 shrink-0 bg-white/70 dark:bg-zinc-900 p-2.5 rounded-xl border border-amber-100 dark:border-zinc-800">
-              <div className="text-center px-2 border-r border-slate-200 dark:border-zinc-850">
+              <div className="text-center px-2 border-r border-slate-200 dark:border-zinc-900">
                 <p className="text-[9px] text-slate-400 uppercase font-mono">
                   Critical Items
                 </p>
@@ -1010,8 +1010,8 @@ export const SmallPartsSearch: React.FC = () => {
       {/* AUTO PURCHASE ORDER (PO) GENERATOR MODAL */}
       {selectedPoComp && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-850 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
-            <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-b border-slate-100 dark:border-zinc-850 flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-900 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
+            <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-b border-slate-100 dark:border-zinc-900 flex items-center justify-between">
               <div>
                 <h4 className="font-extrabold text-sm text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 uppercase font-mono tracking-wide">
                   <ShoppingCart className="w-4 h-4 text-amber-500" /> Draf
@@ -1023,7 +1023,7 @@ export const SmallPartsSearch: React.FC = () => {
               </div>
               <button
                 onClick={() => setSelectedPoComp(null)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-300 dark:hover:bg-zinc-750 text-base"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-300 dark:hover:bg-zinc-700 text-base"
               >
                 &times;
               </button>
@@ -1120,7 +1120,7 @@ export const SmallPartsSearch: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4 text-xs animate-fadeIn">
-                  <div className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-xl border border-slate-100 dark:border-zinc-850/60 flex gap-2.5">
+                  <div className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-xl border border-slate-100 dark:border-zinc-900/60 flex gap-2.5">
                     <Info className="w-4.5 h-4.5 text-indigo-500 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-extrabold text-slate-800 dark:text-zinc-200">
@@ -1144,7 +1144,7 @@ export const SmallPartsSearch: React.FC = () => {
                         value={
                           selectedPoComp.supplierName || "Sinar Jaya Spareparts"
                         }
-                        className="w-full px-2.5 py-2 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-lg outline-none font-bold text-slate-700 dark:text-zinc-300"
+                        className="w-full px-2.5 py-2 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-lg outline-none font-bold text-slate-700 dark:text-zinc-300"
                       />
                     </div>
 
@@ -1173,7 +1173,7 @@ export const SmallPartsSearch: React.FC = () => {
                           type="text"
                           readOnly
                           value={`Rp ${(selectedPoComp.price * 0.75).toLocaleString()}`}
-                          className="w-full px-2.5 py-1.5 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-lg outline-none font-mono"
+                          className="w-full px-2.5 py-1.5 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-lg outline-none font-mono"
                         />
                       </div>
                     </div>
@@ -1215,7 +1215,7 @@ export const SmallPartsSearch: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedPoComp(null)}
-                      className="w-1/3 py-2 border border-slate-200 dark:border-zinc-850 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-850 text-xs font-bold rounded-xl transition"
+                      className="w-1/3 py-2 border border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900 text-xs font-bold rounded-xl transition"
                     >
                       Batal
                     </button>

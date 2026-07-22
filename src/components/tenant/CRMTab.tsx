@@ -87,7 +87,7 @@ export const CRMTab: React.FC<CRMTabProps> = ({
                         <td className="px-4 py-3.5 text-right">
                           <button
                             onClick={() => setSelectedCrmCustomerId(c.id)}
-                            className="bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-800 dark:text-slate-200 border border-blue-200/40 dark:border-slate-700 font-extrabold text-[10.5px] px-3 py-1 rounded-lg cursor-pointer transition duration-150"
+                            className="bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-800 dark:text-slate-200 border border-blue-200/40 dark:border-slate-700 font-extrabold text-[10.5px] px-3 py-1 rounded-lg cursor-pointer transition duration-200"
                           >
                             Profil &amp; Aktivitas
                           </button>

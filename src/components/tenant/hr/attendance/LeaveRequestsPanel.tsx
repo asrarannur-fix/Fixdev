@@ -141,11 +141,11 @@ export const LeaveRequestsPanel: React.FC<any> = ({ employees, currentTenantId, 
                         .map(({ emp, l }) => (
                           <div
                             key={l.id}
-                            className="p-4 rounded-2xl border border-slate-150 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                            className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                           >
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-xs text-slate-850">
+                                <span className="font-bold text-xs text-slate-800">
                                   {emp.name}
                                 </span>
                                 <span

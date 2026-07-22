@@ -15,7 +15,8 @@ export const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({ accounts, curr
           Chart of Accounts (COA) Tenant
         </h3>
       </div>
-      <table className="w-full text-left text-xs">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[640px] text-left text-xs">
         <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
           <tr>
             <th className="px-4 py-3">Kode Akun</th>
@@ -55,6 +56,7 @@ export const ChartOfAccounts: React.FC<ChartOfAccountsProps> = ({ accounts, curr
             ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

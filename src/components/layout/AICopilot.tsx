@@ -178,7 +178,7 @@ export const AICopilot: React.FC = () => {
                     className={`p-3 rounded-2xl text-xs leading-relaxed ${
                       msg.role === "user"
                         ? "bg-slate-900 text-white rounded-tr-none"
-                        : "bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-tl-none shadow-sm/5"
+                        : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-tl-none shadow-sm/5"
                     }`}
                   >
                     {msg.text}
@@ -190,7 +190,7 @@ export const AICopilot: React.FC = () => {
                   <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-zinc-800 flex items-center justify-center text-blue-600 dark:text-blue-400 animate-pulse shrink-0">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
-                  <div className="bg-white dark:bg-slate-850 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 font-semibold animate-pulse rounded-tl-none">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 font-semibold animate-pulse rounded-tl-none">
                     Memikirkan jawaban terbaik...
                   </div>
                 </div>

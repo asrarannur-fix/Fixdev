@@ -554,7 +554,7 @@ export const CannibalWorkshop: React.FC = () => {
                       type="text"
                       value={sellingProduct.name}
                       disabled
-                      className="w-full px-2.5 py-1.5 bg-emerald-100/50 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 rounded-lg text-emerald-900 dark:text-emerald-350 font-semibold cursor-not-allowed"
+                      className="w-full px-2.5 py-1.5 bg-emerald-100/50 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 rounded-lg text-emerald-900 dark:text-emerald-400 font-semibold cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -569,7 +569,7 @@ export const CannibalWorkshop: React.FC = () => {
                           : "B"
                       }
                       disabled
-                      className="w-full px-2.5 py-1.5 bg-emerald-100/50 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 rounded-lg text-emerald-900 dark:text-emerald-350 font-mono cursor-not-allowed text-[10px]"
+                      className="w-full px-2.5 py-1.5 bg-emerald-100/50 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 rounded-lg text-emerald-900 dark:text-emerald-400 font-mono cursor-not-allowed text-[10px]"
                     />
                   </div>
                   <div>
@@ -581,7 +581,7 @@ export const CannibalWorkshop: React.FC = () => {
                       value={buyerName}
                       onChange={(e) => setBuyerName(e.target.value)}
                       placeholder="Cth: Pak Slamet Rongsokan"
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-850 rounded-lg text-slate-800 dark:text-zinc-100 font-semibold outline-none focus:border-accent"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-900 rounded-lg text-slate-800 dark:text-zinc-100 font-semibold outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -593,7 +593,7 @@ export const CannibalWorkshop: React.FC = () => {
                       value={soldPrice}
                       onChange={(e) => setSoldPrice(e.target.value)}
                       placeholder="Cth: 150000"
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-850 rounded-lg text-slate-800 dark:text-zinc-100 font-bold font-mono outline-none focus:border-accent"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-zinc-900 rounded-lg text-slate-800 dark:text-zinc-100 font-bold font-mono outline-none focus:border-accent"
                     />
                   </div>
                 </div>

@@ -614,7 +614,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                   <div
                     key={device.id}
                     onClick={() => setSelectedDeviceIndex(idx)}
-                    className={`flex items-center justify-between p-2.5 bg-white dark:bg-zinc-900 border rounded-xl hover:border-blue-350 transition cursor-pointer ${
+                    className={`flex items-center justify-between p-2.5 bg-white dark:bg-zinc-900 border rounded-xl hover:border-blue-400 transition cursor-pointer ${
                       selectedDeviceIndex === idx
                         ? "border-blue-500 ring-2 ring-blue-100 dark:ring-blue-950/40 shadow-sm"
                         : "border-slate-200 dark:border-zinc-700"
@@ -837,7 +837,7 @@ export const DeviceRentalDashboard: React.FC = () => {
 
             {/* Return & Refund Deposit Form */}
             {returningRental && (
-              <div className="p-4 bg-blue-50 dark:bg-zinc-900 border border-blue-100 dark:border-zinc-850 rounded-2xl space-y-3 mt-4 text-xs animate-fadeIn">
+              <div className="p-4 bg-blue-50 dark:bg-zinc-900 border border-blue-100 dark:border-zinc-900 rounded-2xl space-y-3 mt-4 text-xs animate-fadeIn">
                 <div className="flex justify-between items-center border-b border-blue-100 dark:border-zinc-800 pb-1.5">
                   <h5 className="font-extrabold text-blue-950 dark:text-zinc-200 flex items-center gap-1">
                     <RotateCcw className="w-4 h-4 text-blue-600" /> Proses Retur
@@ -871,7 +871,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                       value={damageDeductionInput}
                       onChange={(e) => setDamageDeductionInput(e.target.value)}
                       placeholder="Cth: 150000 (Isi 0 jika mulus)"
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-850 border border-blue-200 dark:border-zinc-750 rounded-lg text-slate-800 dark:text-white font-bold font-mono outline-none"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold font-mono outline-none"
                     />
                   </div>
                   <div>
@@ -883,12 +883,12 @@ export const DeviceRentalDashboard: React.FC = () => {
                       value={damageNotes}
                       onChange={(e) => setDamageNotes(e.target.value)}
                       placeholder="Cth: Ada goresan halus di casing belakang"
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-850 border border-blue-200 dark:border-zinc-750 rounded-lg text-slate-800 dark:text-white outline-none"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="p-3 bg-white/70 dark:bg-zinc-850 border border-blue-100 dark:border-zinc-750 rounded-xl space-y-1 font-semibold text-[10.5px]">
+                <div className="p-3 bg-white/70 dark:bg-zinc-900 border border-blue-100 dark:border-zinc-700 rounded-xl space-y-1 font-semibold text-[10.5px]">
                   <div className="flex justify-between text-slate-600 dark:text-slate-400">
                     <span>Deposit Awal:</span>
                     <span className="font-mono">
@@ -902,7 +902,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                       {(Number(damageDeductionInput) || 0).toLocaleString()}
                     </span>
                   </div>
-                  <div className="border-t border-blue-100 dark:border-zinc-750 my-1 pt-1 flex justify-between font-black text-blue-950 dark:text-zinc-100">
+                  <div className="border-t border-blue-100 dark:border-zinc-700 my-1 pt-1 flex justify-between font-black text-blue-950 dark:text-zinc-100">
                     <span>Deposit Dikembalikan:</span>
                     <span className="font-mono text-emerald-600">
                       Rp{" "}

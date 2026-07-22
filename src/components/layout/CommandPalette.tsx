@@ -546,7 +546,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-all border ${
                               isSelected
                                 ? "bg-accent-lighter dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900/40 text-indigo-950 dark:text-indigo-200"
-                                : "bg-transparent border-transparent hover:bg-slate-50/50 dark:hover:bg-zinc-850/30"
+                                : "bg-transparent border-transparent hover:bg-slate-50/50 dark:hover:bg-zinc-900/30"
                             }`}
                           >
                             <div

@@ -78,7 +78,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3.5">
+    <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl p-4 space-y-3.5 dark:text-zinc-300 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_select]:border-zinc-800 dark:[&_textarea]:bg-zinc-900 dark:[&_textarea]:text-zinc-100 dark:[&_textarea]:border-zinc-800 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_.hover\:bg-slate-50:hover]:bg-zinc-900">
       <div className="flex items-center justify-between gap-2">
         <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider flex items-center gap-1.5">
           <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Customer Communication Hub

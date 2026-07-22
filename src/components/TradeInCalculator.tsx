@@ -306,7 +306,7 @@ export const TradeInCalculator: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               {/* Screen */}
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-2xl p-4 space-y-2.5">
+              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-900 rounded-2xl p-4 space-y-2.5">
                 <p className="font-bold text-slate-700 dark:text-zinc-300 uppercase text-[10px] font-mono">
                   1. Kondisi Layar / Screen LCD
                 </p>
@@ -351,7 +351,7 @@ export const TradeInCalculator: React.FC = () => {
               </div>
 
               {/* Battery */}
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-2xl p-4 space-y-2.5">
+              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-900 rounded-2xl p-4 space-y-2.5">
                 <p className="font-bold text-slate-700 dark:text-zinc-300 uppercase text-[10px] font-mono">
                   2. Degradasi Kesehatan Baterai (BH)
                 </p>
@@ -387,7 +387,7 @@ export const TradeInCalculator: React.FC = () => {
               </div>
 
               {/* Cameras */}
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-2xl p-4 space-y-2.5">
+              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-900 rounded-2xl p-4 space-y-2.5">
                 <p className="font-bold text-slate-700 dark:text-zinc-300 uppercase text-[10px] font-mono">
                   3. Sistem Kamera &amp; Sensor
                 </p>
@@ -423,7 +423,7 @@ export const TradeInCalculator: React.FC = () => {
               </div>
 
               {/* Body */}
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-2xl p-4 space-y-2.5">
+              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-900 rounded-2xl p-4 space-y-2.5">
                 <p className="font-bold text-slate-700 dark:text-zinc-300 uppercase text-[10px] font-mono">
                   4. Casing / Frame Fisik
                 </p>

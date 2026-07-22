@@ -527,7 +527,7 @@ const MainAppContent: React.FC = () => {
         {/* Cloud API Loader Status Indicator */}
         {effectiveLoading && (
           <div
-            className="fixed top-4 right-4 z-[9999] flex items-center bg-accent dark:bg-accent text-white text-xs font-mono py-2 px-3 rounded-lg shadow-lg border border-accent/60/30 backdrop-blur-xs transition-all animate-pulse"
+            className="fixed top-4 right-4 z-[9999] flex items-center bg-accent dark:bg-accent text-white text-xs font-mono py-2 px-3 rounded-lg shadow-lg border border-accent/30 backdrop-blur-xs transition-all animate-pulse"
             id="api-loading-toast"
           >
             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

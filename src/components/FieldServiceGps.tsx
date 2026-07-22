@@ -203,7 +203,7 @@ export const FieldServiceGps: React.FC = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" />
           </div>
 
-          <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-none xl:max-h-[480px] overflow-y-auto pr-1">
             {scopedVisits.map((visit) => {
               const tech = employees.find((e) => e.id === visit.techId);
               const isSelected = visit.id === selectedVisitId;
@@ -295,7 +295,7 @@ export const FieldServiceGps: React.FC = () => {
                 </div>
 
                 {/* SVG Map Canvas */}
-                <div className="w-full h-[280px] bg-slate-100 rounded-2xl border border-slate-200 relative overflow-hidden flex items-center justify-center shadow-inner">
+                <div className="w-full h-[240px] sm:h-[280px] bg-slate-100 rounded-2xl border border-slate-200 relative overflow-hidden flex items-center justify-center shadow-inner">
                   {/* Grid Lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:24px_24px] opacity-40"></div>
 
@@ -539,7 +539,7 @@ export const FieldServiceGps: React.FC = () => {
                                 value={reportText}
                                 onChange={(e) => setReportText(e.target.value)}
                                 placeholder="Cth: Mengganti kapasitor motherboard yang bocor, tes nyala normal, tegangan stabil..."
-                                className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-750 rounded-xl outline-none focus:border-accent dark:text-white"
+                                className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:border-accent dark:text-white"
                               />
                             </div>
 
