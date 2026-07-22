@@ -276,7 +276,6 @@ No JWT/Sanctum — correct (Midtrans servers can't provide a user session). Auth
 - `src/server/controllers/pos.controller.ts` — POS shift/sale/void
 - `src/server/controllers/accounting.controller.ts` — COA, journal, cash, reports
 - `src/server/controllers/apiV1.controller.ts` — Sanctum tokens, CRUD endpoints
-- `src/server/controllers/ai.controller.ts` — Gemini AI integration
 - `src/server/controllers/audit.controller.ts` — audit trail
 - `src/server/controllers/billing.controller.ts` — billing/subscription
 - `src/server/controllers/manualPayment.controller.ts` — manual payment review
