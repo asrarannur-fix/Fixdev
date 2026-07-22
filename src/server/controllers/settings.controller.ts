@@ -38,6 +38,7 @@ const permissionsSchema = z.array(z.string().trim().min(1).max(100)).max(200);
 const rbacSchema = z.object({ expectedVersion: z.number().int().positive(), matrix: z.record(roleSchema, permissionsSchema) }).strict();
 const userRbacSchema = z.object({ role: roleSchema, permissions: permissionsSchema }).strict();
 const branchSchema = z.object({ id: z.string().uuid().optional(), name: text(150).min(1), address: text(500).default(""), phone: text(50).default(""), isActive: bool.default(true) }).strict();
+const branchUpdateSchema = z.object({ name: text(150).min(1).optional(), address: text(500).optional(), phone: text(50).optional(), isActive: bool.optional() }).strict().refine((value) => Object.keys(value).length > 0);
 const MASK = /^(?:\*+|•+|x+)$/i;
 const SECRET_FIELDS: Partial<Record<SettingsDomain, string[]>> = { emailSettings: ["smtpPass"], notificationSettings: ["telegramBotToken"], waConfig: ["apiToken", "webhookSecret", "whatsappKey"] };
 export function mergeSettingsSecrets(domain: SettingsDomain, existing: Record<string, unknown>, incoming: Record<string, unknown>) { const merged = { ...existing, ...incoming }; for (const field of SECRET_FIELDS[domain] || []) { const value = incoming[field]; if (value === undefined || typeof value === "string" && (!value.trim() || MASK.test(value.trim()))) { if (existing[field] === undefined) delete merged[field]; else merged[field] = existing[field]; } } return merged; }
@@ -63,4 +64,78 @@ export async function updateSettingsDomain(req: Request, res: Response) {
 
 export async function updateRbacMatrix(req: Request, res: Response) { const body = rbacSchema.safeParse(req.body); if (!body.success) return res.status(422).json({ error: "Matriks RBAC atau versi tidak valid." }); try { const result = await dbQuery(`UPDATE tenants SET rbac_matrix=$3::jsonb,version=version+1 WHERE id=$1 AND version=$2 RETURNING rbac_matrix,version`, [req.tenantId, body.data.expectedVersion, JSON.stringify(body.data.matrix)]); if (!result.rows[0]) return res.status(409).json({ error: "RBAC telah berubah. Muat ulang halaman.", code: "VERSION_CONFLICT" }); res.json(toApiResponse(result.rows[0])); } catch (err: any) { logger.error({ err: err.message, tenantId: req.tenantId }, "RBAC matrix update failed"); res.status(500).json({ error: "Matriks RBAC gagal disimpan." }); } }
 export async function updateUserRbac(req: Request, res: Response) { const body = userRbacSchema.safeParse(req.body); if (!body.success) return res.status(422).json({ error: "Role atau permissions tidak valid." }); if (req.params.userId === req.authActor?.userId && body.data.role !== req.authActor.role) return res.status(422).json({ error: "Role akun sendiri tidak dapat diubah." }); try { const result = await dbQuery(`UPDATE users SET role=$3,permissions=$4::text[] WHERE id=$1 AND tenant_id=$2 RETURNING id,role,permissions`, [req.params.userId, req.tenantId, body.data.role, body.data.permissions]); if (!result.rows[0]) return res.status(404).json({ error: "Pengguna tidak ditemukan." }); res.json(toApiResponse(result.rows[0])); } catch (err: any) { logger.error({ err: err.message, tenantId: req.tenantId }, "User RBAC update failed"); res.status(500).json({ error: "RBAC pengguna gagal disimpan." }); } }
-export async function createBranch(req: Request, res: Response) { const body = branchSchema.safeParse(req.body); if (!body.success) return res.status(422).json({ error: "Data cabang tidak valid." }); try { const result = await dbTransaction(async (client) => { const tenantResult = await client.query(`SELECT tier,settings FROM tenants WHERE id=$1 FOR UPDATE`, [req.tenantId]); const tenant = tenantResult.rows[0]; if (!tenant) return { code: 404, error: "Tenant tidak ditemukan." }; const countResult = await client.query(`SELECT COUNT(*)::int AS count FROM branches WHERE tenant_id=$1`, [req.tenantId]); const tierLimits: Record<string, number> = { BASIC: 1, PRO: 5, ENTERPRISE: 20 }; const limit = Number(tenant.settings?.limits?.branches ?? tierLimits[tenant.tier] ?? 1); const count = countResult.rows[0].count; if (count >= limit) return { code: 409, error: `Kuota cabang penuh (${count}/${limit}).`, errorCode: "BRANCH_QUOTA_EXCEEDED" }; const branch = await client.query(`INSERT INTO branches(id,tenant_id,name,address,phone,is_active) VALUES (COALESCE($1::uuid,gen_random_uuid()),$2,$3,$4,$5,$6) RETURNING *`, [body.data.id || null, req.tenantId, body.data.name, body.data.address, body.data.phone, body.data.isActive]); return { branch: branch.rows[0] }; }); if ("error" in result) return res.status(result.code).json({ error: result.error, code: result.errorCode }); res.status(201).json(toApiResponse(result.branch)); } catch (err: any) { logger.error({ err: err.message, tenantId: req.tenantId }, "Branch creation failed"); res.status(500).json({ error: "Cabang gagal dibuat." }); } }
+export async function createBranch(req: Request, res: Response) {
+  const body = branchSchema.safeParse(req.body);
+  if (!body.success) return res.status(422).json({ error: "Data cabang tidak valid." });
+  try {
+    const result = await dbTransaction(async (client) => {
+      const tenantResult = await client.query(`SELECT tier,settings FROM tenants WHERE id=$1 FOR UPDATE`, [req.tenantId]);
+      const tenant = tenantResult.rows[0];
+      if (!tenant) return { code: 404, error: "Tenant tidak ditemukan." };
+      const countResult = await client.query(`SELECT COUNT(*)::int AS count FROM branches WHERE tenant_id=$1`, [req.tenantId]);
+      const tierLimits: Record<string, number> = { BASIC: 1, PRO: 5, ENTERPRISE: 20 };
+      const limit = Number(tenant.settings?.limits?.branches ?? tierLimits[tenant.tier] ?? 1);
+      const count = countResult.rows[0].count;
+      if (count >= limit) return { code: 409, error: `Kuota cabang penuh (${count}/${limit}).`, errorCode: "BRANCH_QUOTA_EXCEEDED" };
+      const branch = await client.query(`INSERT INTO branches(id,tenant_id,name,address,phone,is_active) VALUES (COALESCE($1::uuid,gen_random_uuid()),$2,$3,$4,$5,$6) RETURNING *`, [body.data.id || null, req.tenantId, body.data.name, body.data.address, body.data.phone, body.data.isActive]);
+      return { branch: branch.rows[0] };
+    });
+    if ("error" in result) return res.status(result.code).json({ error: result.error, code: result.errorCode });
+    res.status(201).json(toApiResponse(result.branch));
+  } catch (err: any) { logger.error({ err: err.message, tenantId: req.tenantId }, "Branch creation failed"); res.status(500).json({ error: "Cabang gagal dibuat." }); }
+}
+
+export async function updateBranch(req: Request, res: Response) {
+  const body = branchUpdateSchema.safeParse(req.body);
+  if (!body.success) return res.status(422).json({ error: "Data cabang tidak valid." });
+  try {
+    const result = await dbTransaction(async (client) => {
+      const branchResult = await client.query(`SELECT * FROM branches WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [req.params.id, req.tenantId]);
+      const branch = branchResult.rows[0];
+      if (!branch) return { code: 404, error: "Cabang tidak ditemukan." };
+      if (body.data.isActive === false && branch.is_active !== false) {
+        if (req.branchId === req.params.id) return { code: 409, error: "Pindah ke cabang lain sebelum menonaktifkan cabang aktif." };
+        const otherActive = await client.query(`SELECT COUNT(*)::int AS count FROM branches WHERE tenant_id=$1 AND id<>$2 AND is_active=TRUE`, [req.tenantId, req.params.id]);
+        if (otherActive.rows[0].count === 0) return { code: 409, error: "Tenant harus memiliki minimal satu cabang aktif." };
+        const activeTickets = await client.query(`SELECT COUNT(*)::int AS count FROM service_tickets WHERE tenant_id=$1 AND branch_id=$2 AND status NOT IN ('DIAMBIL','DIBATALKAN','SELESAI','KLAIM_GARANSI')`, [req.tenantId, req.params.id]);
+        if (activeTickets.rows[0].count > 0) return { code: 409, error: `Selesaikan atau pindahkan ${activeTickets.rows[0].count} tiket servis aktif terlebih dahulu.` };
+        const openShifts = await client.query(`SELECT COUNT(*)::int AS count FROM pos_shifts WHERE tenant_id=$1 AND branch_id=$2 AND status='OPEN'`, [req.tenantId, req.params.id]);
+        if (openShifts.rows[0].count > 0) return { code: 409, error: "Tutup shift terlebih dahulu sebelum menonaktifkan cabang." };
+      }
+      const next = {
+        name: body.data.name ?? branch.name,
+        address: body.data.address ?? branch.address ?? "",
+        phone: body.data.phone ?? branch.phone ?? "",
+        isActive: body.data.isActive ?? branch.is_active,
+      };
+      const updated = await client.query(`UPDATE branches SET name=$3,address=$4,phone=$5,is_active=$6 WHERE id=$1 AND tenant_id=$2 RETURNING *`, [req.params.id, req.tenantId, next.name, next.address, next.phone, next.isActive]);
+      return { branch: updated.rows[0] };
+    });
+    if ("error" in result) return res.status(result.code).json({ error: result.error });
+    res.json(toApiResponse(result.branch));
+  } catch (err: any) { logger.error({ err: err.message, tenantId: req.tenantId }, "Branch update failed"); res.status(500).json({ error: "Cabang gagal diperbarui." }); }
+}
+
+export async function deleteBranch(req: Request, res: Response) {
+  const { id } = req.params;
+  try {
+    const result = await dbTransaction(async (client) => {
+      const tenantResult = await client.query(`SELECT id FROM tenants WHERE id=$1 FOR UPDATE`, [req.tenantId]);
+      if (!tenantResult.rows[0]) return { code: 404, error: "Tenant tidak ditemukan." };
+      const branchResult = await client.query(`SELECT * FROM branches WHERE id=$1 AND tenant_id=$2 FOR UPDATE`, [id, req.tenantId]);
+      const branch = branchResult.rows[0];
+      if (!branch) return { code: 404, error: "Cabang tidak ditemukan." };
+      const remainingActiveResult = await client.query(`SELECT COUNT(*)::int AS count FROM branches WHERE tenant_id=$1 AND is_active = TRUE AND id != $2`, [req.tenantId, id]);
+      const remainingActive = remainingActiveResult.rows[0].count;
+      if (remainingActive === 0) return { code: 409, error: "Tidak dapat menonaktifkan cabang terakhir. Minimal satu cabang harus aktif." };
+      const activeTicketsResult = await client.query(`SELECT COUNT(*)::int AS count FROM service_tickets WHERE tenant_id=$1 AND branch_id=$2 AND status NOT IN ('DIAMBIL','DIBATALKAN','SELESAI','KLAIM_GARANSI')`, [req.tenantId, id]);
+      if (activeTicketsResult.rows[0].count > 0) return { code: 409, error: "Selesaikan atau pindahkan tiket servis aktif terlebih dahulu." };
+      const openShiftsResult = await client.query(`SELECT COUNT(*)::int AS count FROM pos_shifts WHERE tenant_id=$1 AND branch_id=$2 AND status = 'OPEN'`, [req.tenantId, id]);
+      if (openShiftsResult.rows[0].count > 0) return { code: 409, error: "Tutup shift terlebih dahulu sebelum menonaktifkan cabang." };
+      const softDelete = await client.query(`UPDATE branches SET is_active = FALSE WHERE id=$1 AND tenant_id=$2 RETURNING *`, [id, req.tenantId]);
+      return { branch: softDelete.rows[0] };
+    });
+    if ("error" in result) return res.status(result.code).json({ error: result.error });
+    res.json(toApiResponse(result.branch));
+  } catch (err: any) { logger.error({ err: err.message, tenantId: req.tenantId }, "Branch soft delete failed"); res.status(500).json({ error: "Cabang gagal dinonaktifkan." }); }
+}

@@ -1,56 +1,9 @@
 import * as React from "react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
-  Building2,
-  Sliders,
-  Receipt,
-  Lock,
-  Zap,
-  FileText,
-  ChevronRight,
-  HelpCircle,
-  Save,
-  PlusCircle,
-  CheckCircle2,
-  Trash2,
-  Copy,
-  AlertTriangle,
-  Monitor,
-  ExternalLink,
-  Brush,
-  Ticket,
-  X,
-  Paintbrush,
-  Wrench,
-  Fingerprint,
-  MapPin,
   Search,
-  Server,
-  Smartphone,
-  Globe,
-  MessageSquare,
-  Shield,
+  X,
   Settings,
-  GitBranch,
-  Printer,
-  Code,
-  CreditCard,
-  ArrowRightLeft,
-  Play,
-  Pencil,
-  Check,
-  Barcode,
-  ShieldCheck,
-  Eye,
-  CheckSquare,
-  Plus,
-  Sparkles,
-  RefreshCw,
-  Send,
-  Database,
-  FileSpreadsheet,
-  Gift,
-  ClipboardCheck,
 } from "lucide-react";
 import { useSaaS } from "../../context/SaaSContext";
 import { useToast } from "../ui/Toast";
@@ -72,12 +25,11 @@ import { OperationalSettingsPanel } from "./OperationalSettingsPanel";
 import { AppSettingsPanel } from "./AppSettingsPanel";
 import { BRANDING_PRESETS } from "../../config/BrandingPresets";
 import { SettingsBranding } from "./SettingsBranding";
-
-import { Tenant, Branch, WorkflowRule, TenantBranding } from "../../types";
+import { Tenant, Branch, TenantBranding } from "../../types";
 import { GROUP_ORDER, getSettingsTabs } from "../../config/settingsConfigs";
 import { SettingsPrinterTerms } from "./SettingsPrinterTerms";
 import { SettingsWorkflows } from "./SettingsWorkflows";
-import { checkQzTray, printFrame, printJobAsync } from "../../utils/printJob";
+import { checkQzTray, printJobAsync } from "../../utils/printJob";
 import { useServiceTrackerQr } from "../../hooks/useServiceTrackerQr";
 
 interface SettingsTabProps {
@@ -441,7 +393,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const activeGroup = activeTabObj.group || groupOrder[0]?.key || "perusahaan";
   const activeGroupLabel =
     groupOrder.find((g) => g.key === activeGroup)?.label || "Pengaturan";
-  const testTicket = {};
 
   return (
     <>

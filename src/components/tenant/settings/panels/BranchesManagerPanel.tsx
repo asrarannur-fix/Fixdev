@@ -49,16 +49,16 @@ export const BranchesManagerPanel: React.FC<BranchesManagerPanelProps> = ({ curr
 
         <div className="bg-slate-50 border border-slate-200/65 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="p-2 bg-accent-lighter border border-indigo-100 text-accent rounded-xl text-xs">??</span>
+            <span className="p-2 bg-accent-lighter border border-indigo-100 text-accent rounded-xl text-xs">Kuota</span>
             <div>
               <p className="font-extrabold text-slate-800 text-xs">Kuota Lokasi Cabang / Outlet ({tenantBranchesCount} / {branchLimit})</p>
               <p className="text-[10px] text-slate-500 mt-0.5">Maksimum outlet fisik sesuai paket <strong className="text-accent uppercase">{tenantObj?.tier || "BASIC"}</strong> Anda.</p>
             </div>
           </div>
           {isBranchLimitReached ? (
-            <span className="inline-flex items-center gap-1 text-[10px] bg-rose-50 text-rose-700 font-extrabold px-3 py-1 rounded-full border border-rose-150/50">?? BATAS KUOTA PENUH</span>
+            <span className="inline-flex items-center gap-1 text-[10px] bg-rose-50 text-rose-700 font-extrabold px-3 py-1 rounded-full border border-rose-150/50">Batas kuota penuh</span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-700 font-extrabold px-3 py-1 rounded-full border border-emerald-150/50">? KUOTA AMAN</span>
+            <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-700 font-extrabold px-3 py-1 rounded-full border border-emerald-150/50">Kuota tersedia</span>
           )}
         </div>
 

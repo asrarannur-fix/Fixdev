@@ -5,7 +5,7 @@ import { useToast } from "../ui/Toast";
 interface SecuritySettingsPanelProps {
   currentTenantId: string;
   tenantObj: any;
-  updateTenant: (id: string, updates: any) => void;
+  updateTenant: (id: string, updates: any) => Promise<void> | void;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 

@@ -447,12 +447,12 @@ interface SaaSContextType {
   reseedCOAAccounts: (tenantId: string, template: string) => void;
 
   // Branch CRUD
-  addBranch: (branchData: Omit<Branch, "id" | "tenantId">) => Branch;
+  addBranch: (branchData: Omit<Branch, "id" | "tenantId">) => Promise<Branch>;
   updateBranch: (
     branchId: string,
     branchData: Partial<Omit<Branch, "id" | "tenantId">>,
-  ) => void;
-  deleteBranch: (branchId: string) => void;
+  ) => Promise<void>;
+  deleteBranch: (branchId: string) => Promise<void>;
 
   // Global Theme
   theme: "light" | "dark";
@@ -4555,122 +4555,48 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const addBranch = (branchData: Omit<Branch, "id" | "tenantId">): Branch => {
-    const tenant = tenants.find((t) => t.id === currentTenantId);
-    if (tenant) {
-      const existingBranches = branches.filter(
-        (b) => b.tenantId === currentTenantId,
-      );
-      const limit = tenant.limits?.branches || 1;
-      if (existingBranches.length >= limit) {
-        throw new Error(
-          `[LIMIT_EXCEEDED] Kuota cabang penuh (${existingBranches.length}/${limit}). Silakan tingkatkan paket langganan Anda melalui menu Billing.`,
-        );
-      }
+  const addBranch = async (branchData: Omit<Branch, "id" | "tenantId">): Promise<Branch> => {
+    const response = await apiFetch("/api/tenant/branches", {
+      method: "POST",
+      body: JSON.stringify(branchData),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || "Cabang gagal dibuat.");
     }
-    const newBranch: Branch = {
-      ...branchData,
-      id: "branch-" + Math.random().toString(36).substr(2, 9),
-      tenantId: currentTenantId,
-    };
+    const newBranch: Branch = await response.json();
     setBranches((prev) => [...prev, newBranch]);
-    syncToApi("branches", "insert", newBranch);
-    addLog(
-      "Create Branch",
-      `Membuat cabang baru: ${newBranch.name}`,
-      "SYSTEM",
-      "MEDIUM",
-    );
+    addLog("Create Branch", `Membuat cabang baru: ${newBranch.name}`, "SYSTEM", "MEDIUM");
     return newBranch;
   };
 
-  const updateBranch = (
+  const updateBranch = async (
     branchId: string,
     branchData: Partial<Omit<Branch, "id" | "tenantId">>,
-  ) => {
-    const branch = branches.find((b) => b.id === branchId);
-    if (!branch || branch.tenantId !== currentTenantId) {
-      throw new Error("Cabang tidak ditemukan.");
-    }
-    if (branchData.isActive === false && branch.isActive !== false) {
-      if (branch.id === currentBranchId) {
-        throw new Error("Pindah ke cabang lain sebelum menonaktifkan cabang aktif.");
-      }
-      const otherActiveBranches = branches.filter(
-        (b) => b.tenantId === currentTenantId && b.id !== branchId && b.isActive,
-      );
-      if (otherActiveBranches.length === 0) {
-        throw new Error("Tenant harus memiliki minimal satu cabang aktif.");
-      }
-      const activeTickets = services.filter(
-        (s) => s.branchId === branchId && !["DIAMBIL", "DIBATALKAN", "SELESAI", "KLAIM_GARANSI"].includes(s.status),
-      );
-      if (activeTickets.length > 0) {
-        throw new Error(`Selesaikan atau pindahkan ${activeTickets.length} tiket servis aktif terlebih dahulu.`);
-      }
-      if (shifts.some((s) => s.branchId === branchId && s.status === "OPEN")) {
-        throw new Error("Tutup shift terlebih dahulu sebelum menonaktifkan cabang.");
-      }
-    }
-    setBranches((prev) => {
-      const updated = prev.map((b) => {
-        if (b.id === branchId) {
-          const u = { ...b, ...branchData };
-          syncToApi("branches", "update", u);
-          return u;
-        }
-        return b;
-      });
-      return updated;
+  ): Promise<void> => {
+    const response = await apiFetch(`/api/tenant/branches/${branchId}`, {
+      method: "PUT",
+      body: JSON.stringify(branchData),
     });
-    addLog(
-      "Update Branch",
-      `Memperbarui info cabang ID: ${branchId}`,
-      "SYSTEM",
-      "MEDIUM",
-    );
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || "Cabang gagal diperbarui.");
+    }
+    const updatedBranch: Branch = await response.json();
+    setBranches((prev) => prev.map((branch) => branch.id === branchId ? updatedBranch : branch));
+    addLog("Update Branch", `Memperbarui info cabang ID: ${branchId}`, "SYSTEM", "MEDIUM");
   };
 
-  const deleteBranch = (branchId: string) => {
-    const branch = branches.find((b) => b.id === branchId);
-    if (!branch) throw new Error("Cabang tidak ditemukan.");
-    // Validasi: minimal satu cabang aktif harus tersisa
-    const otherActiveBranches = branches.filter(
-      (b) => b.tenantId === currentTenantId && b.id !== branchId && b.isActive,
-    );
-    if (otherActiveBranches.length === 0) {
-      throw new Error("Tidak dapat menonaktifkan cabang terakhir. Minimal satu cabang harus aktif.");
+  const deleteBranch = async (branchId: string): Promise<void> => {
+    const branch = branches.find((item) => item.id === branchId);
+    const response = await apiFetch(`/api/tenant/branches/${branchId}`, { method: "DELETE" });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || "Cabang gagal dinonaktifkan.");
     }
-    // Validasi: jangan hapus jika ada tiket aktif
-    const activeTickets = services.filter(
-      (s) => s.branchId === branchId && s.status !== "DIAMBIL" && s.status !== "DIBATALKAN" && s.status !== "SELESAI" && s.status !== "KLAIM_GARANSI",
-    );
-    if (activeTickets.length > 0) {
-      throw new Error(
-        `Tidak dapat menghapus cabang "${branch.name}". Masih ada ${activeTickets.length} tiket servis aktif. Selesaikan atau pindahkan tiket terlebih dahulu.`,
-      );
-    }
-    // Validasi: jangan hapus jika ada transaksi POS belum selesai
-    const openShifts = shifts.filter((s) => s.branchId === branchId && s.status === "OPEN");
-    if (openShifts.length > 0) {
-      throw new Error(`Tutup shift terlebih dahulu sebelum menghapus cabang "${branch.name}".`);
-    }
-    // Soft delete: set isActive = false alih-alih hapus permanen
-    setBranches((prev) => prev.map((b) => (b.id === branchId ? { ...b, isActive: false } : b)));
-    syncToApi("branches", "update", { id: branchId, is_active: false });
-    addLog(
-      "Delete Branch",
-      `Menonaktifkan cabang ID: ${branchId} (${branch.name}) — soft delete, data tetap aman.`,
-      "SYSTEM",
-      "MEDIUM",
-    );
-    // Jika cabang yang dinonaktifkan adalah cabang aktif, pindah ke cabang lain
-    if (branchId === currentBranchId) {
-      const fallbackBranch = branches.find((b) => b.tenantId === currentTenantId && b.id !== branchId && b.isActive);
-      if (fallbackBranch) {
-        switchBranch(fallbackBranch.id);
-      }
-    }
+    const updatedBranch: Branch = await response.json();
+    setBranches((prev) => prev.map((item) => item.id === branchId ? updatedBranch : item));
+    addLog("Delete Branch", `Menonaktifkan cabang ID: ${branchId} (${branch?.name || branchId}) — soft delete, data tetap aman.`, "SYSTEM", "MEDIUM");
   };
 
   const publicBaseUrl = publicTenant?.publicBaseUrl || window.location.origin;

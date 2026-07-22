@@ -14,7 +14,7 @@ type AppSectionKey = "general" | "portal" | "email" | "file" | "theme";
 interface Props {
   currentTenantId: string;
   tenantObj: any;
-  updateTenant: (id: string, updates: any) => void;
+  updateTenant: (id: string, updates: any) => Promise<void> | void;
 }
 
 export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, updateTenant }) => {
@@ -31,13 +31,13 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
   const [maintenanceMode, setMaintenanceMode] = useState(s.generalSettings?.maintenanceMode ?? false);
 
   // Customer Portal
-  const [enableStatusCheck, setEnableStatusCheck] = useState(s.customerPortalSettings?.enableStatusCheck ?? true);
-  const [enableEstApprove, setEnableEstApprove] = useState(s.customerPortalSettings?.enableEstimateApproval ?? true);
-  const [enableInvoiceView, setEnableInvoiceView] = useState(s.customerPortalSettings?.enableInvoiceView ?? true);
-  const [enableWarrantyView, setEnableWarrantyView] = useState(s.customerPortalSettings?.enableWarrantyView ?? true);
-  const [enableTicketTracking, setEnableTicketTracking] = useState(s.customerPortalSettings?.enableTicketTracking ?? true);
-  const [hideInternalNotes, setHideInternalNotes] = useState(s.customerPortalSettings?.hideInternalNotes ?? true);
-  const [hideProfit, setHideProfit] = useState(s.customerPortalSettings?.hideProfit ?? true);
+  const [enableStatusCheck, setEnableStatusCheck] = useState(s.portalSettings?.enableStatusCheck ?? true);
+  const [enableEstApprove, setEnableEstApprove] = useState(s.portalSettings?.enableEstimateApproval ?? true);
+  const [enableInvoiceView, setEnableInvoiceView] = useState(s.portalSettings?.enableInvoiceView ?? true);
+  const [enableWarrantyView, setEnableWarrantyView] = useState(s.portalSettings?.enableWarrantyView ?? true);
+  const [enableTicketTracking, setEnableTicketTracking] = useState(s.portalSettings?.enableTicketTracking ?? true);
+  const [hideInternalNotes, setHideInternalNotes] = useState(s.portalSettings?.hideInternalNotes ?? true);
+  const [hideProfit, setHideProfit] = useState(s.portalSettings?.hideProfit ?? true);
 
   // Email & Push
   const [smtpHost, setSmtpHost] = useState(s.emailSettings?.smtpHost || "");
@@ -49,10 +49,10 @@ export const AppSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, 
   const [enableRealtime, setEnableRealtime] = useState(s.emailSettings?.enableRealtimeNotifications ?? true);
 
   // File Upload
-  const [maxUploadMb, setMaxUploadMb] = useState(s.fileUploadSettings?.maxUploadSizeMb ?? 10);
-  const [allowedTypes, setAllowedTypes] = useState(s.fileUploadSettings?.allowedFileTypes || ".jpg,.png,.pdf,.doc,.xlsx");
-  const [retentionDays, setRetentionDays] = useState(s.fileUploadSettings?.retentionDays ?? 365);
-  const [fileVisibility, setFileVisibility] = useState(s.fileUploadSettings?.fileVisibility || "private");
+  const [maxUploadMb, setMaxUploadMb] = useState(s.uploadSettings?.maxUploadSizeMb ?? 10);
+  const [allowedTypes, setAllowedTypes] = useState(s.uploadSettings?.allowedFileTypes || ".jpg,.png,.pdf,.doc,.xlsx");
+  const [retentionDays, setRetentionDays] = useState(s.uploadSettings?.retentionDays ?? 365);
+  const [fileVisibility, setFileVisibility] = useState(s.uploadSettings?.fileVisibility || "private");
 
   // Theme
   const [primaryColor, setPrimaryColor] = useState(s.themeSettings?.primaryColor || tenantObj?.branding?.primaryColor || "#3b82f6");

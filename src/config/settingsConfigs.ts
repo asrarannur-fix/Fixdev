@@ -20,7 +20,7 @@ import {
 const SETTINGS_DOMAIN: Record<string, string> = {
   rbac: "security",
   security: "security",
-  backup: "security",
+  backup: "backup",
   whatsapp: "whatsapp",
   telegram: "notification",
   notifications: "notification",

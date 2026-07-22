@@ -13,7 +13,7 @@ type OperationalSectionKey = "service" | "pos" | "stok" | "accounting" | "hr";
 interface Props {
   currentTenantId: string;
   tenantObj: any;
-  updateTenant: (id: string, updates: any) => void;
+  updateTenant: (id: string, updates: any) => Promise<void> | void;
 }
 
 export const OperationalSettingsPanel: React.FC<Props> = ({ currentTenantId, tenantObj, updateTenant }) => {

@@ -39,6 +39,9 @@ Tiga spec lama gagal sebelum alur modul karena memakai password test kosong dan 
 - Token invalid atau kedaluwarsa kini menghasilkan HTTP 401, sedangkan konfigurasi secret yang hilang menghasilkan HTTP 503; file terkait: `src/middleware/auth.middleware.ts`.
 - Pemulihan sesi tidak lagi mempercayai cache autentikasi tanpa token, logout selalu menghapus `fixdev_token`, dan profil gagal membersihkan token invalid; file terkait: `src/context/SaaSContext.tsx`, `src/utils/supabaseUtils.ts`.
 
+## Perbaikan Bootstrap Database Development — 22 Juli 2026
+- Bootstrap tenant kini mewajibkan query tenant utama berhasil dan mengembalikan HTTP 404 bila tenant tidak ada, sehingga kegagalan koneksi atau query database tidak lagi tersamarkan sebagai data kosong; file terkait: `src/server/controllers/bootstrap.controller.ts`.
+
 ## Perbaikan Database Lokal — 21 Juli 2026
 - Baseline database dipindah ke `postgresql-schema.sql`; dependency `auth.uid()` dan RLS Supabase dihapus.
 - Migration runner menjalankan baseline `000_baseline.sql` secara idempoten sebelum seluruh migration bernomor.

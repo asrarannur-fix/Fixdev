@@ -49,8 +49,9 @@ export async function bootstrapHandler(req: Request, res: Response) {
   if (!tenantId) return res.status(401).json({ error: "Tenant auth context is required" });
   try {
     const pool = getPool();
+    const tenant = await pool.query(`select * from tenants where id = $1`, [tenantId]);
+    if (!tenant.rowCount) return res.status(404).json({ error: "Tenant not found in database" });
     const data = await Promise.allSettled([
-      pool.query(`select * from tenants where id = $1`, [tenantId]),
       pool.query(`select id, tenant_id, email, name, role, permissions, mfa_enabled, auth_id, created_at, superadmin_role from users where tenant_id = $1`, [tenantId]),
       pool.query(`select ub.* from user_branches ub join branches b on b.id = ub.branch_id where b.tenant_id = $1`, [tenantId]),
       pool.query(`select * from branches where tenant_id = $1`, [tenantId]),
@@ -67,22 +68,22 @@ export async function bootstrapHandler(req: Request, res: Response) {
       pool.query(`select * from audit_logs where tenant_id = $1 LIMIT 500`, [tenantId]),
       pool.query(`select * from module_records where tenant_id = $1 LIMIT 500`, [tenantId]),
     ]).then((results) => ({
-       tenants: results[0].status === 'fulfilled' ? results[0].value.rows.map(redactTenantSettingsSecrets) : [],
-      users: results[1].status === 'fulfilled' ? results[1].value.rows : [],
-      userBranches: results[2].status === 'fulfilled' ? results[2].value.rows : [],
-      branches: results[3].status === 'fulfilled' ? results[3].value.rows : [],
-      warehouses: results[4].status === 'fulfilled' ? results[4].value.rows : [],
-      customers: results[5].status === 'fulfilled' ? results[5].value.rows : [],
-      products: results[6].status === 'fulfilled' ? results[6].value.rows : [],
-      productStock: results[7].status === 'fulfilled' ? results[7].value.rows : [],
-      serviceTickets: results[8].status === 'fulfilled' ? sanitizeServiceTicketsForBootstrap(results[8].value.rows) : [],
-      posTransactions: results[9].status === 'fulfilled' ? results[9].value.rows : [],
-      posShifts: results[10].status === 'fulfilled' ? results[10].value.rows : [],
-      coaAccounts: results[11].status === 'fulfilled' ? results[11].value.rows : [],
-      journalEntries: results[12].status === 'fulfilled' ? results[12].value.rows : [],
-      journalLines: results[13].status === 'fulfilled' ? results[13].value.rows : [],
-      auditLogs: results[14].status === 'fulfilled' ? results[14].value.rows : [],
-      moduleRecords: results[15].status === 'fulfilled' ? results[15].value.rows : [],
+      tenants: tenant.rows.map(redactTenantSettingsSecrets),
+      users: results[0].status === 'fulfilled' ? results[0].value.rows : [],
+      userBranches: results[1].status === 'fulfilled' ? results[1].value.rows : [],
+      branches: results[2].status === 'fulfilled' ? results[2].value.rows : [],
+      warehouses: results[3].status === 'fulfilled' ? results[3].value.rows : [],
+      customers: results[4].status === 'fulfilled' ? results[4].value.rows : [],
+      products: results[5].status === 'fulfilled' ? results[5].value.rows : [],
+      productStock: results[6].status === 'fulfilled' ? results[6].value.rows : [],
+      serviceTickets: results[7].status === 'fulfilled' ? sanitizeServiceTicketsForBootstrap(results[7].value.rows) : [],
+      posTransactions: results[8].status === 'fulfilled' ? results[8].value.rows : [],
+      posShifts: results[9].status === 'fulfilled' ? results[9].value.rows : [],
+      coaAccounts: results[10].status === 'fulfilled' ? results[10].value.rows : [],
+      journalEntries: results[11].status === 'fulfilled' ? results[11].value.rows : [],
+      journalLines: results[12].status === 'fulfilled' ? results[12].value.rows : [],
+      auditLogs: results[13].status === 'fulfilled' ? results[13].value.rows : [],
+      moduleRecords: results[14].status === 'fulfilled' ? results[14].value.rows : [],
     }));
     res.json(toApiResponse(data));
   } catch (error: any) {
