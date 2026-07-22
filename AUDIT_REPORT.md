@@ -69,5 +69,22 @@ Tiga spec lama gagal sebelum alur modul karena memakai password test kosong dan 
 - Status tenant owner dikoreksi dari `ACTIVE` menjadi `TRIAL` karena `trial_ends_at` masih aktif sampai 21 Juli 2027; Keuangan, CRM, dan HR kini terbuka sesuai aturan trial penuh.
 - Bootstrap tenant tidak lagi mengirim `password_hash` pengguna ke browser; query user kini memakai whitelist kolom; file terkait: `src/server/controllers/bootstrap.controller.ts`.
 
+## Audit Super Admin — 22 Juli 2026
+- Endpoint monitoring platform dan bootstrap control-plane kini memerlukan autentikasi Super Admin; detail URL database, environment, memory, auth ID, dan permission user tidak dikirim ke client.
+- Header `X-SuperAdmin-Session-Id` dan `X-Impersonation-Session-Id` ditambahkan ke CORS; permission role assignment diseragamkan menjadi `users:assign_role`.
+- Konfigurasi tenant pada daftar/detail Super Admin memakai redaksi credential; perubahan status tenant mengembalikan kolom whitelist; pengukuran storage tercatat dalam audit event.
+- UI role/permission menghormati mode read-only; fungsi pembayaran langsung yang sudah dinonaktifkan backend dihapus; perhitungan MRR memakai harga plan dari API.
+- Seed permission Super Admin diperluas agar sesuai dengan permission route aktif.
+- Verifikasi: `npm run lint` — PASS; `git diff --check` — PASS. Test Node langsung gagal karena import TypeScript `.js` belum ditranspilasi dan satu test lama mengharapkan implementasi provisioning yang sudah berubah; build produksi tidak dijalankan sesuai aturan proyek.
+
+## Audit Alur Kerja Super Admin — 22 Juli 2026
+- Aktivasi undangan kini menyimpan `password_hash`, menerapkan policy password server, dan tidak memberi permission wildcard otomatis; file terkait: `src/server/controllers/invitation.controller.ts`.
+- Perubahan permission role menolak wildcard pada role non-root; penetapan `ROOT_ADMIN` hanya dapat dilakukan oleh `ROOT_ADMIN`; file terkait: `src/server/controllers/superadmin.controller.ts`.
+- Pembuatan invoice dan cron billing diblokir saat konsol read-only pada UI dan handler; file terkait: `src/components/SaaSSubscription.tsx`, `src/hooks/useSaaSBilling.ts`.
+- Custom domain tenant kini masuk payload konfigurasi; file terkait: `src/components/superadmin/InfrastructureConfigModal.tsx`.
+- Restore snapshot lokal yang sebelumnya dapat memberi klaim sukses palsu dinonaktifkan sampai endpoint restore database transaksional tersedia; file terkait: `src/components/superadmin/AuditRecovery.tsx`.
+- Migration `027_superadmin_audit_scope.sql` menyiapkan audit event platform tanpa tenant dan seed permission route aktif. Penerapan migration tertahan karena runner mendeteksi checksum `000_baseline.sql` telah berubah; checksum lama tidak diubah atau dilewati.
+- Verifikasi akhir: `npm run validate` — PASS termasuk build produksi; `git diff --check` — PASS; `npm run test:unit` — 15/15 PASS. `npm run check:hardening` belum dapat dijalankan karena `scripts/validate-hardening.cjs` tidak tersedia di repository.
+
 ## Status
 Database lokal berhasil dimigrasikan: 26 migration termasuk baseline. Migrasi idempoten dan schema auth terverifikasi.

@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { dbQuery, dbTransaction } from "../../lib/db.js";
 import { logger } from "../../lib/logger.js";
 import nodemailer from "nodemailer";
+import { redactTenantSettingsSecrets } from "./bootstrap.controller.js";
 
 async function sendInvitationEmail(email: string, ownerName: string, tenantName: string, token: string, expiresAt: string) {
   const host = process.env.EMAIL_HOST;
@@ -137,7 +138,14 @@ export async function collectStorageUsage(req: Request, res: Response) {
           }
         }
       }
-      await dbQuery(`UPDATE tenants SET storage_used_bytes=$2,storage_measured_at=now() WHERE id=$1`, [tenant.id, total]);
+      await dbTransaction(async (client) => {
+        await client.query(`UPDATE tenants SET storage_used_bytes=$2,storage_measured_at=now() WHERE id=$1`, [tenant.id, total]);
+        await client.query(`INSERT INTO superadmin_audit_events
+          (actor_user_id,actor_role,effective_tenant_id,action,resource_type,resource_id,outcome,client_ip,after_state)
+          VALUES ($1,$2,$3,'STORAGE_USAGE_COLLECTED','tenant',$3,'SUCCESS',$4,$5::jsonb)`,
+          [req.authActor?.userId, req.authActor?.role, tenant.id, clientIp(req), JSON.stringify({ storageUsedBytes: total })],
+        );
+      });
       measured++;
     }
     res.json({ success: true, measured, measuredAt: new Date().toISOString(), source: "local-storage" });
@@ -180,10 +188,11 @@ export async function listTenants(req: Request, res: Response) {
       params as any[],
     );
     const items = result.rows.map((row: any) => {
-      const limitMb = Number(row.settings?.limits?.storageMb || row.settings?.storageMb || 1024);
+      const sanitizedSettings = redactTenantSettingsSecrets({ settings: row.settings }).settings;
+      const limitMb = Number(sanitizedSettings?.limits?.storageMb || sanitizedSettings?.storageMb || 1024);
       const estimatedMb = Math.round(15.4 + row.transactionCount * 0.4 + row.serviceCount * 2.5 + row.userCount * 1.2 + row.branchCount * 5);
       const actualMb = row.storageUsedBytes == null ? null : Math.round(Number(row.storageUsedBytes) / 1048576);
-      return { ...row, usage: { usedMb: actualMb ?? estimatedMb, limitMb, percent: Math.min(100, Number((((actualMb ?? estimatedMb) / Math.max(limitMb, 1)) * 100).toFixed(1))), source: actualMb == null ? "estimated" : "actual", measuredAt: row.storageMeasuredAt } };
+      return { ...row, settings: sanitizedSettings, branding: row.branding, usage: { usedMb: actualMb ?? estimatedMb, limitMb, percent: Math.min(100, Number((((actualMb ?? estimatedMb) / Math.max(limitMb, 1)) * 100).toFixed(1))), source: actualMb == null ? "estimated" : "actual", measuredAt: row.storageMeasuredAt } };
     });
     res.json({ items, page, pageSize, total: Number(count.rows[0]?.count || 0) });
   } catch (err: any) {
@@ -204,7 +213,7 @@ export async function changeTenantStatus(req: Request, res: Response) {
       if (tenant.version !== expectedVersion) return { code: 409, error: "Data tenant telah berubah. Muat ulang halaman." };
       const updated = await client.query(
         `UPDATE tenants SET status=$2,status_category=$3,status_reason=$4,scheduled_reactivation_at=$5,
-          version=version+1 WHERE id=$1 RETURNING *`,
+          version=version+1 WHERE id=$1 RETURNING id,name,status,status_category,status_reason,version,scheduled_reactivation_at,storage_used_bytes,storage_measured_at`,
         [tenant.id, status, category.trim(), reason.trim(), scheduledReactivationAt || null],
       );
       await client.query(`INSERT INTO tenant_status_history
@@ -447,41 +456,81 @@ export async function listRolePermissions(_req: Request, res: Response) {
 }
 
 export async function updateRolePermissions(req: Request, res: Response) {
-  const permissions = Array.isArray(req.body?.permissions) ? req.body.permissions.filter((p: unknown) => typeof p === "string") : null;
-  if (!permissions) return res.status(422).json({ error: "permissions harus berupa array." });
+  const { role } = req.params;
+  const permissions = Array.isArray(req.body?.permissions) ? req.body.permissions.filter((p: unknown) => typeof p === "string") : [];
+
+  if (!/^[A-Z][A-Z0-9_]{2,31}$/.test(role)) {
+    return res.status(422).json({ error: "Format role tidak valid." });
+  }
+
+  if (role === "ROOT_ADMIN" && req.authActor?.superadminRole !== "ROOT_ADMIN") {
+    return res.status(403).json({ error: "Hanya ROOT_ADMIN yang dapat mengubah permission ROOT_ADMIN." });
+  }
+  if (permissions.includes("*") && role !== "ROOT_ADMIN") {
+    return res.status(422).json({ error: "Permission wildcard (*) hanya diizinkan untuk ROOT_ADMIN." });
+  }
+
   try {
-    await dbTransaction(async (client) => {
-      await client.query(`DELETE FROM superadmin_role_permissions WHERE role=$1`, [req.params.role]);
-      for (const permission of permissions) await client.query(`INSERT INTO superadmin_role_permissions(role,permission) VALUES ($1,$2)`, [req.params.role, permission]);
-      await adminAudit(client, req, "ROLE_PERMISSIONS_UPDATED", "superadmin_role", req.params.role, null, null, { role: req.params.role, permissions });
+    const result = await dbTransaction(async (client) => {
+      const before = await client.query(`SELECT role, array_agg(permission ORDER BY permission) AS permissions FROM superadmin_role_permissions WHERE role=$1 GROUP BY role`, [role]);
+
+      await client.query(`DELETE FROM superadmin_role_permissions WHERE role=$1`, [role]);
+      for (const permission of permissions) {
+        await client.query(`INSERT INTO superadmin_role_permissions(role,permission) VALUES ($1,$2)`, [role, permission]);
+      }
+      const after = { role, permissions };
+      await adminAudit(client, req, "ROLE_PERMISSIONS_UPDATED", "superadmin_role", role, null, before.rows[0] || null, after, { role, permissions });
     });
-    res.json({ success: true, role: req.params.role, permissions });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+    res.json({ success: true, role, permissions });
+  } catch (err: any) {
+    logger.error({ err: err.message }, "updateRolePermissions failed");
+    res.status(500).json({ error: "Gagal memperbarui permission role." });
+  }
 }
 
 export async function listSuperAdminUsers(_req: Request, res: Response) {
   try {
     const result = await dbQuery(`SELECT id,name,email,superadmin_role AS "superadminRole",mfa_enabled AS "mfaEnabled",created_at AS "createdAt" FROM users WHERE role='SUPER_ADMIN' ORDER BY name,email`);
     res.json({ users: result.rows });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    logger.error({ err: err.message }, "listSuperAdminUsers failed");
+    res.status(500).json({ error: "Daftar user Super Admin gagal dimuat." });
+  }
 }
 
 export async function assignSuperAdminRole(req: Request, res: Response) {
+  const { userId } = req.params;
   const role = String(req.body?.role || "");
+
+  if (!/^[A-Z][A-Z0-9_]{2,31}$/.test(role)) {
+    return res.status(422).json({ error: "Format role tidak valid." });
+  }
+
   try {
-    const valid = await dbQuery(`SELECT 1 FROM superadmin_role_permissions WHERE role=$1 LIMIT 1`, [role]);
-    if (!valid.rows[0]) return res.status(422).json({ error: "Role Super Admin tidak valid." });
+    const validRole = await dbQuery(`SELECT 1 FROM superadmin_role_permissions WHERE role=$1 LIMIT 1`, [role]);
+    if (!validRole.rows[0]) return res.status(422).json({ error: "Role Super Admin tidak valid." });
+
     const result = await dbTransaction(async (client) => {
-      const before = await client.query(`SELECT id,name,email,superadmin_role FROM users WHERE id=$1 AND role='SUPER_ADMIN' FOR UPDATE`, [req.params.userId]);
+      const before = await client.query(`SELECT id,name,email,superadmin_role FROM users WHERE id=$1 AND role='SUPER_ADMIN' FOR UPDATE`, [userId]);
       if (!before.rows[0]) return { code: 404, error: "User Super Admin tidak ditemukan." };
-      if (before.rows[0].id === req.authActor?.userId && role !== "ROOT_ADMIN") return { code: 422, error: "ROOT_ADMIN tidak dapat menurunkan role dirinya sendiri." };
-      const after = await client.query(`UPDATE users SET superadmin_role=$2 WHERE id=$1 RETURNING id,name,email,superadmin_role AS "superadminRole"`, [req.params.userId, role]);
-      await adminAudit(client, req, "SUPERADMIN_ROLE_ASSIGNED", "user", req.params.userId, null, before.rows[0], after.rows[0], { role });
+
+      if (role === "ROOT_ADMIN" && req.authActor?.superadminRole !== "ROOT_ADMIN") {
+        return { code: 403, error: "Hanya ROOT_ADMIN yang dapat menetapkan role ROOT_ADMIN." };
+      }
+      if (before.rows[0].id === req.authActor?.userId && role !== "ROOT_ADMIN") {
+        return { code: 403, error: "ROOT_ADMIN tidak dapat menurunkan role dirinya sendiri." };
+      }
+
+      const after = await client.query(`UPDATE users SET superadmin_role=$2 WHERE id=$1 RETURNING id,name,email,superadmin_role AS "superadminRole"`, [userId, role]);
+      await adminAudit(client, req, "SUPERADMIN_ROLE_ASSIGNED", "user", userId, null, before.rows[0], after.rows[0], { role });
       return { user: after.rows[0] };
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
     res.json({ success: true, ...result });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    logger.error({ err: err.message }, "assignSuperAdminRole failed");
+    res.status(500).json({ error: "Gagal menetapkan role Super Admin." });
+  }
 }
 
 export async function getTenantDetail(req: Request, res: Response) {
@@ -495,7 +544,7 @@ export async function getTenantDetail(req: Request, res: Response) {
       dbQuery(`SELECT id,action,outcome,resource_type AS "resourceType",resource_id AS "resourceId",created_at AS "createdAt",metadata FROM superadmin_audit_events WHERE effective_tenant_id=$1 ORDER BY created_at DESC LIMIT 100`, [req.params.id]),
     ]);
     if (!tenant.rows[0]) return res.status(404).json({ error: "Tenant tidak ditemukan." });
-    res.json({ tenant: tenant.rows[0], users: users.rows, invoices: invoices.rows, statusHistory: statusHistory.rows, impersonations: impersonations.rows, audit: audit.rows });
+    res.json({ tenant: redactTenantSettingsSecrets(tenant.rows[0]), users: users.rows, invoices: invoices.rows, statusHistory: statusHistory.rows, impersonations: impersonations.rows, audit: audit.rows });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 }
 

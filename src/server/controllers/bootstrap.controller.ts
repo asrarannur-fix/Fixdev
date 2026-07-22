@@ -35,12 +35,12 @@ export async function platformBootstrapHandler(req: Request, res: Response) {
     const pool = getPool();
     const [tenants, users, auditLogs] = await Promise.all([
       pool.query(`select id, name, subdomain, status, tier, trial_ends_at, created_at, version, status_reason, scheduled_reactivation_at, storage_used_bytes, storage_measured_at from tenants order by created_at desc`),
-      pool.query(`select id, tenant_id, email, name, role, permissions, mfa_enabled, auth_id, created_at from users order by created_at desc`),
+      pool.query(`select id, tenant_id, email, name, role, mfa_enabled, created_at from users order by created_at desc`),
       pool.query(`select * from audit_logs order by created_at desc limit 500`).catch(() => ({ rows: [] })),
     ]);
     res.json(toApiResponse({ tenants: tenants.rows, users: users.rows, auditLogs: auditLogs.rows }));
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: "Data platform gagal dimuat." });
   }
 }
 

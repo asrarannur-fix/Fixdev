@@ -9,7 +9,7 @@ import express from "express";
 import path from "path";
 import rateLimit from "express-rate-limit";
 import { logger } from "./src/lib/logger.js";
-import { requireAdminToken, requireSuperAdmin, requireJwt, requireTenantScope, requireRoles, requireSettingsDomain } from "./src/middleware/auth.middleware.js";
+import { requireAdminToken, requireSuperAdmin, requireSuperAdminPermission, requireJwt, requireTenantScope, requireRoles, requireSettingsDomain } from "./src/middleware/auth.middleware.js";
 import { requireFeature } from "./src/middleware/feature.middleware.js";
 import {
   bootstrapHandler,
@@ -128,7 +128,7 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Credentials", "true");
   }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Tenant-ID,X-Branch-ID,X-SuperAdmin-Mode,X-SuperAdmin-Permissions,x-admin-token");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Tenant-ID,X-Branch-ID,X-SuperAdmin-Mode,X-SuperAdmin-Permissions,X-SuperAdmin-Session-Id,X-Impersonation-Session-Id,x-admin-token");
   if (req.method === "OPTIONS") return origin && !allowedOrigins.includes(origin) ? res.sendStatus(403) : res.sendStatus(204);
   next();
 });
@@ -200,7 +200,7 @@ app.post("/api/whatsapp/queue", requireJwt, requireTenantScope, whatsappPostQueu
 
 app.get("/api/auth/profile", requireJwt, authProfileHandler);
 
-app.get("/api/platform/bootstrap", requireJwt, requireSuperAdmin, platformBootstrapHandler);
+app.get("/api/platform/bootstrap", requireJwt, requireSuperAdmin, requireSuperAdminPermission("platform:view_bootstrap"), platformBootstrapHandler);
 app.get("/api/platform/health", requireJwt, requireSuperAdmin, platformHealthHandler);
 app.get("/api/bootstrap", requireJwt, requireTenantScope, bootstrapHandler);
 app.get("/api/module-records", requireJwt, requireTenantScope, moduleRecordsGetHandler);
@@ -239,7 +239,7 @@ app.use("/api/complaint-templates", requireJwt, requireTenantScope, complaintTem
 // Public / Service routes
 app.use("/api/service-tracking", serviceTrackerRoutes);
 app.use("/api/v1", apiV1Routes);
-app.use("/api/monitoring", monitoringRoutes);
+app.use("/api/monitoring", requireJwt, requireSuperAdmin, monitoringRoutes);
 
 // Generic CRUD API plugin (tenant-isolated, column-whitelisted)
 app.use("/api/crud", createCrudRouter());

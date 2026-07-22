@@ -498,7 +498,7 @@ export const InfrastructureConfigModal: React.FC<
                 },
                 branding: {
                   ...tenant.branding,
-
+                  customDomain: cleanCustomDomain || undefined,
                 },
                 settings: {
                   ...tenant.settings,

@@ -100,15 +100,12 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
     activeTenant,
     isSuperAdmin ? () => undefined : updateTenant,
     apiFetch,
+    readOnlyMode,
   );
 
   const { showToast } = useToast();
 
-  const planPrices: Record<string, number> = {
-    [SubscriptionTier.BASIC]: 100000,
-    [SubscriptionTier.PRO]: 250000,
-    [SubscriptionTier.ENTERPRISE]: 1500000,
-  };
+  const planPrices = Object.fromEntries(plans.map((plan) => [plan.tier, plan.priceMonthly]));
   const planDistribution = tenants.reduce<Record<string, number>>((acc, tenant) => {
     const tier = tenant.tier || SubscriptionTier.BASIC;
     acc[tier] = (acc[tier] || 0) + 1;
@@ -1016,7 +1013,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
 
                   <button
                     onClick={() => handleSelectPlan(p)}
-                    disabled={!activeTenant || (isCurrent && billingCycle === "monthly")}
+                    disabled={readOnlyMode || !activeTenant || (isCurrent && billingCycle === "monthly")}
                     className={`w-full py-2.5 md:py-3 rounded-lg md:rounded-xl font-bold text-xs md:text-sm transition-all flex items-center justify-center gap-2 ${
                       isCurrent || !activeTenant
                         ? "bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-slate-200 dark:border-zinc-800"
@@ -1064,7 +1061,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
           </div>
           <button
             onClick={handleRunCronSimulation}
-            disabled={cronLoading}
+            disabled={readOnlyMode || cronLoading}
             className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-900/50 disabled:cursor-not-allowed text-white font-mono text-xs md:text-sm font-bold py-2.5 md:py-3 px-4 rounded-xl flex items-center justify-center gap-2 border border-slate-800 hover:shadow-lg hover:shadow-slate-950/50 transition-all"
           >
             {cronLoading ? (

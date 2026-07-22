@@ -2,8 +2,9 @@ import { createHash, randomUUID } from "crypto";
 import type { Request, Response } from "express";
 import { dbQuery, dbTransaction } from "../../lib/db.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { passwordPolicyError } from "../lib/passwordPolicy.js";
+
+const MIN_PASSWORD_LENGTH = 8;
 
 export async function validateInvitation(req: Request, res: Response) {
   const token = String(req.query.token || "");
@@ -16,7 +17,11 @@ export async function validateInvitation(req: Request, res: Response) {
 
 export async function acceptInvitation(req: Request, res: Response) {
   const { token, password } = req.body || {};
-  if (typeof token !== "string" || token.length < 20 || typeof password !== "string" || password.length < 8) return res.status(422).json({ error: "Token dan password minimal 8 karakter wajib diisi." });
+  if (typeof token !== "string" || token.length < 20 || typeof password !== "string") return res.status(422).json({ error: "Token dan password wajib diisi." });
+
+  const policyError = passwordPolicyError(password, { minPasswordLength: MIN_PASSWORD_LENGTH });
+  if (policyError) return res.status(422).json({ error: policyError });
+
   const hash = createHash("sha256").update(token).digest("hex");
   try {
     const result = await dbTransaction(async (client) => {
@@ -30,7 +35,7 @@ export async function acceptInvitation(req: Request, res: Response) {
       const userId = randomUUID();
       const passwordHash = await bcrypt.hash(password, 10);
       const branch = await client.query(`SELECT id FROM branches WHERE tenant_id=$1 ORDER BY created_at LIMIT 1`, [invitation.tenant_id]);
-      await client.query(`INSERT INTO users(id,tenant_id,email,name,role,permissions,mfa_enabled,created_at) VALUES ($1,$2,$3,$4,$5,ARRAY['*']::text[],false,now())`, [userId, invitation.tenant_id, invitation.email, invitation.name, invitation.role]);
+      await client.query(`INSERT INTO users(id,tenant_id,email,name,role,password_hash,mfa_enabled,created_at) VALUES ($1,$2,$3,$4,$5,$6,false,now())`, [userId, invitation.tenant_id, invitation.email, invitation.name, invitation.role, passwordHash]);
       if (branch.rows[0]) await client.query(`INSERT INTO user_branches(user_id,branch_id) VALUES ($1,$2)`, [userId, branch.rows[0].id]);
       await client.query(`UPDATE tenant_invitations SET accepted_at=now(),provisioning_status='COMPLETED',provisioning_error=NULL WHERE id=$1`, [invitation.id]);
       return { user: { id: userId, email: invitation.email, name: invitation.name, role: invitation.role, tenantId: invitation.tenant_id } };

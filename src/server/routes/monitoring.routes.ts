@@ -18,7 +18,6 @@ let errorCount = 0;
 router.get("/health", async (req, res) => {
   requestCount++;
   const uptime = Math.floor((Date.now() - startTime) / 1000);
-  const memory = process.memoryUsage();
 
   let poolStatus = "unchecked";
   try {
@@ -31,23 +30,12 @@ router.get("/health", async (req, res) => {
     poolStatus = "disconnected";
   }
 
-  const dbUrl = process.env.DATABASE_URL || "";
-
   res.json({
     status: poolStatus === "connected" ? "healthy" : "degraded",
     uptime: `${uptime}s`,
     startedAt: new Date(startTime).toISOString(),
     requests: { total: requestCount, errors: errorCount },
-    memory: {
-      heapUsed: `${Math.round(memory.heapUsed / 1024 / 1024)} MB`,
-      heapTotal: `${Math.round(memory.heapTotal / 1024 / 1024)} MB`,
-      rss: `${Math.round(memory.rss / 1024 / 1024)} MB`,
-    },
-    database: {
-      status: poolStatus,
-      url: dbUrl.replace(/\/\/.*@/, "//***:***@"),
-    },
-    environment: process.env.NODE_ENV || "development",
+    database: { status: poolStatus },
   });
 });
 
@@ -85,12 +73,12 @@ router.get("/health/db", async (req, res) => {
         });
       } catch (err: any) {
         allOk = false;
-        results.push({ table: q.name, status: "error", error: err.message });
+        results.push({ table: q.name, status: "error" });
       }
     }
   } catch (err: any) {
     allOk = false;
-    results.push({ error: "Connection failed: " + err.message });
+    results.push({ error: "Connection failed" });
   } finally {
     client?.release();
   }

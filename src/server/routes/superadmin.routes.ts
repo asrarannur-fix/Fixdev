@@ -73,6 +73,6 @@ router.post("/incidents/:id/actions", requireSuperAdminPermission("incidents:man
 router.get("/roles", requireSuperAdminPermission("permissions:view_roles"), listRolePermissions);
 router.put("/roles/:role", requireSuperAdminPermission("permissions:manage_roles"), updateRolePermissions);
 router.get("/users", requireSuperAdminPermission("users:view_superadmin_users"), listSuperAdminUsers);
-router.put("/users/:userId/role", requireSuperAdminPermission("users:assign_superadmin_role"), assignSuperAdminRole);
+router.put("/users/:userId/role", requireSuperAdminPermission("users:assign_role"), assignSuperAdminRole);
 
 export default router;

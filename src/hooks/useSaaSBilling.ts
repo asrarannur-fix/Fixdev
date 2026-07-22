@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { SubscriptionTier, SaaSInvoice } from "../types";
+import { SubscriptionTier } from "../types";
 import { useToast } from "../components/ui/Toast";
 
 export interface Plan {
@@ -48,6 +48,7 @@ export function useSaaSBilling(
   activeTenant: any,
   updateTenant: (id: string, data: any) => void,
   apiFetch: (url: string, init?: RequestInit) => Promise<Response>,
+  readOnlyMode = false,
 ) {
   const { showToast } = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -175,6 +176,10 @@ export function useSaaSBilling(
 
   // Handle plan selection & invoice creation
   const handleSelectPlan = async (plan: Plan, paymentChannel: "MIDTRANS" | "MANUAL" = "MANUAL") => {
+    if (readOnlyMode) {
+      showToast("Aktifkan Edit Mode untuk membuat invoice.", "error");
+      return;
+    }
     if (!selectedTenantId || !activeTenant) {
       showToast("Pilih tenant aktif sebelum membuat invoice.", "error");
       return;
@@ -217,84 +222,6 @@ export function useSaaSBilling(
     }
   };
 
-  // Simulate payment confirmation
-  const handleSimulatePayment = async () => {
-    if (!invoice || !selectedTenantId || !activeTenant) return;
-    try {
-      setPaymentLoading(true);
-      const response = await apiFetch("/api/billing/pay-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invoiceId: invoice.id,
-          tenantId: selectedTenantId,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Update subscription in global state
-        const updatedInvoice: SaaSInvoice = {
-          id: data.invoice.id,
-          tenantId: selectedTenantId,
-          date: data.invoice.date,
-          dueDate: data.invoice.dueDate,
-          amount: data.invoice.amount,
-          tier: data.invoice.tier as SubscriptionTier,
-          status: "PAID",
-        };
-
-        const currentHistory = activeTenant?.billingHistory || [];
-        const index = currentHistory.findIndex(
-          (inv: any) => inv.id === invoice.id,
-        );
-        let updatedHistory = [...currentHistory];
-        if (index > -1) {
-          updatedHistory[index] = updatedInvoice;
-        } else {
-          updatedHistory.unshift(updatedInvoice);
-        }
-
-        // Apply new tier & boundaries limits matching the tier specs
-        const selectedPlanSpecs = plans.find(
-          (p) => p.tier === data.invoice.tier,
-        );
-        const limits = selectedPlanSpecs
-          ? selectedPlanSpecs.limits
-          : { users: 5, branches: 2, storageMb: 1024, features: [] };
-
-        updateTenant(selectedTenantId, {
-          tier: data.invoice.tier as SubscriptionTier,
-          status: "ACTIVE",
-          trialEndsAt: data.subscriptionEndsAt,
-          limits: {
-            users: limits.users,
-            branches: limits.branches,
-            storageMb: limits.storageMb,
-            features: limits.features,
-          },
-          billingHistory: updatedHistory,
-        });
-
-        showToast(
-          `Pembayaran Sukses!\n${data.message}\nTenant ditingkatkan ke paket ${data.invoice.tier}.`,
-          "success",
-        );
-        setShowQrModal(false);
-        setInvoice(null);
-        loadPlansAndHistory();
-      } else {
-        showToast("Gagal memverifikasi pembayaran.", "error");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("Error memproses verifikasi.", "error");
-    } finally {
-      setPaymentLoading(false);
-    }
-  };
-
   // Toggle Auto-Renew state
   const handleToggleAutoRenew = async (
     invoiceId: string,
@@ -320,6 +247,10 @@ export function useSaaSBilling(
 
   // Run Cron simulation
   const handleRunCronSimulation = async () => {
+    if (readOnlyMode) {
+      showToast("Aktifkan Edit Mode untuk menjalankan cron billing.", "error");
+      return;
+    }
     try {
       setCronLoading(true);
       setCronLogs([
@@ -379,7 +310,6 @@ export function useSaaSBilling(
     setDetailModalInvoice,
     loadPlansAndHistory,
     handleSelectPlan,
-    handleSimulatePayment,
     handleToggleAutoRenew,
     handleRunCronSimulation,
   };

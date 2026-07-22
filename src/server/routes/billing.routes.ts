@@ -45,7 +45,7 @@ router.get("/public-plans", getPublicBillingPlans);
 // Everything else requires an authenticated session.
 router.use(requireJwt);
 
-router.get("/plans", requireTenantOrSuperAdminPermission("billing:view_plans"), getBillingPlans);
+router.get("/plans", requireTenantOrSuperAdminPermission("billing:view_plans", true), getBillingPlans);
 router.post("/plans", requireSuperAdminPermission("billing:manage_plans"), requireSuperAdminConsoleSession, updateBillingPlans);
 router.get("/subscription", requireTenantScope, requireTenantOrSuperAdminPermission("billing:view_subscription"), getSubscription);
 router.post("/create-invoice", requireTenantOrSuperAdminPermission("billing:manage_invoices"), requireRoles("OWNER", "ADMIN", "SUPER_ADMIN"), createInvoice);
@@ -60,10 +60,10 @@ router.post("/notify-overdue-alerts", requireSuperAdminPermission("operations:ru
 router.post("/notify-payment-confirmation", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, sendPaymentConfirmation);
 router.get("/gateway-config", requireSuperAdminPermission("billing:view_config"), getGatewayConfig);
 router.post("/gateway-config", requireSuperAdminPermission("billing:manage_config"), requireSuperAdminConsoleSession, updateGatewayConfig);
-router.get("/manual-payment-config", requireTenantOrSuperAdminPermission("billing:view_config"), getManualPaymentConfig);
+router.get("/manual-payment-config", requireTenantOrSuperAdminPermission("billing:view_config", true), getManualPaymentConfig);
 router.post("/manual-payment-config/qris-upload", requireTenantOrSuperAdminPermission("billing:manage_config"), requireSuperAdminConsoleSession, createManualQrisUpload);
 router.put("/manual-payment-config", requireTenantOrSuperAdminPermission("billing:manage_config"), requireSuperAdminConsoleSession, updateManualPaymentConfig);
-router.get("/manual-payments", requireTenantOrSuperAdminPermission("billing:view_manual_payments"), listManualPayments);
+router.get("/manual-payments", requireTenantOrSuperAdminPermission("billing:view_manual_payments", true), listManualPayments);
 router.post(
   "/invoices/:invoiceId/manual-payments/upload-url",
   requireTenantOrSuperAdminPermission("billing:manage_manual_payments"),

@@ -61,6 +61,8 @@ declare global {
  * Validates Bearer JWT issued by our local auth system.
  * On success, attaches req.authActor with user profile from DB.
  */
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 export const requireJwt = async (
   req: Request,
   res: Response,
@@ -251,14 +253,12 @@ export const requireSettingsDomain = (domainParam = "domain") => (
   return res.status(403).json({ error: "You do not have permission for this settings domain." });
 };
 
-const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-
 /**
  * Resolves an explicit tenant for control-plane operations. Unlike tenant
  * impersonation, this is only for dedicated Super Admin endpoints that already
  * require a granular permission (for example platform billing management).
  */
-export const requireTenantOrSuperAdminPermission = (permission: string) => async (
+export const requireTenantOrSuperAdminPermission = (permission: string, allowPlatformScope = false) => async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -269,7 +269,8 @@ export const requireTenantOrSuperAdminPermission = (permission: string) => async
     req.headers["x-tenant-id"] ||
     req.query.tenantId || req.query.tenant_id || "",
   ).trim();
-  if (!requestedTenant) return res.status(400).json({ error: "tenantId is required." });
+  if (!requestedTenant && !allowPlatformScope) return res.status(400).json({ error: "tenantId is required." });
+  if (!requestedTenant && allowPlatformScope) return next();
 
   let permissions = req.authActor.permissions;
   if (req.authActor.superadminRole) {
