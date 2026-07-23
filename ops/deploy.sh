@@ -61,8 +61,18 @@ mkdir -p logs
 pm2 startOrRestart ecosystem.config.cjs --only "$PM2_NAME" --update-env
 
 # Verify the process serves the health endpoint before saving state.
-if ! curl -fsS -H "Host: fixdev.web.id" http://127.0.0.1:3000/api/health >/dev/null; then
-    echo "❌ Error: Production health check failed."
+healthy=false
+for attempt in $(seq 1 15); do
+    if curl -fsS -H "Host: fixdev.web.id" http://127.0.0.1:3000/api/health >/dev/null; then
+        healthy=true
+        echo "✅ Production health check passed on attempt $attempt."
+        break
+    fi
+    echo "⏳ Production belum siap (attempt $attempt/15), menunggu 2 detik..."
+    sleep 2
+done
+if [ "$healthy" != true ]; then
+    echo "❌ Error: Production health check failed after 15 attempts."
     exit 1
 fi
 
