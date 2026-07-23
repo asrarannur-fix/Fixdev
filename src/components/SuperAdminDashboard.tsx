@@ -251,7 +251,6 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
           addUser={addUser}
           updateTenantStatus={updateTenantStatus}
           impersonateTenant={impersonateTenant}
-          showConfirm={showConfirm}
           setSelectedTenantForConfig={setSelectedTenantForConfig}
           setConfigSubdomain={setConfigSubdomain}
           setConfigCustomDomain={setConfigCustomDomain}

@@ -624,6 +624,46 @@ export async function checkTenantAvailability(req: Request, res: Response) {
   } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
+export async function permanentDeleteTenant(req: Request, res: Response) {
+  try {
+    const result = await dbTransaction(async (client) => {
+      const locked = await client.query(`SELECT id,name,status,tier,subdomain FROM tenants WHERE id=$1 FOR UPDATE`, [req.params.id]);
+      const tenant = locked.rows[0];
+      if (!tenant) return { code: 404, error: "Tenant tidak ditemukan." };
+
+      const auditSnapshot = await client.query(
+        `SELECT id,action,outcome,resource_type AS "resourceType",resource_id AS "resourceId",created_at AS "createdAt",metadata
+         FROM superadmin_audit_events WHERE effective_tenant_id=$1 ORDER BY created_at DESC LIMIT 500`,
+        [tenant.id],
+      );
+
+      await client.query(`INSERT INTO superadmin_audit_events
+        (actor_user_id, actor_role, effective_tenant_id, action, resource_type, resource_id, outcome, client_ip, before_state, metadata)
+        VALUES ($1,$2,$3,'TENANT_PERMANENT_DELETE','tenant',$4,'SUCCESS',$5,$6::jsonb,$7::jsonb)`,
+        [req.authActor?.userId, req.authActor?.role, tenant.id, tenant.id, clientIp(req),
+          JSON.stringify({ name: tenant.name, subdomain: tenant.subdomain, status: tenant.status, tier: tenant.tier }),
+          JSON.stringify({ auditEventCount: auditSnapshot.rows.length })]);
+
+      await client.query(`DELETE FROM tenants WHERE id=$1`, [tenant.id]);
+
+      const fs = await import("fs");
+      const path = await import("path");
+      const uploadDir = process.env.FILE_UPLOAD_DIR || "./uploads";
+      const tenantDir = path.join(uploadDir, `tenant-${tenant.id}`);
+      if (fs.existsSync(tenantDir)) {
+        fs.rmSync(tenantDir, { recursive: true, force: true });
+      }
+
+      return { tenant: { id: tenant.id, name: tenant.name, subdomain: tenant.subdomain } };
+    });
+    if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
+    res.json({ success: true, deleted: (result as any).tenant });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId: req.params.id }, "Permanent tenant delete failed");
+    res.status(500).json({ error: "Hapus permanen tenant gagal." });
+  }
+}
+
 export async function registerTenant(req: Request, res: Response) {
   const { name, subdomain, ownerName, ownerEmail, tier = "PRO", idempotencyKey } = req.body || {};
   const cleanName = String(name || "").trim();

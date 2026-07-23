@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Server, HardDrive, Lock, Settings2, Play, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { SubscriptionTier, TenantStatus, Tenant } from "../../types";
 import { useToast } from "../ui/Toast";
+import { useConfirm } from "../ui/ConfirmDialog";
 import { useSaaS } from "../../context/SaaSContext";
 import { readJsonResponse } from "../../utils/apiResponse";
 
@@ -28,7 +29,6 @@ interface TenantsManagerProps {
   setConfigName: (v: string) => void;
   setConfigTier: (v: SubscriptionTier) => void;
   setConfigStatus: (v: TenantStatus) => void;
-  showConfirm: (args: any) => Promise<boolean>;
   readOnlyMode?: boolean;
 }
 
@@ -56,7 +56,32 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   readOnlyMode = false,
 }) => {
   const { showToast } = useToast();
+  const { confirm: showConfirm } = useConfirm();
   const { apiFetch, refreshData } = useSaaS();
+  const [isDeletingTenant, setIsDeletingTenant] = useState(false);
+
+  const deleteTenantPermanently = async (tenantId: string, tenantName: string) => {
+    if (await showConfirm({
+      title: "Hapus Permanen Tenant",
+      message: `Yakin hapus permanen ${tenantName}? Ini akan menghapus SEMUA data tenant secara permanen dan tidak bisa dibatalkan.`,
+      confirmLabel: "Ya, Hapus Permanen",
+      cancelLabel: "Batal",
+      type: "danger",
+    })) {
+      setIsDeletingTenant(true);
+      try {
+        await apiFetch(`/api/superadmin/tenants/${tenantId}/permanent`, { method: "DELETE" });
+        showToast(`Tenant ${tenantName} berhasil dihapus permanen.`, "success");
+        refreshData();
+        setDetailTenant(null);
+      } catch (error: any) {
+        showToast(error.message || "Gagal menghapus tenant secara permanen.", "error");
+      } finally {
+        setIsDeletingTenant(false);
+      }
+    }
+  };
+
   const [statusDialogTenant, setStatusDialogTenant] = useState<Tenant | null>(null);
   const [statusCategory, setStatusCategory] = useState("BILLING");
   const [statusReason, setStatusReason] = useState("");
@@ -524,15 +549,14 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                         >
                           <Settings2 className="w-3.5 h-3.5" /> Limit & Fitur
                         </button>
-                        <div
-                          className="rounded-lg border border-amber-200/60 dark:border-amber-900/30 bg-amber-50/70 dark:bg-amber-950/20 px-2.5 py-2 text-[9px] leading-relaxed text-amber-700 dark:text-amber-300"
-                          id={`sa-tenant-danger-zone-${t.id}`}
+                        <button
+                          onClick={() => void deleteTenantPermanently(t.id, t.name)}
+                          disabled={isDeletingTenant}
+                          className="flex items-center justify-center gap-1.5 bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200/50 dark:border-red-900/30 px-2.5 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all w-full shadow-xs"
+                          title="Hapus permanen tenant dan semua datanya. TIDAK BISA DIBATALKAN."
                         >
-                          <p className="font-black uppercase tracking-wider">Danger Zone</p>
-                          <p>
-                            Hard delete disembunyikan. Gunakan suspend/reactivate agar data tenant tetap aman.
-                          </p>
-                        </div>
+                          <Server className="w-3.5 h-3.5" /> Hapus Permanen
+                        </button>
                       </div>
                     </td>
                   </tr>
