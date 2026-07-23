@@ -367,9 +367,9 @@ export async function listManualPayments(req: Request, res: Response) {
     res.json({ requests: result.rows });
   } catch (err: any) {
     if (err?.code === "42P01") {
+      logger.error({ err: err.message }, "Manual payment schema missing — migration required");
       return res.status(503).json({
-        error: "Schema pembayaran manual belum diterapkan.",
-        migrationRequired: ["005_billing.sql", "006_secure_manual_payments.sql"],
+        error: "Fitur pembayaran manual belum tersedia.",
       });
     }
     logger.error({ err: err.message }, "Could not list manual payments");

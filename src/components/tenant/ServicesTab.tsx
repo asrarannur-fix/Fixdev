@@ -253,7 +253,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     setMicroChargeable(false);
     setMicroUnitPrice("");
     setMicroNote("");
-    try { await loadMicroComponents(); } catch (_) {}
+    try { await loadMicroComponents(); } catch (_) { console.warn("Gagal memuat micro components (ServicesTab)"); }
   };
   const filteredMicroComponents = useMemo(() => {
     const query = microSearch.trim().toLowerCase();

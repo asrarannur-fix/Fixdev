@@ -136,7 +136,7 @@ export const TenantDashboard = ({
         try {
           const parsed = JSON.parse(details);
           newTx.notes = `Split: ${posPaymentMethod} (Rp ${(Number(posAmountPaid) || 0).toLocaleString()}) + ${parsed.splitMethod} (Rp ${(parsed.splitNominal || 0).toLocaleString()})`;
-        } catch (_) {}
+        } catch (_) { console.warn("Gagal mem-parsing detail pembayaran dengan split (TenantDashboard)"); }
       }
       setPosCart([]);
       setPosAmountPaid("");

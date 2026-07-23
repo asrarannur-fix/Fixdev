@@ -1,8 +1,8 @@
 // @vitest-environment node
 
 import { describe, it, expect } from "vitest";
-import { validateSettingsDomain, mergeSettingsSecrets } from "./settings.controller.ts";
-import { redactTenantSettingsSecrets } from "./bootstrap.controller.ts";
+import { validateSettingsDomain, mergeSettingsSecrets } from "../src/server/controllers/settings.controller.js";
+import { redactTenantSettingsSecrets } from "../src/server/controllers/bootstrap.controller.js";
 
 describe("settings validator", () => {
   it("rejects domain settings with non-valid fields, billing limits, invalid branding colors or non-HTTPS URLs", () => {

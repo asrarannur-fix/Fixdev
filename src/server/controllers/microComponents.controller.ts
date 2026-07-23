@@ -72,7 +72,14 @@ export async function createMicroComponent(req: Request, res: Response) {
     });
     const row = await dbQuery(`SELECT ${componentSelect} ${componentJoin} WHERE mc.id=$1 AND mc.tenant_id=$2`, [result, req.tenantId]);
     res.status(201).json({ data: row.rows[0] });
-  } catch (error: any) { res.status(error.status || (error.code === "23505" ? 409 : 500)).json({ error: error.code === "23505" ? "SKU sudah digunakan pada Inventory." : error.message }); }
+  } catch (error: any) {
+    const isAppError = !!error.status;
+    const statusCode = error.status || (error.code === "23505" ? 409 : 500);
+    const message = error.code === "23505" ? "SKU sudah digunakan pada Inventory."
+      : isAppError ? (error.message || "Operasi komponen gagal diproses.")
+      : "Operasi komponen gagal diproses.";
+    res.status(statusCode).json({ error: message });
+  }
 }
 
 export async function updateMicroComponent(req: Request, res: Response) {
@@ -91,7 +98,14 @@ export async function updateMicroComponent(req: Request, res: Response) {
     });
     const row=await dbQuery(`SELECT ${componentSelect} ${componentJoin} WHERE mc.id=$1 AND mc.tenant_id=$2`,[req.params.id,req.tenantId]);
     res.json({data:row.rows});
-  } catch(error:any){res.status(error.status||(error.code==="23505"?409:500)).json({error:error.code==="23505"?"SKU sudah digunakan pada Inventory.":error.message});}
+  } catch(error:any){
+    const isAppError = !!error.status;
+    const statusCode = error.status||(error.code==="23505"?409:500);
+    const message = error.code==="23505" ? "SKU sudah digunakan pada Inventory."
+      : isAppError ? (error.message || "Operasi komponen gagal diproses.")
+      : "Operasi komponen gagal diproses.";
+    res.status(statusCode).json({error:message});
+  }
 }
 
 export async function adjustMicroComponentStock(req: Request,res: Response){
@@ -116,7 +130,10 @@ export async function adjustMicroComponentStock(req: Request,res: Response){
       return{idempotent:false};
     });
     const row=await dbQuery(`SELECT ${componentSelect} ${componentJoin} WHERE mc.id=$1 AND mc.tenant_id=$2`,[req.params.id,req.tenantId]); res.json({data:{component:row.rows.find(x=>x.warehouseId===parsed.data.warehouseId),...result}});
-  }catch(error:any){res.status(error.status||500).json({error:error.message});}
+  }catch(error:any){
+    const isAppError = !!error.status;
+    res.status(error.status||500).json({error: isAppError ? (error.message || "Operasi stok gagal diproses.") : "Operasi stok gagal diproses."});
+  }
 }
 
 export async function consumeMicroComponent(req: Request, res: Response) {
@@ -149,5 +166,8 @@ export async function consumeMicroComponent(req: Request, res: Response) {
     const ticket=await dbQuery(`SELECT id,tenant_id AS "tenantId",branch_id AS "branchId",ticket_no AS "ticketNo",customer_id AS "customerId",device_name AS "deviceName",device_brand_model AS "deviceBrandModel",status,estimated_cost::float AS "estimatedCost",micro_component_usages AS "microComponentUsages",timeline,parts_used AS "partsUsed",warranty_months AS "warrantyMonths" FROM service_tickets WHERE id=$1 AND tenant_id=$2`,[result.ticketId,req.tenantId]);
     const components=await dbQuery(`SELECT ${componentSelect} ${componentJoin} WHERE mc.id=$1 AND mc.tenant_id=$2`,[req.params.id,req.tenantId]);
     res.json({data:{usage:result.usage,component:components.rows[0],components:components.rows,ticket:ticket.rows[0],idempotent:result.idempotent}});
-  }catch(error:any){res.status(error.status||500).json({error:error.message});}
+  }catch(error:any){
+    const isAppError = !!error.status;
+    res.status(error.status||500).json({error: isAppError ? (error.message || "Operasi pemakaian komponen gagal diproses.") : "Operasi pemakaian komponen gagal diproses."});
+  }
 }

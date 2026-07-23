@@ -229,7 +229,8 @@ async function finalTicket(client: any, req: Request) {
 }
 
 function sendError(res: Response, error: any) {
-  return res.status(error.status || 500).json({ error: error.message || "Workflow servis gagal." });
+  const isAppError = !!error.status;
+  return res.status(error.status || 500).json({ error: isAppError ? (error.message || "Workflow servis gagal.") : "Workflow servis gagal." });
 }
 
 export async function listServiceTickets(req: Request, res: Response) {

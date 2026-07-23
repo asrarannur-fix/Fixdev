@@ -64,7 +64,7 @@ import {
   INITIAL_TRANSACTIONS,
   seedCashTransactions,
 } from "../mocks/seedData";
-import { mockApi } from "../mocks/api";
+
 import {
   toCamelCase,
   toSnakeCase,
@@ -1882,7 +1882,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       timestamp: new Date().toISOString(),
       action,
       details,
-      ipAddress: "192.168.1.100",
+      ipAddress: "",
       category,
       riskLevel,
     };

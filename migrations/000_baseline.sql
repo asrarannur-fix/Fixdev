@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT NOT NULL DEFAULT 'TEKNISI',
     permissions TEXT[] DEFAULT '{}',
     password_hash TEXT,
+    auth_id UUID,
     mfa_enabled BOOLEAN DEFAULT FALSE,
     superadmin_role TEXT,
     created_at TIMESTAMP DEFAULT NOW()

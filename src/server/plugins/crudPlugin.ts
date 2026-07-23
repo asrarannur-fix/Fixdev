@@ -65,7 +65,8 @@ const resolveResource = async (req: express.Request, res: express.Response, next
   try {
     req.crudColumns = await getTableColumns(cfg.table);
   } catch (err: any) {
-    return res.status(500).json({ error: `Cannot resolve schema for ${cfg.table}: ${err.message}` });
+    console.error(`[CRUD] Schema resolution failed for ${cfg.table}:`, err.message);
+    return res.status(500).json({ error: "Gagal memuat struktur data." });
   }
   if (cfg.feature) return requireFeature(cfg.feature)(req, res, next);
   next();

@@ -254,7 +254,7 @@ export const CannibalWorkshop: React.FC = () => {
           `saas_cannibal_logs_${currentTenantId}`,
           JSON.stringify(nextLogs),
         );
-      } catch (_) {}
+      } catch (_) { console.warn("Gagal menyimpan log lokal (CannibalWorkshop)"); }
       return nextLogs;
     });
 

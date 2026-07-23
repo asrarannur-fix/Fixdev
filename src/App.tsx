@@ -75,12 +75,14 @@ class AppErrorBoundary extends React.Component<
           Refresh halaman. Jika masih gagal, hubungi admin.
         </p>
         <pre className="mt-4 max-h-64 overflow-auto rounded-xl bg-white/70 p-4 text-xs dark:bg-black/30 whitespace-pre-wrap">
-          {this.state.error.message}
+          {process.env.NODE_ENV === "development" ? this.state.error.message : "Terjadi kesalahan internal."}
         </pre>
-        <pre className="mt-2 max-h-48 overflow-auto rounded-xl bg-white/70 p-4 text-xs dark:bg-black/30 whitespace-pre-wrap text-rose-700 dark:text-rose-300">
-          {this.state.error.stack}
-        </pre>
-        {this.state.componentStack && (
+        {process.env.NODE_ENV === "development" && this.state.error.stack && (
+          <pre className="mt-2 max-h-48 overflow-auto rounded-xl bg-white/70 p-4 text-xs dark:bg-black/30 whitespace-pre-wrap text-rose-700 dark:text-rose-300">
+            {this.state.error.stack}
+          </pre>
+        )}
+        {process.env.NODE_ENV === "development" && this.state.componentStack && (
           <details className="mt-2">
             <summary className="cursor-pointer text-xs font-bold text-rose-700 dark:text-rose-300">
               Component Stack

@@ -194,9 +194,20 @@ const onboardingLimiter = rateLimit({
   validate: { xForwardedForHeader: false },
 });
 
+const publicApiLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30, // 30 req/min for public tracking
+  message: { error: "Terlalu banyak permintaan. Silakan tunggu 1 menit." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Apply rate limiting
 app.use("/api/", (req, res, next) => {
   const path = req.path;
+  if (path.startsWith("/public/") || path.startsWith("/healthz")) {
+    return next();
+  }
   if (path.startsWith("/admin/") || path.startsWith("/billing/")) {
     return adminBillingLimiter(req, res, next);
   }
@@ -205,6 +216,10 @@ app.use("/api/", (req, res, next) => {
   }
   return apiLimiter(req, res, next);
 });
+
+// Apply stricter rate limiting to sensitive public endpoints
+app.use("/api/service-tracking", publicApiLimiter);
+app.use("/api/invitations", publicApiLimiter);
 
 // Apply Multi-Tenant Audit Middleware
 app.use(auditMiddleware);
@@ -215,9 +230,14 @@ app.use(auditMiddleware);
 
 app.get("/api/public/tenant-context", publicTenantContextHandler);
 
-// Health check
+// Health check (Internal/Liveness)
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
+});
+
+// Public health check for Load Balancers / External Monitoring
+app.get("/api/healthz", (req, res) => {
+  res.status(200).send("ok");
 });
 
 app.post("/api/admin/auth/reset-password", requireAdminToken, adminResetPasswordHandler);

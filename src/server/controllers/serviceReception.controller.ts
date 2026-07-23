@@ -188,6 +188,7 @@ export async function createServiceReception(req: Request, res: Response) {
 
     return res.status(201).json({ data: result, message: "Penerimaan unit berhasil disimpan." });
   } catch (error: any) {
-    return res.status(error.status || 500).json({ error: error.message || "Gagal menyimpan penerimaan unit." });
+    const msg = error.status ? (error.message || "Gagal menyimpan penerimaan unit.") : "Gagal menyimpan penerimaan unit.";
+    return res.status(error.status || 500).json({ error: msg });
   }
 }

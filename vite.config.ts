@@ -24,11 +24,13 @@ export default defineConfig(() => {
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          charts: ['recharts'],
-          icons: ['lucide-react'],
-          motion: ['motion'],
+        manualChunks(id) {
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) return "vendor-react";
+          if (id.includes("node_modules/recharts")) return "vendor-charts";
+          if (id.includes("node_modules/lucide-react")) return "vendor-icons";
+          if (id.includes("node_modules/motion")) return "vendor-motion";
+          if (id.includes("node_modules/zod")) return "vendor-zod";
+          if (id.includes("node_modules/redux") || id.includes("node_modules/react-redux")) return "vendor-redux";
         },
       },
     },
