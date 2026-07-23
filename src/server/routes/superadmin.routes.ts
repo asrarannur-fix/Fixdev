@@ -1,7 +1,5 @@
 import express from "express";
 import {
-  enforceSuperAdminWriteMode,
-  requireSuperAdminConsoleSession,
   requireSuperAdmin,
   requireSuperAdminPermission,
   requireJwt,
@@ -41,11 +39,7 @@ import {
 } from "../controllers/superadmin.controller.js";
 
 const router = express.Router();
-router.use(requireJwt, requireSuperAdmin, enforceSuperAdminWriteMode);
-
-router.post("/sessions", startConsoleSession);
-router.post("/sessions/:id/end", endConsoleSession);
-router.use(requireSuperAdminConsoleSession);
+router.use(requireJwt, requireSuperAdmin);
 
 router.get("/overview", requireSuperAdminPermission("overview:view"), getOverview);
 router.get("/tenants", requireSuperAdminPermission("tenants:view_all"), listTenants);

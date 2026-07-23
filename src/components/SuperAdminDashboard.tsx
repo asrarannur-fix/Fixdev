@@ -47,50 +47,7 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
 
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
-  const [readOnlyMode, setReadOnlyMode] = useState(() => {
-    try {
-      const session = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null");
-      return !session || session.mode !== "EDIT" || new Date(session.expiresAt).getTime() <= Date.now();
-    } catch { return true; }
-  });
-  const [sessionLoading, setSessionLoading] = useState(false);
-
-  const createConsoleSession = async (mode: "READ_ONLY" | "EDIT") => {
-    setSessionLoading(true);
-    try {
-      const existing = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null");
-      if (existing?.id) {
-        await apiFetch(`/api/superadmin/sessions/${existing.id}/end`, { method: "POST" }).catch(() => undefined);
-        localStorage.removeItem("saas_superadmin_console_session");
-      }
-      const response = await apiFetch("/api/superadmin/sessions", {
-        method: "POST",
-        body: JSON.stringify({ mode, durationMinutes: 60 }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Sesi konsol gagal dibuat.");
-      localStorage.setItem("saas_superadmin_console_session", JSON.stringify(result.session));
-      setReadOnlyMode(mode !== "EDIT");
-    } catch (err: any) {
-      showToast(err.message || "Sesi konsol gagal dibuat.", "error");
-    } finally { setSessionLoading(false); }
-  };
-
-  useEffect(() => {
-    let session: any = null;
-    try { session = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null"); } catch {}
-    if (!session || new Date(session.expiresAt).getTime() <= Date.now()) void createConsoleSession("READ_ONLY");
-    const timer = window.setInterval(() => {
-      try {
-        const active = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null");
-        if (!active || new Date(active.expiresAt).getTime() <= Date.now()) {
-          localStorage.removeItem("saas_superadmin_console_session");
-          setReadOnlyMode(true);
-        }
-      } catch { setReadOnlyMode(true); }
-    }, 15000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const readOnlyMode = false;
 
   // Tenant Infrastructure Configuration States
   const [selectedTenantForConfig, setSelectedTenantForConfig] = useState<
@@ -252,29 +209,11 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => void createConsoleSession(readOnlyMode ? "EDIT" : "READ_ONLY")}
-            disabled={sessionLoading}
-            className={`text-[10px] font-bold px-3 py-1.5 rounded-xl cursor-pointer transition-all ${
-              readOnlyMode
-                ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300/50"
-                : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700"
-            }`}
-            id="sa-readonly-toggle-btn"
-          >
-            {readOnlyMode ? "🔒 Read-Only ON" : "🔓 Edit Mode"}
-          </button>
           <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 text-[10px] font-bold font-mono">
             Live Database
           </span>
         </div>
       </div>
-
-      {readOnlyMode && (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 px-4 py-3 text-xs font-bold" id="sa-readonly-banner">
-          READ-ONLY MODE aktif. Aksi tulis super admin diblokir di UI.
-        </div>
-      )}
 
       {/* 1. Langganan & QRIS Billing Tab */}
       {currentTab === "saas-billing" && <SaaSSubscription readOnlyMode={readOnlyMode} />}

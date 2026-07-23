@@ -106,7 +106,7 @@ export async function loginHandler(req: Request, res: Response) {
     if (user.mfa_enabled) {
       return res.status(403).json({ error: "MFA verification is required. Contact administrator." });
     }
-    if (req.hostTenant && user.tenant_id !== req.hostTenant.id) {
+    if (user.role !== 'SUPER_ADMIN' && req.hostTenant && user.tenant_id !== req.hostTenant.id) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 

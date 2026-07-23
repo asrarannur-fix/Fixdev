@@ -1802,16 +1802,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       if (impersonationSession?.accessMode === "READ_ONLY" && !["GET", "HEAD", "OPTIONS"].includes(method)) {
         throw new Error("Sesi impersonasi hanya-baca. Aksi perubahan diblokir.");
       }
-      const consoleSession = JSON.parse(localStorage.getItem("saas_superadmin_console_session") || "null");
-      if (consoleSession?.id && new Date(consoleSession.expiresAt).getTime() > Date.now()) {
-        headers.set("X-SuperAdmin-Session-ID", consoleSession.id);
-      }
       if (impersonationSession?.id && new Date(impersonationSession.expiresAt).getTime() > Date.now()) {
         headers.set("X-Impersonation-Session-ID", impersonationSession.id);
       }
     } catch (error: any) {
       if (error?.message === "Sesi impersonasi hanya-baca. Aksi perubahan diblokir.") throw error;
-      localStorage.removeItem("saas_superadmin_console_session");
       localStorage.removeItem("saas_impersonation_session");
     }
     if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
