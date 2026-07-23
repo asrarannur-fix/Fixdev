@@ -214,6 +214,21 @@ Dokumen audit historis yang berisi status lama tidak dijadikan sumber kebenaran.
 - Jangan mengubah secret production saat refactor.
 - Setelah perubahan database, bandingkan migration lokal dan production.
 
+## 9. Evidence audit backend, keamanan, database — 2026-07-22
+
+| ID | Severity | Bukti | Fix | Test | Status |
+|---|---|---|---|---|---|
+| SEC-RL-001 | Medium | `server.ts:161-207` memasang `apiLimiter` pada seluruh `/api/`; login dan onboarding memakai limiter lebih ketat; admin/billing memakai limiter khusus. | Tidak ada route API terdaftar di luar mount `/api/` tanpa limiter global. | Review seluruh route registration dan `npm run test:security`: 9 passed. | PASS |
+| SEC-UP-001 | High | `manualPayment.controller.ts:12-16,39-63,113-129,251-269` membatasi ukuran, MIME, nama/path, dan magic bytes upload. | Upload QRIS dan bukti pembayaran memakai raw parser berlimit serta validasi signature sebelum write. | `tests/billing-security.test.ts`: 9 passed. | PASS |
+| FIN-TX-001 | High | `accounting.controller.ts:196-238,526-576` memakai `dbTransaction`; journal header/lines atomik; cash transaction atomik. | Tambah verifikasi ownership akun tenant sebelum journal dan validasi reference duplicate dalam boundary transaksi. | `npm test`: unit 15 passed; finance regression test ditambahkan. DB integration belum dapat dijalankan tanpa credential. | PARTIAL |
+| FIN-IDEM-001 | High | Sebelumnya `reference_no` belum dicek saat create journal/cash. | Tambah duplicate check tenant-scoped dalam transaksi. | Unit simulation `tests/finance-security.test.ts`; perlu integration DB untuk race/concurrent proof. | PARTIAL |
+| DB-BR-001 | High | Simulasi `pg_dump -d fixdev_dev` berhenti: `fe_sendauth: no password supplied`. | Tidak menyentuh database; evidence restore belum dapat dibuat tanpa credential resmi. | Command gagal aman; tidak ada dump/restore production. | NOT READY |
+| SEC-ISO-001 | High | Route tenant memakai `requireJwt` + `requireTenantScope`; query accounting memakai `tenant_id`; branch service reception diverifikasi dalam transaksi. | Tambah ownership check setiap `accountId` journal dan target cash account. | `tests/finance-security.test.ts`; full DB tenant/branch regression menunggu fixture/credential test. | PARTIAL |
+
+Catatan rate-limit: audit statis menemukan global limiter mencakup route API, tetapi belum ada limiter khusus per-user/per-tenant untuk endpoint public tracking/webhook. Risiko residual dicatat; perlu keputusan threshold bisnis sebelum pemisahan limiter.
+
+Catatan backup/restore: simulasi aman tidak melakukan restore atau perubahan database. Evidence lengkap membutuhkan `DATABASE_URL` development/test resmi dan database target disposable.
+
 ## 9. Definition of done
 
 Perubahan dianggap selesai bila:

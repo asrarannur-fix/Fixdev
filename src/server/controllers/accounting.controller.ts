@@ -200,6 +200,16 @@ export const createJournalEntry = async (req: any, res: any) => {
       if (Math.abs(totalDebit - totalCredit) > 0.01) {
         throw new Error("Jurnal tidak seimbang. Total debit harus sama dengan total kredit.");
       }
+
+      // Idempotency: reference_no uniqueness per tenant
+      if (refNo) {
+        const refCheck = await client.query(
+          `SELECT id FROM journal_entries WHERE tenant_id = $1 AND reference_no = $2 LIMIT 1`,
+          [tenantId, refNo]
+        );
+        if (refCheck.rows[0]) throw new Error(`Duplikasi transaksi: Reference No ${refNo} sudah terdaftar.`);
+      }
+
       // Insert journal entry header
       const entryRes = await client.query(
         `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, source_id, created_by)
@@ -524,29 +534,38 @@ export const createCashTransaction = async (req: any, res: any) => {
 
   try {
     const result = await dbTransaction(async (client) => {
-    // Find cash account: prefer code starting with 101, fallback to first ASSET
-    const cashAcct = await client.query(
-      `SELECT id FROM coa_accounts WHERE tenant_id = $1 AND (code LIKE '101%' OR name ILIKE '%kas%') AND type = 'ASSET' LIMIT 1`,
-      [tenantId],
-    );
-    if (!cashAcct.rows[0]) {
-      const fallback = await client.query(
-        `SELECT id FROM coa_accounts WHERE tenant_id = $1 AND type = 'ASSET' LIMIT 1`,
+      // Find cash account: prefer code starting with 101, fallback to first ASSET
+      const cashAcct = await client.query(
+        `SELECT id FROM coa_accounts WHERE tenant_id = $1 AND (code LIKE '101%' OR name ILIKE '%kas%') AND type = 'ASSET' LIMIT 1`,
         [tenantId],
       );
-      if (!fallback.rows[0]) throw new Error("Tidak ada akun aset (kas) untuk transaksi. Buat akun kas terlebih dahulu.");
-      cashAcct.rows = fallback.rows;
-    }
+      if (!cashAcct.rows[0]) {
+        const fallback = await client.query(
+          `SELECT id FROM coa_accounts WHERE tenant_id = $1 AND type = 'ASSET' LIMIT 1`,
+          [tenantId],
+        );
+        if (!fallback.rows[0]) throw new Error("Tidak ada akun aset (kas) untuk transaksi. Buat akun kas terlebih dahulu.");
+        cashAcct.rows = fallback.rows;
+      }
 
-    const targetAcctId = parsed.type === "CASH_IN" ? parsed.toAccountId : parsed.fromAccountId;
-    if (!targetAcctId) throw new Error("Akun lawan transaksi wajib diisi.");
+      const targetAcctId = parsed.type === "CASH_IN" ? parsed.toAccountId : parsed.fromAccountId;
+      if (!targetAcctId) throw new Error("Akun lawan transaksi wajib diisi.");
 
-    // Validate target account exists
-    const targetAcct = await client.query(
-      `SELECT id, name FROM coa_accounts WHERE id = $1 AND tenant_id = $2`,
-      [targetAcctId, tenantId],
-    );
-    if (!targetAcct.rows[0]) throw new Error("Akun lawan transaksi tidak ditemukan.");
+      // Validate target account exists AND tenant-owned
+      const targetAcct = await client.query(
+        `SELECT id, name FROM coa_accounts WHERE id = $1 AND tenant_id = $2`,
+        [targetAcctId, tenantId],
+      );
+      if (!targetAcct.rows[0]) throw new Error("Akun lawan transaksi tidak ditemukan atau bukan milik tenant Anda.");
+
+      // Idempotency: reference_no uniqueness per tenant
+      if (parsed.refNo) {
+        const refCheck = await client.query(
+          `SELECT id FROM journal_entries WHERE tenant_id = $1 AND reference_no = $2 LIMIT 1`,
+          [tenantId, parsed.refNo]
+        );
+        if (refCheck.rows[0]) throw new Error(`Duplikasi transaksi: Reference No ${parsed.refNo} sudah terdaftar.`);
+      }
 
     // Create journal entry
     const entryRes = await client.query(

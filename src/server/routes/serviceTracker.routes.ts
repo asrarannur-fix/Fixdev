@@ -3,6 +3,8 @@ import {
   getPublicTicketByToken,
   getPublicTicketStatus,
   verifyWarrantyQr,
+  getPortalTicketDetail,
+  approvePortalTicket,
 } from "../controllers/serviceTracker.controller.js";
 
 const router = express.Router();
@@ -19,5 +21,8 @@ router.get("/status/*", (req: any, res) => {
 });
 router.get("/token/:token", getPublicTicketByToken);
 router.post("/verify-warranty", verifyWarrantyQr);
+
+router.post("/portal-detail", getPortalTicketDetail);
+router.post("/portal-approve", approvePortalTicket);
 
 export default router;

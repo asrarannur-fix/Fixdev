@@ -5,7 +5,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Pencil, Trash2, X, Loader2, Search, Copy, Filter, RotateCcw } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, Search, Copy, Filter, RotateCcw, Database } from "lucide-react";
 import api from "../lib/api/client";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
@@ -243,7 +243,7 @@ export const CrudManager: React.FC<CrudManagerProps> = ({
         <div className="flex items-center justify-center py-12 text-slate-400 text-xs">
           <Loader2 className="w-4 h-4 animate-spin mr-2" /> Memuat...
         </div>
-      ) : urlReady && (
+      ) : urlReady && (rows.length > 0 ? (
         <DataTable
           columns={[...columns.map((c) => ({
             ...c,
@@ -256,7 +256,15 @@ export const CrudManager: React.FC<CrudManagerProps> = ({
           state={tableState}
           onStateChange={handleStateChange}
         />
-      )}
+      ) : (
+        <div className="text-center py-12 text-slate-400 dark:text-slate-500">
+          {Icon ? <Icon className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-2" /> : <Database className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-2" />}
+          <p className="text-xs font-bold">
+            Belum ada data {title} terdaftar.
+          </p>
+        </div>
+      ))}
+
 
       {showModal && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="crud-modal-title">

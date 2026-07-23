@@ -798,7 +798,7 @@ export const voidSale = async (req: any, res: any) => {
     );
     res
       .status(err.status || 500)
-      .json({ error: err.message || "Failed to void transaction." });
+      .json({ error: err.status ? err.message : "Transaksi gagal dibatalkan." });
   }
 };
 

@@ -236,15 +236,16 @@ export const POSTab: React.FC<POSTabProps> = ({
                   Katalog Produk & Suku Cadang
                 </h3>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Scan barcode..."
-                    value={barcodeScan}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setBarcodeScan(v);
-                      // Auto lookup on Enter
-                    }}
+                    <input
+                      type="text"
+                      placeholder="Scan barcode..."
+                      value={barcodeScan}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBarcodeScan(v);
+                        // Auto lookup on Enter
+                      }}
+                      autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && barcodeScan.trim()) {
                         const found = effectiveProducts.find(
@@ -285,19 +286,19 @@ export const POSTab: React.FC<POSTabProps> = ({
                   >
                     <div>
                       <div className="flex justify-between items-center gap-1">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 text-[8px] font-mono uppercase">
+                        <span className="px-2 py-1 rounded bg-slate-200 text-slate-600 text-[9px] font-mono uppercase">
                           {p.category}
                         </span>
                         {p.category !== "JASA" && (
-                          <span
-                            className={`text-[8px] font-mono font-bold px-1 rounded ${
-                              effectiveGetBranchStock(p) <= 0
-                                ? "bg-rose-100 text-rose-700"
-                                : "bg-blue-100 text-blue-700"
-                            }`}
-                          >
-                            Stok: {effectiveGetBranchStock(p)}
-                          </span>
+                            <span
+                              className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                                effectiveGetBranchStock(p) <= 0
+                                  ? "bg-rose-100 text-rose-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              Stok: {effectiveGetBranchStock(p)}
+                            </span>
                         )}
                       </div>
                       <h4 className="font-bold text-slate-700 text-xs mt-1.5 line-clamp-2 leading-snug">
@@ -373,7 +374,7 @@ export const POSTab: React.FC<POSTabProps> = ({
                         <p className="font-bold text-slate-700 leading-snug">
                           {item.product.name}
                         </p>
-                        <p className="text-slate-400 text-[10px] mt-0.5 font-mono">
+                        <p className="text-slate-500 text-[11px] mt-0.5 font-mono">
                           {item.qty} x Rp{" "}
                           {(item.product.sellPrice ?? 0).toLocaleString()}
                         </p>

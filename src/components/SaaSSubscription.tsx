@@ -296,20 +296,23 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId },
         body: JSON.stringify({ tenantId: selectedTenantId, fileName: manualProof.name, contentType: manualProof.type, sizeBytes: manualProof.size }),
       });
-      if (!uploadResponse.ok) throw new Error((await uploadResponse.json()).error || "Upload URL gagal dibuat");
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json().catch(() => ({}));
+        throw new Error(error.error || "Gagal membuat URL unggah bukti.");
+      }
       const upload = await uploadResponse.json();
       const storageResponse = await apiFetch(upload.signedUploadUrl, {
         method: "PUT",
         headers: { "Content-Type": manualProof.type, "X-Tenant-ID": selectedTenantId },
         body: manualProof,
       });
-      if (!storageResponse.ok) throw new Error("Bukti pembayaran gagal diunggah");
+      if (!storageResponse.ok) throw new Error("Gagal mengunggah gambar bukti pembayaran.");
 
       const submitResponse = await apiFetch(`/api/billing/invoices/${manualInvoice.id}/manual-payments`, {
-method: "POST",
-         headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId },
-         body: JSON.stringify({
-           tenantId: selectedTenantId,
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId },
+        body: JSON.stringify({
+          tenantId: selectedTenantId,
           method: manualMethod,
           paidAt: new Date(manualPaidAt).toISOString(),
           payerName: manualPayerName,
@@ -320,14 +323,17 @@ method: "POST",
           sizeBytes: manualProof.size,
         }),
       });
-      if (!submitResponse.ok) throw new Error((await submitResponse.json()).error || "Pengajuan gagal dikirim");
+      if (!submitResponse.ok) {
+        const error = await submitResponse.json().catch(() => ({}));
+        throw new Error(error.error || "Gagal mengirim formulir verifikasi pembayaran.");
+      }
       showToast("Bukti pembayaran dikirim dan menunggu verifikasi Super Admin.", "success");
       setManualInvoice(null);
       setManualProof(null);
       setManualReference("");
       await Promise.all([loadPlansAndHistory(), loadManualRequests()]);
     } catch (error: any) {
-      showToast(error.message || "Pembayaran manual gagal dikirim.", "error");
+      showToast(error.message || "Terjadi kesalahan saat memproses pembayaran manual.", "error");
     } finally {
       setManualSubmitting(false);
     }
@@ -1869,21 +1875,27 @@ method: "POST",
         <section id="billing-review" className="scroll-mt-24 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/10 p-4 md:p-5">
           <h3 className="font-black text-sm text-slate-900 dark:text-white">Antrean Verifikasi Pembayaran Manual</h3>
           <div className="mt-3 space-y-2">
-            {manualRequests.filter((request) => request.status === "SUBMITTED").map((request) => (
-              <div key={request.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-3">
-                <div className="text-xs">
-                  <p className="font-black">{request.tenant_name} · {request.invoice_id}</p>
-                  <p className="text-slate-500 mt-1">{request.method === "BANK_TRANSFER" ? "Transfer Bank" : "QRIS Manual"} · {formatRupiah(Number(request.amount))} · Ref {request.reference_number}</p>
-                  <p className={`mt-1 text-[10px] font-bold ${Date.now() - new Date(request.submitted_at).getTime() > 24 * 60 * 60 * 1000 ? "text-rose-600" : "text-amber-600"}`}>Menunggu {Math.max(0, Math.floor((Date.now() - new Date(request.submitted_at).getTime()) / 3600000))} jam · SLA 24 jam</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={async () => { try { const result = await readJsonResponse<any>(await apiFetch(`/api/billing/manual-payments/${request.id}/proof-url`), "Bukti pembayaran"); const proofResponse = await apiFetch(result.fileUrl); if (!proofResponse.ok) throw new Error("Bukti pembayaran gagal dimuat."); const proofUrl = URL.createObjectURL(await proofResponse.blob()); window.open(proofUrl, "_blank", "noopener,noreferrer"); window.setTimeout(() => URL.revokeObjectURL(proofUrl), 60000); } catch (err: any) { showToast(err.message, "error"); } }} className="rounded-lg border border-accent/50 px-3 py-1.5 text-xs font-bold text-accent">Lihat bukti</button>
-                  <button disabled={readOnlyMode} onClick={() => handleReviewManual(request, "reject")} className="rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50">Tolak</button>
-                  <button disabled={readOnlyMode} onClick={() => handleReviewManual(request, "approve")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">Setujui</button>
-                </div>
+            {manualRequests.filter((request) => request.status === "SUBMITTED").length === 0 ? (
+              <div className="rounded-xl bg-white/40 dark:bg-zinc-900/40 p-8 text-center border border-dashed border-amber-200 dark:border-amber-900/30">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-amber-300 dark:text-amber-800 mb-2" />
+                <p className="text-xs font-bold text-slate-500">Antrean kosong. Semua pembayaran manual sudah diproses.</p>
               </div>
-            ))}
-            {manualRequests.filter((request) => request.status === "SUBMITTED").length === 0 && <p className="rounded-xl border border-dashed border-amber-300/60 bg-white/60 p-5 text-center text-xs text-amber-800 dark:bg-zinc-900/50 dark:text-amber-200">Tidak ada pembayaran manual menunggu verifikasi.</p>}
+            ) : (
+              manualRequests.filter((request) => request.status === "SUBMITTED").map((request) => (
+                <div key={request.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-3">
+                  <div className="text-xs">
+                    <p className="font-black">{request.tenant_name} · {request.invoice_id}</p>
+                    <p className="text-slate-500 mt-1">{request.method === "BANK_TRANSFER" ? "Transfer Bank" : "QRIS Manual"} · {formatRupiah(Number(request.amount))} · Ref {request.reference_number}</p>
+                    <p className={`mt-1 text-[10px] font-bold ${Date.now() - new Date(request.submitted_at).getTime() > 24 * 60 * 60 * 1000 ? "text-rose-600" : "text-amber-600"}`}>Menunggu {Math.max(0, Math.floor((Date.now() - new Date(request.submitted_at).getTime()) / 3600000))} jam · SLA 24 jam</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={async () => { try { const result = await readJsonResponse<any>(await apiFetch(`/api/billing/manual-payments/${request.id}/proof-url`), "Bukti pembayaran"); const proofResponse = await apiFetch(result.fileUrl); if (!proofResponse.ok) throw new Error("Bukti pembayaran gagal dimuat."); const proofUrl = URL.createObjectURL(await proofResponse.blob()); window.open(proofUrl, "_blank", "noopener,noreferrer"); window.setTimeout(() => URL.revokeObjectURL(proofUrl), 60000); } catch (err: any) { showToast(err.message, "error"); } }} className="rounded-lg border border-accent/50 px-3 py-1.5 text-xs font-bold text-accent">Lihat bukti</button>
+                    <button onClick={() => handleReviewManual(request, "approve")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">Setujui</button>
+                    <button onClick={() => handleReviewManual(request, "reject")} className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">Tolak</button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
       )}

@@ -224,10 +224,10 @@ export function DataTable<T>({
             {sorted.length} baris · hal {current + 1}/{pageCount}
           </span>
           <div className="flex items-center gap-1">
-            <button onClick={() => emitState({ ...tableState, page: Math.max(0, current - 1) })} disabled={current === 0} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-40">
+            <button onClick={() => emitState({ ...tableState, page: Math.max(0, current - 1) })} disabled={current === 0} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-40" aria-label="Halaman sebelumnya">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => emitState({ ...tableState, page: Math.min(pageCount - 1, current + 1) })} disabled={current >= pageCount - 1} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-40">
+            <button onClick={() => emitState({ ...tableState, page: Math.min(pageCount - 1, current + 1) })} disabled={current >= pageCount - 1} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-40" aria-label="Halaman berikutnya">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

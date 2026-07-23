@@ -55,6 +55,6 @@ export const qzSignHandler = async (req: Request, res: Response): Promise<void> 
     res.json({ signature });
   } catch (err: any) {
     logger.error({ err: err.message }, "QZ signing failed");
-    res.status(500).json({ error: "Gagal membuat signature" });
+    res.status(500).json({ error: "Terjadi kesalahan pada server. Mohon coba lagi." });
   }
 };
