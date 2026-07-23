@@ -258,3 +258,6 @@ Perubahan dianggap selesai bila:
 - `src/server/routes/superadmin.routes.ts` — tambah route `DELETE /tenants/:id/permanent` dengan permission `tenants:manage_lifecycle`.
 - `src/components/superadmin/TenantsManager.tsx` — ganti kotak "Danger Zone" statis dengan tombol "Hapus Permanen" + konfirmasi dialog + refresh daftar.
 - Gunakan `useConfirm` dari `ConfirmDialog` agar konsisten.
+
+**Fix Login via dev.fixdev.web.id:**
+- `src/middleware/tenantHost.middleware.ts` — tambah daftar subdomain non-tenant (`dev`, `www`, `staging`, `test`, `db`, `api`) agar middleware `tenantHostResolver` tidak salah menganggap `dev.fixdev.web.id` sebagai domain tenant. Sebelumnya login dari domain dev gagal karena middleware me-resolve subdomain "dev" sebagai tenant dan memblokir user yang bukan anggota tenant tersebut.
