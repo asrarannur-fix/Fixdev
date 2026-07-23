@@ -242,3 +242,19 @@ Perubahan dianggap selesai bila:
 - tidak ada secret baru di diff
 - dokumentasi master diperbarui bila aturan runtime/security berubah
 - residual risk dicatat, bukan disembunyikan
+
+## 10. Catatan Perubahan
+
+### 2026-07-23 — Hapus Read-Only Mode & Fitur Hapus Permanen Tenant
+
+**Read-Only Mode Dihapus:**
+- Backend: `src/server/routes/superadmin.routes.ts` — hapus middleware `enforceSuperAdminWriteMode`, `requireSuperAdminConsoleSession`, dan route session start/end.
+- Frontend: `src/components/SuperAdminDashboard.tsx` — hapus toggle "Read-Only ON/OFF", banner "READ-ONLY MODE", dan logika sesi konsol.
+- `src/context/SaaSContext.tsx` — hapus injeksi header `X-SuperAdmin-Session-ID`.
+- Superadmin kini dapat menulis langsung tanpa perlu mode edit.
+
+**Fitur Hapus Permanen Tenant:**
+- `src/server/controllers/superadmin.controller.ts` — tambah fungsi `permanentDeleteTenant`: audit trail, hapus file upload, cascade DELETE via ON DELETE CASCADE.
+- `src/server/routes/superadmin.routes.ts` — tambah route `DELETE /tenants/:id/permanent` dengan permission `tenants:manage_lifecycle`.
+- `src/components/superadmin/TenantsManager.tsx` — ganti kotak "Danger Zone" statis dengan tombol "Hapus Permanen" + konfirmasi dialog + refresh daftar.
+- Gunakan `useConfirm` dari `ConfirmDialog` agar konsisten.
