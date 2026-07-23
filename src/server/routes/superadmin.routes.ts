@@ -7,8 +7,6 @@ import {
 import {
   changeTenantStatus,
   createBackupJob,
-  startConsoleSession,
-  endConsoleSession,
   createTenantInvitation,
   endImpersonation,
   getOverview,
@@ -50,9 +48,9 @@ router.post("/tenants", requireSuperAdminPermission("tenants:manage_registration
 router.get("/tenants/:id", requireSuperAdminPermission("tenants:view_detail"), getTenantDetail);
 router.get("/tenants/:id/invitations", requireSuperAdminPermission("tenants:view_invitations"), listInvitations);
 router.delete("/tenants/:id/invitations/:invitationId", requireSuperAdminPermission("tenants:manage_invitations"), revokeInvitation);
-  router.post("/tenants/:id/status", requireSuperAdminPermission("tenants:manage_lifecycle"), changeTenantStatus);
-  router.delete("/tenants/:id/permanent", requireSuperAdminPermission("tenants:manage_lifecycle"), permanentDeleteTenant);
-  router.put("/tenants/:id/config", requireSuperAdminPermission("tenants:manage_config"), updateTenantConfig);
+router.post("/tenants/:id/status", requireSuperAdminPermission("tenants:manage_lifecycle"), changeTenantStatus);
+router.delete("/tenants/:id/permanent", requireSuperAdminPermission("tenants:manage_lifecycle"), permanentDeleteTenant);
+router.put("/tenants/:id/config", requireSuperAdminPermission("tenants:manage_config"), updateTenantConfig);
 router.post("/tenants/:id/invitations", requireSuperAdminPermission("tenants:manage_invitations"), createTenantInvitation);
 router.post("/tenants/:id/impersonation", requireSuperAdminPermission("impersonation:create_session"), startImpersonation);
 router.post("/impersonation/:id/end", requireSuperAdminPermission("impersonation:end_session"), endImpersonation);
