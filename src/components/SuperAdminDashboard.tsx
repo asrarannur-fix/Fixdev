@@ -53,7 +53,7 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
   const [selectedTenantForConfig, setSelectedTenantForConfig] = useState<
     string | null
   >(null);
-  const [configSubdomain, setConfigSubdomain] = useState("");
+
   const [configCustomDomain, setConfigCustomDomain] = useState("");
   const [configStorageMode, setConfigStorageMode] = useState("SYSTEM");
   const [configBucketName, setConfigBucketName] = useState("");
@@ -252,7 +252,6 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
           updateTenantStatus={updateTenantStatus}
           impersonateTenant={impersonateTenant}
           setSelectedTenantForConfig={setSelectedTenantForConfig}
-          setConfigSubdomain={setConfigSubdomain}
           setConfigCustomDomain={setConfigCustomDomain}
           setConfigStorageMode={setConfigStorageMode}
           setConfigBucketName={setConfigBucketName}
@@ -286,8 +285,7 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
           tenant={selectedTenant}
           selectedTenantForConfig={selectedTenantForConfig}
           setSelectedTenantForConfig={setSelectedTenantForConfig}
-          configSubdomain={configSubdomain}
-          setConfigSubdomain={setConfigSubdomain}
+
           configCustomDomain={configCustomDomain}
           setConfigCustomDomain={setConfigCustomDomain}
           configStorageMode={configStorageMode}

@@ -38,7 +38,24 @@ export async function platformBootstrapHandler(req: Request, res: Response) {
       pool.query(`select id, tenant_id, email, name, role, mfa_enabled, created_at from users order by created_at desc`),
       pool.query(`select * from audit_logs order by created_at desc limit 500`).catch(() => ({ rows: [] })),
     ]);
-    res.json(toApiResponse({ tenants: tenants.rows, users: users.rows, auditLogs: auditLogs.rows }));
+    res.json(toApiResponse({ 
+      tenants: tenants.rows, 
+      users: users.rows, 
+      auditLogs: auditLogs.rows,
+      // Provide empty arrays for keys expected by SaaSContext to prevent UI crashes
+      userBranches: [],
+      branches: [],
+      warehouses: [],
+      customers: [],
+      products: [],
+      productStock: [],
+      serviceTickets: [],
+      posTransactions: [],
+      posShifts: [],
+      coaAccounts: [],
+      journalEntries: [],
+      moduleRecords: []
+    }));
   } catch {
     res.status(500).json({ error: "Data platform gagal dimuat." });
   }

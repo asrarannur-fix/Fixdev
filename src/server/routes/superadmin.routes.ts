@@ -35,6 +35,8 @@ import {
   updateAlertSettings,
   updateRolePermissions,
   updateTenantConfig,
+  terminateSubscription,
+  extendSubscription,
 } from "../controllers/superadmin.controller.js";
 
 const router = express.Router();
@@ -49,6 +51,8 @@ router.get("/tenants/:id", requireSuperAdminPermission("tenants:view_detail"), g
 router.get("/tenants/:id/invitations", requireSuperAdminPermission("tenants:view_invitations"), listInvitations);
 router.delete("/tenants/:id/invitations/:invitationId", requireSuperAdminPermission("tenants:manage_invitations"), revokeInvitation);
 router.post("/tenants/:id/status", requireSuperAdminPermission("tenants:manage_lifecycle"), changeTenantStatus);
+router.post("/tenants/:id/terminate-subscription", requireSuperAdminPermission("tenants:manage_lifecycle"), terminateSubscription);
+router.post("/tenants/:id/extend-subscription", requireSuperAdminPermission("tenants:manage_lifecycle"), extendSubscription);
 router.delete("/tenants/:id/permanent", requireSuperAdminPermission("tenants:manage_lifecycle"), permanentDeleteTenant);
 router.put("/tenants/:id/config", requireSuperAdminPermission("tenants:manage_config"), updateTenantConfig);
 router.post("/tenants/:id/invitations", requireSuperAdminPermission("tenants:manage_invitations"), createTenantInvitation);

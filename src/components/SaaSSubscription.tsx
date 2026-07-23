@@ -653,18 +653,28 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         <div className="bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.24),_transparent_42%),linear-gradient(135deg,#020617,#172554_55%,#312e81)] px-5 py-6 text-white sm:px-8 sm:py-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100"><ShieldCheck className="h-3.5 w-3.5" /> Billing Control Plane</span>
-              <h2 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">Pendapatan langganan dalam satu ruang kerja</h2>
-              <p className="mt-2 max-w-xl text-xs leading-6 text-slate-300 sm:text-sm">Kelola paket, invoice, metode pembayaran, settlement, dan recurring billing dengan tenant scope serta audit yang jelas.</p>
+              {isSuperAdmin && (
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100"><ShieldCheck className="h-3.5 w-3.5" /> Billing Control Plane</span>
+              )}
+              <h2 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
+                {isSuperAdmin ? "Pendapatan langganan dalam satu ruang kerja" : "Kelola Langganan Toko Anda"}
+              </h2>
+              <p className="mt-2 max-w-xl text-xs leading-6 text-slate-300 sm:text-sm">
+                {isSuperAdmin 
+                  ? "Kelola paket, invoice, metode pembayaran, settlement, dan recurring billing dengan tenant scope serta audit yang jelas."
+                  : "Upgrade paket, pantau riwayat tagihan, dan aktifkan fitur tambahan untuk mendukung operasional bisnis Anda."}
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-              {[{label:"Tenant",value:tenants.length},{label:"Invoice",value:invoices.length},{label:"Perlu review",value:manualRequests.filter((item)=>item.status==="SUBMITTED").length},{label:"Overdue",value:overdueInvoices}].map((item)=><div key={item.label} className="min-w-24 rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p><p className="mt-1 text-xl font-black">{item.value}</p></div>)}
+              {isSuperAdmin && [{label:"Tenant",value:tenants.length},{label:"Invoice",value:invoices.length},{label:"Perlu review",value:manualRequests.filter((item)=>item.status==="SUBMITTED").length},{label:"Overdue",value:overdueInvoices}].map((item)=><div key={item.label} className="min-w-24 rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p><p className="mt-1 text-xl font-black">{item.value}</p></div>)}
             </div>
           </div>
         </div>
-        <nav className="grid grid-cols-3 gap-2 border-t border-white/5 bg-slate-950 p-3" aria-label="Navigasi billing">
-          {([['overview','Ringkasan'],['invoices','Tagihan'],['settings','Pengaturan']] as const).map(([view,label])=><button key={view} type="button" onClick={()=>setSimpleView(view)} aria-pressed={simpleView===view} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${simpleView===view?'bg-white text-slate-950 shadow':'border border-slate-700 text-slate-300 hover:border-indigo-400 hover:text-white'}`}>{label}</button>)}
-        </nav>
+        {isSuperAdmin && (
+          <nav className="grid grid-cols-3 gap-2 border-t border-white/5 bg-slate-950 p-3" aria-label="Navigasi billing">
+            {([['overview','Ringkasan'],['invoices','Tagihan'],['settings','Pengaturan']] as const).map(([view,label])=><button key={view} type="button" onClick={()=>setSimpleView(view)} aria-pressed={simpleView===view} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${simpleView===view?'bg-white text-slate-950 shadow':'border border-slate-700 text-slate-300 hover:border-indigo-400 hover:text-white'}`}>{label}</button>)}
+          </nav>
+        )}
       </section>
 
       {(billingError || usingFallbackPlans) && (
@@ -1021,7 +1031,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
 
                   <button
                     onClick={() => handleSelectPlan(p)}
-                    disabled={readOnlyMode || !activeTenant || (isCurrent && billingCycle === "monthly")}
+                    disabled={readOnlyMode || !activeTenant || (isCurrent && activeTenant?.status === "ACTIVE" && billingCycle === "monthly")}
                     className={`w-full py-2.5 md:py-3 rounded-lg md:rounded-xl font-bold text-xs md:text-sm transition-all flex items-center justify-center gap-2 ${
                       isCurrent || !activeTenant
                         ? "bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-slate-400 cursor-not-allowed border border-slate-200 dark:border-zinc-800"
@@ -1030,7 +1040,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                           : "bg-accent hover:bg-accent-hover text-white hover:shadow-lg hover:shadow-accent/20 shadow-md cursor-pointer"
                     }`}
                   >
-                    {isCurrent ? "Paket Sedang Aktif" : `Upgrade ke ${p.tier}`}{" "}
+                    {isCurrent && activeTenant?.status === "ACTIVE" ? "Paket Sedang Aktif" : `Upgrade ke ${p.tier}`}{" "}
                     {!isCurrent && <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                   </button>
                 </div>

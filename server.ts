@@ -178,7 +178,7 @@ const adminBillingLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60_000,
-  max: 15,
+  max: Number(process.env.LOGIN_RATE_LIMIT_MAX || 15),
   message: { error: "Too many login attempts. Try again in 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,

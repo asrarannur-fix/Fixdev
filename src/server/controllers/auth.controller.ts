@@ -230,7 +230,7 @@ export async function adminResetPasswordHandler(req: Request, res: Response) {
 // ---------------------------------------------------------------------------
 
 export async function onboardingRegisterHandler(req: Request, res: Response) {
-  const { shopName, subdomain, ownerName, ownerEmail, ownerPassword, themeColor } = req.body || {};
+  const { shopName, ownerName, ownerEmail, ownerPassword, themeColor } = req.body || {};
   if (!shopName || !ownerName || !ownerEmail || !ownerPassword) {
     return res.status(422).json({ success: false, message: "shopName, ownerName, ownerEmail, ownerPassword are required." });
   }
@@ -244,11 +244,13 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     const passwordHash = await bcrypt.hash(String(ownerPassword), 10);
     const tenantId = randomUUID();
     const branchId = randomUUID();
+    const generatedSubdomain = shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + randomUUID().slice(0, 4);
+
     await client.query("BEGIN");
     await client.query(
       `INSERT INTO tenants (id, name, subdomain, status, tier, trial_ends_at, settings, branding, created_at)
-       VALUES ($1, $2, $3, 'TRIAL', $4, now() + interval '30 days', $5, $6, now())`,
-      [tenantId, shopName, subdomain || shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-"), "BASIC",
+       VALUES ($1, $2, $3, 'TRIAL', $4, now() + interval '14 days', $5, $6, now())`,
+      [tenantId, shopName, generatedSubdomain, "ENTERPRISE",
        JSON.stringify({ baseCurrency: "IDR", taxSettings: { taxRate: 11, taxEnabled: true, taxInclusive: false }, authSettings: { requireMfa: false, passwordPolicy: "medium" } }),
        JSON.stringify({ primaryColor: themeColor || "#4f46e5", accentColor: "#6366f1", portalHelpTitle: `Pusat Bantuan ${shopName}` })]
     );
@@ -297,6 +299,14 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
   } catch (error: any) {
     await client.query("ROLLBACK");
     logger.error({ err: error.message }, "[onboarding-register] Failed");
+    if (error.code === '23505') {
+      if (error.detail?.includes('subdomain')) {
+        return res.status(409).json({ success: false, message: "Subdomain sudah terdaftar." });
+      }
+      if (error.detail?.includes('email')) {
+        return res.status(409).json({ success: false, message: "Email sudah terdaftar." });
+      }
+    }
     return res.status(500).json({ success: false, message: "Registration failed." });
   } finally {
     client.release();

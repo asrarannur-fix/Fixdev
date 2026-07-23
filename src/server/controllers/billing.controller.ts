@@ -53,6 +53,9 @@ export interface SaaSInvoiceServer {
   qrisData: string;
   billingCycle: "monthly" | "yearly";
   autoRenew: boolean;
+  paidAt?: string;
+  periodStart?: string;
+  periodEnd?: string;
 }
 
 export interface MidtransConfig {
@@ -283,13 +286,25 @@ export const getSubscription = async (req: any, res: any) => {
   if (!tenantId) return res.status(400).json({ error: "tenantId parameter is required" });
 
   try {
-    const result = await dbQuery(
-      `SELECT id, tenant_id as "tenantId", date, due_date as "dueDate", amount, tier, status,
-              qris_data as "qrisData", billing_cycle as "billingCycle", auto_renew as "autoRenew"
-       FROM saas_invoices WHERE tenant_id = $1 ORDER BY created_at DESC`,
-      [tenantId],
-    );
-    res.json({ tenantId, invoices: result.rows });
+    const [invoices, usage] = await Promise.all([
+      dbQuery(
+        `SELECT id, tenant_id as "tenantId", date, due_date as "dueDate", amount, tier, status,
+                qris_data as "qrisData", billing_cycle as "billingCycle", auto_renew as "autoRenew",
+                period_start as "periodStart", period_end as "periodEnd"
+         FROM saas_invoices WHERE tenant_id = $1 ORDER BY created_at DESC`,
+        [tenantId],
+      ),
+      dbQuery(
+        `SELECT 
+          storage_used_bytes as "usedBytes",
+          (SELECT COUNT(*)::int FROM users WHERE tenant_id = $1) as "userCount",
+          (SELECT COUNT(*)::int FROM branches WHERE tenant_id = $1) as "branchCount"
+         FROM tenants WHERE id = $1`,
+        [tenantId],
+      ),
+    ]);
+
+    res.json({ tenantId, invoices: invoices.rows, usage: usage.rows[0] });
   } catch (err: any) {
     res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
@@ -332,6 +347,43 @@ export const createInvoice = async (req: any, res: any) => {
   }
 
   const amount = billingCycle === "yearly" ? planConfig.priceYearly : planConfig.priceMonthly;
+  
+  // Calculate pro-rata adjustment if upgrading/downgrading from an active subscription
+  let finalAmount = amount;
+  let prorationNotes = "";
+  try {
+    const activeSub = await dbQuery(
+      `SELECT id, amount, tier, billing_cycle as "billingCycle", period_start as "periodStart", period_end as "periodEnd"
+       FROM saas_invoices
+       WHERE tenant_id = $1 AND status = 'PAID' AND period_end > NOW()
+       ORDER BY period_end DESC LIMIT 1`,
+      [tenantId]
+    );
+
+    const isTrial = await dbQuery(`SELECT 1 FROM tenants WHERE id=$1 AND status='TRIAL' LIMIT 1`, [tenantId]);
+
+    if (activeSub.rows[0] && !isTrial.rows[0]) {
+      const active = activeSub.rows[0];
+      const start = new Date(active.periodStart).getTime();
+      const end = new Date(active.periodEnd).getTime();
+      const now = Date.now();
+
+      if (now > start && now < end) {
+        const totalDuration = end - start;
+        const remainingTime = end - now;
+        const unusedRatio = remainingTime / totalDuration;
+        const unusedValue = Math.floor(Number(active.amount) * unusedRatio);
+
+        if (unusedValue > 0) {
+          finalAmount = Math.max(0, amount - unusedValue);
+          prorationNotes = `Pro-rata credit: Rp ${unusedValue.toLocaleString()} applied from previous ${active.tier} subscription.`;
+        }
+      }
+    }
+  } catch (err: any) {
+    logger.warn({ err: err.message, tenantId }, "[billing] Error computing proration, defaulting to full price");
+  }
+
   const invoiceId = `saas-inv-${randomUUID()}`;
   const dateStr = new Date().toISOString().split("T")[0];
   const due = new Date();
@@ -362,7 +414,7 @@ export const createInvoice = async (req: any, res: any) => {
         headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: authHeader },
         body: JSON.stringify({
           payment_type: "qris",
-          transaction_details: { order_id: invoiceId, gross_amount: amount },
+          transaction_details: { order_id: invoiceId, gross_amount: finalAmount },
           qris: { acquirer: "gopay" },
         }),
       });
@@ -397,9 +449,10 @@ export const createInvoice = async (req: any, res: any) => {
   try {
     const responseBody = {
       success: true,
-      invoice: { id: invoiceId, tenantId, date: dateStr, dueDate: dueDateStr, amount, tier, status: "UNPAID", qrisData, billingCycle, autoRenew: true },
+      invoice: { id: invoiceId, tenantId, date: dateStr, dueDate: dueDateStr, amount: finalAmount, tier, status: "UNPAID", qrisData, billingCycle, autoRenew: true },
       isRealGateway: isRealMidtrans,
       paymentChannel,
+      prorationNotes,
       message: isRealMidtrans
         ? "Invoice Midtrans dibuat. Status akan diperbarui melalui webhook terverifikasi."
         : "Invoice dibuat. Unggah bukti transfer bank atau QRIS manual untuk verifikasi.",
@@ -409,7 +462,7 @@ export const createInvoice = async (req: any, res: any) => {
         `INSERT INTO saas_invoices
            (id, tenant_id, date, due_date, amount, tier, status, qris_data, billing_cycle, auto_renew, plan_snapshot, gateway_provider, gateway_order_id)
          VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', $7, $8, true, $9::jsonb, $10, $11)`,
-        [invoiceId, tenantId, dateStr, dueDateStr, amount, tier, qrisData, billingCycle, JSON.stringify(planConfig), isRealMidtrans ? "MIDTRANS" : null, isRealMidtrans ? invoiceId : null],
+        [invoiceId, tenantId, dateStr, dueDateStr, finalAmount, tier, qrisData, billingCycle, JSON.stringify(planConfig), isRealMidtrans ? "MIDTRANS" : null, isRealMidtrans ? invoiceId : null],
       );
       await client.query(`UPDATE billing_invoice_requests SET status='COMPLETED',invoice_id=$3,response=$4::jsonb,updated_at=now() WHERE tenant_id=$1 AND idempotency_key=$2`, [tenantId, idempotencyKey, invoiceId, JSON.stringify(responseBody)]);
     });
@@ -513,9 +566,11 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
       );
 
       if (nextStatus === "PAID") {
-        const periodEnd = new Date();
+        const periodStart = row.period_start || new Date(); // Use existing period_start or current date
+        const periodEnd = new Date(periodStart); // Start from period_start
         if (row.billing_cycle === "yearly") periodEnd.setFullYear(periodEnd.getFullYear() + 1);
         else periodEnd.setMonth(periodEnd.getMonth() + 1);
+
         await client.query(
           `INSERT INTO billing_transactions
              (invoice_id, tenant_id, channel, method, provider_transaction_id, amount, status, provider_payload)
@@ -524,7 +579,7 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
           [row.id, row.tenant_id, String(req.body.transaction_id || order_id), row.amount,
             JSON.stringify({ transaction_status, fraud_status, status_code })],
         );
-        await client.query(`UPDATE saas_invoices SET period_start=COALESCE(period_start,now()),period_end=COALESCE(period_end,$2) WHERE id=$1`, [row.id, periodEnd]);
+        await client.query(`UPDATE saas_invoices SET period_start=COALESCE(period_start,$2),period_end=COALESCE(period_end,$3) WHERE id=$1`, [row.id, periodStart, periodEnd]);
         await client.query(
           `UPDATE tenants SET status = 'ACTIVE', tier = $2, trial_ends_at = $3,
              settings = COALESCE(settings, '{}'::jsonb) || jsonb_build_object('limits', COALESCE($4::jsonb, '{}'::jsonb))
@@ -689,11 +744,11 @@ export const notifyDueReminders = async (req: any, res: any) => {
         tenantId: inv.tenant_id,
         invoiceId: inv.id,
         type: "due_reminder",
-        channel: "email",
-       recipient: owner.email,
-       payload,
-       eventKey: `payment_confirmed:${inv.id}`,
-     });
+        channel: owner.phone ? "whatsapp" : "email",
+        recipient: owner.phone || owner.email,
+        payload,
+        eventKey: `due_reminder:${inv.id}:${inv.due_date}`,
+      });
 
       sent++;
     }
@@ -781,18 +836,20 @@ export const sendPaymentConfirmation = async (req: any, res: any) => {
       amount: inv.amount,
       tier: inv.tier,
       status: inv.status,
-      message: `Pembayaran untuk invoice ${inv.id} (paket ${inv.tier}) sebesar Rp ${Number(inv.amount).toLocaleString()} telah dikonfirmasi. Terima kasih!`,
+      periodStart: inv.period_start,
+      periodEnd: inv.period_end,
+      message: `Pembayaran untuk invoice ${inv.id} (paket ${inv.tier}) sebesar Rp ${Number(inv.amount).toLocaleString()} telah dikonfirmasi. Periode: ${new Date(inv.period_start).toLocaleDateString()} - ${new Date(inv.period_end).toLocaleDateString()}. Terima kasih!`,
     };
 
     await queueNotification({
       tenantId,
       invoiceId: inv.id,
       type: "payment_confirmed",
-      channel: "email",
-      recipient: owner.email,
-         payload,
-         eventKey: `due_reminder:${inv.id}:${inv.due_date}`,
-       });
+      channel: owner.phone ? "whatsapp" : "email",
+      recipient: owner.phone || owner.email,
+      payload,
+      eventKey: `payment_confirmed:${inv.id}`,
+    });
 
     res.json({ success: true, message: "Notifikasi pembayaran berhasil dikirim." });
   } catch (err: any) {

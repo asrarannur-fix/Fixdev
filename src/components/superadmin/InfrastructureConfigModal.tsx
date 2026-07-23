@@ -7,8 +7,7 @@ interface InfrastructureConfigModalProps {
   tenant: Tenant;
   selectedTenantForConfig: string | null;
   setSelectedTenantForConfig: (id: string | null) => void;
-  configSubdomain: string;
-  setConfigSubdomain: (v: string) => void;
+
   configCustomDomain: string;
   setConfigCustomDomain: (v: string) => void;
   configStorageMode: string;
@@ -40,8 +39,7 @@ export const InfrastructureConfigModal: React.FC<
   tenant,
   selectedTenantForConfig,
   setSelectedTenantForConfig,
-  configSubdomain,
-  setConfigSubdomain,
+
   configCustomDomain,
   setConfigCustomDomain,
   configStorageMode,
@@ -181,20 +179,7 @@ export const InfrastructureConfigModal: React.FC<
             <h4 className="font-bold text-[11px] uppercase text-blue-700 dark:text-blue-400 tracking-wider font-mono">
               1. Domain & Jaringan
             </h4>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
-                Kode Identitas Tenant (Slug / ID)
-              </label>
-              <div className="flex items-center">
-                <input
-                  type="text"
-                  value={configSubdomain}
-                  onChange={(e) => setConfigSubdomain(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none font-mono text-xs focus:border-accent"
-                  placeholder="slug-identitas"
-                />
-              </div>
-            </div>
+
 
             <div>
               <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
@@ -466,17 +451,10 @@ export const InfrastructureConfigModal: React.FC<
           <button
             onClick={async () => {
               const cleanName = configName.trim();
-              const cleanSubdomain = configSubdomain
-                .trim()
-                .toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, "")
-                .replace(/\s+/g, "-")
-                .replace(/-+/g, "-")
-                .replace(/^-|-$/g, "");
               const cleanCustomDomain = configCustomDomain.trim().toLowerCase();
 
-              if (!cleanName || !cleanSubdomain) {
-                showToast("Nama tenant dan subdomain tidak boleh kosong.", "error");
+              if (!cleanName) {
+                showToast("Nama tenant tidak boleh kosong.", "error");
                 return;
               }
 
@@ -488,7 +466,6 @@ export const InfrastructureConfigModal: React.FC<
                 name: cleanName,
                 tier: configTier,
                 status: configStatus,
-                subdomain: cleanSubdomain,
                 limits: {
                   ...tenant.limits,
                   storageMb: safeStorage,

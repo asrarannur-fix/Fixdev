@@ -19,7 +19,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [shopName, setShopName] = useState("");
-  const [subdomain, setSubdomain] = useState("");
   const [businessSector, setBusinessSector] = useState("IT & Servis Komputer");
   const [ownerName, setOwnerName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -43,9 +42,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
 
   const handleShopNameChange = (val: string) => {
     setShopName(val);
-    setSubdomain(
-      val.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-"),
-    );
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
@@ -77,8 +73,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
     }
     if (!cleanOwnerEmail.includes("@")) { setErrorMsg("Format email owner tidak valid."); return; }
     if (submittedOwnerPassword.length < 6) { setErrorMsg("Password owner minimal 6 karakter."); return; }
-    const cleanSubdomain = subdomain.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-    if (!cleanSubdomain) { setErrorMsg("Identitas subdomain tidak valid."); return; }
     setLoading(true);
     setErrorMsg("");
     try {
@@ -87,7 +81,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shopName: cleanShopName,
-          subdomain: cleanSubdomain,
           ownerName: cleanOwnerName,
           ownerEmail: cleanOwnerEmail,
           ownerPassword: submittedOwnerPassword,

@@ -6,6 +6,14 @@ import nodemailer from "nodemailer";
 import { z } from "zod";
 import { redactTenantSettingsSecrets } from "./bootstrap.controller.js";
 
+interface TenantSubscriptionInfo {
+  id: string;
+  tenantId: string;
+  tier: string;
+  status: string;
+  periodEnd: Date;
+}
+
 async function sendInvitationEmail(email: string, ownerName: string, tenantName: string, token: string, expiresAt: string) {
   const host = process.env.EMAIL_HOST;
   const user = process.env.EMAIL_USER;
@@ -71,7 +79,7 @@ async function adminAudit(
 
 export async function getOverview(req: Request, res: Response) {
   try {
-    const [billing, tenants, trials, manual, incidents, notifications] = await Promise.all([
+    const [billing, tenants, trials, manual, incidents, notifications, analytics] = await Promise.all([
       dbQuery(`SELECT
         COALESCE(SUM(amount) FILTER (WHERE status='PAID' AND COALESCE(period_end, now() + interval '1 month') > now()
           AND COALESCE(period_start, paid_at, created_at) <= now()
@@ -98,11 +106,16 @@ export async function getOverview(req: Request, res: Response) {
       dbQuery(`SELECT COUNT(*) FILTER (WHERE read_at IS NULL)::int AS unread
         FROM billing_internal_notifications WHERE audience_role='SUPER_ADMIN'`)
         .catch(() => ({ rows: [{ unread: 0 }] } as any)),
+      dbQuery(`SELECT 
+        (SELECT COUNT(*)::int FROM tenants WHERE created_at >= date_trunc('month', now())) AS new_tenants_month,
+        (SELECT COUNT(*)::int FROM saas_invoices WHERE status='PAID' AND paid_at >= date_trunc('month', now())) AS paid_invoices_month,
+        (SELECT COALESCE(AVG(amount), 0)::numeric FROM saas_invoices WHERE status='PAID' AND paid_at >= date_trunc('month', now())) AS avg_revenue_per_paid_invoice`),
     ]);
 
     const b = billing.rows[0] || {};
     const t = tenants.rows[0] || {};
     const trial = trials.rows[0] || {};
+    const a = analytics.rows[0] || {};
     const mrr = Number(b.mrr_monthly || 0) + Number(b.mrr_yearly || 0);
     const actions = [
       Number(manual.rows[0]?.pending) > 0 && { id: "manual-payments", severity: "critical", count: Number(manual.rows[0].pending), label: "Pembayaran manual menunggu verifikasi", targetTab: "saas-billing", targetFilter: "manual-pending" },
@@ -119,6 +132,9 @@ export async function getOverview(req: Request, res: Response) {
         trialTenants: Number(t.trial || 0), suspendedTenants: Number(t.suspended || 0),
         pendingManualPayments: Number(manual.rows[0]?.pending || 0), trialExpiring: Number(trial.warning || 0),
         unreadNotifications: Number(notifications.rows[0]?.unread || 0),
+        newTenantsThisMonth: a.new_tenants_month,
+        paidInvoicesThisMonth: a.paid_invoices_month,
+        arpu: Number(a.avg_revenue_per_paid_invoice || 0),
       },
       actions,
       generatedAt: new Date().toISOString(),
@@ -267,7 +283,7 @@ export async function changeTenantStatus(req: Request, res: Response) {
         (tenant_id,previous_status,next_status,category,reason,internal_note,scheduled_reactivation_at,notify_owner,actor_user_id)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [tenant.id, tenant.status, status, category.trim(), reason.trim(), internalNote || null, scheduledReactivationAt || null, Boolean(notifyOwner), req.authActor?.userId]);
-      await adminAudit(client, req, status === "SUSPENDED" ? "TENANT_SUSPENDED" : "TENANT_REACTIVATED", "tenant", tenant.id, tenant.id, tenant, updated.rows[0], { category, notifyOwner });
+      await adminAudit(client, req, "TENANT_SUSPENDED", "tenant", tenant.id, tenant.id, tenant, updated.rows[0], { category, notifyOwner });
       return { tenant: updated.rows[0] };
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
@@ -371,6 +387,8 @@ export async function listAudit(req: Request, res: Response) {
   if (req.query.to) { params.push(req.query.to); clauses.push(`created_at <= $${params.length}`); }
   if (req.query.search) { params.push(`%${req.query.search}%`); clauses.push(`(action ILIKE $${params.length} OR resource_id ILIKE $${params.length} OR metadata::text ILIKE $${params.length})`); }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const sort = allowedSorts[String(req.query.sort || "createdAt")] || allowedSorts.createdAt;
+  const direction = String(req.query.direction).toLowerCase() === "asc" ? "ASC" : "DESC";
   try {
     const count = await dbQuery(`SELECT COUNT(*)::int AS count FROM superadmin_audit_events ${where}`, params as any[]);
     params.push(pageSize, offset);
@@ -449,7 +467,7 @@ export async function createIncident(req: Request, res: Response) {
   try {
     const result = await dbTransaction(async (client) => {
       const row = await client.query(`INSERT INTO platform_incidents(component,severity,status,title,details) VALUES ($1,$2,'OPEN',$3,$4) RETURNING *`, [component.trim(), severity, title.trim(), details || null]);
-      await client.query(`INSERT INTO platform_incident_events(incident_id,event_type,note,actor_user_id) VALUES ($1,'CREATED',$2,$3)`, [row.rows[0].id, details || null, req.authActor?.userId]);
+      await client.query(`INSERT INTO platform_incident_events(incident_id,event_type,note,actor_user_id) VALUES ($1,$2,$3,$4)`, [row.rows[0].id, details || null, req.authActor?.userId]);
       await adminAudit(client, req, "INCIDENT_CREATED", "platform_incident", row.rows[0].id, null, null, row.rows[0]);
       return { incident: row.rows[0] };
     });
@@ -580,12 +598,85 @@ export async function assignSuperAdminRole(req: Request, res: Response) {
   }
 }
 
+export async function terminateSubscription(req: Request, res: Response) {
+  const { tenantId } = req.params;
+  const { reason } = req.body;
+  if (!reason?.trim()) return res.status(422).json({ error: "Alasan penghentian wajib diisi." });
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      const tenant = await client.query(`SELECT status, tier, version FROM tenants WHERE id=$1 FOR UPDATE`, [tenantId]);
+      if (!tenant.rows[0]) return { code: 404, error: "Tenant tidak ditemukan." };
+
+      await client.query(
+        `UPDATE tenants SET status='SUSPENDED', status_category='BILLING', status_reason=$2, version=version+1 WHERE id=$1`,
+        [tenantId, reason]
+      );
+
+      await client.query(
+        `UPDATE saas_invoices SET status='OVERDUE', version=version+1 WHERE tenant_id=$1 AND status='PAID' AND period_end > NOW()`,
+        [tenantId]
+      );
+
+      await adminAudit(client, req, "SUBSCRIPTION_TERMINATED", "tenant", tenantId, tenantId, tenant.rows[0], { status: 'SUSPENDED' }, { reason });
+      return { success: true };
+    });
+
+    if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
+    res.json({ success: true, message: "Langganan berhasil dihentikan secara paksa." });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId }, "terminateSubscription failed");
+    res.status(500).json({ error: "Gagal menghentikan langganan." });
+  }
+}
+
+export async function extendSubscription(req: Request, res: Response) {
+  const { tenantId } = req.params;
+  const { days, reason } = req.body;
+  if (!Number.isInteger(days) || days <= 0 || !reason?.trim()) {
+    return res.status(422).json({ error: "Jumlah hari dan alasan perpanjangan wajib diisi." });
+  }
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      const active = await client.query(
+        `SELECT id, period_end, version FROM saas_invoices WHERE tenant_id=$1 AND status='PAID' AND period_end > NOW() ORDER BY period_end DESC LIMIT 1 FOR UPDATE`,
+        [tenantId]
+      );
+
+      if (!active.rows[0]) return { code: 404, error: "Tidak ada langganan aktif yang bisa diperpanjang." };
+
+      const oldEnd = new Date(active.rows[0].period_end);
+      const newEnd = new Date(oldEnd);
+      newEnd.setDate(newEnd.getDate() + days);
+
+      await client.query(
+        `UPDATE saas_invoices SET period_end=$2, version=version+1 WHERE id=$1`,
+        [active.rows[0].id, newEnd]
+      );
+
+      await client.query(
+        `UPDATE tenants SET trial_ends_at=$2, version=version+1 WHERE id=$1`,
+        [tenantId, newEnd]
+      );
+
+      await adminAudit(client, req, "SUBSCRIPTION_EXTENDED", "saas_invoice", active.rows[0].id, tenantId, { periodEnd: oldEnd }, { periodEnd: newEnd }, { days, reason });
+      return { success: true, newPeriodEnd: newEnd };
+    });
+
+    if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
+    res.json({ success: true, message: `Langganan diperpanjang ${days} hari.`, newPeriodEnd: (result as any).newPeriodEnd });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId }, "extendSubscription failed");
+    res.status(500).json({ error: "Gagal memperpanjang langganan." });
+  }
+}
 export async function getTenantDetail(req: Request, res: Response) {
   try {
     const [tenant, users, invoices, statusHistory, impersonations, audit] = await Promise.all([
       dbQuery(`SELECT id,name,subdomain,status,tier,trial_ends_at AS "trialEndsAt",created_at AS "createdAt",settings,branding,version,status_reason AS "statusReason",scheduled_reactivation_at AS "scheduledReactivationAt",storage_used_bytes AS "storageUsedBytes",storage_measured_at AS "storageMeasuredAt" FROM tenants WHERE id=$1`, [req.params.id]),
       dbQuery(`SELECT id,name,email,role,mfa_enabled AS "mfaEnabled",created_at AS "createdAt" FROM users WHERE tenant_id=$1 ORDER BY created_at DESC`, [req.params.id]),
-      dbQuery(`SELECT id,date,due_date AS "dueDate",amount,tier,status,billing_cycle AS "billingCycle",paid_at AS "paidAt",created_at AS "createdAt" FROM saas_invoices WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 100`, [req.params.id]).catch(() => ({ rows: [] } as any)),
+      dbQuery(`SELECT id,date,due_date AS "dueDate",amount,tier,status,billing_cycle AS "billingCycle",paid_at AS "paidAt",period_start AS "periodStart",period_end AS "periodEnd",created_at AS "createdAt" FROM saas_invoices WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 100`, [req.params.id]).catch(() => ({ rows: [] } as any)),
       dbQuery(`SELECT previous_status AS "previousStatus",next_status AS "nextStatus",category,reason,internal_note AS "internalNote",created_at AS "createdAt" FROM tenant_status_history WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 50`, [req.params.id]),
       dbQuery(`SELECT id,reason,ticket_id AS "ticketId",access_mode AS "accessMode",started_at AS "startedAt",expires_at AS "expiresAt",ended_at AS "endedAt" FROM impersonation_sessions WHERE tenant_id=$1 ORDER BY started_at DESC LIMIT 50`, [req.params.id]),
       dbQuery(`SELECT id,action,outcome,resource_type AS "resourceType",resource_id AS "resourceId",created_at AS "createdAt",metadata FROM superadmin_audit_events WHERE effective_tenant_id=$1 ORDER BY created_at DESC LIMIT 100`, [req.params.id]),
@@ -637,15 +728,19 @@ export async function permanentDeleteTenant(req: Request, res: Response) {
         [tenant.id],
       );
 
+      // Record the deletion in audit log BEFORE actual deletion of tenant
+      // We set effective_tenant_id to NULL so the log survives the CASCADE deletion of the tenant itself
       await client.query(`INSERT INTO superadmin_audit_events
         (actor_user_id, actor_role, effective_tenant_id, action, resource_type, resource_id, outcome, client_ip, before_state, metadata)
-        VALUES ($1,$2,$3,'TENANT_PERMANENT_DELETE','tenant',$4,'SUCCESS',$5,$6::jsonb,$7::jsonb)`,
-        [req.authActor?.userId, req.authActor?.role, tenant.id, tenant.id, clientIp(req),
+        VALUES ($1,$2,NULL,'TENANT_PERMANENT_DELETE','tenant',$3,'SUCCESS',$4,$5::jsonb,$6::jsonb)`,
+        [req.authActor?.userId, req.authActor?.role, tenant.id, clientIp(req),
           JSON.stringify({ name: tenant.name, subdomain: tenant.subdomain, status: tenant.status, tier: tenant.tier }),
           JSON.stringify({ auditEventCount: auditSnapshot.rows.length })]);
 
+      // Delete the tenant. This will CASCADE to all dependent tables (users, branches, audit_events etc.)
       await client.query(`DELETE FROM tenants WHERE id=$1`, [tenant.id]);
 
+      // Delete associated file storage
       const fs = await import("fs");
       const path = await import("path");
       const uploadDir = process.env.FILE_UPLOAD_DIR || "./uploads";
@@ -665,13 +760,20 @@ export async function permanentDeleteTenant(req: Request, res: Response) {
 }
 
 export async function registerTenant(req: Request, res: Response) {
-  const { name, subdomain, ownerName, ownerEmail, tier = "PRO", idempotencyKey } = req.body || {};
+  const { name, ownerName, ownerEmail, tier = "PRO" } = req.body || {};
   const cleanName = String(name || "").trim();
-  const cleanSubdomain = String(subdomain || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "");
   const cleanOwnerName = String(ownerName || "").trim();
   const cleanOwnerEmail = String(ownerEmail || "").trim().toLowerCase();
-  if (!cleanName || !cleanSubdomain || !cleanOwnerName || !cleanOwnerEmail.includes("@") || !["BASIC", "PRO", "ENTERPRISE"].includes(tier) || !/^[0-9a-f-]{36}$/i.test(String(idempotencyKey || ""))) {
-    return res.status(422).json({ error: "Nama, subdomain, owner, email, paket, dan idempotency key wajib valid." });
+
+  // Auto-generate subdomain from tenant name + UUID suffix
+  const baseSlug = cleanName.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  const uniqueSuffix = randomUUID().slice(0, 8); // Use first 8 chars of a UUID
+  const cleanSubdomain = `${baseSlug}-${uniqueSuffix}`;
+
+  const idempotencyKey = randomUUID(); // Always generate a new one on the backend
+
+  if (!cleanName || !cleanOwnerName || !cleanOwnerEmail.includes("@") || !["BASIC", "PRO", "ENTERPRISE"].includes(tier)) {
+    return res.status(422).json({ error: "Nama, owner, email, dan paket wajib valid." });
   }
 
   const planLimits: Record<string, { users: number; branches: number; storageMb: number; features: string[] }> = {
@@ -683,14 +785,7 @@ export async function registerTenant(req: Request, res: Response) {
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
   try {
-    const existingRequest = await dbQuery(`SELECT t.*,i.id AS invitation_id,i.expires_at AS invitation_expires_at FROM tenants t LEFT JOIN tenant_invitations i ON i.tenant_id=t.id WHERE t.registration_key=$1 ORDER BY i.created_at DESC LIMIT 1`, [idempotencyKey]);
-    if (existingRequest.rows[0]) {
-      const row = existingRequest.rows[0];
-      return res.status(200).json({ success: true, replayed: true, tenant: row, invitation: { id: row.invitation_id, expiresAt: row.invitation_expires_at } });
-    }
     const result = await dbTransaction(async (client) => {
-      const duplicate = await client.query(`SELECT id FROM tenants WHERE subdomain=$1`, [cleanSubdomain]);
-      if (duplicate.rows[0]) return { code: 409, error: "Subdomain sudah digunakan." };
       const duplicateEmail = await client.query(`SELECT id FROM users WHERE lower(email)=$1`, [cleanOwnerEmail]);
       if (duplicateEmail.rows[0]) return { code: 409, error: "Email owner sudah terdaftar." };
 
@@ -698,11 +793,11 @@ export async function registerTenant(req: Request, res: Response) {
       const branchId = randomUUID();
       const tenant = await client.query(
         `INSERT INTO tenants (id,name,subdomain,status,tier,trial_ends_at,settings,branding,registration_key,created_at)
-         VALUES ($1,$2,$3,'TRIAL',$4,now()+interval '30 days',$5::jsonb,$6::jsonb,$7,now())
+         VALUES ($1,$2,$3,'TRIAL',$4,now()+interval '14 days',$5::jsonb,$6::jsonb,$7,now())
          RETURNING *`,
-        [tenantId, cleanName, cleanSubdomain, tier,
-          JSON.stringify({ baseCurrency: "IDR", limits: planLimits[tier], authSettings: { requireMfa: false, passwordPolicy: "medium" }, taxSettings: { taxEnabled: true, taxRate: 11, taxInclusive: false } }),
-          JSON.stringify({ primaryColor: "#1e3a8a", accentColor: "#3b82f6", whiteLabelEnabled: tier === "ENTERPRISE" }), idempotencyKey],
+        [tenantId, cleanName, cleanSubdomain, "ENTERPRISE",
+          JSON.stringify({ baseCurrency: "IDR", limits: planLimits["ENTERPRISE"], authSettings: { requireMfa: false, passwordPolicy: "medium" }, taxSettings: { taxEnabled: true, taxRate: 11, taxInclusive: false } }),
+          JSON.stringify({ primaryColor: "#1e3a8a", accentColor: "#3b82f6", whiteLabelEnabled: true }), idempotencyKey],
       );
       await client.query(`INSERT INTO branches (id,tenant_id,name,address,phone,is_active,created_at) VALUES ($1,$2,$3,$4,'',true,now())`, [branchId, tenantId, `Cabang Utama ${cleanName}`, `Alamat Utama ${cleanName}`]);
       await client.query(`INSERT INTO warehouses (id,tenant_id,branch_id,name,location,created_at) VALUES ($1,$2,$3,'Gudang Utama','Lokasi utama',now())`, [randomUUID(), tenantId, branchId]);
@@ -744,6 +839,7 @@ export async function createTenantInvitation(req: Request, res: Response) {
     res.status(201).json({ success: true, invitation: row.rows[0], delivery: sent ? "EMAIL_SENT" : "OUTBOX_PENDING" });
   } catch (err: any) {
     if (err.code === "23505") return res.status(409).json({ error: "Undangan aktif untuk email ini sudah tersedia." });
-    res.status(500).json({ error: "Operasi Super Admin gagal diproses." });
+    logger.error({ err: err.message }, "createTenantInvitation failed");
+    res.status(500).json({ error: "Undangan tenant gagal dibuat." });
   }
 }

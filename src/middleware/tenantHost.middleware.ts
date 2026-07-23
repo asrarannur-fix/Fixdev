@@ -23,7 +23,7 @@ export const tenantHostResolver = async (req: Request, res: Response, next: Next
   try {
     const tenant = await getHostTenantId(hostname, rootDomain);
     if (tenant) req.hostTenant = tenant;
-    else if (subdomain) return res.status(404).json({ error: "Not found." });
+    // Don't return 404 here, just continue for single domain support
     next();
   } catch (error: any) {
     logger.error({ err: error.message, hostname }, "Could not resolve tenant host");

@@ -3,6 +3,7 @@ import { Server, HardDrive, Lock, Settings2, Play, Download, ChevronLeft, Chevro
 import { SubscriptionTier, TenantStatus, Tenant } from "../../types";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
+
 import { useSaaS } from "../../context/SaaSContext";
 import { readJsonResponse } from "../../utils/apiResponse";
 
@@ -18,7 +19,7 @@ interface TenantsManagerProps {
   updateTenantStatus: (id: string, status: TenantStatus) => void;
   impersonateTenant: (id: string) => void;
   setSelectedTenantForConfig: (id: string) => void;
-  setConfigSubdomain: (v: string) => void;
+
   setConfigCustomDomain: (v: string) => void;
   setConfigStorageMode: (v: string) => void;
   setConfigBucketName: (v: string) => void;
@@ -42,7 +43,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   updateTenantStatus,
   impersonateTenant,
   setSelectedTenantForConfig,
-  setConfigSubdomain,
+
   setConfigCustomDomain,
   setConfigStorageMode,
   setConfigBucketName,
@@ -56,18 +57,20 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   readOnlyMode = false,
 }) => {
   const { showToast } = useToast();
-  const { confirm: showConfirm } = useConfirm();
+  const { confirm } = useConfirm();
   const { apiFetch, refreshData } = useSaaS();
   const [isDeletingTenant, setIsDeletingTenant] = useState(false);
 
   const deleteTenantPermanently = async (tenantId: string, tenantName: string) => {
-    if (await showConfirm({
+    console.log("Delete button clicked for tenant:", tenantId, tenantName);
+    if (await confirm({
       title: "Hapus Permanen Tenant",
       message: `Yakin hapus permanen ${tenantName}? Ini akan menghapus SEMUA data tenant secara permanen dan tidak bisa dibatalkan.`,
       confirmLabel: "Ya, Hapus Permanen",
       cancelLabel: "Batal",
       type: "danger",
     })) {
+      console.log("Confirm dialog resolved to true. Proceeding with deletion.");
       setIsDeletingTenant(true);
       try {
         await apiFetch(`/api/superadmin/tenants/${tenantId}/permanent`, { method: "DELETE" });
@@ -129,15 +132,12 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
     } finally { setDetailLoading(false); }
   };
   const [newTenantName, setNewTenantName] = useState("");
-  const [newSubdomain, setNewSubdomain] = useState("");
   const [newOwnerName, setNewOwnerName] = useState("");
   const [newOwnerEmail, setNewOwnerEmail] = useState("");
   const [newTier, setNewTier] = useState<SubscriptionTier>(
     SubscriptionTier.PRO,
   );
-  const [registrationStep, setRegistrationStep] = useState(1);
-  const [registrationKey, setRegistrationKey] = useState(() => crypto.randomUUID());
-  const [availability, setAvailability] = useState<{ subdomainAvailable: boolean | null; emailAvailable: boolean | null } | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<TenantStatus | "">("");
@@ -188,16 +188,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleTenantNameChange = (val: string) => {
-    setNewTenantName(val);
-    const slug = val
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "") // remove special characters
-      .replace(/\s+/g, "-") // replace spaces with -
-      .replace(/-+/g, "-"); // collapse duplicate dashes
-    setNewSubdomain(slug);
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (readOnlyMode) {
@@ -207,11 +197,8 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
     const cleanTenantName = newTenantName.trim();
     const cleanOwnerName = newOwnerName.trim();
     const cleanOwnerEmail = newOwnerEmail.trim().toLowerCase();
-    if (!cleanTenantName || !newSubdomain || !cleanOwnerName || !cleanOwnerEmail) {
-      showToast(
-        "Harap isi semua kolom pendaftaran termasuk data Owner!",
-        "error",
-      );
+    if (!cleanTenantName || !cleanOwnerName || !cleanOwnerEmail) {
+      showToast("Harap isi semua kolom pendaftaran.", "error");
       return;
     }
     if (!cleanOwnerEmail.includes("@")) {
@@ -219,60 +206,24 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
       return;
     }
 
-    const cleanSubdomain = newSubdomain
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-    if (!cleanSubdomain) {
-      showToast("Subdomain tenant tidak valid.", "error");
-      return;
-    }
-
-    const isSubdomainExists = tenants.some(
-      (t) => (t.subdomain || t.id).toLowerCase() === cleanSubdomain,
-    );
-    if (isSubdomainExists) {
-      showToast(
-        `Kode Identitas (Slug) "${cleanSubdomain}" sudah digunakan oleh tenant lain! Harap gunakan kode unik.`,
-        "error",
-      );
-      return;
-    }
-
-    // 2. Uniqueness check for owner email
-    const isEmailExists = users.some(
-      (u) => u.email.toLowerCase() === cleanOwnerEmail,
-    );
-    if (isEmailExists) {
-      showToast(
-        `Email owner "${cleanOwnerEmail}" sudah terdaftar dalam sistem! Gunakan email lain yang unik.`,
-        "error",
-      );
-      return;
-    }
-
+    setIsRegistering(true);
     try {
       const response = await apiFetch("/api/superadmin/tenants", {
         method: "POST",
         headers: { "X-SuperAdmin-Mode": readOnlyMode ? "read-only" : "edit" },
-        body: JSON.stringify({ name: cleanTenantName, subdomain: cleanSubdomain, ownerName: cleanOwnerName, ownerEmail: cleanOwnerEmail, tier: newTier, idempotencyKey: registrationKey }),
+        body: JSON.stringify({ name: cleanTenantName, ownerName: cleanOwnerName, ownerEmail: cleanOwnerEmail, tier: newTier }),
       });
       const result = await readJsonResponse<any>(response, "Registrasi tenant");
-      showToast(`Tenant "${cleanTenantName}" dibuat. Undangan owner berlaku sampai ${new Date(result.invitation.expiresAt).toLocaleString("id-ID")}.`, "success");
+      showToast(`Tenant "${cleanTenantName}" berhasil dibuat. Undangan dikirim ke ${cleanOwnerEmail}.`, "success");
       setNewTenantName("");
-      setNewSubdomain("");
       setNewOwnerName("");
       setNewOwnerEmail("");
-      setRegistrationStep(1);
-      setAvailability(null);
-      setRegistrationKey(crypto.randomUUID());
+      setNewTier(SubscriptionTier.PRO);
       await refreshData();
-      window.dispatchEvent(new CustomEvent("superadmin-tenant-created", { detail: result.tenant }));
     } catch (err: any) {
       showToast("Gagal mendaftarkan tenant: " + err.message, "error");
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -526,7 +477,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                           disabled={readOnlyMode}
                           onClick={() => {
                             setSelectedTenantForConfig(t.id);
-                            setConfigSubdomain(t.subdomain || t.id);
                             setConfigCustomDomain(
                               t.branding?.customDomain || "",
                             );
@@ -551,7 +501,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                         </button>
                         <button
                           onClick={() => void deleteTenantPermanently(t.id, t.name)}
-                          disabled={isDeletingTenant}
                           className="flex items-center justify-center gap-1.5 bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200/50 dark:border-red-900/30 px-2.5 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all w-full shadow-xs"
                           title="Hapus permanen tenant dan semua datanya. TIDAK BISA DIBATALKAN."
                         >
@@ -579,79 +528,48 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
           Registrasi Tenant Baru
         </h3>
         <form onSubmit={handleRegister} className="space-y-4">
-          <div className="grid grid-cols-6 gap-1" aria-label={`Langkah registrasi ${registrationStep} dari 6`}>{[1,2,3,4,5,6].map((step) => <span key={step} className={`h-1.5 rounded-full ${step <= registrationStep ? "bg-blue-600" : "bg-slate-200 dark:bg-zinc-800"}`} />)}</div>
-          <p className="text-[10px] font-bold uppercase text-slate-500">Langkah {registrationStep}/6 · {['Identitas','Domain','Owner','Paket','Validasi','Review'][registrationStep-1]}</p>
-          {registrationStep === 1 && <div>
+          <div>
             <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">
-              Nama Perusahaan / Bisnis
+              Nama Bisnis
             </label>
             <input
               type="text"
-              placeholder="cth: Nama Toko Servis"
+              placeholder="cth: Toko Servis Makassar"
               value={newTenantName}
-              onChange={(e) => handleTenantNameChange(e.target.value)}
+              onChange={(e) => setNewTenantName(e.target.value)}
               className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
-              required
             />
-          </div>}
-          {registrationStep === 2 && <div>
+          </div>
+          <div>
             <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">
-              Kode Identitas / Slug Tenant
+              Nama Owner / Pengelola
             </label>
-            <div className="flex items-center">
-              <input
-                type="text"
-                placeholder="mac-repair"
-                value={newSubdomain}
-                onChange={(e) =>
-                  setNewSubdomain(
-                    e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                  )
-                }
-                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
-                required
-              />
-            </div>
-          </div>}
-
-          {registrationStep === 3 && <div className="border-t border-slate-100 dark:border-zinc-800 my-4 pt-4 space-y-4">
-            <h4 className="font-bold text-[10px] uppercase text-blue-600 dark:text-blue-400 tracking-wider font-mono">
-              Data Owner (Akun Administrator)
-            </h4>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">
-                Nama Owner / Pengelola
-              </label>
-              <input
-                type="text"
-                placeholder="cth: Budi Santoso"
-                value={newOwnerName}
-                onChange={(e) => setNewOwnerName(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">
-                Email Owner (Untuk Login)
-              </label>
-              <input
-                type="email"
-                placeholder="cth: budi@repaircenter.com"
-                value={newOwnerEmail}
-                onChange={(e) => setNewOwnerEmail(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
-                required
-              />
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Owner akan menerima undangan sekali pakai untuk membuat sandi sendiri. Undangan kedaluwarsa dalam 48 jam.
-              </p>
-            </div>
-          </div>}
-
-          {registrationStep === 4 && <div>
+            <input
+              type="text"
+              placeholder="cth: Budi Santoso"
+              value={newOwnerName}
+              onChange={(e) => setNewOwnerName(e.target.value)}
+              className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
+            />
+          </div>
+          <div>
             <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">
-              Subscription Paket
+              Email Owner
+            </label>
+            <input
+              type="email"
+              placeholder="cth: budi@email.com"
+              value={newOwnerEmail}
+              onChange={(e) => setNewOwnerEmail(e.target.value)}
+              className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-accent bg-slate-50/50 dark:bg-zinc-950 text-slate-800 dark:text-white transition-colors"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Owner akan menerima undangan untuk membuat sandi sendiri. Undangan kedaluwarsa dalam 48 jam.
+            </p>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">
+              Paket Langganan
             </label>
             <select
               value={newTier}
@@ -659,27 +577,23 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
               className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50/50 dark:bg-zinc-950 outline-none cursor-pointer font-bold text-slate-700 dark:text-slate-300"
             >
               <option value={SubscriptionTier.BASIC}>
-                BASIC (5 Users, Rp 100k/bln)
+                BASIC (15 user, Rp 100k/bln)
               </option>
               <option value={SubscriptionTier.PRO}>
-                PRO (15 Users, Rp 250k/bln)
+                PRO (15 user, Rp 250k/bln)
               </option>
               <option value={SubscriptionTier.ENTERPRISE}>
-                ENTERPRISE (100 Users, Rp 1.5M/bln)
+                ENTERPRISE (100 user, Rp 1.5jt/bln)
               </option>
             </select>
-          </div>}
-          {registrationStep === 5 && <div className="space-y-3"><p className="text-xs text-slate-500">Periksa ketersediaan subdomain dan email sebelum melanjutkan.</p><button type="button" onClick={async () => { try { const params = new URLSearchParams({ subdomain: newSubdomain, email: newOwnerEmail }); const result = await readJsonResponse<any>(await apiFetch(`/api/superadmin/tenants/availability?${params}`), "Ketersediaan tenant"); setAvailability(result); } catch (err: any) { showToast(err.message, "error"); } }} className="w-full rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">Periksa ketersediaan</button>{availability && <div className={`rounded-xl p-3 text-xs font-bold ${availability.subdomainAvailable && availability.emailAvailable ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>Subdomain: {availability.subdomainAvailable ? "tersedia" : "digunakan"} · Email: {availability.emailAvailable ? "tersedia" : "digunakan"}</div>}</div>}
-          {registrationStep === 6 && <div className="rounded-xl bg-slate-50 p-4 text-xs dark:bg-zinc-950"><p className="font-black">Review registrasi</p><dl className="mt-3 space-y-2"><div><dt className="text-slate-500">Tenant</dt><dd className="font-bold">{newTenantName} ({newSubdomain})</dd></div><div><dt className="text-slate-500">Owner</dt><dd className="font-bold">{newOwnerName} · {newOwnerEmail}</dd></div><div><dt className="text-slate-500">Paket</dt><dd className="font-bold">{newTier}</dd></div></dl></div>}
-          <div className="flex gap-2">{registrationStep > 1 && <button type="button" onClick={() => setRegistrationStep((step) => step - 1)} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-bold dark:border-zinc-700">Kembali</button>}{registrationStep < 6 && <button type="button" onClick={() => { if (registrationStep === 1 && !newTenantName.trim()) return showToast("Nama tenant wajib diisi.", "error"); if (registrationStep === 2 && !newSubdomain.trim()) return showToast("Subdomain wajib diisi.", "error"); if (registrationStep === 3 && (!newOwnerName.trim() || !newOwnerEmail.includes("@"))) return showToast("Data owner wajib valid.", "error"); if (registrationStep === 5 && (!availability?.subdomainAvailable || !availability?.emailAvailable)) return showToast("Ketersediaan belum valid.", "error"); setRegistrationStep((step) => step + 1); }} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white">Lanjut</button>}</div>
-          {registrationStep === 6 && <button
+          </div>
+          <button
             type="submit"
-            disabled={readOnlyMode}
+            disabled={readOnlyMode || isRegistering}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/10 transition-all"
           >
-            <Play className="w-3.5 h-3.5" /> Daftarkan & Setup Database
-            (DB Sync)
-          </button>}
+            <Play className="w-3.5 h-3.5" /> {isRegistering ? "Mendaftarkan..." : "Daftarkan Tenant"}
+          </button>
         </form>
       </div>
       {detailTenant && (
