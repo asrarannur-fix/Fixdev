@@ -60,7 +60,7 @@ router.post("/simulate-recurring-cron", requireSuperAdminPermission("operations:
 router.post("/simulate-trial-expiry", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, simulateTrialExpiryCron);
 router.post("/notify-due-reminders", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyDueReminders);
 router.post("/notify-overdue-alerts", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyOverdueAlerts);
-router.post("/notify-payment-confirmation", requireTenantOrSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, sendPaymentConfirmation);
+router.post("/notify-payment-confirmation", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, sendPaymentConfirmation);
 router.get("/gateway-config", requireSuperAdminPermission("billing:view_config"), getGatewayConfig);
 router.post("/gateway-config", requireSuperAdminPermission("billing:manage_config"), requireSuperAdminConsoleSession, updateGatewayConfig);
 router.get("/manual-payment-config", requireTenantOrSuperAdminPermission("billing:view_config", true), getManualPaymentConfig);

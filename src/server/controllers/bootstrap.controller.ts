@@ -87,6 +87,6 @@ export async function bootstrapHandler(req: Request, res: Response) {
     }));
     res.json(toApiResponse(data));
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Bootstrap gagal diproses." });
   }
 }

@@ -63,9 +63,7 @@ export function DeveloperApiManager() {
   const [copiedToken, setCopiedToken] = useState(false);
 
   // Playground state
-  const [selectedToken, setSelectedToken] = useState<string>(
-    "km_sanctum_token_owner",
-  );
+  const [selectedToken, setSelectedToken] = useState<string>("");
   const [playgroundEndpoint, setPlaygroundEndpoint] =
     useState<string>("customers");
   const [playgroundMethod, setPlaygroundMethod] = useState<
@@ -103,10 +101,7 @@ export function DeveloperApiManager() {
   const fetchTokens = async () => {
     setLoadingTokens(true);
     try {
-      // Use the master seeded token to access token list administrative API
-      const res = await apiFetch("/api/v1/auth/tokens", {
-        headers: { Authorization: "Bearer km_sanctum_token_owner" },
-      });
+      const res = await apiFetch("/api/v1/auth/tokens");
       if (res.ok) {
         const data = await res.json();
         setTokens(data);
@@ -180,11 +175,8 @@ export function DeveloperApiManager() {
     }
 
     try {
-      const res = await fetch(`/api/v1/auth/tokens/${tokenId}`, {
+      const res = await apiFetch(`/api/v1/auth/tokens/${tokenId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: "Bearer km_sanctum_token_owner",
-        },
       });
 
       if (res.ok) {

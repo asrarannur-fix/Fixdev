@@ -263,7 +263,15 @@ export const requireTenantOrSuperAdminPermission = (permission: string, allowPla
   res: Response,
   next: NextFunction,
 ) => {
-  if (req.authActor?.role !== "SUPER_ADMIN") return requireTenantScope(req, res, next);
+  const actor = req.authActor;
+  if (!actor) return res.status(401).json({ error: "Authentication is required." });
+  if (actor.role !== "SUPER_ADMIN") {
+    const hasPermission = actor.permissions.includes("*") || actor.permissions.includes(permission);
+    if (!hasPermission && !["OWNER", "ADMIN"].includes(actor.role)) {
+      return res.status(403).json({ error: "You do not have permission for this operation." });
+    }
+    return requireTenantScope(req, res, next);
+  }
 
   const requestedTenant = String(
     req.headers["x-tenant-id"] ||

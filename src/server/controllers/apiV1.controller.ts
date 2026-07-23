@@ -130,41 +130,12 @@ export interface PersonalAccessToken {
   branchId: string;
 }
 
-// Seed default developer tokens — ONLY active when ALLOW_DEV_API_TOKENS=true.
-// ponytail: remove entirely when real token provisioning is in place.
-const allowDevTokens = process.env.ALLOW_DEV_API_TOKENS === "true";
-const SEED_TOKENS_FALLBACK: PersonalAccessToken[] = allowDevTokens
-  ? [
-      {
-        id: "tok-owner-1",
-        token: "km_sanctum_token_owner",
-        name: "Owner Production Sync Key",
-        abilities: ["*"],
-        createdAt: new Date().toISOString(),
-        tenantId: "bd7725f3-02cf-4944-bdc9-80ba642a2c55",
-        branchId: "bd7725f3-0001-4000-8000-000000000001",
-      },
-      {
-        id: "tok-read-only",
-        token: "km_sanctum_token_read_only",
-        name: "Third-Party Logistics Key",
-        abilities: ["customers:read", "inventory:read"],
-        createdAt: new Date().toISOString(),
-        tenantId: "bd7725f3-02cf-4944-bdc9-80ba642a2c55",
-        branchId: "bd7725f3-0001-4000-8000-000000000001",
-      },
-    ]
-  : [];
+// Personal access tokens are always provisioned and stored in the database.
+// No credential fallback is embedded in source code.
 
 // Lookup token from DB (with in-memory fallback when dev tokens enabled)
 async function findToken(tokenValue: string): Promise<PersonalAccessToken | null> {
-  // Check dev tokens first (only when ALLOW_DEV_API_TOKENS=true)
-  if (allowDevTokens) {
-    const seed = SEED_TOKENS_FALLBACK.find((t) => t.token === tokenValue);
-    if (seed) return seed;
-  }
-
-  // Check DB
+  // Check DB only; plaintext legacy rows are handled below for migration compatibility.
   try {
     const tokenHash = createHash("sha256").update(tokenValue).digest("hex");
     const result = await dbQuery(
@@ -213,6 +184,25 @@ export const sanctumAuthMiddleware = async (req: any, res: any, next: any) => {
   // Update last used timestamp without persisting or logging the plaintext token.
   const tokenHash = createHash("sha256").update(tokenValue).digest("hex");
   dbQuery("UPDATE api_tokens SET last_used_at = now() WHERE token_hash = $1 OR (token_hash IS NULL AND token = $2)", [tokenHash, tokenValue]).catch(() => {});
+
+  if (req.hostTenant && req.hostTenant.id !== tokenRecord.tenantId) {
+    return res.status(403).json({
+      message: "Forbidden.",
+      error: "The token is not valid for this tenant host.",
+    });
+  }
+
+  if (tokenRecord.branchId) {
+    try {
+      const branch = await dbQuery(
+        "SELECT id FROM branches WHERE id=$1 AND tenant_id=$2 AND is_active=true LIMIT 1",
+        [tokenRecord.branchId, tokenRecord.tenantId],
+      );
+      if (!branch.rows[0]) return res.status(403).json({ message: "Forbidden.", error: "The token branch is invalid." });
+    } catch {
+      return res.status(503).json({ message: "Service unavailable.", error: "Token scope could not be validated." });
+    }
+  }
 
   req.sanctumToken = tokenRecord;
   req.tenantId = tokenRecord.tenantId;
@@ -285,7 +275,7 @@ export const createToken = async (req: any, res: any) => {
        [tokenId, tokenHash, tokenString.slice(0, 16), resolvedName, JSON.stringify(tokenAbilities), tenantId, branchId, req.authActor.userId],
     );
   } catch (err: any) {
-    return res.status(500).json({ message: "Token could not be persisted.", error: err.message });
+    return res.status(500).json({ message: "Token could not be persisted.", error: "Token tidak dapat disimpan." });
   }
 
   return res.status(201).json({
@@ -344,7 +334,7 @@ export const revokeToken = async (req: any, res: any) => {
     }
     res.json({ success: true, message: "Personal Access Token successfully revoked." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -388,7 +378,7 @@ export const getCustomers = async (req: any, res: any) => {
     );
     res.json({ data: result.rows, meta: { total: result.rows.length, tenantId } });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -409,7 +399,7 @@ export const getCustomerById = async (req: any, res: any) => {
     }
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -446,7 +436,7 @@ export const createCustomer = async (req: any, res: any) => {
     );
     res.status(201).json({ data: result.rows[0], message: "Customer created successfully." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -474,7 +464,7 @@ export const updateCustomer = async (req: any, res: any) => {
     }
     res.json({ data: result.rows[0], message: "Customer updated successfully." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -491,7 +481,7 @@ export const deleteCustomer = async (req: any, res: any) => {
     }
     res.json({ message: "Customer successfully deleted." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -539,7 +529,7 @@ export const getTickets = async (req: any, res: any) => {
     );
     res.json({ data: result.rows, meta: { total: result.rows.length, tenantId, branchId } });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -565,7 +555,7 @@ export const getTicketById = async (req: any, res: any) => {
     }
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -603,7 +593,7 @@ export const createTicket = async (req: any, res: any) => {
     );
     res.status(201).json({ data: result.rows[0], message: "Service ticket created successfully." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -631,7 +621,7 @@ export const updateTicket = async (req: any, res: any) => {
     }
     res.json({ data: result.rows[0], message: "Service ticket updated successfully." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -649,7 +639,7 @@ export const deleteTicket = async (req: any, res: any) => {
     }
     res.json({ message: "Service ticket successfully deleted." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -693,7 +683,7 @@ export const getInventory = async (req: any, res: any) => {
     );
     res.json({ data: result.rows, meta: { total: result.rows.length, tenantId } });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -718,7 +708,7 @@ export const getInventoryById = async (req: any, res: any) => {
     }
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -768,7 +758,7 @@ export const createInventory = async (req: any, res: any) => {
 
     res.status(201).json({ data: { ...product, stockQty: qty }, message: "Inventory product created successfully." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -797,7 +787,7 @@ export const updateInventory = async (req: any, res: any) => {
     }
     res.json({ data: result.rows[0], message: "Product updated successfully." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -814,7 +804,7 @@ export const deleteInventory = async (req: any, res: any) => {
     }
     res.json({ message: "Product successfully deleted." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -855,7 +845,7 @@ export const getSales = async (req: any, res: any) => {
     );
     res.json({ data: result.rows, meta: { total: result.rows.length, tenantId, branchId } });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -879,7 +869,7 @@ export const getSaleById = async (req: any, res: any) => {
     }
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   }
 };
 
@@ -1007,7 +997,7 @@ export const createSale = async (req: any, res: any) => {
     });
   } catch (err: any) {
     await client.query("ROLLBACK");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi API gagal diproses." });
   } finally {
     client.release();
   }

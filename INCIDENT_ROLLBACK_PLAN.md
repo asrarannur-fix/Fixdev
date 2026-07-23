@@ -1,13 +1,13 @@
 ﻿# Incident Rollback Plan
 
-Langkah rollback saat deploy bermasalah. Sumber: `deploy.sh`, `server.ts`, `supabase-schema.sql`.
+Langkah rollback saat deploy bermasalah. Sumber: `ops/deploy.sh`, `server.ts`, `supabase-schema.sql`.
 
 ## Prinsip
 - Rollback = **kembalikan kode + rebuild + restart pm2**, bukan manipulasi DB langsung.
 - Simpan artifact `dist/` sebelumnya sebelum deploy baru (backup `dist` ke `dist.bak`).
 
 ## Rollback Aplikasi
-1. `cd /var/www/fixdev`
+1. `cd /home/ubuntu/fixdev`
 2. `git revert <commit_problematik>` (atau `git checkout <last_good_commit> -- .`)
 3. `npm run build`
 4. `pm2 restart fixdev-erp`
@@ -25,4 +25,4 @@ Langkah rollback saat deploy bermasalah. Sumber: `deploy.sh`, `server.ts`, `supa
 
 ## Pencegahan
 - Selalu jalankan `npm run validate` di CI sebelum `git pull` di prod.
-- `deploy.sh` pakai `git pull --ff-only` → cegah merge tak terduga.
+- `ops/deploy.sh` pakai `git pull --ff-only` → cegah merge tak terduga.

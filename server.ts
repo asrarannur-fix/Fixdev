@@ -3,7 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import "dotenv/config";
+import dotenv from "dotenv";
+
+dotenv.config({
+  path: process.env.DOTENV_CONFIG_PATH || ".env",
+  override: true,
+});
 import http from "http";
 import express from "express";
 import path from "path";
@@ -68,6 +73,21 @@ import { publicTenantContextHandler } from "./src/server/controllers/publicTenan
 const runtimeMode = process.env.NODE_ENV || "development";
 if (!["development", "production", "test"].includes(runtimeMode)) throw new Error(`Invalid NODE_ENV: ${runtimeMode}`);
 const isProduction = runtimeMode === "production";
+const runtimeProfile = process.env.FIXDEV_PROFILE;
+if (runtimeProfile && runtimeProfile !== runtimeMode) {
+  throw new Error(`FIXDEV_PROFILE=${runtimeProfile} does not match NODE_ENV=${runtimeMode}.`);
+}
+if (runtimeMode !== "test" && process.env.FIXDEV_DATABASE_NAME && process.env.DATABASE_URL) {
+  try {
+    const databaseName = new URL(process.env.DATABASE_URL).pathname.replace(/^\//, "");
+    if (databaseName !== process.env.FIXDEV_DATABASE_NAME) {
+      throw new Error(`FIXDEV_DATABASE_NAME=${process.env.FIXDEV_DATABASE_NAME} does not match DATABASE_URL database.`);
+    }
+  } catch (error: any) {
+    if (error instanceof TypeError) throw new Error("DATABASE_URL must be a valid URL.");
+    throw error;
+  }
+}
 const portValue = isProduction ? process.env.PORT || "3000" : process.env.DEV_PORT || "3001";
 const PORT = Number(portValue);
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error(`Invalid server port: ${portValue}`);
@@ -165,6 +185,15 @@ const loginLimiter = rateLimit({
   validate: { xForwardedForHeader: false },
 });
 
+const onboardingLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: Number(process.env.ONBOARDING_RATE_LIMIT_MAX || 10),
+  message: { error: "Terlalu banyak percobaan pendaftaran. Silakan coba lagi nanti." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
+
 // Apply rate limiting
 app.use("/api/", (req, res, next) => {
   const path = req.path;
@@ -214,7 +243,7 @@ app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
 
 app.post("/api/auth/login", loginLimiter, loginHandler);
 app.post("/api/auth/profile/password", requireJwt, authPasswordUpdateHandler);
-app.post("/api/onboarding/register", onboardingRegisterHandler);
+app.post("/api/onboarding/register", onboardingLimiter, onboardingRegisterHandler);
 app.get("/api/invitations/validate", validateInvitation);
 app.post("/api/invitations/accept", acceptInvitation);
 app.post("/api/onboarding/upgrade-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), upgradeTrialHandler);
@@ -319,7 +348,7 @@ async function startServer() {
       }
     });
 
-    httpServer.listen(PORT, "0.0.0.0", () => {
+    httpServer.listen(PORT, process.env.BIND_HOST || "127.0.0.1", () => {
       logger.info({ port: PORT, env: isDev ? "development" : "production" }, "[ERP SaaS Server] Started");
     });
   }

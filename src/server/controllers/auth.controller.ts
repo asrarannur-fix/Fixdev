@@ -234,8 +234,9 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
   if (!shopName || !ownerName || !ownerEmail || !ownerPassword) {
     return res.status(422).json({ success: false, message: "shopName, ownerName, ownerEmail, ownerPassword are required." });
   }
-  if (String(ownerPassword).length < 6) {
-    return res.status(422).json({ success: false, message: "Password must be at least 6 characters." });
+  const policyError = passwordPolicyError(String(ownerPassword), { minPasswordLength: 8 });
+  if (policyError) {
+    return res.status(422).json({ success: false, message: policyError });
   }
 
   const client = await getPool().connect();
@@ -339,19 +340,10 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
 
     const tenant = tenantResult.rows[0];
     
-    if (tenant.status !== "TRIAL") {
+    if (tenant.status !== "TRIAL" && tenant.status !== "EXPIRED") {
       return res.status(400).json({ 
         success: false, 
-        message: `Tenant tidak dalam status TRIAL (current: ${tenant.status})` 
-      });
-    }
-
-    const trialEndsAt = new Date(tenant.trial_ends_at);
-    const now = new Date();
-    if (trialEndsAt < now) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Trial period sudah expired. Silakan bayar tagihan lama terlebih dahulu." 
+        message: `Tenant tidak dalam status trial atau expired (current: ${tenant.status})`
       });
     }
 
@@ -375,7 +367,7 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
 
     const amount = billingCycle === "yearly" ? plan.priceYearly : plan.priceMonthly;
 
-    const invoiceId = "upgrade-inv-" + Date.now().toString(36);
+    const invoiceId = `upgrade-${randomUUID()}`;
     const dateStr = new Date().toISOString().split("T")[0];
     const due = new Date();
     due.setDate(due.getDate() + 3);
@@ -418,7 +410,7 @@ export async function upgradeTrialHandler(req: Request, res: Response) {
   } catch (error: any) {
     await client.query("ROLLBACK");
     logger.error({ err: error.message, tenantId, tier }, "[upgrade-trial] Failed");
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: "Operasi autentikasi gagal diproses." });
   } finally {
     client.release();
   }
@@ -469,10 +461,13 @@ export async function extendTrialHandler(req: Request, res: Response) {
 
     const currentTrialEndsAt = new Date(tenant.trial_ends_at);
     const now = new Date();
-    if (currentTrialEndsAt < now) {
+    const gracePeriodEnd = new Date(currentTrialEndsAt);
+    gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 3); // 3-day grace period
+
+    if (gracePeriodEnd < now) {
       return res.status(400).json({
         success: false,
-        message: "Trial sudah expired, tidak dapat diperpanjang. Silakan upgrade ke paket berbayar."
+        message: "Trial sudah expired lebih dari 3 hari, tidak dapat diperpanjang. Silakan upgrade ke paket berbayar."
       });
     }
 
@@ -523,7 +518,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
   } catch (error: any) {
     await client.query("ROLLBACK");
     logger.error({ err: error.message, tenantId, days }, "[extend-trial] Failed");
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: "Operasi autentikasi gagal diproses." });
   } finally {
     client.release();
   }

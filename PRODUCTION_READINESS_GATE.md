@@ -22,7 +22,7 @@ Gerbang kelayakan production. Semua item wajib hijau sebelum deploy.
 - [ ] Acceptance per modul terpenuhi (`ACCEPTANCE_CRITERIA_BY_MODULE.md`).
 
 ## Gate 5 — Ops
-- [ ] `deploy.sh` teruji di staging.
+- [ ] `ops/deploy.sh` teruji di staging.
 - [ ] Nginx proxy & TLS benar.
 - [ ] Log `pm2` & `audit_logs` terpasang.
 - [ ] Rollback plan divalidasi.

@@ -125,7 +125,7 @@ export const getAuditTrail = async (req: Request, res: Response) => {
     res.json(result.rows);
   } catch (err: any) {
     logger.error({ err: err.message }, "[audit] getAuditTrail failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi audit gagal diproses." });
   }
 };
 
@@ -147,6 +147,6 @@ export const clearAuditTrail = async (req: Request, res: Response) => {
     res.json({ status: "success", message: "Audit logs cleared." });
   } catch (err: any) {
     logger.error({ err: err.message }, "[audit] clearAuditTrail failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi audit gagal diproses." });
   }
 };

@@ -13,6 +13,9 @@ coverage/
 
 google_compute_engine*
 
+# Runtime uploads are stored outside Git.
+uploads/
+
 # ── Agent / IDE scaffolding (not app source) ──
 .hermes/
 .claude/

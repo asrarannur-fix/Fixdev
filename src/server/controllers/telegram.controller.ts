@@ -31,6 +31,6 @@ export async function telegramTestHandler(req: Request, res: Response) {
     }
     return res.json({ success: true, messageId: payload.result?.message_id ?? null });
   } catch (error: any) {
-    return res.status(502).json({ error: error.message || "Telegram tidak dapat dihubungi." });
+    return res.status(502).json({ error: "Layanan Telegram tidak dapat dihubungi." });
   }
 }

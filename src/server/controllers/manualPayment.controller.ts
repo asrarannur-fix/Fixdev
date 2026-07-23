@@ -52,6 +52,10 @@ function matchesImageSignature(buffer: Buffer, contentType: string) {
   return false;
 }
 
+function matchesPdfSignature(buffer: Buffer) {
+  return buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+}
+
 function extensionFor(contentType: string) {
   if (contentType === "image/jpeg") return "jpg";
   if (contentType === "image/png") return "png";
@@ -226,8 +230,14 @@ export async function createManualProofUpload(req: Request, res: Response) {
   try {
     await ensureUploadTarget(objectPath);
 
-    if (req.body && (req.body as any).fileBuffer) {
-      const fileBuffer = Buffer.from((req.body as any).fileBuffer);
+    if (req.body && (req.body as any).fileBuffer !== undefined) {
+      const fileBuffer = (req.body as any).fileBuffer;
+      if (!Buffer.isBuffer(fileBuffer) || fileBuffer.length < 1 || fileBuffer.length > MAX_PROOF_BYTES || fileBuffer.length !== sizeBytes) {
+        return res.status(422).json({ error: "Isi bukti pembayaran tidak valid." });
+      }
+      if ((contentType === "application/pdf" && !matchesPdfSignature(fileBuffer)) || (contentType !== "application/pdf" && !matchesImageSignature(fileBuffer, contentType))) {
+        return res.status(422).json({ error: "Isi bukti pembayaran tidak sesuai format." });
+      }
       await fs.writeFile(localUploadPath(objectPath), fileBuffer);
     }
 
@@ -241,8 +251,11 @@ export async function createManualProofUpload(req: Request, res: Response) {
 export async function uploadManualProof(req: Request, res: Response) {
   const { invoiceId, fileName } = req.params;
   const contentType = String(req.headers["content-type"] || "").split(";")[0];
-  if (!/^[0-9a-f-]+\.(jpg|png|pdf)$/.test(fileName) || !ALLOWED_PROOF_TYPES.has(contentType) || !Buffer.isBuffer(req.body) || req.body.length < 1 || req.body.length > MAX_PROOF_BYTES) {
+  if (!/^[0-9a-f-]+\.(jpg|png|pdf)$/.test(fileName || "") || !ALLOWED_PROOF_TYPES.has(contentType) || !Buffer.isBuffer(req.body) || req.body.length < 1 || req.body.length > MAX_PROOF_BYTES) {
     return res.status(422).json({ error: "Bukti pembayaran tidak valid." });
+  }
+  if ((contentType === "application/pdf" && !matchesPdfSignature(req.body)) || (contentType !== "application/pdf" && !matchesImageSignature(req.body, contentType))) {
+    return res.status(422).json({ error: "Isi bukti pembayaran tidak sesuai format." });
   }
   const invoice = await dbQuery(`SELECT id FROM saas_invoices WHERE id=$1 AND tenant_id=$2`, [invoiceId, req.tenantId]);
   if (!invoice.rows[0]) return res.status(404).json({ error: "Invoice tidak ditemukan." });

@@ -175,7 +175,7 @@ export const openShift = async (req: any, res: any) => {
       { err: err.message, tenantId, branchId },
       "POS openShift error",
     );
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi POS gagal diproses." });
   }
 };
 
@@ -281,7 +281,7 @@ export const closeShift = async (req: any, res: any) => {
       { err: err.message, tenantId, branchId },
       "POS closeShift error",
     );
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi POS gagal diproses." });
   }
 };
 
@@ -344,7 +344,7 @@ export const getShiftSummary = async (req: any, res: any) => {
     });
   } catch (err: any) {
     logger.error({ err: err.message, tenantId }, "POS getShiftSummary error");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi POS gagal diproses." });
   }
 };
 
@@ -376,7 +376,7 @@ export const getShifts = async (req: any, res: any) => {
     );
     res.json({ data: result.rows });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi POS gagal diproses." });
   }
 };
 
@@ -635,7 +635,7 @@ export const createSale = async (req: any, res: any) => {
     });
   } catch (err: any) {
     logger.error({ err: err.message, stack: err.stack, tenantId, branchId }, "[pos.createSale] Error");
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: "Operasi POS gagal diproses." });
   }
 
   res.status(201).json({ data: result, message: "Transaksi POS berhasil." });
@@ -847,7 +847,7 @@ export const getSales = async (req: any, res: any) => {
       meta: { total: result.rows.length, tenantId, branchId },
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi POS gagal diproses." });
   }
 };
 
@@ -877,6 +877,6 @@ export const getSaleById = async (req: any, res: any) => {
       return res.status(404).json({ message: "Transaksi tidak ditemukan." });
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi POS gagal diproses." });
   }
 };

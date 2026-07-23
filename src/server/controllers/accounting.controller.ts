@@ -90,7 +90,7 @@ export const getAccounts = async (req: any, res: any) => {
     const result = await dbQuery(sql, params);
     res.json({ data: result.rows });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -127,7 +127,7 @@ export const createAccount = async (req: any, res: any) => {
 
     res.status(201).json({ data: result.rows[0], message: "Akun berhasil dibuat." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -165,7 +165,7 @@ export const updateAccount = async (req: any, res: any) => {
     if (result.rows.length === 0) return res.status(404).json({ message: "Akun tidak ditemukan." });
     res.json({ data: result.rows[0], message: "Akun berhasil diupdate." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -247,7 +247,7 @@ export const createJournalEntry = async (req: any, res: any) => {
 
     res.status(201).json({ success: true, data: result.entry });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -311,7 +311,7 @@ export const getJournalEntries = async (req: any, res: any) => {
 
     res.json({ data: entries.rows });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -342,7 +342,7 @@ export const getJournalEntryById = async (req: any, res: any) => {
 
     res.json({ data: { ...entryRes.rows[0], lines: lines.rows } });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -391,7 +391,7 @@ export const getTrialBalance = async (req: any, res: any) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -447,7 +447,7 @@ export const getBalanceSheet = async (req: any, res: any) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -504,7 +504,7 @@ export const getProfitAndLoss = async (req: any, res: any) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
 
@@ -584,6 +584,6 @@ export const createCashTransaction = async (req: any, res: any) => {
 
   res.status(201).json({ data: result, message: "Transaksi kas berhasil dicatat." });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };

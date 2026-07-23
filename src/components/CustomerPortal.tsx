@@ -282,7 +282,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
     // Fallback search online on server
     try {
-      const res = await fetch(`/api/service-tracking/status/${trimmed}?tenantId=${encodeURIComponent(currentTenantId || "")}`);
+      const res = await fetch(`/api/service-tracking/status/${trimmed}`);
       if (!res.ok) throw new Error("Ticket not found on server");
       const data = await res.json();
       setSearchedTicket({

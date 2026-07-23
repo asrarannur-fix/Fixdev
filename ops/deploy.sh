@@ -1,12 +1,12 @@
 #!/bin/bash
 # ==========================================
 # FIXDEV ERP SaaS — Automated Deployment Script
-# Run this on your server: bash deploy.sh
+# Run on production server: bash ops/deploy.sh
 # ==========================================
 
 set -euo pipefail
 
-APP_DIR="/var/www/fixdev"
+APP_DIR="/home/ubuntu/fixdev"
 PM2_NAME="fixdev-erp"
 ENV_FILE="/etc/fixdev/fixdev.production.env"
 
@@ -19,6 +19,12 @@ if [ ! -d "$APP_DIR" ]; then
 fi
 
 cd "$APP_DIR"
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "❌ Error: Working tree is dirty. Commit/stash local changes before production deploy."
+    git status --short
+    exit 1
+fi
 
 if [ ! -f "$ENV_FILE" ]; then
     echo "❌ Error: Production environment file $ENV_FILE does not exist."
@@ -35,7 +41,7 @@ git pull --ff-only origin main
 # Install dependencies
 echo "📥 Installing dependencies..."
 if [ -f package-lock.json ]; then
-    npm ci
+    npm ci --include=dev
 else
     npm install
 fi
@@ -51,7 +57,14 @@ if ! command -v pm2 >/dev/null 2>&1; then
     exit 1
 fi
 mkdir -p logs
-pm2 startOrRestart ecosystem.config.cjs --env production
+# Only production is restarted here; development remains managed separately.
+pm2 startOrRestart ecosystem.config.cjs --only "$PM2_NAME" --update-env
+
+# Verify the process serves the health endpoint before saving state.
+if ! curl -fsS -H "Host: fixdev.web.id" http://127.0.0.1:3000/api/health >/dev/null; then
+    echo "❌ Error: Production health check failed."
+    exit 1
+fi
 
 # Save PM2 state
 pm2 save

@@ -43,7 +43,7 @@ export async function listMicroComponents(req: Request, res: Response) {
        AND ($4='' OR p.name ILIKE '%'||$4||'%' OR p.sku ILIKE '%'||$4||'%' OR mc.compat_models::text ILIKE '%'||$4||'%')
        ORDER BY p.name,ps.warehouse_id`, [req.tenantId, category, warehouseId, search]);
     res.json({ data: result.rows });
-  } catch (error: any) { res.status(500).json({ error: error.message }); }
+  } catch (error: any) { res.status(500).json({ error: "Operasi komponen gagal diproses." }); }
 }
 
 export async function createMicroComponent(req: Request, res: Response) {

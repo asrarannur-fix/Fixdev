@@ -216,7 +216,7 @@ router.get("/openapi.json", (req, res) => {
           type: "http",
           scheme: "bearer",
           description:
-            "Enter your Laravel Sanctum Personal Access Token. Example: `km_sanctum_token_owner`",
+            "Enter your Laravel Sanctum Personal Access Token. Example: `<generated-token>`",
         },
       },
       schemas: {

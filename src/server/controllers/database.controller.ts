@@ -71,6 +71,6 @@ export async function databaseMigrateHandler(_req: Request, res: Response) {
     const logs = await runPendingMigrations(connectionString);
     return res.json({ success: true, logs });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: "Operasi database gagal diproses." });
   }
 }

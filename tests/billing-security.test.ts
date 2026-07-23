@@ -1,7 +1,7 @@
-import test from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { buildMidtransSignature } from "../src/server/controllers/billing.controller";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 test("Midtrans signature uses the documented SHA-512 payload", () => {
@@ -28,6 +28,41 @@ test("billing routes require role and tenant guards", () => {
   assert.match(routes, /Direct payment confirmation has been removed/);
 });
 
+test("manual payment persists before best-effort notification", () => {
+  const controller = readFileSync(resolve("src/server/controllers/manualPayment.controller.ts"), "utf8");
+  const submit = controller.match(/export async function submitManualPayment[\s\S]*?export async function listManualPayments/)?.[0] || "";
+  assert.match(submit, /const result = await dbTransaction[\s\S]*?return \{ request: inserted\.rows\[0\] \};[\s\S]*?await dbTransaction\(\(client\) => notify/);
+  assert.match(submit, /Manual payment notification failed/);
+});
+
+test("public payment and tracking handlers do not expose raw internal errors", () => {
+  const tracking = readFileSync(resolve("src/server/controllers/serviceTracker.controller.ts"), "utf8");
+  const billing = readFileSync(resolve("src/server/controllers/billing.controller.ts"), "utf8");
+  assert.doesNotMatch(tracking, /res\.status\(500\)\.json\(\{ error: error\.message \}\)/);
+  assert.doesNotMatch(billing, /Midtrans webhook failed[\s\S]{0,180}res\.status\(500\)\.json\(\{ error: err\.message \}\)/);
+});
+test("API tenant boundaries and public tracking do not accept arbitrary fallbacks", () => {
+  const apiV1 = readFileSync(resolve("src/server/controllers/apiV1.controller.ts"), "utf8");
+  const tracking = readFileSync(resolve("src/server/controllers/serviceTracker.controller.ts"), "utf8");
+  assert.match(apiV1, /req\.hostTenant && req\.hostTenant\.id !== tokenRecord\.tenantId/);
+  assert.doesNotMatch(apiV1, /km_sanctum_token_owner|SEED_TOKENS_FALLBACK/);
+  assert.doesNotMatch(tracking, /req\.query\?\.tenantId|req\.body\?\.tenantId/);
+});
+
+test("manual payment uploads validate PDF signatures", () => {
+  const controller = readFileSync(resolve("src/server/controllers/manualPayment.controller.ts"), "utf8");
+  assert.match(controller, /matchesPdfSignature/);
+  assert.match(controller, /contentType === "application\/pdf"/);
+  assert.match(controller, /fileBuffer\.length !== sizeBytes/);
+});
+test("controller 5xx responses do not expose internal error messages", () => {
+  const controllersDir = resolve("src/server/controllers");
+  const rawErrorResponse = /res\.status\((?:500|502|503)\)\.json\(\{[^}]*\b(?:err|error)\.message/;
+  for (const file of readdirSync(controllersDir).filter((name) => name.endsWith(".ts"))) {
+    const source = readFileSync(resolve(controllersDir, file), "utf8");
+    assert.doesNotMatch(source, rawErrorResponse, file);
+  }
+});
 test("generic sync excludes privileged tables and dynamic id fields", () => {
   const controller = readFileSync(resolve("src/server/controllers/data.controller.ts"), "utf8");
   const allowlist = controller.match(/const ALLOWED_TABLES = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";

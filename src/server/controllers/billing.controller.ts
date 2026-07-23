@@ -223,7 +223,7 @@ export const updateGatewayConfig = async (req: any, res: any) => {
     });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] updateGatewayConfig failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -270,7 +270,7 @@ export const updateBillingPlans = async (req: any, res: any) => {
     res.json({ success: true, message: "Paket langganan SaaS berhasil diperbarui!", plans: updatedPlans });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] updateBillingPlans failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -291,7 +291,7 @@ export const getSubscription = async (req: any, res: any) => {
     );
     res.json({ tenantId, invoices: result.rows });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -449,7 +449,7 @@ export const payInvoice = async (req: any, res: any) => {
 
     res.json({ success: true, message: "Pembayaran QRIS berhasil dikonfirmasi!", invoice, subscriptionEndsAt: now.toISOString() });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -544,7 +544,7 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
     res.json({ success: true, ...(invoice as any) });
   } catch (err: any) {
     logger.error({ err: err.message, orderId: order_id }, "[billing] Midtrans webhook failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Webhook pembayaran sedang diproses ulang." });
   }
 };
 
@@ -561,7 +561,7 @@ export const toggleRenew = async (req: any, res: any) => {
     if (result.rowCount === 0) return res.status(404).json({ error: "Invoice not found" });
     res.json({ success: true, invoice: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -590,7 +590,7 @@ export const simulateTrialExpiryCron = async (_req: any, res: any) => {
     });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] simulateTrialExpiryCron failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -627,7 +627,7 @@ export const simulateRecurringCron = async (req: any, res: any) => {
     });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] simulateRecurringCron failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -701,7 +701,7 @@ export const notifyDueReminders = async (req: any, res: any) => {
     res.json({ success: true, sent, message: `${sent} pengingat jatuh tempo dibuat.` });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] notifyDueReminders failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -746,7 +746,7 @@ export const notifyOverdueAlerts = async (req: any, res: any) => {
     res.json({ success: true, sent, message: `${sent} peringatan keterlambatan dibuat.` });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] notifyOverdueAlerts failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };
 
@@ -797,6 +797,6 @@ export const sendPaymentConfirmation = async (req: any, res: any) => {
     res.json({ success: true, message: "Notifikasi pembayaran berhasil dikirim." });
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] sendPaymentConfirmation failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi billing gagal diproses." });
   }
 };

@@ -25,7 +25,7 @@ export async function whatsappGetLogsHandler(req: Request, res: Response) {
     );
     res.json((result as any).rows);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Operasi WhatsApp gagal diproses." });
   }
 }
 
@@ -45,7 +45,7 @@ export async function whatsappPostLogsHandler(req: Request, res: Response) {
     );
     res.json({ success: true, id: (result as any).rows[0]?.id });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Operasi WhatsApp gagal diproses." });
   }
 }
 
@@ -66,7 +66,7 @@ export async function whatsappGetQueueHandler(req: Request, res: Response) {
     );
     res.json((result as any).rows);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Operasi WhatsApp gagal diproses." });
   }
 }
 
@@ -86,6 +86,6 @@ export async function whatsappPostQueueHandler(req: Request, res: Response) {
     );
     res.json({ success: true, id: (result as any).rows[0]?.id });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Operasi WhatsApp gagal diproses." });
   }
 }

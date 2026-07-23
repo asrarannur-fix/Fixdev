@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getPool } from "../../lib/db.js";
 import { toApiResponse } from "../utils/responseTransform.js";
+import { logger } from "../../lib/logger.js";
 
 async function withDb<T>(fn: (client: any) => Promise<T>): Promise<T> {
   const pool = getPool();
@@ -167,7 +168,7 @@ export async function moduleRecordsGetHandler(req: Request, res: Response) {
     const rows = await withDb(c => c.query(`select * from module_records where tenant_id = $1 and deleted_at is null`, [tenantId]).then((r: any) => r.rows));
     res.json(toApiResponse(rows));
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Operasi data gagal diproses." });
   }
 }
 
@@ -192,7 +193,7 @@ export async function moduleRecordsPostHandler(req: Request, res: Response) {
     });
     res.json({ success: true, id: rows[0]?.id });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Operasi data gagal diproses." });
   }
 }
 
@@ -298,6 +299,7 @@ export async function dataSyncHandler(req: Request, res: Response) {
       res.status(400).json({ error: "Invalid action" });
     }
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err: err.message, table, action }, "Generic data operation failed");
+    res.status(500).json({ error: "Operasi data gagal diproses." });
   }
 }

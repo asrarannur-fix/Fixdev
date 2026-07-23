@@ -1,4 +1,7 @@
 import { dbQuery } from "../../lib/db.js";
+import { logger } from "../../lib/logger.js";
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function obscureName(name?: string): string {
   if (!name) return "Pelanggan";
@@ -34,9 +37,9 @@ export const getPublicTicketStatus = async (req: any, res: any) => {
   }
   ticketNo = ticketNo.split("?")[0]; // remove query params
   if (!ticketNo) ticketNo = String(req.params.ticketNo || "").trim();
-  const tenantId = req.hostTenant?.id || String(req.query?.tenantId || "").trim();
+  const tenantId = req.hostTenant?.id;
   if (!ticketNo) return res.status(400).json({ error: "Missing ticket number." });
-  if (!tenantId) return res.status(400).json({ error: "Missing tenantId parameter." });
+  if (!tenantId || !UUID_PATTERN.test(tenantId)) return res.status(404).json({ error: "Service ticket not found" });
   try {
     const result = await dbQuery(
       `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
@@ -51,7 +54,8 @@ export const getPublicTicketStatus = async (req: any, res: any) => {
     if (!result.rows[0]) return res.status(404).json({ error: "Service ticket not found" });
     res.json(publicTicketRow(result.rows[0]));
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    logger.error({ err: error.message }, "Public ticket status lookup failed");
+    res.status(500).json({ error: "Layanan pelacakan tiket sedang tidak tersedia." });
   }
 };
 
@@ -79,15 +83,16 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
     if (error.message?.includes("does not exist") || error.message?.includes("relation")) {
       return res.status(404).json({ error: "Service ticket not found" });
     }
-    res.status(500).json({ error: error.message });
+    logger.error({ err: error.message }, "Public ticket token lookup failed");
+    res.status(500).json({ error: "Layanan pelacakan tiket sedang tidak tersedia." });
   }
 };
 
 export const verifyWarrantyQr = async (req: any, res: any) => {
   const ticketNo = String(req.body?.ticketNo || "").trim();
-  const tenantId = req.hostTenant?.id || String(req.body?.tenantId || "").trim();
+  const tenantId = req.hostTenant?.id;
   if (!ticketNo) return res.status(400).json({ error: "Missing ticketNo parameter." });
-  if (!tenantId) return res.status(400).json({ error: "Missing tenantId parameter." });
+  if (!tenantId || !UUID_PATTERN.test(tenantId)) return res.status(404).json({ error: "Ticket not found." });
   try {
     const result = await dbQuery(
       `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.warranty_months AS "warrantyMonths",
@@ -106,5 +111,8 @@ export const verifyWarrantyQr = async (req: any, res: any) => {
       status: isWarrantyActive ? "WARRANTY_ACTIVE" : "WARRANTY_EXPIRED",
       verifiedAt: new Date().toISOString(),
     });
-  } catch (error: any) { res.status(500).json({ error: error.message }); }
+  } catch (error: any) {
+    logger.error({ err: error.message }, "Public warranty verification failed");
+    res.status(500).json({ error: "Layanan verifikasi garansi sedang tidak tersedia." });
+  }
 };

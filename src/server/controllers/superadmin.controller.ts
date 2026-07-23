@@ -207,7 +207,7 @@ export async function listTenants(req: Request, res: Response) {
     });
     res.json({ items, page, pageSize, total: Number(count.rows[0]?.count || 0) });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi Super Admin gagal diproses." });
   }
 }
 
@@ -378,7 +378,7 @@ export async function listAudit(req: Request, res: Response) {
       FROM superadmin_audit_events a LEFT JOIN users u ON u.id=a.actor_user_id LEFT JOIN tenants t ON t.id=a.effective_tenant_id
       ${where} ORDER BY a.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`, params as any[]);
     res.json({ items: rows.rows, page, pageSize, total: Number(count.rows[0]?.count || 0) });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function createBackupJob(req: Request, res: Response) {
@@ -394,12 +394,12 @@ export async function createBackupJob(req: Request, res: Response) {
       [mode, status, schemaVersion, fileName || null, sizeBytes || null, checksumSha256 || null,
         JSON.stringify(summary), JSON.stringify({ valid: true, dryRun: mode === "RESTORE_DRY_RUN" }), req.authActor?.userId]);
     res.status(201).json({ success: true, job: row.rows[0] });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function listBackupJobs(_req: Request, res: Response) {
   try { const result = await dbQuery(`SELECT * FROM backup_jobs ORDER BY created_at DESC LIMIT 50`); res.json({ jobs: result.rows }); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function listNotifications(req: Request, res: Response) {
@@ -407,19 +407,19 @@ export async function listNotifications(req: Request, res: Response) {
     const result = await dbQuery(`SELECT * FROM billing_internal_notifications
       WHERE audience_role='SUPER_ADMIN' OR audience_role IS NULL ORDER BY created_at DESC LIMIT 100`);
     res.json({ notifications: result.rows });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function markNotificationRead(req: Request, res: Response) {
   try { await dbQuery(`UPDATE billing_internal_notifications SET read_at=now() WHERE id=$1`, [req.params.id]); res.json({ success: true }); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function listOutbox(_req: Request, res: Response) {
   try {
     const result = await dbQuery(`SELECT id,event_key,tenant_id AS "tenantId",channel,recipient,status,attempts,next_attempt_at AS "nextAttemptAt",sent_at AS "sentAt",last_error AS "lastError",created_at AS "createdAt" FROM billing_notification_outbox ORDER BY created_at DESC LIMIT 100`);
     res.json({ items: result.rows });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function retryNotification(req: Request, res: Response) {
@@ -432,7 +432,7 @@ export async function retryNotification(req: Request, res: Response) {
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
     res.json({ success: true, ...result });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function listIncidents(_req: Request, res: Response) {
@@ -440,7 +440,7 @@ export async function listIncidents(_req: Request, res: Response) {
     const incidents = await dbQuery(`SELECT i.*,u.name AS acknowledged_by_name,r.name AS resolved_by_name FROM platform_incidents i LEFT JOIN users u ON u.id=i.acknowledged_by LEFT JOIN users r ON r.id=i.resolved_by ORDER BY i.opened_at DESC LIMIT 100`);
     const events = await dbQuery(`SELECT e.*,u.name AS actor_name FROM platform_incident_events e LEFT JOIN users u ON u.id=e.actor_user_id WHERE e.incident_id=ANY($1::uuid[]) ORDER BY e.created_at`, [incidents.rows.map((row: any) => row.id)]).catch(() => ({ rows: [] } as any));
     res.json({ incidents: incidents.rows.map((incident: any) => ({ ...incident, timeline: events.rows.filter((event: any) => event.incident_id === incident.id) })) });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function createIncident(req: Request, res: Response) {
@@ -454,7 +454,7 @@ export async function createIncident(req: Request, res: Response) {
       return { incident: row.rows[0] };
     });
     res.status(201).json({ success: true, ...result });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function updateIncident(req: Request, res: Response) {
@@ -476,14 +476,14 @@ export async function updateIncident(req: Request, res: Response) {
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
     res.json({ success: true, ...result });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function getAlertSettings(_req: Request, res: Response) {
   try {
     const result = await dbQuery(`SELECT value FROM app_settings WHERE key='superadmin_alert_settings' LIMIT 1`);
     res.json({ settings: result.rows[0]?.value || { overdueEnabled: true, trialDays: 7, queueFailureEnabled: true, dailyReportHour: 8 } });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function updateAlertSettings(req: Request, res: Response) {
@@ -492,14 +492,14 @@ export async function updateAlertSettings(req: Request, res: Response) {
   try {
     await dbQuery(`INSERT INTO app_settings(key,value,updated_at) VALUES ('superadmin_alert_settings',$1::jsonb,now()) ON CONFLICT(key) DO UPDATE SET value=$1::jsonb,updated_at=now()`, [JSON.stringify(settings)]);
     res.json({ success: true, settings });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function listRolePermissions(_req: Request, res: Response) {
   try {
     const result = await dbQuery(`SELECT role, array_agg(permission ORDER BY permission) AS permissions FROM superadmin_role_permissions GROUP BY role ORDER BY role`);
     res.json({ roles: result.rows });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function updateRolePermissions(req: Request, res: Response) {
@@ -592,14 +592,14 @@ export async function getTenantDetail(req: Request, res: Response) {
     ]);
     if (!tenant.rows[0]) return res.status(404).json({ error: "Tenant tidak ditemukan." });
     res.json({ tenant: redactTenantSettingsSecrets(tenant.rows[0]), users: users.rows, invoices: invoices.rows, statusHistory: statusHistory.rows, impersonations: impersonations.rows, audit: audit.rows });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function listInvitations(req: Request, res: Response) {
   try {
     const result = await dbQuery(`SELECT id,tenant_id AS "tenantId",email,name,role,token_prefix AS "tokenPrefix",expires_at AS "expiresAt",accepted_at AS "acceptedAt",revoked_at AS "revokedAt",created_at AS "createdAt" FROM tenant_invitations WHERE tenant_id=$1 ORDER BY created_at DESC`, [req.params.id]);
     res.json({ invitations: result.rows });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function revokeInvitation(req: Request, res: Response) {
@@ -607,7 +607,7 @@ export async function revokeInvitation(req: Request, res: Response) {
     const row = await dbQuery(`UPDATE tenant_invitations SET revoked_at=now() WHERE id=$1 AND tenant_id=$2 AND accepted_at IS NULL AND revoked_at IS NULL RETURNING id`, [req.params.invitationId, req.params.id]);
     if (!row.rows[0]) return res.status(404).json({ error: "Undangan aktif tidak ditemukan." });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function checkTenantAvailability(req: Request, res: Response) {
@@ -621,7 +621,7 @@ export async function checkTenantAvailability(req: Request, res: Response) {
       email ? dbQuery(`SELECT 1 FROM tenant_invitations WHERE lower(email)=$1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at>now() LIMIT 1`, [email]) : Promise.resolve({ rows: [] }),
     ]);
     res.json({ subdomainAvailable: subdomain ? !tenant.rows[0] : null, emailAvailable: email ? !user.rows[0] && !invitation.rows[0] : null });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) { res.status(500).json({ error: "Operasi Super Admin gagal diproses." }); }
 }
 
 export async function registerTenant(req: Request, res: Response) {
@@ -704,6 +704,6 @@ export async function createTenantInvitation(req: Request, res: Response) {
     res.status(201).json({ success: true, invitation: row.rows[0], delivery: sent ? "EMAIL_SENT" : "OUTBOX_PENDING" });
   } catch (err: any) {
     if (err.code === "23505") return res.status(409).json({ error: "Undangan aktif untuk email ini sudah tersedia." });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Operasi Super Admin gagal diproses." });
   }
 }

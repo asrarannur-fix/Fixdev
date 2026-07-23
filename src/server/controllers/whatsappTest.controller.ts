@@ -22,6 +22,6 @@ export async function whatsappTestHandler(req: Request, res: Response) {
     if (!response.ok || payload.error) return res.status(502).json({ error: payload.error?.message || `Meta HTTP ${response.status}` });
     return res.json({ success: true, mode: "API", phoneId: payload.id || phoneId, verifiedName: payload.verified_name || null });
   } catch (error: any) {
-    return res.status(502).json({ error: error.message || "WhatsApp API tidak dapat dihubungi." });
+    return res.status(502).json({ error: "Layanan WhatsApp tidak dapat dihubungi." });
   }
 }

@@ -1,19 +1,19 @@
 ﻿# Deployment — Production Checklist
 
-Panduan deploy ke server. Sumber: `deploy.sh`, `nginx-default.conf`, `package.json`.
+Panduan deploy ke server. Sumber: `ops/deploy.sh`, `nginx-default.conf`, `package.json`.
 
 ## Prerequisite Server
 - Node.js + npm, `pm2` global (`npm i -g pm2`).
-- Repo di `/var/www/fixdev`, branch `main`.
+- Repo di `/home/ubuntu/fixdev`, branch `main`.
 - Nginx sebagai reverse proxy (lihat `nginx-default.conf`).
 
 ## Langkah Deploy (otomatis)
-Jalankan di server: `bash deploy.sh`
+Jalankan di server: `bash ops/deploy.sh`
 1. `git pull --ff-only origin main`
-2. `npm ci` (atau `npm install`)
+2. `npm ci --include=dev` (atau `npm install --include=dev`)
 3. `npm run build` → `dist/server.cjs` + `dist/assets`
 4. Muat env eksternal `/etc/fixdev/fixdev.production.env`.
-5. `pm2 startOrRestart ecosystem.config.cjs --env production`
+5. `pm2 startOrRestart ecosystem.config.cjs --only fixdev-erp --update-env`
 6. `pm2 save`
 
 ## Nginx
@@ -29,9 +29,9 @@ Jalankan di server: `bash deploy.sh`
 ## Catatan Perbaikan Deployment
 - Ikon `Sparkles` dan teks AI pada antarmuka dihapus agar visual tidak menyerupai Gemini; ikon konteks menggantikan ikon dekoratif bila tersedia. File terkait: `src/App.tsx`, `src/config/nav.config.ts`, `src/components`, `src/context/SaaSContext.tsx`.
 - Validasi `ALLOWED_ORIGINS` kini menerima host root `TENANT_ROOT_DOMAIN` dan subdomain tenant tanpa menolak `APP_URL` produksi.
-- Environment development berada di `/home/ubuntu/fixdev` dengan `.env`, sedangkan production berada di `/var/www/fixdev` dengan `/etc/fixdev/fixdev.production.env` dan PM2. Build development tidak lagi menimpa artefak production.
+- Environment development berada di `/home/ubuntu/fixdev` dengan `.env`, sedangkan production berada di `/home/ubuntu/fixdev` dengan `/etc/fixdev/fixdev.production.env` dan PM2. Build development tidak lagi menimpa artefak production.
 - Variabel Supabase lama dihapus dari environment development dan production karena aplikasi memakai PostgreSQL langsung melalui `DATABASE_URL`.
-- File terkait: `server.ts`, `deploy.sh`, `ecosystem.config.cjs`, `.env`, `/etc/fixdev/fixdev.production.env`, `DEPLOYMENT_PRODUCTION_CHECKLIST.md`.
+- File terkait: `server.ts`, `ops/deploy.sh`, `ecosystem.config.cjs`, `.env`, `/etc/fixdev/fixdev.production.env`, `DEPLOYMENT_PRODUCTION_CHECKLIST.md`.
 
 ## Post-Deploy
 - [ ] `pm2 logs fixdev-erp` tidak error.
