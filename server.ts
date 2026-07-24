@@ -10,6 +10,8 @@ dotenv.config({
   override: true,
 });
 import { validateEnv } from "./src/lib/envSchema.js";
+import { loginSchema, registerSchema, passwordChangeSchema, onboardingSchema, upgradeTrialSchema } from "./src/lib/validationSchemas.js";
+import { validateSchema } from "./src/middleware/validateSchema.js";
 
 try {
   validateEnv();
@@ -288,12 +290,12 @@ app.get("/api/qz/certificate/download", qzCertDownloadHandler);
 app.get("/api/qz/installer.bat", qzInstallerBatHandler);
 app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
 
-app.post("/api/auth/login", loginLimiter, loginHandler);
-app.post("/api/auth/profile/password", requireJwt, authPasswordUpdateHandler);
-app.post("/api/onboarding/register", onboardingLimiter, onboardingRegisterHandler);
+app.post("/api/auth/login", loginLimiter, validateSchema(loginSchema), loginHandler);
+app.post("/api/auth/profile/password", requireJwt, validateSchema(passwordChangeSchema), authPasswordUpdateHandler);
+app.post("/api/onboarding/register", onboardingLimiter, validateSchema(registerSchema), onboardingRegisterHandler);
 app.get("/api/invitations/validate", validateInvitation);
 app.post("/api/invitations/accept", acceptInvitation);
-app.post("/api/onboarding/upgrade-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), upgradeTrialHandler);
+app.post("/api/onboarding/upgrade-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), validateSchema(upgradeTrialSchema), upgradeTrialHandler);
 app.post("/api/onboarding/extend-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), extendTrialHandler);
 
 // Mounted Modular Routes (Secured)
