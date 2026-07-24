@@ -103,7 +103,7 @@ export const CampaignManager: React.FC = () => {
 
         {showForm && (
           <div className="p-5 border-b border-slate-100 bg-slate-50/50 space-y-3 text-xs">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Nama Kampanye</label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Contoh: Promo Ramadhan" className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none" />
@@ -131,7 +131,7 @@ export const CampaignManager: React.FC = () => {
               <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Pesan</label>
               <textarea rows={3} value={formMessage} onChange={(e) => setFormMessage(e.target.value)} placeholder="Tulis pesan kampanye di sini..." className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none resize-none" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Kupon (Opsional)</label>
                 <select value={formCoupon} onChange={(e) => setFormCoupon(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none cursor-pointer">
@@ -154,6 +154,7 @@ export const CampaignManager: React.FC = () => {
           </div>
         )}
 
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
             <tr>
@@ -217,6 +218,7 @@ export const CampaignManager: React.FC = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {selectedCampaign && (

@@ -79,7 +79,7 @@ export const FollowUpManager: React.FC = () => {
 
         {showForm && (
           <div className="p-5 border-b border-slate-100 bg-slate-50/50 space-y-3 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Pelanggan</label>
                 <select value={formCustomerId} onChange={(e) => setFormCustomerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none cursor-pointer">

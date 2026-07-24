@@ -1192,7 +1192,7 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
               <label className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-2">
                 Pilih Paket untuk Dikonfigurasi:
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   {
                     tier: SubscriptionTier.BASIC,

@@ -113,7 +113,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({ customerId, quotat
       </div>
 
       <div className="p-5 space-y-4 text-xs">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Pelanggan</label>
             <select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none">
@@ -148,12 +148,14 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({ customerId, quotat
           </div>
           <div className="space-y-2">
             {items.map((item, idx) => (
-              <div key={item.id} className="flex gap-2 items-center">
-                <input type="text" value={item.description} onChange={(e) => updateItem(idx, "description", e.target.value)} placeholder="Deskripsi item" className="flex-1 px-3 py-2 border border-slate-200 rounded-lg outline-none" />
+              <div key={item.id} className="flex flex-col sm:flex-row gap-2 sm:items-center p-2 sm:p-0 bg-slate-50 sm:bg-transparent rounded-lg">
+                <input type="text" value={item.description} onChange={(e) => updateItem(idx, "description", e.target.value)} placeholder="Deskripsi item" className="w-full sm:flex-1 px-3 py-2 border border-slate-200 rounded-lg outline-none" />
+                <div className="flex gap-2 items-center">
                 <input type="number" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))} className="w-20 px-3 py-2 border border-slate-200 rounded-lg outline-none text-center" />
                 <input type="number" value={item.unitPrice} onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))} className="w-32 px-3 py-2 border border-slate-200 rounded-lg outline-none text-right" />
                 <span className="w-32 text-right font-mono font-bold">Rp {item.total.toLocaleString()}</span>
-                <button onClick={() => removeItem(idx)} className="p-1 hover:bg-red-50 rounded">
+                </div>
+                <button onClick={() => removeItem(idx)} className="p-1 hover:bg-red-50 rounded self-end sm:self-center">
                   <Trash2 className="w-3 h-3 text-red-400" />
                 </button>
               </div>
@@ -161,7 +163,7 @@ export const QuotationForm: React.FC<QuotationFormProps> = ({ customerId, quotat
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Diskon (%)</label>
             <input type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none" />

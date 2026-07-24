@@ -225,7 +225,8 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
       {/* Billing Management Sub-Tabs */}
       {currentTab === "billing-management" && (
         <div className="space-y-6">
-          <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
+          <div className="overflow-x-auto pb-2">
+          <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-3 min-w-max">
             {[
               { id: "billing-plans", label: "📦 Paket", icon: "📦" },
               { id: "billing-invoices", label: "📄 Invoice", icon: "📄" },
@@ -246,6 +247,7 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
                 {tab.label}
               </button>
             ))}
+          </div>
           </div>
           <div className="pt-4">
             {billingSubTab === "billing-plans" && <BillingPlansManager readOnlyMode={readOnlyMode} />}

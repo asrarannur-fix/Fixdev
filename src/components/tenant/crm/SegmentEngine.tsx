@@ -75,7 +75,7 @@ export const SegmentEngine: React.FC = () => {
         </div>
 
         <div className="p-5">
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             {segmentCounts.map((s) => (
               <button
                 key={s.id}
@@ -100,6 +100,7 @@ export const SegmentEngine: React.FC = () => {
               <h4 className="text-xs font-bold text-slate-700 mb-3">
                 Pelanggan di segmen "{segments.find((s) => s.id === selectedSegment)?.name}"
               </h4>
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
                   <tr>
@@ -130,6 +131,7 @@ export const SegmentEngine: React.FC = () => {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>

@@ -38,7 +38,7 @@ export const CRMTab: React.FC<CRMTabProps> = ({ activeSubTab }) => {
           />
         ) : (
           activeSubTab === "customers" && (
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden animate-fadeIn">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm animate-fadeIn">
               <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                 <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
                   Database CRM Pelanggan
@@ -47,6 +47,7 @@ export const CRMTab: React.FC<CRMTabProps> = ({ activeSubTab }) => {
                   SaaS CRM Module
                 </span>
               </div>
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
                   <tr>
@@ -107,6 +108,7 @@ export const CRMTab: React.FC<CRMTabProps> = ({ activeSubTab }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
             </div>
           )
         )}

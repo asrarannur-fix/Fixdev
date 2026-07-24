@@ -67,6 +67,7 @@ export const QuotationList: React.FC<QuotationListProps> = ({ onEdit }) => {
           </select>
         </div>
 
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
             <tr>
@@ -119,6 +120,7 @@ export const QuotationList: React.FC<QuotationListProps> = ({ onEdit }) => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

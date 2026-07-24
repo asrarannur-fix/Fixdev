@@ -82,7 +82,7 @@ export const LoyaltyManager: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {tierCounts.map((t) => (
           <div key={t.tier} className={`bg-gradient-to-br ${tierColors[t.tier]} rounded-xl p-4 text-white shadow-sm`}>
             <div className="flex items-center gap-2 mb-2">
@@ -108,7 +108,7 @@ export const LoyaltyManager: React.FC = () => {
 
         {showForm && (
           <div className="p-5 border-b border-slate-100 bg-slate-50/50 space-y-3 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Nama Aturan</label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Contoh: Poin per Rp1000" className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none" />
@@ -121,7 +121,7 @@ export const LoyaltyManager: React.FC = () => {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Poin per Rp</label>
                 <input type="number" value={formPointsPerRp} onChange={(e) => setFormPointsPerRp(Number(e.target.value))} className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none" />
@@ -144,6 +144,7 @@ export const LoyaltyManager: React.FC = () => {
           </div>
         )}
 
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
             <tr>
@@ -187,6 +188,7 @@ export const LoyaltyManager: React.FC = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
