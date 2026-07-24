@@ -286,7 +286,7 @@ export const getSubscription = async (req: any, res: any) => {
   if (!tenantId) return res.status(400).json({ error: "tenantId parameter is required" });
 
   try {
-    const [invoices, usage] = await Promise.all([
+    const [invoices, usage, tenant] = await Promise.all([
       dbQuery(
         `SELECT id, tenant_id as "tenantId", date, due_date as "dueDate", amount, tier, status,
                 qris_data as "qrisData", billing_cycle as "billingCycle", auto_renew as "autoRenew",
@@ -302,9 +302,22 @@ export const getSubscription = async (req: any, res: any) => {
          FROM tenants WHERE id = $1`,
         [tenantId],
       ),
+      dbQuery(
+        `SELECT status, tier, trial_ends_at as "trialEndsAt", subscription_status as "subscriptionStatus"
+         FROM tenants WHERE id = $1`,
+        [tenantId],
+      ),
     ]);
 
-    res.json({ tenantId, invoices: invoices.rows, usage: usage.rows[0] });
+    res.json({
+      tenantId,
+      status: tenant.rows[0]?.status,
+      tier: tenant.rows[0]?.tier,
+      trialEndsAt: tenant.rows[0]?.trialEndsAt,
+      subscriptionStatus: tenant.rows[0]?.subscriptionStatus || (tenant.rows[0]?.status === "TRIAL" ? "TRIALING" : "ACTIVE"),
+      invoices: invoices.rows,
+      usage: usage.rows[0],
+    });
   } catch (err: any) {
     res.status(500).json({ error: "Operasi billing gagal diproses." });
   }

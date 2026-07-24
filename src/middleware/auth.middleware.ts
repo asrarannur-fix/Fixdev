@@ -9,9 +9,9 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { dbQuery } from "../lib/db.js";
+import { getEffectiveFeatures } from "../lib/featureUtils.js";
 import { logger } from "../lib/logger.js";
 import { timingSafeEqual as cryptoTimingSafeEqual } from "crypto";
-import { getEffectiveFeatures } from "../lib/featureUtils.js";
 
 function timingSafeEqual(expected: string, provided: string): boolean {
   const expectedBuffer = Buffer.from(expected);
@@ -429,4 +429,41 @@ export const requireSuperAdminPermission = (permission: string) => async (
     return res.status(403).json({ error: "Izin Super Admin tidak mencukupi." });
   }
   next();
+};
+
+/**
+ * Feature/tier guard. Requires requireTenantScope to run first (sets req.tenantId).
+ * Loads the tenant, computes effective features via featureUtils, and rejects
+ * with 403 when `feature` is not granted. This closes the gap where the UI hides
+ * premium modules but the API could still be called directly.
+ */
+export const requireFeature = (feature: string) => async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const tenantId = req.tenantId || req.authActor?.tenantId;
+  if (!tenantId) {
+    return res.status(400).json({ error: "tenantId is required." });
+  }
+  try {
+    const result = await dbQuery(
+      `SELECT status, tier, trial_ends_at AS "trialEndsAt" FROM tenants WHERE id=$1 LIMIT 1`,
+      [tenantId],
+    );
+    const row = result.rows[0];
+    if (!row) return res.status(404).json({ error: "Tenant tidak ditemukan." });
+    const features = getEffectiveFeatures(row);
+    if (!features.includes(feature)) {
+      return res.status(403).json({
+        error: "Fitur ini memerlukan paket langganan yang lebih tinggi.",
+        code: "FEATURE_LOCKED",
+        requiredFeature: feature,
+      });
+    }
+    next();
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId, feature }, "Feature guard failed");
+    return res.status(503).json({ error: "Layanan otorisasi fitur tidak tersedia." });
+  }
 };

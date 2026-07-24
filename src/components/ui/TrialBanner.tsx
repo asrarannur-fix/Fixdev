@@ -20,7 +20,7 @@ export const TrialBanner: React.FC<TrialBannerProps> = ({ onClose, onUpgrade }) 
   const diffTime = trialEndTime - Date.now();
   const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  if (diffTime < 0) {
+  if ((activeTenant.status as string) === "EXPIRED" || diffTime < 0) {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
@@ -29,7 +29,7 @@ export const TrialBanner: React.FC<TrialBannerProps> = ({ onClose, onUpgrade }) 
             Trial Berakhir
           </p>
           <p className="text-[11px] text-red-600 dark:text-red-300 mt-0.5">
-            Masa trial telah berakhir. Segera upgrade untuk melanjutkan akses.
+            Masa trial telah berakhir. Segera upgrade untuk melanjutkan akses ke semua fitur.
           </p>
           {onUpgrade && (
             <button
@@ -50,7 +50,7 @@ export const TrialBanner: React.FC<TrialBannerProps> = ({ onClose, onUpgrade }) 
     );
   }
 
-  const isUrgent = diffDays <= 3;
+  const isUrgent = diffDays <= 7;
   const bgColor = isUrgent
     ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
     : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800";

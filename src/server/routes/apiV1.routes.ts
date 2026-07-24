@@ -4,7 +4,7 @@
  */
 
 import express from "express";
-import { requireRoles, requireJwt, requireTenantScope } from "../../middleware/auth.middleware.js";
+import { requireRoles, requireJwt, requireTenantScope, requireFeature } from "../../middleware/auth.middleware.js";
 import {
   sanctumAuthMiddleware,
   checkAbilities,
@@ -67,18 +67,24 @@ router.delete("/auth/tokens/:id", sanctumAuthMiddleware, revokeToken);
 router.get(
   "/customers",
   sanctumAuthMiddleware,
+  requireTenantScope,
+  requireFeature("CRM"),
   checkAbilities(["customers:read"]),
   getCustomers,
 );
 router.get(
   "/customers/:id",
   sanctumAuthMiddleware,
+  requireTenantScope,
+  requireFeature("CRM"),
   checkAbilities(["customers:read"]),
   getCustomerById,
 );
 router.post(
   "/customers",
   sanctumAuthMiddleware,
+  requireTenantScope,
+  requireFeature("CRM"),
   checkAbilities(["customers:write"]),
   validateBody(customerSchema),
   createCustomer,
@@ -86,6 +92,8 @@ router.post(
 router.put(
   "/customers/:id",
   sanctumAuthMiddleware,
+  requireTenantScope,
+  requireFeature("CRM"),
   checkAbilities(["customers:write"]),
   validateBody(customerUpdateSchema),
   updateCustomer,
@@ -93,6 +101,8 @@ router.put(
 router.delete(
   "/customers/:id",
   sanctumAuthMiddleware,
+  requireTenantScope,
+  requireFeature("CRM"),
   checkAbilities(["customers:write"]),
   deleteCustomer,
 );

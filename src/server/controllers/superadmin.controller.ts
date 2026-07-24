@@ -801,8 +801,8 @@ export async function registerTenant(req: Request, res: Response) {
         `INSERT INTO tenants (id,name,subdomain,status,tier,trial_ends_at,settings,branding,registration_key,created_at)
          VALUES ($1,$2,$3,'TRIAL',$4,now()+interval '14 days',$5::jsonb,$6::jsonb,$7,now())
          RETURNING *`,
-        [tenantId, cleanName, cleanSubdomain, "ENTERPRISE",
-          JSON.stringify({ baseCurrency: "IDR", limits: planLimits["ENTERPRISE"], authSettings: { requireMfa: false, passwordPolicy: "medium" }, taxSettings: { taxEnabled: true, taxRate: 11, taxInclusive: false } }),
+        [tenantId, cleanName, cleanSubdomain, "BASIC",
+          JSON.stringify({ baseCurrency: "IDR", limits: planLimits["BASIC"], authSettings: { requireMfa: false, passwordPolicy: "medium" }, taxSettings: { taxEnabled: true, taxRate: 11, taxInclusive: false } }),
           JSON.stringify({ primaryColor: "#1e3a8a", accentColor: "#3b82f6", whiteLabelEnabled: true }), idempotencyKey],
       );
       await client.query(`INSERT INTO branches (id,tenant_id,name,address,phone,is_active,created_at) VALUES ($1,$2,$3,$4,'',true,now())`, [branchId, tenantId, `Cabang Utama ${cleanName}`, `Alamat Utama ${cleanName}`]);
