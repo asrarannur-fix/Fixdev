@@ -72,8 +72,13 @@ export async function getManualPaymentConfig(req: Request, res: Response) {
     const config = await readManualConfig();
     let qrisImageUrl = "";
     if (config.manualQrisEnabled && config.qrisObjectPath) {
-      const image = await fs.readFile(localUploadPath(config.qrisObjectPath));
-      qrisImageUrl = `data:${config.qrisObjectPath.endsWith(".png") ? "image/png" : "image/jpeg"};base64,${image.toString("base64")}`;
+      try {
+        const image = await fs.readFile(localUploadPath(config.qrisObjectPath));
+        qrisImageUrl = `data:${config.qrisObjectPath.endsWith(".png") ? "image/png" : "image/jpeg"};base64,${image.toString("base64")}`;
+      } catch (fileErr: any) {
+        // File fisik QRIS hilang tapi catatan masih ada di DB — jangan gagalkan seluruh endpoint.
+        logger.warn({ path: config.qrisObjectPath, err: fileErr.message }, "QRIS image file missing, returning config without image");
+      }
     }
     const isSuperAdmin = req.authActor?.role === "SUPER_ADMIN";
     res.json({

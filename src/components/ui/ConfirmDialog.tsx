@@ -30,7 +30,6 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
   } | null>(null);
 
   const confirm = useCallback((opts: ConfirmOptions) => {
-    console.log("CONFIRM CALLED with options:", opts);
     setOptions({ ...opts, showInput: false });
     setIsOpen(true);
     return new Promise<boolean>((resolve) => {

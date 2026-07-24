@@ -62,7 +62,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   const [isDeletingTenant, setIsDeletingTenant] = useState(false);
 
   const deleteTenantPermanently = async (tenantId: string, tenantName: string) => {
-    console.log("Delete button clicked for tenant:", tenantId, tenantName);
     if (await confirm({
       title: "Hapus Permanen Tenant",
       message: `Yakin hapus permanen ${tenantName}? Ini akan menghapus SEMUA data tenant secara permanen dan tidak bisa dibatalkan.`,
@@ -70,7 +69,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
       cancelLabel: "Batal",
       type: "danger",
     })) {
-      console.log("Confirm dialog resolved to true. Proceeding with deletion.");
       setIsDeletingTenant(true);
       try {
         await apiFetch(`/api/superadmin/tenants/${tenantId}/permanent`, { method: "DELETE" });
