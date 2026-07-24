@@ -256,8 +256,9 @@ Jurnal double-entry telah tercatat.`,
   return (
     <>
       <div className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_tr:hover]:bg-zinc-900" id="hr-pane">
-        <HRPayrollPanel generatePayroll={generatePayroll} />
+        {(activeSubTab === "" || activeSubTab === "payroll") && <HRPayrollPanel generatePayroll={generatePayroll} />}
 
+        {activeSubTab === "kasbon" && (
                 <HRKasbonPanel
           activeSubTab={activeSubTab}
           employees={employees}
@@ -281,8 +282,11 @@ Jurnal double-entry telah tercatat.`,
           addLog={addLog}
           approveCashAdvance={approveCashAdvance}
         />
+        )}
 
+        {activeSubTab === "attendance" && (
         <HRAttendancePanel {...{ activeSubTab, Plus, addEmployee, approveLeave, attendanceDate, attendanceEmployeeId, attendanceInTime, attendanceManualStatus, attendanceOutTime, attendanceSubTabState, branches, bulkCheckIn, currentBranchId, currentTenantId, currentUser, currentUserPermissions, detailHistoryEmpId, editEmpContract, editEmpDiv, editEmpEmail, editEmpName, editEmpPhone, editEmpPos, editEmpSalary, employeeAuditTab, employees, leaveEmployeeId, leaveEnd, leaveReason, leaveStart, leaveType, newEmpContract, newEmpDiv, newEmpEmail, newEmpName, newEmpPhone, newEmpPos, newEmpSalary, recordAttendance, services, setAttendanceDate, setAttendanceEmployeeId, setAttendanceInTime, setAttendanceManualStatus, setAttendanceOutTime, setAttendanceSubTabState, setDetailHistoryEmpId, setEditEmpContract, setEditEmpDiv, setEditEmpEmail, setEditEmpName, setEditEmpPhone, setEditEmpPos, setEditEmpSalary, setEmployeeAuditTab, setLeaveEmployeeId, setLeaveEnd, setLeaveReason, setLeaveStart, setLeaveType, setNewEmpContract, setNewEmpDiv, setNewEmpEmail, setNewEmpName, setNewEmpPhone, setNewEmpPos, setNewEmpSalary, showConfirm, showPrompt, showToast, submitLeave, updateEmployee }} />
+        )}
 
         {activeSubTab === "commission" && (
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden animate-fadeIn">
