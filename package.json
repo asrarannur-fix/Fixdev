@@ -11,8 +11,10 @@
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
-    "lint": "tsc --noEmit",
+    "lint": "eslint src/ --ext .ts,.tsx && tsc --noEmit",
+    "lint:fix": "eslint src/ --ext .ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "prepare": "husky",
     "test:browser": "playwright test",
     "test:e2e": "playwright test",
     "test:unit": "vitest run",
@@ -20,6 +22,12 @@
     "db:migrate:production": "DOTENV_CONFIG_PATH=/etc/fixdev/fixdev.production.env FIXDEV_PROFILE=production FIXDEV_DATABASE_NAME=fixdev tsx scripts/migrate.ts",
     "validate": "npm run lint && npm run build",
     "preflight:production": "npm run lint && npm test && npm run build"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -46,6 +54,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -58,12 +67,18 @@
     "@vitest/ui": "^4.1.10",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.2.0",
     "playwright": "^1.61.1",
     "prettier": "^3.9.4",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
+    "typescript-eslint": "^8.65.0",
     "vite": "^6.2.3",
     "vitest": "^4.1.10"
   }

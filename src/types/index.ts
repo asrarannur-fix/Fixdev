@@ -8,16 +8,16 @@
 // ==========================================
 
 export enum SubscriptionTier {
-  BASIC = "BASIC",
-  PRO = "PRO",
-  ENTERPRISE = "ENTERPRISE",
+  BASIC = 'BASIC',
+  PRO = 'PRO',
+  ENTERPRISE = 'ENTERPRISE',
 }
 
 export enum TenantStatus {
-  ACTIVE = "ACTIVE",
-  TRIAL = "TRIAL",
-  EXPIRED = "EXPIRED",
-  SUSPENDED = "SUSPENDED",
+  ACTIVE = 'ACTIVE',
+  TRIAL = 'TRIAL',
+  EXPIRED = 'EXPIRED',
+  SUSPENDED = 'SUSPENDED',
 }
 
 export interface TenantLimits {
@@ -46,7 +46,7 @@ export interface TenantBranding {
 export interface WhatsAppTemplate {
   id: string;
   name: string;
-  category: "SERVICE_UPDATE" | "INVOICE_REMINDER" | "PROMOTION" | "CUSTOM";
+  category: 'SERVICE_UPDATE' | 'INVOICE_REMINDER' | 'PROMOTION' | 'CUSTOM';
   content: string;
 }
 
@@ -76,7 +76,7 @@ export interface TenantSettings {
     telegramChatId?: string;
   };
   printConfig?: {
-    printMode?: "browser" | "qz";
+    printMode?: 'browser' | 'qz';
     printerName?: string;
     paperSize?: string;
     printQrCode?: boolean;
@@ -223,14 +223,10 @@ export interface TenantSettings {
 }
 
 export type SaaSInvoiceStatus =
-  | "PAID"
-  | "UNPAID"
-  | "PENDING_VERIFICATION"
-  | "OVERDUE"
-  | "CANCELLED";
+  'PAID' | 'UNPAID' | 'PENDING_VERIFICATION' | 'OVERDUE' | 'CANCELLED';
 
-export type ManualPaymentMethod = "BANK_TRANSFER" | "MANUAL_QRIS";
-export type ManualPaymentStatus = "SUBMITTED" | "APPROVED" | "REJECTED";
+export type ManualPaymentMethod = 'BANK_TRANSFER' | 'MANUAL_QRIS';
+export type ManualPaymentStatus = 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
 export interface ManualPaymentRequest {
   id: string;
@@ -244,7 +240,7 @@ export interface ManualPaymentRequest {
   referenceNumber: string;
   notes?: string;
   proofOriginalName: string;
-  proofContentType: "image/jpeg" | "image/png" | "application/pdf";
+  proofContentType: 'image/jpeg' | 'image/png' | 'application/pdf';
   proofSizeBytes: number;
   status: ManualPaymentStatus;
   rejectionReason?: string;
@@ -252,7 +248,7 @@ export interface ManualPaymentRequest {
   reviewedAt?: string;
   version: number;
   tier?: SubscriptionTier;
-  billingCycle?: "monthly" | "yearly";
+  billingCycle?: 'monthly' | 'yearly';
 }
 
 export interface SaaSInvoice {
@@ -264,7 +260,7 @@ export interface SaaSInvoice {
   tier: SubscriptionTier;
   status: SaaSInvoiceStatus;
   qrisData?: string;
-  billingCycle?: "monthly" | "yearly";
+  billingCycle?: 'monthly' | 'yearly';
   autoRenew?: boolean;
   version?: number;
   pdfUrl?: string;
@@ -299,16 +295,16 @@ export interface Tenant {
 // ==========================================
 
 export enum UserRole {
-  SUPER_ADMIN = "SUPER_ADMIN",
-  OWNER = "OWNER",
-  ADMIN = "ADMIN",
-  MANAGER = "MANAGER",
-  KASIR = "KASIR",
-  TEKNISI = "TEKNISI",
-  SALES = "SALES",
-  HR = "HR",
-  CUSTOMER = "CUSTOMER",
-  ANONYMOUS = "ANONYMOUS",
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  KASIR = 'KASIR',
+  TEKNISI = 'TEKNISI',
+  SALES = 'SALES',
+  HR = 'HR',
+  CUSTOMER = 'CUSTOMER',
+  ANONYMOUS = 'ANONYMOUS',
 }
 
 export interface UserSession {
@@ -356,29 +352,29 @@ export interface Warehouse {
 // ==========================================
 
 export enum ServiceStatus {
-  DRAFT = "DRAFT",
-  BOOKING = "BOOKING",
-  DITERIMA = "DITERIMA",
-  ANTRIAN = "ANTRIAN",
-  DIAGNOSA = "DIAGNOSA",
-  ESTIMATE_PENDING = "ESTIMATE_PENDING", // New status
-  MENUGGU_APPROVAL = "MENUGGU_APPROVAL",
-  APPROVAL_DITOLAK = "APPROVAL_DITOLAK",
-  MENUGGU_SPAREPART = "MENUGGU_SPAREPART",
-  SEDANG_DIKERJAKAN = "SEDANG_DIKERJAKAN",
-  DIKIRIM_KE_VENDOR = "DIKIRIM_KE_VENDOR", // Subkon
-  REWORK = "REWORK",
-  QC = "QC",
-  SELESAI = "SELESAI",
-  MENUGGU_PEMBAYARAN = "MENUGGU_PEMBAYARAN",
-  SIAP_DIAMBIL = "SIAP_DIAMBIL",
-  DIAMBIL = "DIAMBIL",
-  DIBATALKAN = "DIBATALKAN",
-  KLAIM_GARANSI = "KLAIM_GARANSI",
-  TIDAK_BISA_DIPERBAIKI = "TIDAK_BISA_DIPERBAIKI",
-  CUSTOMER_TIDAK_MERESPON = "CUSTOMER_TIDAK_MERESPON",
-  BARANG_TIDAK_DIAMBIL = "BARANG_TIDAK_DIAMBIL",
-  RUSAK = "RUSAK",
+  DRAFT = 'DRAFT',
+  BOOKING = 'BOOKING',
+  DITERIMA = 'DITERIMA',
+  ANTRIAN = 'ANTRIAN',
+  DIAGNOSA = 'DIAGNOSA',
+  ESTIMATE_PENDING = 'ESTIMATE_PENDING', // New status
+  MENUGGU_APPROVAL = 'MENUGGU_APPROVAL',
+  APPROVAL_DITOLAK = 'APPROVAL_DITOLAK',
+  MENUGGU_SPAREPART = 'MENUGGU_SPAREPART',
+  SEDANG_DIKERJAKAN = 'SEDANG_DIKERJAKAN',
+  DIKIRIM_KE_VENDOR = 'DIKIRIM_KE_VENDOR', // Subkon
+  REWORK = 'REWORK',
+  QC = 'QC',
+  SELESAI = 'SELESAI',
+  MENUGGU_PEMBAYARAN = 'MENUGGU_PEMBAYARAN',
+  SIAP_DIAMBIL = 'SIAP_DIAMBIL',
+  DIAMBIL = 'DIAMBIL',
+  DIBATALKAN = 'DIBATALKAN',
+  KLAIM_GARANSI = 'KLAIM_GARANSI',
+  TIDAK_BISA_DIPERBAIKI = 'TIDAK_BISA_DIPERBAIKI',
+  CUSTOMER_TIDAK_MERESPON = 'CUSTOMER_TIDAK_MERESPON',
+  BARANG_TIDAK_DIAMBIL = 'BARANG_TIDAK_DIAMBIL',
+  RUSAK = 'RUSAK',
 }
 
 export interface ServiceTimelineEvent {
@@ -445,7 +441,7 @@ export interface ServiceTicket {
   customerComplaints: string;
   techDiagnosis?: string;
   estimatedCost: number;
-  customerApprovalStatus: "PENDING" | "APPROVED" | "REJECTED" | string;
+  customerApprovalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
   customerApprovalDate?: string;
   assignedTechId?: string;
   partsUsed: SparepartUsage[];
@@ -492,7 +488,7 @@ export interface ServiceTicket {
   provisionalSignatureName?: string; // Name of person who signed
   dynamicFields?: Record<string, string>; // Dynamic specification input values
   technicianNotes?: string; // Internal tech notes
-  qcStatus?: "PASSED" | "FAILED" | string;
+  qcStatus?: 'PASSED' | 'FAILED' | string;
   internalDiscussions?: {
     id: string;
     text: string;
@@ -507,7 +503,7 @@ export interface ServiceTicket {
     id: string;
     sparepartId: string;
     qty: number;
-    status: "PENDING" | "APPROVED" | "REJECTED";
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
     requestedAt: string;
   }[];
   createdAt?: string;
@@ -547,13 +543,13 @@ export interface FieldServiceVisit {
 // ==========================================
 
 export enum CustomerSegment {
-  PERSONAL = "PERSONAL",
-  CORPORATE = "CORPORATE",
-  VIP = "VIP",
-  NEW = "NEW",
-  COLD = "COLD",
-  ACTIVE = "ACTIVE",
-  CHAMPION = "CHAMPION",
+  PERSONAL = 'PERSONAL',
+  CORPORATE = 'CORPORATE',
+  VIP = 'VIP',
+  NEW = 'NEW',
+  COLD = 'COLD',
+  ACTIVE = 'ACTIVE',
+  CHAMPION = 'CHAMPION',
 }
 
 export interface CRMQuotation {
@@ -569,7 +565,7 @@ export interface CRMQuotation {
   discount: number;
   tax: number;
   total: number;
-  status: "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED";
+  status: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
   notes?: string;
   sentAt?: string;
   approvedAt?: string;
@@ -584,8 +580,8 @@ export interface QuotationItem {
   total: number;
 }
 
-export type CampaignChannel = "WHATSAPP" | "SMS" | "EMAIL";
-export type CampaignStatus = "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "FAILED";
+export type CampaignChannel = 'WHATSAPP' | 'SMS' | 'EMAIL';
+export type CampaignStatus = 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'SENT' | 'FAILED';
 
 export interface Campaign {
   id: string;
@@ -606,13 +602,13 @@ export interface Campaign {
   createdAt: string;
 }
 
-export type LoyaltyTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+export type LoyaltyTier = 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
 
 export interface LoyaltyRule {
   id: string;
   tenantId: string;
   name: string;
-  type: "EARN" | "REDEEM";
+  type: 'EARN' | 'REDEEM';
   pointsPerRp: number;
   minSpend: number;
   maxPoints: number;
@@ -643,7 +639,7 @@ export interface FollowUp {
   title: string;
   description: string;
   dueDate: string;
-  status: "PENDING" | "COMPLETED" | "OVERDUE" | "CANCELLED";
+  status: 'PENDING' | 'COMPLETED' | 'OVERDUE' | 'CANCELLED';
   assignedTo?: string;
   createdAt: string;
   completedAt?: string;
@@ -659,7 +655,7 @@ export interface PipelineDeal {
   deviceDetails: string;
   qty: number;
   estimatedValue: number;
-  stage: "LEAD" | "OPPORTUNITY" | "QUOTATION" | "WON" | "LOST";
+  stage: 'LEAD' | 'OPPORTUNITY' | 'QUOTATION' | 'WON' | 'LOST';
   notes: string;
   activities: PipelineActivity[];
   createdAt: string;
@@ -668,7 +664,7 @@ export interface PipelineDeal {
 
 export interface PipelineActivity {
   id: string;
-  type: "CALL" | "MEETING" | "EMAIL" | "NOTE" | "STAGE_CHANGE";
+  type: 'CALL' | 'MEETING' | 'EMAIL' | 'NOTE' | 'STAGE_CHANGE';
   description: string;
   createdAt: string;
 }
@@ -689,7 +685,7 @@ export interface Customer {
   storeCredit?: number;
   referralCode?: string;
   referredBy?: string;
-  salesPipelineStage?: "LEAD" | "OPPORTUNITY" | "QUOTATION" | "WON" | "LOST";
+  salesPipelineStage?: 'LEAD' | 'OPPORTUNITY' | 'QUOTATION' | 'WON' | 'LOST';
   assignedTo?: string;
   quotations?: CRMQuotation[];
   totalSpend?: number;
@@ -713,13 +709,13 @@ export interface POSItem {
 }
 
 export enum PaymentMethod {
-  CASH = "CASH",
-  BANK_TRANSFER = "BANK_TRANSFER",
-  QRIS = "QRIS",
-  EDC = "EDC",
-  E_WALLET = "E_WALLET",
-  DEPOSIT = "DEPOSIT",
-  TEMPO = "TEMPO",
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  QRIS = 'QRIS',
+  EDC = 'EDC',
+  E_WALLET = 'E_WALLET',
+  DEPOSIT = 'DEPOSIT',
+  TEMPO = 'TEMPO',
 }
 
 export interface POSShift {
@@ -735,7 +731,7 @@ export interface POSShift {
   difference?: number;
   cashInHand?: number;
   notes?: string;
-  status: "OPEN" | "CLOSED";
+  status: 'OPEN' | 'CLOSED';
 }
 
 export interface POSTransaction {
@@ -768,11 +764,11 @@ export interface POSTransaction {
 // ==========================================
 
 export enum ItemGrade {
-  NEW = "NEW",
-  GRADE_A = "GRADE_A",
-  GRADE_B = "GRADE_B",
-  GRADE_C = "GRADE_C",
-  GRADE_D = "GRADE_D",
+  NEW = 'NEW',
+  GRADE_A = 'GRADE_A',
+  GRADE_B = 'GRADE_B',
+  GRADE_C = 'GRADE_C',
+  GRADE_D = 'GRADE_D',
 }
 
 export interface InventoryProduct {
@@ -781,8 +777,8 @@ export interface InventoryProduct {
   name: string;
   sku: string;
   barcode: string;
-  category: "SPAREPART" | "AKSESORIS" | "JASA" | "LAINNYA";
-  itemType?: "RETAIL_PRODUCT" | "SERVICE_PART" | "MICRO_COMPONENT" | "CONSUMABLE";
+  category: 'SPAREPART' | 'AKSESORIS' | 'JASA' | 'LAINNYA';
+  itemType?: 'RETAIL_PRODUCT' | 'SERVICE_PART' | 'MICRO_COMPONENT' | 'CONSUMABLE';
   isActive?: boolean;
   purchaseCost: number; // HPP (Average Cost)
   sellPrice: number;
@@ -805,9 +801,9 @@ export interface StorageLocation {
   id: string;
   tenantId: string;
   branchId: string;
-  name: string;      // Contoh: "Rak A - Layar"
-  code: string;      // Contoh: "RAK-A1"
-  type: "SPAREPART" | "UNIT_SERVICE";
+  name: string; // Contoh: "Rak A - Layar"
+  code: string; // Contoh: "RAK-A1"
+  type: 'SPAREPART' | 'UNIT_SERVICE';
   description?: string;
   occupiedTicketIds?: string[]; // Menyimpan ID tiket servis yang sedang ditaruh di sini
 }
@@ -817,7 +813,7 @@ export interface StockMovement {
   tenantId: string;
   productId: string;
   warehouseId: string;
-  type: "IN" | "OUT" | "ADJUSTMENT" | "TRANSFER" | "RESERVATION";
+  type: 'IN' | 'OUT' | 'ADJUSTMENT' | 'TRANSFER' | 'RESERVATION';
   quantity: number;
   referenceNo: string; // TicketNo, InvoiceNo, PO etc.
   note: string;
@@ -835,7 +831,7 @@ export interface PurchaseOrder {
     quantity: number;
     costPrice: number;
   }[];
-  status: "PENDING" | "APPROVED" | "ORDERED" | "RECEIVED" | "CANCELLED";
+  status: 'PENDING' | 'APPROVED' | 'ORDERED' | 'RECEIVED' | 'CANCELLED';
   totalAmount: number;
   createdAt: string;
 }
@@ -856,11 +852,11 @@ export interface Vendor {
 // ==========================================
 
 export enum AccountType {
-  ASSET = "ASSET",
-  LIABILITY = "LIABILITY",
-  EQUITY = "EQUITY",
-  REVENUE = "REVENUE",
-  EXPENSE = "EXPENSE",
+  ASSET = 'ASSET',
+  LIABILITY = 'LIABILITY',
+  EQUITY = 'EQUITY',
+  REVENUE = 'REVENUE',
+  EXPENSE = 'EXPENSE',
 }
 
 export interface COAAccount {
@@ -899,7 +895,7 @@ export interface CashTransaction {
   id: string;
   tenantId: string;
   branchId: string;
-  type: "CASH_IN" | "CASH_OUT" | "TRANSFER";
+  type: 'CASH_IN' | 'CASH_OUT' | 'TRANSFER';
   amount: number;
   fromAccountId: string;
   toAccountId: string;
@@ -931,7 +927,7 @@ export interface Employee {
   name: string;
   position: string;
   division: string;
-  contractStatus: "PERMANENT" | "CONTRACT" | "INTERN";
+  contractStatus: 'PERMANENT' | 'CONTRACT' | 'INTERN';
   basicSalary: number;
   email: string;
   phone: string;
@@ -939,7 +935,7 @@ export interface Employee {
     date: string;
     checkIn: string;
     checkOut?: string;
-    status: "PRESENT" | "LATE" | "ABSENT" | "LEAVE";
+    status: 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE';
     shiftId?: string;
     shiftName?: string;
     clockInLat?: number;
@@ -956,8 +952,8 @@ export interface Employee {
     id: string;
     start: string;
     end: string;
-    type: "ANNUAL" | "SICK" | "UNPAID";
-    status: "PENDING" | "APPROVED" | "REJECTED";
+    type: 'ANNUAL' | 'SICK' | 'UNPAID';
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
     reason: string;
   }[];
   cashAdvances?: {
@@ -965,14 +961,14 @@ export interface Employee {
     date: string;
     amount: number;
     reason: string;
-    status: "PENDING" | "APPROVED" | "REJECTED" | "PAID";
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAID';
     approvedBy?: string;
   }[];
   contractStartDate?: string;
   contractEndDate?: string;
   joinDate?: string;
   address?: string;
-  gender?: "MALE" | "FEMALE";
+  gender?: 'MALE' | 'FEMALE';
   dateOfBirth?: string;
   npwp?: string;
   bpjsKesehatanNo?: string;
@@ -989,7 +985,7 @@ export interface Employee {
   trainingRecords?: TrainingRecord[];
   resignations?: Resignation[];
   performanceReviews?: PerformanceReview[];
-  status?: "ACTIVE" | "RESIGNED" | "TERMINATED" | "ON_LEAVE";
+  status?: 'ACTIVE' | 'RESIGNED' | 'TERMINATED' | 'ON_LEAVE';
   resignedAt?: string;
   lastWorkingDate?: string;
   exitInterviewNotes?: string;
@@ -998,7 +994,7 @@ export interface Employee {
 
 export interface EmployeeDocument {
   id: string;
-  type: "KTP" | "SK" | "CONTRACT" | "CV" | "CERTIFICATE" | "OTHER";
+  type: 'KTP' | 'SK' | 'CONTRACT' | 'CV' | 'CERTIFICATE' | 'OTHER';
   name: string;
   fileUrl: string;
   uploadedAt: string;
@@ -1011,9 +1007,9 @@ export interface OvertimeRecord {
   startTime: string;
   endTime: string;
   hours: number;
-  rate: "1.5X" | "2X";
+  rate: '1.5X' | '2X';
   reason: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   approvedBy?: string;
   totalAmount: number;
 }
@@ -1021,7 +1017,7 @@ export interface OvertimeRecord {
 export interface DisciplinaryAction {
   id: string;
   date: string;
-  level: "SP1" | "SP2" | "SP3" | "WARNING" | "TERMINATION";
+  level: 'SP1' | 'SP2' | 'SP3' | 'WARNING' | 'TERMINATION';
   reason: string;
   description: string;
   issuedBy: string;
@@ -1038,7 +1034,7 @@ export interface TrainingRecord {
   hours: number;
   cost: number;
   certificate?: string;
-  status: "PLANNED" | "ONGOING" | "COMPLETED";
+  status: 'PLANNED' | 'ONGOING' | 'COMPLETED';
   notes?: string;
 }
 
@@ -1048,7 +1044,7 @@ export interface Resignation {
   submittedAt: string;
   lastWorkingDate: string;
   reason: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   approvedBy?: string;
   clearanceChecklist?: { item: string; cleared: boolean }[];
   settlementAmount?: number;
@@ -1082,12 +1078,12 @@ export interface Payroll {
   deductions: number;
   kasbonDeduction: number;
   netSalary: number;
-  status: "DRAFT" | "PAID";
+  status: 'DRAFT' | 'PAID';
   paidAt?: string;
   breakdown?: {
     label: string;
     amount: number;
-    type: "INCOME" | "DEDUCTION";
+    type: 'INCOME' | 'DEDUCTION';
   }[];
 }
 
@@ -1098,9 +1094,9 @@ export interface TechnicianCommission {
   employeeId: string;
   serviceId?: string;
   posTransactionId?: string;
-  type: "SERVICE" | "SALES" | "FIELD";
+  type: 'SERVICE' | 'SALES' | 'FIELD';
   amount: number;
-  status: "PENDING" | "APPROVED" | "PAID" | "CANCELLED";
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED';
   timestamp: string;
 }
 
@@ -1112,8 +1108,8 @@ export interface Voucher {
   id: string;
   tenantId: string;
   code: string;
-  type: "DISCOUNT" | "CASHBACK" | "STORE_CREDIT";
-  discountType: "PERCENTAGE" | "VALUE";
+  type: 'DISCOUNT' | 'CASHBACK' | 'STORE_CREDIT';
+  discountType: 'PERCENTAGE' | 'VALUE';
   value: number; // e.g. 10 for 10% or 50000 for Rp50.000
   minTransaction: number;
   validFrom: string;
@@ -1132,9 +1128,9 @@ export interface SupportTicket {
   tenantId: string;
   customerId: string;
   subject: string;
-  category: "SERVICE" | "BILLING" | "TECHNICAL";
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+  category: 'SERVICE' | 'BILLING' | 'TECHNICAL';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   assignedTo?: string;
   messages: { sender: string; message: string; timestamp: string }[];
 }
@@ -1144,8 +1140,8 @@ export interface ProjectTask {
   tenantId: string;
   title: string;
   description: string;
-  status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
-  priority: "LOW" | "MEDIUM" | "HIGH";
+  status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
   dueDate: string;
   assigneeId?: string;
 }
@@ -1165,16 +1161,16 @@ export interface AuditLog {
   details: string;
   ipAddress: string;
   category:
-    | "AUTH"
-    | "FINANCE"
-    | "INVENTORY"
-    | "ADMIN"
-    | "SERVICE"
-    | "SECURITY"
-    | "SYSTEM"
-    | "CRM"
-    | "SALES";
-  riskLevel: "LOW" | "MEDIUM" | "HIGH";
+    | 'AUTH'
+    | 'FINANCE'
+    | 'INVENTORY'
+    | 'ADMIN'
+    | 'SERVICE'
+    | 'SECURITY'
+    | 'SYSTEM'
+    | 'CRM'
+    | 'SALES';
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
 export interface FraudAlert {
@@ -1182,14 +1178,14 @@ export interface FraudAlert {
   tenantId: string;
   branchId: string;
   type:
-    | "VOID_SALE"
-    | "LARGE_DISCOUNT"
-    | "HPP_MODIFIED"
-    | "SERVICE_RELEASE_UNPAID"
-    | "LOGIN_ANOMALY"
-    | "WORKFLOW_AUTO";
+    | 'VOID_SALE'
+    | 'LARGE_DISCOUNT'
+    | 'HPP_MODIFIED'
+    | 'SERVICE_RELEASE_UNPAID'
+    | 'LOGIN_ANOMALY'
+    | 'WORKFLOW_AUTO';
   message: string;
-  riskLevel: "MEDIUM" | "HIGH" | "CRITICAL";
+  riskLevel: 'MEDIUM' | 'HIGH' | 'CRITICAL';
   timestamp: string;
   operator: string;
   isResolved: boolean;
@@ -1205,10 +1201,9 @@ export interface ERPWorkflow {
   id: string;
   tenantId: string;
   name: string;
-  triggerType:
-    "INVOICE_UNPAID" | "TICKET_CREATED" | "STOCK_LOW" | "SHIFT_CLOSED";
+  triggerType: 'INVOICE_UNPAID' | 'TICKET_CREATED' | 'STOCK_LOW' | 'SHIFT_CLOSED';
   triggerCondition: string; // e.g., "> 30"
-  actionType: "WHATSAPP" | "EMAIL" | "JOURNAL_ENTRY" | "FRAUD_ALERT";
+  actionType: 'WHATSAPP' | 'EMAIL' | 'JOURNAL_ENTRY' | 'FRAUD_ALERT';
   actionPayload: string;
   isActive: boolean;
   lastTriggeredAt?: string;
@@ -1234,12 +1229,12 @@ export interface InventoryTransfer {
   originWarehouseId: string;
   destinationWarehouseId: string;
   items: TransferItem[];
-  status: "REQUEST_CREATED" | "PACKED" | "SHIPPED" | "RECEIVED";
+  status: 'REQUEST_CREATED' | 'PACKED' | 'SHIPPED' | 'RECEIVED';
   note: string;
   createdAt: string;
   updatedAt: string;
   history: {
-    status: "REQUEST_CREATED" | "PACKED" | "SHIPPED" | "RECEIVED";
+    status: 'REQUEST_CREATED' | 'PACKED' | 'SHIPPED' | 'RECEIVED';
     timestamp: string;
     note?: string;
   }[];
@@ -1257,7 +1252,7 @@ export interface InternalMessage {
 }
 
 export interface PlatformHealth {
-  status: "checking" | "ok" | "degraded" | "down" | "local";
+  status: 'checking' | 'ok' | 'degraded' | 'down' | 'local';
   checkedAt?: string;
   components?: {
     api?: { status: string; latencyMs?: number };
@@ -1269,7 +1264,12 @@ export interface PlatformHealth {
       userCount?: number;
     };
     billing?: { status: string; openInvoices?: number; overdue?: number };
-    notificationOutbox?: { status: string; failed?: number; pending?: number; lastSentAt?: string | null };
+    notificationOutbox?: {
+      status: string;
+      failed?: number;
+      pending?: number;
+      lastSentAt?: string | null;
+    };
     backup?: { status: string; lastJobAt?: string; message?: string };
     incidents?: { status: string; open?: number; critical?: number };
   };
@@ -1293,7 +1293,7 @@ export interface SuperAdminMetrics {
 
 export interface SuperAdminActionItem {
   id: string;
-  severity: "info" | "warning" | "critical";
+  severity: 'info' | 'warning' | 'critical';
   count: number;
   label: string;
   targetTab: string;
@@ -1304,14 +1304,14 @@ export interface SuperAdminOverview {
   metrics: SuperAdminMetrics;
   actions: SuperAdminActionItem[];
   generatedAt: string;
-  source: "database";
+  source: 'database';
 }
 
 export interface TenantUsageSummary {
   usedMb: number;
   limitMb: number;
   percent: number;
-  source: "actual" | "estimated";
+  source: 'actual' | 'estimated';
   measuredAt?: string;
 }
 
@@ -1321,20 +1321,54 @@ export interface SuperAdminTenantSummary extends Tenant {
   branchCount: number;
   transactionCount: number;
   serviceCount: number;
-  overdueCount: number;
-  lastActivityAt?: string;
-  statusReason?: string;
-  scheduledReactivationAt?: string;
-  usage: TenantUsageSummary;
+  supportTicketCount: number;
+  storageUsedBytes?: number | null;
+  lastActivityAt?: string | null;
 }
 
+export interface TenantOperationalModuleHealth {
+  open_tickets?: number;
+  status?: string;
+  latencyMs?: number;
+  failed?: number;
+  pending?: number;
+  open?: number;
+  critical?: number;
+  lastJobAt?: string | null;
+  [key: string]: any;
+}
+
+export interface TenantOperationalHealth {
+  status: 'ok' | 'degraded' | 'down' | 'unknown';
+  alertCount: number;
+}
+
+export interface TenantOperationalAlert {
+  module: string;
+  label: string;
+  count: number;
+}
+
+export interface TenantOperationalSummary {
+  tenantId: string;
+  generatedAt: string;
+  health: TenantOperationalHealth;
+  modules: Record<string, TenantOperationalModuleHealth>;
+  alerts: TenantOperationalAlert[];
+}
+
+export interface SuperAdminActionItem {
+  label: string;
+  targetTab: string;
+  targetFilter?: string;
+}
 export interface ImpersonationSession {
   id: string;
   tenantId: string;
   tenantName: string;
   reason: string;
   ticketId?: string;
-  accessMode: "READ_ONLY" | "FULL";
+  accessMode: 'READ_ONLY' | 'FULL';
   startedAt: string;
   expiresAt: string;
 }
@@ -1346,7 +1380,7 @@ export interface SuperAdminAuditEvent {
   action: string;
   resourceType: string;
   resourceId?: string;
-  outcome: "SUCCESS" | "DENIED" | "FAILED";
+  outcome: 'SUCCESS' | 'DENIED' | 'FAILED';
   clientIp?: string;
   correlationId: string;
   beforeState?: Record<string, unknown>;
@@ -1354,5 +1388,3 @@ export interface SuperAdminAuditEvent {
   metadata?: Record<string, unknown>;
   createdAt: string;
 }
-
-

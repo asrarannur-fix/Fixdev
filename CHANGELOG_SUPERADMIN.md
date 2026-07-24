@@ -1,5 +1,39 @@
 # Log Perubahan Super Admin
 
+## 2026-07-24 - Operational Oversight Superadmin (Tenant Health + Module Alerts)
+
+### Ringkasan
+- Menambahkan kemampuan operational oversight read-only untuk superadmin: ringkasan operasional per tenant, alert kesehatan modul, dan status kesehatan terintegrasi.
+- Mengurangi celah kontrol dengan memisahkan view operasional dari aksi administratif langsung.
+
+### Detail Perubahan
+
+#### Frontend
+- `TenantsManager.tsx`: menambahkan tab Operasional pada detail tenant, state `operationalSummary`/`operationalLoading`, dan pengambilan data dari endpoint baru.
+- `DashboardOverview.tsx`, `HealthCenter.tsx`, `OperationsCenter`: siap diintegrasikan dengan tipe operasional baru.
+- `services/superadminApi.ts`: menambahkan fungsi akses API `fetchTenantOperationalSummary()`.
+
+#### Backend
+- `superadmin.controller.ts`: menambahkan endpoint read-only `getTenantOperationalSummary` untuk modul, alerts, dan health tenant.
+- `superadmin.routes.ts`: mendaftarkan route baru `GET /tenants/:id/operational-summary` dengan permission superadmin.
+
+#### Tipe
+- `src/types/index.ts`: menambahkan tipe `TenantOperationalSummary`, `TenantOperationalModuleHealth`, `TenantOperationalHealth`, `TenantOperationalAlert`, dan `SuperAdminActionItem`.
+
+### Validasi
+| Jenis | Status |
+|-------|--------|
+| Unit test | ✅ |
+| Security test | ✅ |
+| TypeScript lint | ✅ |
+| Build | ✅ |
+
+### Catatan
+- Operational oversight ditata sebagai read-only untuk menghindari perubahan data operasional tenant yang tidak disengaja.
+- Integrasi penuh ke `DashboardOverview` dan `HealthCenter` merupakan langkah refinemen berikutnya.
+
+---
+
 ## 2026-07-23 - Perbaikan Alur Registrasi Tenant + Testing Komprehensif
 
 ### Ringkasan

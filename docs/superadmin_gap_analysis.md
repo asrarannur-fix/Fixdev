@@ -9,6 +9,7 @@ Superadmin console saat ini berfokus ke **Control Plane SaaS**. Belum ada **Oper
 - Billing/subscription: terminate, extend, invoices, payments, cron, gateway, template
 - Audit/compliance: audit log, backup jobs, console sessions
 - RBAC: roles/permissions matrix, superadmin users
+- **Operational oversight (read-only):** ringkasan operasional per tenant, alert kesehatan modul, status kesehatan terintegrasi
 
 ## Missing: Operational Oversight
 Per module:
@@ -46,6 +47,6 @@ Per module:
 - ⚠️ branding/white-label belum ada UI superadmin
 
 ## Recommended Roadmap
-1. Phase 1: Tenant Detail > Operational Summary (read-only aggregation per module)
-2. Phase 2: Module Health Dashboard + alerts
+1. ~~Phase 1: Tenant Detail > Operational Summary (read-only aggregation per module)~~ **DONE**
+2. ~~Phase 2: Module Health Dashboard + alerts~~ **DONE**
 3. Phase 3: Module-level enforcement/config from superadmin

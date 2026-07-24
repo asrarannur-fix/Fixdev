@@ -31,8 +31,6 @@ test.describe("Superadmin", () => {
   });
 
   test("tenant registration mutation without edit-session is blocked", async ({ request }) => {
-    // router.use now applies requireSuperAdminConsoleSession; POST /tenants (a mutation)
-    // must be rejected with 423 (read-only) or 401 when no console session header is sent.
     const res = await request.post(`${BASE_URL}/api/superadmin/tenants`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {
@@ -43,5 +41,32 @@ test.describe("Superadmin", () => {
       },
     });
     expect([401, 423]).toContain(res.status());
+  });
+
+  test("tenant operational summary requires authentication", async ({ request }) => {
+    const res = await request.get(`${BASE_URL}/api/superadmin/tenants/00000000-0000-0000-0000-000000000000/operational-summary`);
+    expect(res.status()).toBe(401);
+  });
+
+  test("tenant operational summary returns health and modules with valid token", async ({ request }) => {
+    const listRes = await request.get(`${BASE_URL}/api/superadmin/tenants`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(listRes.ok()).toBeTruthy();
+    const listBody = await listRes.json();
+    const tenantId = listBody.items?.[0]?.id || listBody[0]?.id;
+    if (!tenantId) {
+      test.skip(true, "No tenant available for operational summary test");
+      return;
+    }
+    const res = await request.get(`${BASE_URL}/api/superadmin/tenants/${tenantId}/operational-summary`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body).toHaveProperty("health");
+    expect(body).toHaveProperty("modules");
+    expect(body).toHaveProperty("alerts");
+    expect(body.alerts).toEqual(expect.any(Array));
   });
 });
