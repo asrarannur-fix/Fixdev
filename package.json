@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "test": "npm run test:unit && npm run test:security",
+    "test": "npm run test:unit && npm run test:security && npm run test:integration",
     "test:security": "vitest run --config vitest.security.config.ts",
+    "test:integration": "tsx --test tests/accounting.api.test.ts tests/accounting-pagination.test.ts tests/api-response.test.ts tests/feature-gating.test.ts tests/finance-security.test.ts tests/response-transform.test.ts tests/service-reception-api.test.ts tests/service-reception-print-template.test.ts tests/service-reception-security.test.ts tests/service-reception-validation.test.ts tests/service-ticket-reception.test.ts tests/service-workflow.test.ts tests/superadmin-session-security.test.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   requireSuperAdmin,
+  requireSuperAdminConsoleSession,
   requireSuperAdminPermission,
   requireJwt,
 } from "../../middleware/auth.middleware.js";
@@ -40,7 +41,7 @@ import {
 } from "../controllers/superadmin.controller.js";
 
 const router = express.Router();
-router.use(requireJwt, requireSuperAdmin);
+router.use(requireJwt, requireSuperAdmin, requireSuperAdminConsoleSession);
 
 router.get("/overview", requireSuperAdminPermission("overview:view"), getOverview);
 router.get("/tenants", requireSuperAdminPermission("tenants:view_all"), listTenants);

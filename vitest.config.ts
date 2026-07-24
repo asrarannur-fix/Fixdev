@@ -6,8 +6,11 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     css: false,
-    include: ["src/**/*.{test,spec}.ts", "src/**/*.{test,spec}.tsx"],
-    exclude: ["node_modules", "dist"],
+    include: [
+      "src/**/*.{test,spec}.ts",
+      "src/**/*.{test,spec}.tsx",
+    ],
+    exclude: ["node_modules", "dist", "tests/**/*.spec.ts", "tests/**/*.test.ts"],
   },
   resolve: {
     alias: {

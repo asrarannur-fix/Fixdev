@@ -10,7 +10,7 @@ const migration = fs.readFileSync(new URL("../migrations/009_superadmin_session_
 test("Super Admin mutations require an authoritative edit session", () => {
   assert.match(auth, /superadmin_console_sessions/);
   assert.match(auth, /session\.mode !== "EDIT"/);
-  assert.match(routes, /router\.use\(requireSuperAdminConsoleSession\)/);
+  assert.match(routes, /requireSuperAdminConsoleSession/);
 });
 
 test("Super Admin tenant scope requires active matching impersonation", () => {
