@@ -277,16 +277,7 @@ const MainAppContent: React.FC = () => {
     };
   }, []);
 
-  // Auto-navigate to Customer Portal if tracking ticket is in URL params on load
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ticketParam = params.get("ticket");
-    const subParam = params.get("sub");
-    if (ticketParam && subParam !== "warranty-claim") {
-      setActiveTab("customer-portal");
-      setActiveSubTab("overview");
-    }
-  }, []);
+
 
   // Allowed super admin tabs
   const SUPER_ADMIN_TABS = [

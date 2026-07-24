@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildMidtransSignature } from "../src/server/controllers/billing.controller";
 import { readFileSync, readdirSync } from "node:fs";

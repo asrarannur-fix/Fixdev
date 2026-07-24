@@ -16,38 +16,12 @@ import rateLimit from "express-rate-limit";
 import { logger } from "./src/lib/logger.js";
 import { requireAdminToken, requireSuperAdmin, requireSuperAdminPermission, requireJwt, requireTenantScope, requireRoles, requireSettingsDomain } from "./src/middleware/auth.middleware.js";
 import { requireFeature } from "./src/middleware/feature.middleware.js";
-import {
-  bootstrapHandler,
-  platformBootstrapHandler,
-} from "./src/server/controllers/bootstrap.controller.js";
-import {
-  authProfileHandler,
-  authPasswordUpdateHandler,
-  adminResetPasswordHandler,
-  onboardingRegisterHandler,
-  upgradeTrialHandler,
-  extendTrialHandler,
-  loginHandler
-} from "./src/server/controllers/auth.controller.js";
-import {
-  moduleRecordsGetHandler,
-  moduleRecordsPostHandler,
-  dataSyncHandler,
-} from "./src/server/controllers/data.controller.js";
-import {
-  databaseTestHandler,
-  databaseMigrateHandler,
-} from "./src/server/controllers/database.controller.js";
-import {
-  whatsappGetLogsHandler,
-  whatsappPostLogsHandler,
-  whatsappGetQueueHandler,
-  whatsappPostQueueHandler,
-} from "./src/server/controllers/whatsapp.controller.js";
+import { databaseTestHandler, databaseMigrateHandler } from "./src/server/controllers/database.controller.js";
 import { auditMiddleware } from "./src/server/controllers/audit.controller.js";
 import auditRoutes from "./src/server/routes/audit.routes.js";
-import billingRoutes from "./src/server/routes/billing.routes.js";
-
+import authRoutes from "./src/server/routes/auth.routes.js";
+import whatsappRoutes from "./src/server/routes/whatsapp.routes.js";
+import systemRoutes from "./src/server/routes/system.routes.js"; // New import
 import { createCrudRouter } from "./src/server/plugins/crudPlugin.js";
 import tenantRoutes from "./src/server/routes/tenant.routes.js";
 import serviceTrackerRoutes from "./src/server/routes/serviceTracker.routes.js";
@@ -61,14 +35,11 @@ import purchasingRoutes from "./src/server/routes/purchasing.routes.js";
 import complaintTemplateRoutes from "./src/server/routes/complaintTemplate.routes.js";
 import monitoringRoutes from "./src/server/routes/monitoring.routes.js";
 import superadminRoutes from "./src/server/routes/superadmin.routes.js";
-import { platformHealthHandler } from "./src/server/controllers/monitoring.controller.js";
-import { acceptInvitation, validateInvitation } from "./src/server/controllers/invitation.controller.js";
-import { telegramTestHandler } from "./src/server/controllers/telegram.controller.js";
-import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.controller.js";
-import { qzPublicCertHandler, qzSignHandler } from "./src/server/controllers/qz.controller.js";
-import { qzCertDownloadHandler, qzInstallerBatHandler } from "./src/server/controllers/qzinstaller.controller.js";
-import { tenantHostResolver } from "./src/middleware/tenantHost.middleware.js";
+import { telegramTestHandler } from "./src/server/controllers/telegram.controller.js"; // Keep for now
+import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.controller.js"; // Keep for now
 import { publicTenantContextHandler } from "./src/server/controllers/publicTenant.controller.js";
+import { tenantHostResolver } from "./src/middleware/tenantHost.middleware.js"; // Re-import
+import billingRoutes from "./src/server/routes/billing.routes.js"; // Re-import
 
 const runtimeMode = process.env.NODE_ENV || "development";
 if (!["development", "production", "test"].includes(runtimeMode)) throw new Error(`Invalid NODE_ENV: ${runtimeMode}`);
@@ -176,24 +147,6 @@ const adminBillingLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60_000,
-  max: Number(process.env.LOGIN_RATE_LIMIT_MAX || 15),
-  message: { error: "Too many login attempts. Try again in 15 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
-});
-
-const onboardingLimiter = rateLimit({
-  windowMs: 15 * 60_000,
-  max: Number(process.env.ONBOARDING_RATE_LIMIT_MAX || 10),
-  message: { error: "Terlalu banyak percobaan pendaftaran. Silakan coba lagi nanti." },
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
-});
-
 const publicApiLimiter = rateLimit({
   windowMs: 60_000,
   max: 30, // 30 req/min for public tracking
@@ -202,8 +155,7 @@ const publicApiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Apply rate limiting
-app.use("/api/", (req, res, next) => {
+const apiRateLimiterMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const path = req.path;
   if (path.startsWith("/public/") || path.startsWith("/healthz")) {
     return next();
@@ -215,11 +167,13 @@ app.use("/api/", (req, res, next) => {
     return next();
   }
   return apiLimiter(req, res, next);
-});
+};
+
+app.use("/api/", apiRateLimiterMiddleware);
 
 // Apply stricter rate limiting to sensitive public endpoints
 app.use("/api/service-tracking", publicApiLimiter);
-app.use("/api/invitations", publicApiLimiter);
+app.use("/api/invitations", publicApiLimiter); // This is general for auth.routes now
 
 // Apply Multi-Tenant Audit Middleware
 app.use(auditMiddleware);
@@ -228,46 +182,21 @@ app.use(auditMiddleware);
 // API ROUTES
 // ==========================================
 
+app.use("/api/auth", authRoutes);
+app.use("/api/whatsapp", requireJwt, requireTenantScope, whatsappRoutes); // New: use whatsappRoutes
+app.use("/api", systemRoutes); // New: use systemRoutes for shared system routes
+
 app.get("/api/public/tenant-context", publicTenantContextHandler);
 
-// Health check (Internal/Liveness)
+// Health check (Internal/Liveness) - moved to systemRoutes, but keep for legacy/direct
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
-// Public health check for Load Balancers / External Monitoring
+// Public health check for Load Balancers / External Monitoring - moved to systemRoutes, but keep for legacy/direct
 app.get("/api/healthz", (req, res) => {
   res.status(200).send("ok");
 });
-
-app.post("/api/admin/auth/reset-password", requireAdminToken, adminResetPasswordHandler);
-
-app.get("/api/whatsapp/logs", requireJwt, requireTenantScope, whatsappGetLogsHandler);
-app.post("/api/whatsapp/logs", requireJwt, requireTenantScope, whatsappPostLogsHandler);
-app.get("/api/whatsapp/queue", requireJwt, requireTenantScope, whatsappGetQueueHandler);
-app.post("/api/whatsapp/queue", requireJwt, requireTenantScope, whatsappPostQueueHandler);
-
-app.get("/api/auth/profile", requireJwt, authProfileHandler);
-
-app.get("/api/platform/bootstrap", requireJwt, requireSuperAdmin, requireSuperAdminPermission("platform:view_bootstrap"), platformBootstrapHandler);
-app.get("/api/platform/health", requireJwt, requireSuperAdmin, platformHealthHandler);
-app.get("/api/bootstrap", requireJwt, requireTenantScope, bootstrapHandler);
-app.get("/api/module-records", requireJwt, requireTenantScope, moduleRecordsGetHandler);
-app.post("/api/module-records", requireJwt, requireTenantScope, moduleRecordsPostHandler);
-
-app.post("/api/data/sync", requireJwt, requireTenantScope, dataSyncHandler);
-app.get("/api/qz/certificate", qzPublicCertHandler);
-app.get("/api/qz/certificate/download", qzCertDownloadHandler);
-app.get("/api/qz/installer.bat", qzInstallerBatHandler);
-app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
-
-app.post("/api/auth/login", loginLimiter, loginHandler);
-app.post("/api/auth/profile/password", requireJwt, authPasswordUpdateHandler);
-app.post("/api/onboarding/register", onboardingLimiter, onboardingRegisterHandler);
-app.get("/api/invitations/validate", validateInvitation);
-app.post("/api/invitations/accept", acceptInvitation);
-app.post("/api/onboarding/upgrade-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), upgradeTrialHandler);
-app.post("/api/onboarding/extend-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), extendTrialHandler);
 
 // Mounted Modular Routes (Secured)
 app.use("/api/admin", requireJwt, requireTenantScope, auditRoutes);
