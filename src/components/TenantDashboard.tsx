@@ -157,8 +157,8 @@ export const TenantDashboard = ({
         setPosAmountPaid('');
         setSelectedPosCust('');
         showToast(`Transaksi berhasil! No: ${newTx?.invoiceNo || '-'}`, 'success');
-        // Auto-print receipt
-        if (newTx) scheduleReceiptPrint(newTx as any);
+        // Auto-print receipt (delayed to allow DOM settle)
+        if (newTx) setTimeout(() => handlePrintPOSReceipt(newTx), 0);
       } catch (e: any) {
         setOptimisticCart(null);
         showToast(e.message || 'Gagal checkout. Coba lagi.', 'error');
@@ -167,12 +167,6 @@ export const TenantDashboard = ({
       }
     },
     [posCart, selectedPosCust, posPaymentMethod, posAmountPaid, depositUsed, createPOSTransaction]
-  );
-  const scheduleReceiptPrint = React.useCallback(
-    (tx: any) => {
-      if (tx) setTimeout(() => handlePrintPOSReceipt(tx), 0);
-    },
-    [handlePrintPOSReceipt]
   );
   const handlePrintPOSReceipt = React.useCallback(
     (tx: any) => {
