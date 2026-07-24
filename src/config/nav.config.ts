@@ -165,7 +165,11 @@ export const OPERATIONAL_MODULES: NavModule[] = [
     subtabs: [
       { id: "pipeline", label: "Pipeline", icon: Sliders },
       { id: "customers", label: "Pelanggan", icon: Users },
-      { id: "marketing", label: "Broadcast", icon: Megaphone },
+      { id: "quotations", label: "Penawaran", icon: FileSpreadsheet },
+      { id: "campaigns", label: "Kampanye", icon: Megaphone },
+      { id: "loyalty", label: "Loyalty", icon: Gift },
+      { id: "segments", label: "Segmen", icon: Database },
+      { id: "follow-ups", label: "Follow-Up", icon: Clock },
     ],
   },
   {

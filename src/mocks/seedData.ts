@@ -361,6 +361,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     referralCode: "CUST1",
     salesPipelineStage: "WON",
     quotations: [],
+    createdAt: "2024-01-15T08:00:00.000Z",
   },
   {
     id: "cust-2",
@@ -377,6 +378,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     referralCode: "CUST2",
     salesPipelineStage: "LEAD",
     quotations: [],
+    createdAt: "2024-02-20T08:00:00.000Z",
   },
   {
     id: "cust-3",
@@ -395,6 +397,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     referralCode: "DEMOSVC",
     salesPipelineStage: "WON",
     quotations: [],
+    createdAt: "2023-11-10T08:00:00.000Z",
   },
   {
     id: "cust-4",
@@ -412,6 +415,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     referralCode: "SEKDEMO",
     salesPipelineStage: "QUOTATION",
     quotations: [],
+    createdAt: "2024-03-05T08:00:00.000Z",
   },
   {
     id: "cust-5",
@@ -428,6 +432,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     referralCode: "CUSTB",
     salesPipelineStage: "LEAD",
     quotations: [],
+    createdAt: "2024-04-01T08:00:00.000Z",
   },
 ];
 

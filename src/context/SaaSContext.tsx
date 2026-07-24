@@ -46,6 +46,16 @@ import {
   WorkShift,
   InternalMessage,
   PlatformHealth,
+  Campaign,
+  CampaignStatus,
+  LoyaltyRule,
+  LoyaltyTierConfig,
+  CustomerNote,
+  FollowUp,
+  PipelineDeal,
+  CRMQuotation,
+  QuotationItem,
+  PipelineActivity,
 } from "../types";
 
 import {
@@ -420,6 +430,12 @@ interface SaaSContextType {
   updateWorkflow: (id: string, updates: Partial<ERPWorkflow>) => Promise<void>;
   deleteWorkflow: (id: string) => Promise<void>;
   executeWorkflow: (id: string) => Promise<void>;
+  checkAndTriggerWorkflows: (
+    triggerType: ERPWorkflow["triggerType"],
+    context: Record<string, any>,
+    actualValue?: number,
+  ) => Promise<void>;
+  evaluateCondition: (condition: string, value: number) => boolean;
   updateUserRole: (userId: string, role: UserRole) => Promise<void>;
   updateUserPermissions: (userId: string, permissions: string[]) => Promise<void>;
   addUser: (
@@ -431,6 +447,48 @@ interface SaaSContextType {
   deleteUser: (userId: string) => Promise<void> | void;
   addCustomer: (customer: Omit<Customer, "id" | "tenantId">) => Customer;
   updateCustomer: (customerId: string, data: Partial<Customer>) => void;
+
+  // CRM: Quotations
+  addQuotation: (q: Omit<CRMQuotation, "id" | "tenantId">) => CRMQuotation;
+  updateQuotation: (customerId: string, quotationId: string, data: Partial<CRMQuotation>) => void;
+  deleteQuotation: (customerId: string, quotationId: string) => void;
+
+  // CRM: Campaigns
+  campaigns: Campaign[];
+  addCampaign: (c: Omit<Campaign, "id" | "tenantId" | "createdAt" | "deliveredCount" | "readCount" | "failedCount">) => Campaign;
+  updateCampaign: (campaignId: string, data: Partial<Campaign>) => void;
+  deleteCampaign: (campaignId: string) => void;
+
+  // CRM: Loyalty
+  loyaltyRules: LoyaltyRule[];
+  loyaltyTiers: LoyaltyTierConfig[];
+  addLoyaltyRule: (r: Omit<LoyaltyRule, "id" | "tenantId">) => LoyaltyRule;
+  updateLoyaltyRule: (ruleId: string, data: Partial<LoyaltyRule>) => void;
+  deleteLoyaltyRule: (ruleId: string) => void;
+  redeemLoyaltyPoints: (customerId: string, points: number) => void;
+  addLoyaltyPoints: (customerId: string, points: number) => void;
+
+  // CRM: Customer Notes
+  customerNotes: CustomerNote[];
+  addCustomerNote: (note: Omit<CustomerNote, "id" | "tenantId" | "createdAt" | "updatedAt">) => CustomerNote;
+  updateCustomerNote: (noteId: string, data: Partial<CustomerNote>) => void;
+  deleteCustomerNote: (noteId: string) => void;
+
+  // CRM: Follow-Ups
+  followUps: FollowUp[];
+  addFollowUp: (f: Omit<FollowUp, "id" | "tenantId" | "createdAt">) => FollowUp;
+  updateFollowUp: (followUpId: string, data: Partial<FollowUp>) => void;
+  deleteFollowUp: (followUpId: string) => void;
+
+  // CRM: Pipeline Deals
+  pipelineDeals: PipelineDeal[];
+  addPipelineDeal: (d: Omit<PipelineDeal, "id" | "tenantId" | "createdAt" | "updatedAt" | "activities">) => PipelineDeal;
+  updatePipelineDeal: (dealId: string, data: Partial<PipelineDeal>) => void;
+  addPipelineActivity: (dealId: string, activity: Omit<PipelineActivity, "id" | "createdAt">) => void;
+  deletePipelineDeal: (dealId: string) => void;
+
+  // CRM: Segmentation
+  computeCustomerSegment: (cust: Customer) => CustomerSegment;
 
   // Marketplace Sync Integration Helpers
   updateProductStock: (productId: string, newQty: number) => void;
@@ -1425,6 +1483,33 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       ]),
   );
 
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+    return parseArray<Campaign>("saas_campaigns", []);
+  });
+
+  const [loyaltyRules, setLoyaltyRules] = useState<LoyaltyRule[]>(() => {
+    return parseArray<LoyaltyRule>("saas_loyalty_rules", []);
+  });
+
+  const [loyaltyTiers] = useState<LoyaltyTierConfig[]>([
+    { tier: "BRONZE", minPoints: 0, discountPercent: 0, pointsMultiplier: 1 },
+    { tier: "SILVER", minPoints: 500, discountPercent: 5, pointsMultiplier: 1.5 },
+    { tier: "GOLD", minPoints: 2000, discountPercent: 10, pointsMultiplier: 2 },
+    { tier: "PLATINUM", minPoints: 5000, discountPercent: 15, pointsMultiplier: 3 },
+  ]);
+
+  const [customerNotes, setCustomerNotes] = useState<CustomerNote[]>(() => {
+    return parseArray<CustomerNote>("saas_customer_notes", []);
+  });
+
+  const [followUps, setFollowUps] = useState<FollowUp[]>(() => {
+    return parseArray<FollowUp>("saas_follow_ups", []);
+  });
+
+  const [pipelineDeals, setPipelineDeals] = useState<PipelineDeal[]>(() => {
+    return parseArray<PipelineDeal>("saas_pipeline_deals", []);
+  });
+
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
     return parseArray<AuditLog>("saas_audit_logs", isBackendConfigured() ? [] : INITIAL_AUDITS);
   });
@@ -1600,6 +1685,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     localStorage.setItem("saas_audit_logs", JSON.stringify(auditLogs));
     localStorage.setItem("saas_fraud", JSON.stringify(fraudAlerts));
+    localStorage.setItem("saas_campaigns", JSON.stringify(campaigns));
+    localStorage.setItem("saas_loyalty_rules", JSON.stringify(loyaltyRules));
+    localStorage.setItem("saas_customer_notes", JSON.stringify(customerNotes));
+    localStorage.setItem("saas_follow_ups", JSON.stringify(followUps));
+    localStorage.setItem("saas_pipeline_deals", JSON.stringify(pipelineDeals));
     localStorage.setItem("saas_users", JSON.stringify(users));
     localStorage.setItem("saas_workflows", JSON.stringify(workflows));
     localStorage.setItem(
@@ -1640,6 +1730,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     workflows,
     stockMovements,
     inventoryTransfers,
+    campaigns,
+    loyaltyRules,
+    customerNotes,
+    followUps,
+    pipelineDeals,
   ]);
 
   // ==========================================
@@ -2350,6 +2445,14 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       }),
     );
+
+    checkAndTriggerWorkflows("TICKET_CREATED", {
+      tenantId,
+      customerName,
+      customerPhone,
+      ticketNo: newTicket.ticketNo,
+      deviceName: newTicket.deviceName,
+    });
 
     return newTicket;
   };
@@ -3286,6 +3389,213 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       return next;
     });
+  };
+
+  // ==========================================
+  // CRM: QUOTATIONS
+  // ==========================================
+  const addQuotation = (q: Omit<CRMQuotation, "id" | "tenantId">): CRMQuotation => {
+    const id = generateUUID();
+    const newQ: CRMQuotation = { ...q, id, tenantId: currentTenantId };
+    setCustomers((prev) => prev.map((c) =>
+      c.id === q.customerId
+        ? { ...c, quotations: [...(c.quotations || []), newQ] }
+        : c,
+    ));
+    addLog("Add Quotation", `Quotation baru: ${q.subject} (Rp ${q.total.toLocaleString()})`, "SERVICE");
+    return newQ;
+  };
+
+  const updateQuotation = (customerId: string, quotationId: string, data: Partial<CRMQuotation>) => {
+    setCustomers((prev) => prev.map((c) => {
+      if (c.id !== customerId) return c;
+      return {
+        ...c,
+        quotations: (c.quotations || []).map((q) =>
+          q.id === quotationId ? { ...q, ...data } : q,
+        ),
+      };
+    }));
+  };
+
+  const deleteQuotation = (customerId: string, quotationId: string) => {
+    setCustomers((prev) => prev.map((c) => {
+      if (c.id !== customerId) return c;
+      return {
+        ...c,
+        quotations: (c.quotations || []).filter((q) => q.id !== quotationId),
+      };
+    }));
+  };
+
+  // ==========================================
+  // CRM: CAMPAIGNS
+  // ==========================================
+  const addCampaign = (c: Omit<Campaign, "id" | "tenantId" | "createdAt" | "deliveredCount" | "readCount" | "failedCount">): Campaign => {
+    const id = generateUUID();
+    const newCampaign: Campaign = {
+      ...c,
+      id,
+      tenantId: currentTenantId,
+      deliveredCount: 0,
+      readCount: 0,
+      failedCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+    setCampaigns((prev) => [...prev, newCampaign]);
+    addLog("Add Campaign", `Kampanye baru: ${c.name}`, "SERVICE");
+    return newCampaign;
+  };
+
+  const updateCampaign = (campaignId: string, data: Partial<Campaign>) => {
+    setCampaigns((prev) => prev.map((c) =>
+      c.id === campaignId ? { ...c, ...data } : c,
+    ));
+  };
+
+  const deleteCampaign = (campaignId: string) => {
+    setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+  };
+
+  // ==========================================
+  // CRM: LOYALTY RULES
+  // ==========================================
+  const addLoyaltyRule = (r: Omit<LoyaltyRule, "id" | "tenantId">): LoyaltyRule => {
+    const id = generateUUID();
+    const newRule: LoyaltyRule = { ...r, id, tenantId: currentTenantId };
+    setLoyaltyRules((prev) => [...prev, newRule]);
+    addLog("Add Loyalty Rule", `Aturan loyalty baru: ${r.name}`, "SERVICE");
+    return newRule;
+  };
+
+  const updateLoyaltyRule = (ruleId: string, data: Partial<LoyaltyRule>) => {
+    setLoyaltyRules((prev) => prev.map((r) =>
+      r.id === ruleId ? { ...r, ...data } : r,
+    ));
+  };
+
+  const deleteLoyaltyRule = (ruleId: string) => {
+    setLoyaltyRules((prev) => prev.filter((r) => r.id !== ruleId));
+  };
+
+  const redeemLoyaltyPoints = (customerId: string, points: number) => {
+    setCustomers((prev) => prev.map((c) => {
+      if (c.id !== customerId) return c;
+      const current = c.loyaltyPoints || 0;
+      if (current < points) return c;
+      return { ...c, loyaltyPoints: current - points };
+    }));
+  };
+
+  const addLoyaltyPoints = (customerId: string, points: number) => {
+    setCustomers((prev) => prev.map((c) => {
+      if (c.id !== customerId) return c;
+      return { ...c, loyaltyPoints: (c.loyaltyPoints || 0) + points };
+    }));
+  };
+
+  // ==========================================
+  // CRM: CUSTOMER NOTES
+  // ==========================================
+  const addCustomerNote = (note: Omit<CustomerNote, "id" | "tenantId" | "createdAt" | "updatedAt">): CustomerNote => {
+    const id = generateUUID();
+    const newNote: CustomerNote = {
+      ...note,
+      id,
+      tenantId: currentTenantId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setCustomerNotes((prev) => [...prev, newNote]);
+    return newNote;
+  };
+
+  const updateCustomerNote = (noteId: string, data: Partial<CustomerNote>) => {
+    setCustomerNotes((prev) => prev.map((n) =>
+      n.id === noteId ? { ...n, ...data, updatedAt: new Date().toISOString() } : n,
+    ));
+  };
+
+  const deleteCustomerNote = (noteId: string) => {
+    setCustomerNotes((prev) => prev.filter((n) => n.id !== noteId));
+  };
+
+  // ==========================================
+  // CRM: FOLLOW-UPS
+  // ==========================================
+  const addFollowUp = (f: Omit<FollowUp, "id" | "tenantId" | "createdAt">): FollowUp => {
+    const id = generateUUID();
+    const newFollowUp: FollowUp = { ...f, id, tenantId: currentTenantId, createdAt: new Date().toISOString() };
+    setFollowUps((prev) => [...prev, newFollowUp]);
+    addLog("Add Follow-Up", `Follow-up baru: ${f.title}`, "SERVICE");
+    return newFollowUp;
+  };
+
+  const updateFollowUp = (followUpId: string, data: Partial<FollowUp>) => {
+    setFollowUps((prev) => prev.map((f) =>
+      f.id === followUpId ? { ...f, ...data } : f,
+    ));
+  };
+
+  const deleteFollowUp = (followUpId: string) => {
+    setFollowUps((prev) => prev.filter((f) => f.id !== followUpId));
+  };
+
+  // ==========================================
+  // CRM: PIPELINE DEALS
+  // ==========================================
+  const addPipelineDeal = (d: Omit<PipelineDeal, "id" | "tenantId" | "createdAt" | "updatedAt" | "activities">): PipelineDeal => {
+    const id = generateUUID();
+    const now = new Date().toISOString();
+    const newDeal: PipelineDeal = {
+      ...d,
+      id,
+      tenantId: currentTenantId,
+      activities: [{ id: generateUUID(), type: "NOTE", description: "Deal dibuat", createdAt: now }],
+      createdAt: now,
+      updatedAt: now,
+    };
+    setPipelineDeals((prev) => [...prev, newDeal]);
+    addLog("Add Deal", `Deal baru: ${d.clientName} (Rp ${d.estimatedValue.toLocaleString()})`, "SERVICE");
+    return newDeal;
+  };
+
+  const updatePipelineDeal = (dealId: string, data: Partial<PipelineDeal>) => {
+    setPipelineDeals((prev) => prev.map((d) =>
+      d.id === dealId ? { ...d, ...data, updatedAt: new Date().toISOString() } : d,
+    ));
+  };
+
+  const addPipelineActivity = (dealId: string, activity: Omit<PipelineActivity, "id" | "createdAt">) => {
+    setPipelineDeals((prev) => prev.map((d) => {
+      if (d.id !== dealId) return d;
+      return {
+        ...d,
+        activities: [...d.activities, { ...activity, id: generateUUID(), createdAt: new Date().toISOString() }],
+        updatedAt: new Date().toISOString(),
+      };
+    }));
+  };
+
+  const deletePipelineDeal = (dealId: string) => {
+    setPipelineDeals((prev) => prev.filter((d) => d.id !== dealId));
+  };
+
+  // ==========================================
+  // CRM: SEGMENTATION HELPER
+  // ==========================================
+  const computeCustomerSegment = (cust: Customer): CustomerSegment => {
+    const totalSpend = cust.totalSpend || 0;
+    const lastService = cust.lastServiceDate ? new Date(cust.lastServiceDate) : null;
+    const monthsSinceLastService = lastService
+      ? (Date.now() - lastService.getTime()) / (1000 * 60 * 60 * 24 * 30)
+      : 999;
+    if (totalSpend > 10000000) return CustomerSegment.CHAMPION;
+    if (totalSpend > 5000000) return CustomerSegment.VIP;
+    if (monthsSinceLastService > 6) return CustomerSegment.COLD;
+    if (cust.visitCount && cust.visitCount > 5) return CustomerSegment.ACTIVE;
+    if (!cust.lastServiceDate) return CustomerSegment.NEW;
+    return cust.segment;
   };
 
   const updateEmployee = (employeeId: string, data: Partial<Employee>) => {
@@ -4454,22 +4764,116 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  // ==========================================
+  // WORKFLOW ENGINE: Condition Evaluator
+  // ==========================================
+  const evaluateCondition = (triggerCondition: string, actualValue: number): boolean => {
+    const trimmed = triggerCondition.trim();
+    if (trimmed === "all") return true;
+    const match = trimmed.match(/^([<>=!]+)\s*(\d+)$/);
+    if (!match) return true;
+    const op = match[1];
+    const val = Number(match[2]);
+    switch (op) {
+      case ">": return actualValue > val;
+      case "<": return actualValue < val;
+      case ">=": return actualValue >= val;
+      case "<=": return actualValue <= val;
+      case "==":
+      case "=": return actualValue === val;
+      case "!=": return actualValue !== val;
+      default: return true;
+    }
+  };
+
+  // ==========================================
+  // WORKFLOW ENGINE: Action Dispatcher
+  // ==========================================
+  const dispatchWorkflowAction = async (wf: ERPWorkflow, context: Record<string, any>) => {
+    const interpolate = (text: string) => {
+      return text.replace(/\{(\w+)\}/g, (_, key) => String(context[key] ?? `{${key}}`));
+    };
+
+    switch (wf.actionType) {
+      case "WHATSAPP":
+        try {
+          const waPayload = {
+            id: `wa-wf-${Date.now().toString(36)}`,
+            timestamp: new Date().toISOString(),
+            recipientName: context.customerName || "Pelanggan",
+            recipientPhone: context.customerPhone || "",
+            type: "SYSTEM_AUTO" as const,
+            message: interpolate(wf.actionPayload),
+            status: "SENT" as const,
+            senderName: "Workflow Automation",
+            channel: "Workflow Engine",
+          };
+          const savedWaLogs = safeLocalStorage.getItem("saas_wa_logs_" + (currentTenantId || "default"));
+          const waLogsArr = savedWaLogs ? JSON.parse(savedWaLogs) : [];
+          waLogsArr.unshift(waPayload);
+          safeLocalStorage.setItem("saas_wa_logs_" + (currentTenantId || "default"), JSON.stringify(waLogsArr));
+        } catch (e) {
+          console.error("Workflow WhatsApp action failed", e);
+        }
+        break;
+
+      case "EMAIL":
+        addLog("Workflow Email", interpolate(wf.actionPayload), "SYSTEM", "LOW");
+        break;
+
+      case "JOURNAL_ENTRY":
+        addLog("Workflow Journal", interpolate(wf.actionPayload), "SYSTEM", "LOW");
+        break;
+
+      case "FRAUD_ALERT":
+        triggerFraudAlert("WORKFLOW_AUTO", interpolate(wf.actionPayload), "MEDIUM");
+        break;
+    }
+  };
+
+  // ==========================================
+  // WORKFLOW ENGINE: Trigger Checker
+  // ==========================================
+  const checkAndTriggerWorkflows = async (
+    triggerType: ERPWorkflow["triggerType"],
+    context: Record<string, any>,
+    actualValue?: number,
+  ) => {
+    const matching = workflows.filter(
+      (w) => w.tenantId === context.tenantId && w.triggerType === triggerType && w.isActive,
+    );
+    for (const wf of matching) {
+      if (actualValue !== undefined && !evaluateCondition(wf.triggerCondition, actualValue)) continue;
+      const updated = { ...wf, executionCount: wf.executionCount + 1, lastTriggeredAt: new Date().toISOString() };
+      await syncModuleRecord("workflows", wf.id, updated, "update");
+      setWorkflows((prev) => prev.map((w) => (w.id === wf.id ? updated : w)));
+      await dispatchWorkflowAction(wf, context);
+      addLog("Workflow Triggered", `Otomatis: '${wf.name}' dieksekusi via trigger ${triggerType}`, "SYSTEM", "LOW");
+    }
+  };
+
   const executeWorkflow = async (id: string) => {
     const current = workflows.find((w) => w.id === id);
     if (!current) throw new Error("Workflow tidak ditemukan.");
+    if (!current.isActive) throw new Error("Workflow tidak aktif.");
     const updated = { ...current, executionCount: current.executionCount + 1, lastTriggeredAt: new Date().toISOString() };
     await syncModuleRecord("workflows", id, updated, "update");
     setWorkflows((prev) => prev.map((w) => (w.id === id ? updated : w)));
-    // We can fetch the name for the audit log
-    const targetWf = workflows.find((w) => w.id === id);
-    if (targetWf) {
-      addLog(
-        "Execute Workflow",
-        `Simulasi pemicu otomatis: '${targetWf.name}' dieksekusi dengan aksi ${targetWf.actionType}`,
-        "SYSTEM",
-        "MEDIUM",
-      );
-    }
+    await dispatchWorkflowAction(updated, {
+      customerName: "Test User",
+      customerPhone: "+6281234567890",
+      invoiceNo: "INV-99999",
+      amount: "1,000,000",
+      deviceName: "Test Device",
+      ticketNo: "TKT-99999",
+      condition: current.triggerCondition,
+    });
+    addLog(
+      "Execute Workflow",
+      `Alur otomatisasi '${updated.name}' dieksekusi manual dengan aksi ${updated.actionType}`,
+      "SYSTEM",
+      "LOW",
+    );
   };
 
     const updateUserPermissions = async (userId: string, permissions: string[]) => {
@@ -4742,6 +5146,34 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         addEmployee,
         addCustomer,
         updateCustomer,
+        addQuotation,
+        updateQuotation,
+        deleteQuotation,
+        campaigns,
+        addCampaign,
+        updateCampaign,
+        deleteCampaign,
+        loyaltyRules,
+        loyaltyTiers,
+        addLoyaltyRule,
+        updateLoyaltyRule,
+        deleteLoyaltyRule,
+        redeemLoyaltyPoints,
+        addLoyaltyPoints,
+        customerNotes,
+        addCustomerNote,
+        updateCustomerNote,
+        deleteCustomerNote,
+        followUps,
+        addFollowUp,
+        updateFollowUp,
+        deleteFollowUp,
+        pipelineDeals,
+        addPipelineDeal,
+        updatePipelineDeal,
+        addPipelineActivity,
+        deletePipelineDeal,
+        computeCustomerSegment,
         updateEmployee,
         recordAttendance,
         bulkCheckIn,
@@ -4766,6 +5198,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         updateWorkflow,
         deleteWorkflow,
         executeWorkflow,
+        checkAndTriggerWorkflows,
+        evaluateCondition,
         updateUserRole,
         updateUserPermissions,
         addUser,

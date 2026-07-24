@@ -150,6 +150,7 @@ export const DataImporter: React.FC = () => {
               address: (address || "").trim(),
               segment: (type as any) || "RETAIL",
               tags: [],
+              createdAt: new Date().toISOString(),
             });
             success++;
           }

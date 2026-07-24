@@ -549,14 +549,128 @@ export interface FieldServiceVisit {
 export enum CustomerSegment {
   PERSONAL = "PERSONAL",
   CORPORATE = "CORPORATE",
+  VIP = "VIP",
+  NEW = "NEW",
+  COLD = "COLD",
+  ACTIVE = "ACTIVE",
+  CHAMPION = "CHAMPION",
 }
 
 export interface CRMQuotation {
   id: string;
+  tenantId: string;
+  customerId: string;
   date: string;
+  validUntil: string;
   subject: string;
-  amount: number;
-  status: "DRAFT" | "SENT" | "APPROVED" | "EXPIRED";
+  description: string;
+  items: QuotationItem[];
+  subtotal: number;
+  discount: number;
+  tax: number;
+  total: number;
+  status: "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED";
+  notes?: string;
+  sentAt?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+}
+
+export interface QuotationItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export type CampaignChannel = "WHATSAPP" | "SMS" | "EMAIL";
+export type CampaignStatus = "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "FAILED";
+
+export interface Campaign {
+  id: string;
+  tenantId: string;
+  name: string;
+  channel: CampaignChannel;
+  targetSegment: string;
+  targetCount: number;
+  message: string;
+  couponCode?: string;
+  status: CampaignStatus;
+  scheduledAt?: string;
+  sentAt?: string;
+  deliveredCount: number;
+  readCount: number;
+  failedCount: number;
+  createdBy: string;
+  createdAt: string;
+}
+
+export type LoyaltyTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+
+export interface LoyaltyRule {
+  id: string;
+  tenantId: string;
+  name: string;
+  type: "EARN" | "REDEEM";
+  pointsPerRp: number;
+  minSpend: number;
+  maxPoints: number;
+  active: boolean;
+}
+
+export interface LoyaltyTierConfig {
+  tier: LoyaltyTier;
+  minPoints: number;
+  discountPercent: number;
+  pointsMultiplier: number;
+}
+
+export interface CustomerNote {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  content: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FollowUp {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  status: "PENDING" | "COMPLETED" | "OVERDUE" | "CANCELLED";
+  assignedTo?: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface PipelineDeal {
+  id: string;
+  tenantId: string;
+  customerId?: string;
+  clientName: string;
+  contactPerson: string;
+  phone: string;
+  deviceDetails: string;
+  qty: number;
+  estimatedValue: number;
+  stage: "LEAD" | "OPPORTUNITY" | "QUOTATION" | "WON" | "LOST";
+  notes: string;
+  activities: PipelineActivity[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PipelineActivity {
+  id: string;
+  type: "CALL" | "MEETING" | "EMAIL" | "NOTE" | "STAGE_CHANGE";
+  description: string;
+  createdAt: string;
 }
 
 export interface Customer {
@@ -574,9 +688,14 @@ export interface Customer {
   loyaltyPoints?: number;
   storeCredit?: number;
   referralCode?: string;
+  referredBy?: string;
   salesPipelineStage?: "LEAD" | "OPPORTUNITY" | "QUOTATION" | "WON" | "LOST";
+  assignedTo?: string;
   quotations?: CRMQuotation[];
   totalSpend?: number;
+  lastServiceDate?: string;
+  visitCount?: number;
+  createdAt: string;
 }
 
 // ==========================================
@@ -1067,7 +1186,8 @@ export interface FraudAlert {
     | "LARGE_DISCOUNT"
     | "HPP_MODIFIED"
     | "SERVICE_RELEASE_UNPAID"
-    | "LOGIN_ANOMALY";
+    | "LOGIN_ANOMALY"
+    | "WORKFLOW_AUTO";
   message: string;
   riskLevel: "MEDIUM" | "HIGH" | "CRITICAL";
   timestamp: string;

@@ -1,8 +1,31 @@
 import * as React from "react";
 import { Building2, Sliders, Receipt, Lock, Zap, FileText, ChevronRight, HelpCircle, Save, PlusCircle, CheckCircle2, Trash2, Copy, AlertTriangle, Monitor, ExternalLink, Brush, Ticket, X, Paintbrush, Wrench, Fingerprint, MapPin, Search, Server, Smartphone, Globe, MessageSquare, Shield, Settings, GitBranch, Printer, Code, CreditCard, ArrowRightLeft, Play, Pencil, Check, Barcode, ShieldCheck, Eye, CheckSquare, Plus,  RefreshCw, Send, Database, FileSpreadsheet, Gift, ClipboardCheck } from "lucide-react";
-import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from "../../types";
+import { WorkflowRule, UserRole, TenantBranding } from "../../types";
 
-export const SettingsWorkflows: React.FC<any> = (props) => {
+interface SettingsWorkflowsProps {
+  addWorkflow: any;
+  currentTenantId: string;
+  deleteWorkflow: any;
+  executeWorkflow: any;
+  setShowAddWorkflowModal: any;
+  setWfActionPayload: any;
+  setWfActionType: any;
+  setWfName: any;
+  setWfTriggerCondition: any;
+  setWfTriggerType: any;
+  showAddWorkflowModal: any;
+  showConfirm: any;
+  showToast: any;
+  updateWorkflow: any;
+  wfActionPayload: any;
+  wfActionType: any;
+  wfName: any;
+  wfTriggerCondition: any;
+  wfTriggerType: any;
+  workflows: WorkflowRule[];
+}
+
+export const SettingsWorkflows: React.FC<SettingsWorkflowsProps> = (props) => {
   const { addWorkflow, currentTenantId, deleteWorkflow, executeWorkflow, setShowAddWorkflowModal, setWfActionPayload, setWfActionType, setWfName, setWfTriggerCondition, setWfTriggerType, showAddWorkflowModal, showConfirm, showToast, updateWorkflow, wfActionPayload, wfActionType, wfName, wfTriggerCondition, wfTriggerType, workflows } = props;
   return (
   <div className="w-full max-w-6xl animate-fadeIn space-y-6">

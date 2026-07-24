@@ -2,20 +2,23 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import React, { useEffect, useState } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { useConfirm } from "./ui/ConfirmDialog";
 import { SubscriptionTier, TenantStatus } from "../types";
 import SaaSSubscription from "./SaaSSubscription";
-
-// Import refactored components
 import { DashboardOverview } from "./superadmin/DashboardOverview";
 import { TenantsManager } from "./superadmin/TenantsManager";
 import { AuditRecovery } from "./superadmin/AuditRecovery";
 import { InfrastructureConfigModal } from "./superadmin/InfrastructureConfigModal";
 import OperationsCenter from "./superadmin/OperationsCenter";
+import { BillingPlansManager } from "./superadmin/BillingPlansManager";
+import { InvoiceManager } from "./superadmin/InvoiceManager";
+import { PaymentPipeline } from "./superadmin/PaymentPipeline";
+import { CronSettings } from "./superadmin/CronSettings";
+import { GatewayConfig } from "./superadmin/GatewayConfig";
+import { InvoiceTemplateEditor } from "./superadmin/InvoiceTemplateEditor";
 
 export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab: string, filter?: string) => void }> = ({
   activeTab,
@@ -68,6 +71,7 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
   const [configStatus, setConfigStatus] = useState<TenantStatus>(
     TenantStatus.ACTIVE,
   );
+  const [billingSubTab, setBillingSubTab] = useState("billing-plans");
 
   // Global calculations
   const totalTenants = tenants.length;
@@ -217,6 +221,42 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
 
       {/* 1. Langganan & QRIS Billing Tab */}
       {currentTab === "saas-billing" && <SaaSSubscription readOnlyMode={readOnlyMode} />}
+
+      {/* Billing Management Sub-Tabs */}
+      {currentTab === "billing-management" && (
+        <div className="space-y-6">
+          <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
+            {[
+              { id: "billing-plans", label: "📦 Paket", icon: "📦" },
+              { id: "billing-invoices", label: "📄 Invoice", icon: "📄" },
+              { id: "billing-payments", label: "💰 Pembayaran", icon: "💰" },
+              { id: "billing-cron", label: "⏰ Cron", icon: "⏰" },
+              { id: "billing-gateway", label: "🔧 Gateway", icon: "🔧" },
+              { id: "billing-template", label: "📝 Template", icon: "📝" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => onSetTab?.("billing-management", tab.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                  billingSubTab === tab.id
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="pt-4">
+            {billingSubTab === "billing-plans" && <BillingPlansManager readOnlyMode={readOnlyMode} />}
+            {billingSubTab === "billing-invoices" && <InvoiceManager />}
+            {billingSubTab === "billing-payments" && <PaymentPipeline />}
+            {billingSubTab === "billing-cron" && <CronSettings />}
+            {billingSubTab === "billing-gateway" && <GatewayConfig />}
+            {billingSubTab === "billing-template" && <InvoiceTemplateEditor />}
+          </div>
+        </div>
+      )}
 
       {/* 2. Global Dashboard Analytics / overview */}
       {(currentTab === "saas-dashboard" || !currentTab) && (

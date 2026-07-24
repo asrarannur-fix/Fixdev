@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
-import { useConfirm } from "./ui/ConfirmDialog";
+import { PipelineDeal } from "../types";
 import {
   Plus,
   ChevronRight,
@@ -16,101 +16,19 @@ import {
   Check,
 } from "lucide-react";
 
-interface PipelineDeal {
-  id: string;
-  clientName: string;
-  contactPerson: string;
-  phone: string;
-  deviceDetails: string;
-  qty: number;
-  estimatedValue: number;
-  stage: "LEAD" | "OPPORTUNITY" | "QUOTATION" | "WON" | "LOST";
-  notes: string;
-  createdAt: string;
-}
-
 export const B2BPipeline: React.FC = () => {
   const { showToast } = useToast();
-  const { confirm: showConfirm } = useConfirm();
   const {
     customers,
     addServiceTicket,
     addLog,
     currentTenantId,
     currentBranchId,
+    pipelineDeals,
+    addPipelineDeal,
+    updatePipelineDeal,
+    deletePipelineDeal,
   } = useSaaS();
-
-  // Internal CRM Leads State (Pre-filled with rich corporate prospects)
-  const [deals, setDeals] = useState<PipelineDeal[]>(() => {
-    const saved = localStorage.getItem(`zk_b2b_deals_${currentTenantId}`);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return [
-      {
-        id: "deal-01",
-        clientName: "SMA Negeri 1 Makassar",
-        contactPerson: "Pak Hendra (Wakasek Sarpras)",
-        phone: "081293810294",
-        deviceDetails: "Servis 12 Unit PC Lab & Pembersihan Ram",
-        qty: 12,
-        estimatedValue: 6500000,
-        stage: "LEAD",
-        notes: "Suku cadang butuh pasta thermal & repasting masal.",
-        createdAt: "2026-06-25",
-      },
-      {
-        id: "deal-02",
-        clientName: "Universitas Hasanuddin (Fakultas Teknik)",
-        contactPerson: "Bu Ratna (Staf Inventaris)",
-        phone: "082348572910",
-        deviceDetails: "Perbaikan 3 Unit Proyektor Aula & Ganti Lampu",
-        qty: 3,
-        estimatedValue: 3200000,
-        stage: "OPPORTUNITY",
-        notes: "Menunggu persetujuan dekanat untuk pencairan dana taktis.",
-        createdAt: "2026-06-26",
-      },
-      {
-        id: "deal-03",
-        clientName: "PT Bosowa Semen (Lantai 4 Office)",
-        contactPerson: "Mas Ivan (IT Support)",
-        phone: "085210492839",
-        deviceDetails: "Upgrade SSD 512GB & RAM 16GB iMac 27 Inch",
-        qty: 5,
-        estimatedValue: 4800000,
-        stage: "QUOTATION",
-        notes: "Quotation penawaran No. 2026/QTN/042 sudah dikirim.",
-        createdAt: "2026-06-27",
-      },
-      {
-        id: "deal-04",
-        clientName: "Bank Sulselbar Cabang Utama",
-        contactPerson: "Ibu Desi (Humas & IT Procurement)",
-        phone: "081192840294",
-        deviceDetails: "Ganti Backlight & IC Power 4 Unit Server Monitor",
-        qty: 4,
-        estimatedValue: 12000000,
-        stage: "WON",
-        notes:
-          "SPK sudah ditandatangani. Perlu segera dikonversikan menjadi tiket servis utama.",
-        createdAt: "2026-06-28",
-      },
-    ];
-  });
-
-  // Form states
-  const [showAddLead, setShowAddLead] = useState(false);
-  const [clientName, setClientName] = useState("");
-  const [contactPerson, setContactPerson] = useState("");
-  const [phone, setPhone] = useState("");
-  const [deviceDetails, setDeviceDetails] = useState("");
-  const [qty, setQty] = useState(1);
-  const [valAmount, setValAmount] = useState("");
-  const [notes, setNotes] = useState("");
-  const [initStage, setInitStage] = useState<PipelineDeal["stage"]>("LEAD");
 
   const [convertedDeals, setConvertedDeals] = useState<string[]>(() => {
     const saved = localStorage.getItem(`zk_converted_deals_${currentTenantId}`);
@@ -125,12 +43,16 @@ export const B2BPipeline: React.FC = () => {
     }
   });
 
-  React.useEffect(() => {
-    localStorage.setItem(
-      `zk_b2b_deals_${currentTenantId}`,
-      JSON.stringify(deals),
-    );
-  }, [deals, currentTenantId]);
+  // Form states
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [clientName, setClientName] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [phone, setPhone] = useState("");
+  const [deviceDetails, setDeviceDetails] = useState("");
+  const [qty, setQty] = useState(1);
+  const [valAmount, setValAmount] = useState("");
+  const [notes, setNotes] = useState("");
+  const [initStage, setInitStage] = useState<PipelineDeal["stage"]>("LEAD");
 
   React.useEffect(() => {
     localStorage.setItem(
@@ -140,55 +62,45 @@ export const B2BPipeline: React.FC = () => {
   }, [convertedDeals, currentTenantId]);
 
   // Calculate totals
-  const totalPipelineValue = deals.reduce(
-    (sum, d) => sum + d.estimatedValue,
-    0,
-  );
-  const wonValue = deals
-    .filter((d) => d.stage === "WON")
+  const totalPipelineValue = pipelineDeals
+    .filter((d) => d.tenantId === currentTenantId)
     .reduce((sum, d) => sum + d.estimatedValue, 0);
+  const wonValue = pipelineDeals
+    .filter((d) => d.tenantId === currentTenantId && d.stage === "WON")
+    .reduce((sum, d) => sum + d.estimatedValue, 0);
+
+  const tenantDeals = pipelineDeals.filter((d) => d.tenantId === currentTenantId);
 
   const moveStage = (
     dealId: string,
     direction: "next" | "prev" | "lost" | "won",
   ) => {
-    const stagesOrder: PipelineDeal["stage"][] = [
-      "LEAD",
-      "OPPORTUNITY",
-      "QUOTATION",
-      "WON",
-      "LOST",
-    ];
+    const stagesOrder: string[] = ["LEAD", "OPPORTUNITY", "QUOTATION", "WON", "LOST"];
+    const deal = tenantDeals.find((d) => d.id === dealId);
+    if (!deal) return;
 
-    setDeals((prevDeals) =>
-      prevDeals.map((d) => {
-        if (d.id !== dealId) return d;
+    let curIdx = stagesOrder.indexOf(deal.stage);
+    let nextStage = deal.stage;
 
-        let curIdx = stagesOrder.indexOf(d.stage);
-        let nextStage = d.stage;
+    if (direction === "next" && curIdx < stagesOrder.length - 2) {
+      nextStage = stagesOrder[curIdx + 1] as PipelineDeal["stage"];
+    } else if (direction === "prev" && curIdx > 0) {
+      nextStage = stagesOrder[curIdx - 1] as PipelineDeal["stage"];
+    } else if (direction === "lost") {
+      nextStage = "LOST";
+    } else if (direction === "won") {
+      nextStage = "WON";
+    }
 
-        if (direction === "next" && curIdx < stagesOrder.length - 2) {
-          nextStage = stagesOrder[curIdx + 1];
-        } else if (direction === "prev" && curIdx > 0) {
-          nextStage = stagesOrder[curIdx - 1];
-        } else if (direction === "lost") {
-          nextStage = "LOST";
-        } else if (direction === "won") {
-          nextStage = "WON";
-        }
-
-        if (nextStage !== d.stage) {
-          addLog(
-            "CRM Pipeline",
-            `Memindahkan prospek ${d.clientName} ke tahap ${nextStage}`,
-            "CRM",
-            "LOW",
-          );
-        }
-
-        return { ...d, stage: nextStage };
-      }),
-    );
+    if (nextStage !== deal.stage) {
+      updatePipelineDeal(dealId, { stage: nextStage as any });
+      addLog(
+        "CRM Pipeline",
+        `Memindahkan prospek ${deal.clientName} ke tahap ${nextStage}`,
+        "CRM",
+        "LOW",
+      );
+    }
   };
 
   const handleCreateLead = (e: React.FormEvent) => {
@@ -205,8 +117,7 @@ export const B2BPipeline: React.FC = () => {
     const safeQty = Math.max(1, Math.trunc(qty || 1));
     const safeValue = Math.max(0, Number(valAmount) || 0);
 
-    const newDeal: PipelineDeal = {
-      id: "deal-" + Date.now().toString(36),
+    addPipelineDeal({
       clientName: cleanClient,
       contactPerson: cleanContact,
       phone: cleanPhone,
@@ -215,10 +126,8 @@ export const B2BPipeline: React.FC = () => {
       estimatedValue: safeValue,
       stage: initStage,
       notes: notes.trim(),
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+    });
 
-    setDeals((prev) => [...prev, newDeal]);
     addLog(
       "CRM Create Lead",
       `Prospek korporat baru dibuat: ${cleanClient} senilai Rp ${safeValue.toLocaleString()}`,
@@ -226,7 +135,6 @@ export const B2BPipeline: React.FC = () => {
       "LOW",
     );
 
-    // Reset Form
     setClientName("");
     setContactPerson("");
     setPhone("");
@@ -237,18 +145,9 @@ export const B2BPipeline: React.FC = () => {
     setShowAddLead(false);
   };
 
-  const handleDeleteDeal = async (id: string) => {
-    if (
-      await showConfirm({
-        title: "Hapus Prospek",
-        message:
-          "Apakah Anda yakin ingin menghapus prospek ini dari pipeline? Data estimasi nilai proyek akan hilang.",
-        confirmLabel: "Hapus Prospek",
-        type: "danger",
-      })
-    ) {
-      setDeals((prev) => prev.filter((d) => d.id !== id));
-    }
+  const handleDeleteDeal = (id: string) => {
+    deletePipelineDeal(id);
+    showToast("Prospek berhasil dihapus", "success");
   };
 
   const handleConvertToTicket = (deal: PipelineDeal) => {
@@ -407,10 +306,10 @@ export const B2BPipeline: React.FC = () => {
               Win Efficiency
             </p>
             <p className="text-lg font-syne font-black text-amber-600 dark:text-amber-400">
-              {deals.length > 0
+              {tenantDeals.length > 0
                 ? Math.round(
-                    (deals.filter((d) => d.stage === "WON").length /
-                      deals.length) *
+                    (tenantDeals.filter((d) => d.stage === "WON").length /
+                      tenantDeals.length) *
                       100,
                   )
                 : 0}
@@ -575,7 +474,7 @@ export const B2BPipeline: React.FC = () => {
       <div className="p-4 sm:p-6 overflow-x-auto snap-x snap-mandatory">
         <div className="flex gap-4 sm:gap-5 min-w-max items-stretch">
           {columns.map((col) => {
-            const colDeals = deals.filter((d) => d.stage === col.stage);
+            const colDeals = tenantDeals.filter((d) => d.stage === col.stage);
             const colSum = colDeals.reduce(
               (sum, d) => sum + d.estimatedValue,
               0,

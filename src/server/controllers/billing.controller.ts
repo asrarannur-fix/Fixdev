@@ -581,8 +581,8 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
       );
 
       if (nextStatus === "PAID") {
-        const periodStart = row.period_start || new Date(); // Use existing period_start or current date
-        const periodEnd = new Date(periodStart); // Start from period_start
+        const periodStart = row.period_start || new Date();
+        const periodEnd = new Date(periodStart);
         if (row.billing_cycle === "yearly") periodEnd.setFullYear(periodEnd.getFullYear() + 1);
         else periodEnd.setMonth(periodEnd.getMonth() + 1);
 
@@ -601,6 +601,34 @@ export const handleMidtransWebhook = async (req: any, res: any) => {
            WHERE id = $1`,
           [row.tenant_id, row.tier, periodEnd, JSON.stringify(row.plan_snapshot?.limits || {})],
         );
+      }
+
+      // --- Auto-handle expired/denied/cancelled transactions ---
+      if (["deny", "cancel", "expire", "failure"].includes(String(transaction_status))) {
+        await client.query(
+          `INSERT INTO billing_internal_notifications (tenant_id, audience_role, event_type, title, message, resource_type, resource_id)
+           SELECT t.id, 'SUPER_ADMIN', 'payment_failed',
+                  'Pembayaran invoice ' || $1 || ' gagal',
+                  'Pembayaran invoice ' || $1 || ' untuk paket ' || i.tier || ' sebesar Rp ' || i.amount::text || ' tidak berhasil (status: ' || $2 || '). Silakan coba kembali atau hubungi admin.',
+                  'invoice', $1
+           FROM saas_invoices i JOIN tenants t ON t.id = i.tenant_id
+           WHERE i.id = $1`,
+          [order_id, String(transaction_status)],
+        ).catch(() => undefined);
+      }
+
+      // --- Auto-send payment confirmation notification on successful PAID ---
+      if (nextStatus === "PAID") {
+        await client.query(
+          `INSERT INTO billing_internal_notifications (tenant_id, audience_role, event_type, title, message, resource_type, resource_id)
+           SELECT t.id, 'SUPER_ADMIN', 'payment_confirmed',
+                  'Pembayaran invoice ' || $1 || ' berhasil',
+                  'Pembayaran invoice ' || $1 || ' (paket ' || i.tier || ') sebesar Rp ' || i.amount::text || ' berhasil dikonfirmasi. Periode: ' || COALESCE(i.period_start::text, '-') || ' — ' || COALESCE(i.period_end::text, '-') || '.',
+                  'invoice', $1
+           FROM saas_invoices i JOIN tenants t ON t.id = i.tenant_id
+           WHERE i.id = $1`,
+          [order_id],
+        ).catch(() => undefined);
       }
 
       const result = { invoiceId: updated.rows[0].id, status: updated.rows[0].status };
@@ -664,6 +692,65 @@ export const simulateTrialExpiryCron = async (_req: any, res: any) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Invoice Template CRUD
+// ---------------------------------------------------------------------------
+
+const DEFAULT_INVOICE_TEMPLATE = {
+  header: "PT FixDev ERP — Invoice",
+  logoUrl: "",
+  fields: ["invoice_number", "tenant_name", "plan_name", "amount", "due_date", "payment_method"],
+  footer: "Terima kasih telah berlangganan FixDev ERP",
+  colorPrimary: "#059669",
+};
+
+async function loadInvoiceTemplate(): Promise<unknown> {
+  return getSettingJson("invoice_template", DEFAULT_INVOICE_TEMPLATE);
+}
+
+export const getInvoiceTemplate = async (_req: any, res: any) => {
+  try {
+    const template = await loadInvoiceTemplate();
+    res.json(template);
+  } catch (err: any) {
+    logger.error({ err: err.message }, "[billing] getInvoiceTemplate failed");
+    res.status(500).json({ error: "Gagal memuat template invoice." });
+  }
+};
+
+export const updateInvoiceTemplate = async (req: any, res: any) => {
+  const template = req.body;
+  if (!template || typeof template !== "object") {
+    return res.status(400).json({ error: "Template invoice wajib diisi sebagai objek JSON." });
+  }
+  const validKeys = ["header", "logoUrl", "fields", "footer", "colorPrimary"];
+  const sanitized: Record<string, unknown> = {};
+  for (const key of validKeys) {
+    if (template[key] !== undefined) sanitized[key] = template[key];
+  }
+  if (sanitized.fields && (!Array.isArray(sanitized.fields) || sanitized.fields.length === 0)) {
+    return res.status(422).json({ error: "Template fields harus berupa array non-kosong." });
+  }
+  try {
+    await dbTransaction(async (client) => {
+      const before = await client.query(`SELECT value FROM app_settings WHERE key='invoice_template'`);
+      await client.query(
+        `INSERT INTO app_settings(key,value,updated_at) VALUES('invoice_template',$1::jsonb,now())
+         ON CONFLICT(key) DO UPDATE SET value=$1::jsonb,updated_at=now()`,
+        [JSON.stringify(sanitized)],
+      );
+      await recordBillingAdminAudit(
+        client, req, "INVOICE_TEMPLATE_UPDATED", "billing_invoice_template", "invoice_template", null,
+        before.rows[0]?.value || null, sanitized,
+      );
+    });
+    res.json({ success: true, message: "Template invoice berhasil diperbarui.", template: sanitized });
+  } catch (err: any) {
+    logger.error({ err: err.message }, "[billing] updateInvoiceTemplate failed");
+    res.status(500).json({ error: "Gagal memperbarui template invoice." });
+  }
+};
+
 export const simulateRecurringCron = async (req: any, res: any) => {
   const logs: string[] = [];
 
@@ -698,6 +785,95 @@ export const simulateRecurringCron = async (req: any, res: any) => {
   } catch (err: any) {
     logger.error({ err: err.message }, "[billing] simulateRecurringCron failed");
     res.status(500).json({ error: "Operasi billing gagal diproses." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Additional cron notifications: overdue >3 days, trial expiring <7 days
+// ---------------------------------------------------------------------------
+
+export const notifyOverdueWithEmail = async (_req: any, res: any) => {
+  const logs: string[] = [];
+  try {
+    const rows = await dbQuery(
+      `SELECT i.*, t.name as tenant_name, u.email as owner_email
+       FROM saas_invoices i
+       JOIN tenants t ON t.id = i.tenant_id
+       JOIN users u ON u.tenant_id = t.id AND u.role = 'OWNER'
+       WHERE i.status = 'UNPAID'
+         AND i.due_date < CURRENT_DATE - INTERVAL '3 days'
+         AND NOT EXISTS (
+           SELECT 1 FROM billing_internal_notifications bn
+           WHERE bn.resource_id = i.id AND bn.event_type = 'overdue_long'
+             AND bn.created_at >= now() - INTERVAL '1 day'
+         )`,
+    );
+
+    let sent = 0;
+    for (const inv of rows.rows) {
+      const daysOverdue = Math.floor((Date.now() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24));
+      const payload = {
+        invoiceId: inv.id,
+        tenantName: inv.tenant_name,
+        dueDate: inv.due_date,
+        amount: inv.amount,
+        tier: inv.tier,
+        daysOverdue,
+        message: `Invoice ${inv.id} untuk paket ${inv.tier} sebesar Rp ${Number(inv.amount).toLocaleString()} telah ${daysOverdue} hari tidak dibayar. Segera hubungi admin untuk penyelesaian.`,
+      };
+      await dbQuery(
+        `INSERT INTO billing_internal_notifications (tenant_id, audience_role, event_type, title, message, resource_type, resource_id)
+         VALUES ($1, $2, $3, $4, $5, 'invoice', $6)`,
+        [inv.tenant_id, "SUPER_ADMIN", "overdue_long", payload.message, payload.message, inv.id],
+      ).catch(() => undefined);
+      logs.push(`Overdue alert sent for invoice ${inv.id} (${daysOverdue}d overdue)`);
+      sent++;
+    }
+    res.json({ success: true, sent, message: `${sent} overdue alerts dikirim.`, logs: logs.length > 0 ? logs : ["Tidak ada invoice overdue >3 hari yang perlu notifikasi."] });
+  } catch (err: any) {
+    logger.error({ err: err.message }, "[billing] notifyOverdueWithEmail failed");
+    res.status(500).json({ error: "Gagal mengirim overdue alerts." });
+  }
+};
+
+export const notifyTrialExpiringWithEmail = async (_req: any, res: any) => {
+  const logs: string[] = [];
+  try {
+    const rows = await dbQuery(
+      `SELECT t.id as tenant_id, t.name as tenant_name, t.trial_ends_at, u.email as owner_email
+       FROM tenants t
+       JOIN users u ON u.tenant_id = t.id AND u.role = 'OWNER'
+       WHERE t.status = 'TRIAL'
+         AND t.trial_ends_at BETWEEN now() AND now() + INTERVAL '7 days'
+       AND NOT EXISTS (
+         SELECT 1 FROM billing_internal_notifications bn
+         WHERE bn.tenant_id = t.id AND bn.event_type = 'trial_expiring'
+           AND bn.created_at >= now() - INTERVAL '1 day'
+       )`,
+    );
+
+    let sent = 0;
+    for (const tenant of rows.rows) {
+      const daysLeft = Math.ceil((new Date(tenant.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const payload = {
+        tenantId: tenant.tenant_id,
+        tenantName: tenant.tenant_name,
+        trialEndsAt: tenant.trial_ends_at,
+        daysLeft,
+        message: `Trial ${tenant.tenant_name} akan berakhir dalam ${daysLeft} hari. Segera pilih paket berlangganan untuk melanjutkan akses penuh.`,
+      };
+      await dbQuery(
+        `INSERT INTO billing_internal_notifications (tenant_id, audience_role, event_type, title, message, resource_type, resource_id)
+         VALUES ($1, $2, $3, $4, $5, 'tenant', $6)`,
+        [tenant.tenant_id, "SUPER_ADMIN", "trial_expiring", payload.message, payload.message, `trial_expiring:${tenant.tenant_id}`],
+      ).catch(() => undefined);
+      logs.push(`Trial expiring alert sent for tenant ${tenant.tenant_id} (${daysLeft}d remaining)`);
+      sent++;
+    }
+    res.json({ success: true, sent, message: `${sent} trial expiring alerts dikirim.`, logs: logs.length > 0 ? logs : ["Tidak ada trial yang akan berakhir <7 hari."] });
+  } catch (err: any) {
+    logger.error({ err: err.message }, "[billing] notifyTrialExpiringWithEmail failed");
+    res.status(500).json({ error: "Gagal mengirim trial expiring alerts." });
   }
 };
 

@@ -36,6 +36,10 @@ import {
   notifyOverdueAlerts,
   sendPaymentConfirmation,
   handleMidtransWebhook,
+  getInvoiceTemplate,
+  updateInvoiceTemplate,
+  notifyOverdueWithEmail,
+  notifyTrialExpiringWithEmail,
 } from "../controllers/billing.controller.js";
 
 const router = express.Router();
@@ -61,6 +65,12 @@ router.post("/simulate-trial-expiry", requireSuperAdminPermission("operations:ru
 router.post("/notify-due-reminders", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyDueReminders);
 router.post("/notify-overdue-alerts", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyOverdueAlerts);
 router.post("/notify-payment-confirmation", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, sendPaymentConfirmation);
+// Additional cron notifications
+router.post("/notify-overdue-deep", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyOverdueWithEmail);
+router.post("/notify-trial-expiring", requireSuperAdminPermission("operations:run_cron"), requireSuperAdminConsoleSession, notifyTrialExpiringWithEmail);
+// Invoice template CRUD
+router.get("/invoice-template", requireSuperAdminPermission("billing:view_config"), getInvoiceTemplate);
+router.post("/invoice-template", requireSuperAdminPermission("billing:manage_config"), requireSuperAdminConsoleSession, updateInvoiceTemplate);
 router.get("/gateway-config", requireSuperAdminPermission("billing:view_config"), getGatewayConfig);
 router.post("/gateway-config", requireSuperAdminPermission("billing:manage_config"), requireSuperAdminConsoleSession, updateGatewayConfig);
 router.get("/manual-payment-config", requireTenantOrSuperAdminPermission("billing:view_config", true), getManualPaymentConfig);
@@ -94,5 +104,9 @@ router.get("/manual-payments/:id/proof-url", requireTenantOrSuperAdminPermission
 router.get("/manual-payments/:id/proof", requireTenantOrSuperAdminPermission("billing:view_manual_payments", true), streamManualProof);
 router.post("/manual-payments/:id/approve", requireSuperAdminPermission("billing:manage_manual_payments"), requireSuperAdminConsoleSession, approveManualPayment);
 router.post("/manual-payments/:id/reject", requireSuperAdminPermission("billing:manage_manual_payments"), requireSuperAdminConsoleSession, rejectManualPayment);
+
+// Invoice template CRUD (superadmin only)
+router.get("/invoice-template", requireSuperAdminPermission("billing:view_config"), getInvoiceTemplate);
+router.post("/invoice-template", requireSuperAdminPermission("billing:manage_config"), requireSuperAdminConsoleSession, updateInvoiceTemplate);
 
 export default router;

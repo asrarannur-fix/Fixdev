@@ -27,6 +27,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { CustomerSegment, ServiceStatus, PaymentMethod } from "../types";
+import { Tag, Plus, Trash2, X } from "lucide-react";
 
 interface CustomerActivityFeedProps {
   customerId: string;
@@ -57,6 +58,13 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
     currentUser,
     currentTenantId,
     addLog,
+    updateCustomer,
+    customerNotes,
+    addCustomerNote,
+    deleteCustomerNote,
+    followUps,
+    addFollowUp,
+    updateFollowUp,
   } = useSaaS();
 
   // Load WhatsApp Logs from Local Storage to integrate with the feed
@@ -147,6 +155,67 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
         log.recipientName.toLowerCase() === customer.name.toLowerCase(),
     );
   }, [waLogs, customer]);
+
+  // Customer Notes & Follow-ups
+  const [newNote, setNewNote] = useState("");
+  const [newTag, setNewTag] = useState("");
+  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
+  const [followUpTitle, setFollowUpTitle] = useState("");
+  const [followUpDescription, setFollowUpDescription] = useState("");
+  const [followUpDueDate, setFollowUpDueDate] = useState("");
+
+  const customerNotesList = useMemo(
+    () => customerNotes.filter((n) => n.customerId === customerId),
+    [customerNotes, customerId],
+  );
+
+  const customerFollowUps = useMemo(
+    () => followUps
+      .filter((f) => f.customerId === customerId)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
+    [followUps, customerId],
+  );
+
+  const handleAddNote = () => {
+    if (!newNote.trim()) return;
+    addCustomerNote({
+      customerId,
+      content: newNote.trim(),
+      createdBy: currentUser.name,
+    });
+    setNewNote("");
+    showToast("Catatan ditambahkan", "success");
+  };
+
+  const handleAddTag = () => {
+    if (!newTag.trim() || !customer) return;
+    const tags = [...(customer.tags || []), newTag.trim()];
+    updateCustomer(customerId, { tags });
+    setNewTag("");
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    if (!customer) return;
+    const tags = (customer.tags || []).filter((t) => t !== tag);
+    updateCustomer(customerId, { tags });
+  };
+
+  const handleAddFollowUp = () => {
+    if (!followUpTitle || !followUpDueDate) return;
+    addFollowUp({
+      customerId,
+      title: followUpTitle,
+      description: followUpDescription,
+      dueDate: followUpDueDate,
+      status: "PENDING",
+      assignedTo: currentUser.name,
+    });
+    setFollowUpTitle("");
+    setFollowUpDescription("");
+    setFollowUpDueDate("");
+    setShowFollowUpForm(false);
+    showToast("Follow-up ditambahkan", "success");
+  };
 
   // Combined Chronological Feed
   const chronologicalFeed = useMemo<CombinedEvent[]>(() => {
@@ -446,6 +515,89 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Card: Tags */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
+              <Tag className="w-4 h-4 text-indigo-500" />
+              Tags Pelanggan
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {(customer.tags || []).map((tag) => (
+                <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold">
+                  {tag}
+                  <button onClick={() => handleRemoveTag(tag)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+              {(customer.tags || []).length === 0 && <span className="text-[10px] text-slate-400 italic">Belum ada tag</span>}
+            </div>
+            <div className="flex gap-1">
+              <input type="text" value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddTag()} placeholder="Tambah tag..." className="flex-1 px-2 py-1 border border-slate-200 rounded text-[10px] outline-none" />
+              <button onClick={handleAddTag} className="px-2 py-1 bg-indigo-500 text-white rounded text-[10px] font-bold"><Plus className="w-3 h-3" /></button>
+            </div>
+          </div>
+
+          {/* Card: Notes */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
+              <FileText className="w-4 h-4 text-amber-500" />
+              Catatan Internal
+            </h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {customerNotesList.length === 0 && <p className="text-[10px] text-slate-400 italic">Belum ada catatan</p>}
+              {customerNotesList.map((n) => (
+                <div key={n.id} className="bg-slate-50 border border-slate-100 rounded-lg p-2 text-[10px]">
+                  <p className="text-slate-700 whitespace-pre-wrap">{n.content}</p>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-slate-400">{n.createdBy}</span>
+                    <button onClick={() => { deleteCustomerNote(n.id); showToast("Catatan dihapus", "success"); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <textarea rows={2} value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Tulis catatan..." className="flex-1 px-2 py-1 border border-slate-200 rounded text-[10px] outline-none resize-none" />
+              <button onClick={handleAddNote} className="self-end px-2 py-1 bg-amber-500 text-white rounded text-[10px] font-bold"><Plus className="w-3 h-3" /></button>
+            </div>
+          </div>
+
+          {/* Card: Follow-Ups */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-500" />
+                Follow-Up
+              </h3>
+              <button onClick={() => setShowFollowUpForm(!showFollowUpForm)} className="text-[10px] font-bold text-cyan-600 hover:text-cyan-700">
+                {showFollowUpForm ? "Batal" : "+ Baru"}
+              </button>
+            </div>
+            {showFollowUpForm && (
+              <div className="space-y-2 text-[10px]">
+                <input type="text" value={followUpTitle} onChange={(e) => setFollowUpTitle(e.target.value)} placeholder="Judul follow-up" className="w-full px-2 py-1 border border-slate-200 rounded outline-none" />
+                <input type="date" value={followUpDueDate} onChange={(e) => setFollowUpDueDate(e.target.value)} className="w-full px-2 py-1 border border-slate-200 rounded outline-none" />
+                <textarea rows={2} value={followUpDescription} onChange={(e) => setFollowUpDescription(e.target.value)} placeholder="Deskripsi..." className="w-full px-2 py-1 border border-slate-200 rounded outline-none resize-none" />
+                <button onClick={handleAddFollowUp} className="w-full bg-cyan-500 text-white py-1 rounded font-bold">Simpan</button>
+              </div>
+            )}
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {customerFollowUps.length === 0 && <p className="text-[10px] text-slate-400 italic">Belum ada follow-up</p>}
+              {customerFollowUps.slice(0, 5).map((f) => (
+                <div key={f.id} className={`border rounded-lg p-2 text-[10px] ${f.status === "COMPLETED" ? "bg-emerald-50 border-emerald-200" : f.status === "PENDING" && new Date(f.dueDate) < new Date() ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">{f.title}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${f.status === "COMPLETED" ? "bg-emerald-100 text-emerald-700" : f.status === "PENDING" && new Date(f.dueDate) < new Date() ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-600"}`}>
+                      {f.status === "PENDING" && new Date(f.dueDate) < new Date() ? "OVERDUE" : f.status}
+                    </span>
+                  </div>
+                  <p className="text-slate-400 mt-0.5">Jatuh tempo: {f.dueDate}</p>
+                  {f.status === "PENDING" && (
+                    <button onClick={() => updateFollowUp(f.id, { status: "COMPLETED", completedAt: new Date().toISOString() })} className="mt-1 text-emerald-600 font-bold hover:underline">Tandai Selesai</button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
