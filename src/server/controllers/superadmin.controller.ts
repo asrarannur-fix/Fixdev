@@ -811,17 +811,19 @@ export async function registerTenant(req: Request, res: Response) {
       for (const [code, accountName, type] of coa) await client.query(`INSERT INTO coa_accounts (id,tenant_id,code,name,type,balance) VALUES ($1,$2,$3,$4,$5,0)`, [randomUUID(), tenantId, code, accountName, type]);
       const invitation = await client.query(
         `INSERT INTO tenant_invitations (tenant_id,email,name,token_hash,token_prefix,created_by,expires_at)
-         VALUES ($1,$2,$3,$4,$5,$6,now()+interval '48 hours')
+         VALUES ($1,$2,$3,$4,$5,(SELECT id FROM users WHERE id = $6),now()+interval '48 hours')
          RETURNING id,tenant_id AS "tenantId",email,name,expires_at AS "expiresAt"`,
         [tenantId, cleanOwnerEmail, cleanOwnerName, tokenHash, token.slice(0, 8), req.authActor?.userId],
       );
-      await dbQuery(`INSERT INTO billing_notification_outbox (event_key,tenant_id,channel,recipient,payload,status) VALUES ($1,$2,'INTERNAL',$3,$4::jsonb,'PENDING') ON CONFLICT(event_key,channel,recipient) DO NOTHING`, [`tenant_invitation:${invitation.rows[0].id}`, tenantId, cleanOwnerEmail, JSON.stringify({ type: "TENANT_INVITATION", invitationToken: token, tenantName: cleanName, ownerName: cleanOwnerName, expiresAt: invitation.rows[0].expiresAt })]);
+      await client.query(`INSERT INTO billing_notification_outbox (event_key,tenant_id,channel,recipient,payload,status) VALUES ($1,$2,'INTERNAL',$3,$4::jsonb,'PENDING') ON CONFLICT(event_key,channel,recipient) DO NOTHING`, [`tenant_invitation:${invitation.rows[0].id}`, tenantId, cleanOwnerEmail, JSON.stringify({ type: "TENANT_INVITATION", invitationToken: token, tenantName: cleanName, ownerName: cleanOwnerName, expiresAt: invitation.rows[0].expiresAt })]);
       await adminAudit(client, req, "TENANT_REGISTERED", "tenant", tenantId, tenantId, null, tenant.rows[0], { invitationId: invitation.rows[0].id, ownerEmail: cleanOwnerEmail });
       return { tenant: tenant.rows[0], branchId, invitation: invitation.rows[0] };
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
     const deliveryQueued = await sendInvitationEmail(cleanOwnerEmail, cleanOwnerName, cleanName, token, (result as any).invitation.expiresAt).catch((err) => { logger.warn({ err: err.message }, "Invitation email delivery failed; retained in outbox"); return false; });
-    return res.status(201).json({ success: true, ...result, delivery: deliveryQueued ? "EMAIL_SENT" : "OUTBOX_PENDING" });
+    // Return the full invitation token so automated flows (E2E, provisioning)
+    // can accept the owner invitation without reading email/outbox.
+    return res.status(201).json({ success: true, ...result, invitationToken: token, delivery: deliveryQueued ? "EMAIL_SENT" : "OUTBOX_PENDING" });
   } catch (err: any) {
     logger.error({ err: err.message }, "Tenant registration failed");
     return res.status(500).json({ error: "Registrasi tenant gagal." });

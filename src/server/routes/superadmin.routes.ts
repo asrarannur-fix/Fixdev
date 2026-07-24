@@ -38,6 +38,8 @@ import {
   updateTenantConfig,
   terminateSubscription,
   extendSubscription,
+  startConsoleSession,
+  endConsoleSession,
 } from "../controllers/superadmin.controller.js";
 
 const router = express.Router();
@@ -167,11 +169,16 @@ router.put(
   requireSuperAdminConsoleSession,
   updateRolePermissions,
 );
+router.get("/users", requireSuperAdminPermission("users:view_superadmin_users"), listSuperAdminUsers);
 router.put(
   "/users/:userId/role",
   requireSuperAdminPermission("users:assign_role"),
   requireSuperAdminConsoleSession,
   assignSuperAdminRole,
 );
+
+// Console-session lifecycle (start/end) must NOT require an active edit session itself.
+router.post("/console-session/start", requireSuperAdminPermission("platform:manage_console_session"), startConsoleSession);
+router.post("/console-session/:id/end", requireSuperAdminPermission("platform:manage_console_session"), endConsoleSession);
 
 export default router;
