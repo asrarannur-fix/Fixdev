@@ -75,22 +75,32 @@ export const validateBody = (schema: z.ZodSchema) => {
 
 export const getAccounts = async (req: any, res: any) => {
   const tenantId = req.tenantId;
-  const { type } = req.query;
+  const { type, limit: queryLimit, offset: queryOffset } = req.query;
+  const limit = parseInt(queryLimit as string) || 50;
+  const offset = parseInt(queryOffset as string) || 0;
 
   try {
     let sql = `SELECT id, tenant_id as "tenantId", code, name, type, is_group as "isGroup",
                       balance, created_at as "createdAt"
                FROM coa_accounts WHERE tenant_id = $1`;
     const params: any[] = [tenantId];
+    let idx = 2;
     if (type) {
-      sql += ` AND type = $2`;
+      sql += ` AND type = $${idx++}`;
       params.push((type as string).toUpperCase());
     }
-    sql += ` ORDER BY code ASC`;
+    const countSql = `SELECT COUNT(*) FROM coa_accounts WHERE tenant_id = $1 ${type ? `AND type = $2` : ''}`;
+    const countParams = type ? [tenantId, (type as string).toUpperCase()] : [tenantId];
+    const totalCountResult = await dbQuery(countSql, countParams);
+    const total = parseInt(totalCountResult.rows[0].count, 10);
+
+    sql += ` ORDER BY code ASC LIMIT $${idx++} OFFSET $${idx++}`;
+    params.push(limit, offset);
 
     const result = await dbQuery(sql, params);
-    res.json({ data: result.rows });
+    res.json({ data: result.rows, total, limit, offset });
   } catch (err: any) {
+    logger.error(`Error fetching accounts: ${err.message || err}`);
     res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
@@ -268,7 +278,9 @@ export const createJournalEntry = async (req: any, res: any) => {
 
 export const getJournalEntries = async (req: any, res: any) => {
   const tenantId = req.tenantId;
-  const { accountId, from, to, sourceType } = req.query;
+  const { accountId, from, to, sourceType, limit: queryLimit, offset: queryOffset } = req.query;
+  const limit = parseInt(queryLimit as string) || 50;
+  const offset = parseInt(queryOffset as string) || 0;
 
   try {
     const conditions: string[] = ["je.tenant_id = $1"];
@@ -277,9 +289,8 @@ export const getJournalEntries = async (req: any, res: any) => {
     let idx = 2;
 
     if (accountId) {
-      joinClause = "JOIN journal_lines jl ON jl.journal_entry_id = je.id AND jl.account_id = $2";
+      joinClause = `JOIN journal_lines jl ON jl.journal_entry_id = je.id AND jl.account_id = $${idx++}`;
       params.push(accountId);
-      idx = 3;
     }
 
     if (from) { conditions.push(`je.entry_date >= $${idx++}`); params.push(from); }
@@ -288,13 +299,17 @@ export const getJournalEntries = async (req: any, res: any) => {
 
     const where = conditions.join(" AND ");
 
+    const countSql = `SELECT COUNT(DISTINCT je.id) FROM journal_entries je ${joinClause} WHERE ${where}`;
+    const totalCountResult = await dbQuery(countSql, params);
+    const total = parseInt(totalCountResult.rows[0].count, 10);
+
     const entries = await dbQuery(
       `SELECT DISTINCT je.id, je.entry_date as "entryDate", je.description, je.reference_no as "refNo",
               je.source_type as "sourceType", je.is_posted as "isPosted", je.created_at as "createdAt"
        FROM journal_entries je ${joinClause}
        WHERE ${where}
-       ORDER BY je.entry_date DESC LIMIT 200`,
-      params,
+       ORDER BY je.entry_date DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      [...params, limit, offset],
     );
 
     // Attach lines to each entry for chart rendering
@@ -320,8 +335,9 @@ export const getJournalEntries = async (req: any, res: any) => {
       (entry as any).lines = linesMap[entry.id] || [];
     }
 
-    res.json({ data: entries.rows });
+    res.json({ data: entries.rows, total, limit, offset });
   } catch (err: any) {
+    logger.error(`Error fetching journal entries: ${err.message || err}`);
     res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
