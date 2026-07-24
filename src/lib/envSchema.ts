@@ -9,7 +9,7 @@ const serverEnvSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   ADMIN_TOKEN: z.string().min(16, 'ADMIN_TOKEN must be at least 16 characters'),
   ALLOW_DEV_API_TOKENS: z.coerce.boolean().default(false),
-  TENANT_ROOT_DOMAIN: z.string().url('TENANT_ROOT_DOMAIN must be a valid URL').optional(),
+  TENANT_ROOT_DOMAIN: z.string().optional(),
   ALLOWED_ORIGINS: z.string().optional(),
   DB_POOL_MAX: z.coerce.number().int().positive().default(20),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
@@ -29,7 +29,7 @@ const serverEnvSchema = z.object({
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   DISABLE_HMR: z.coerce.boolean().default(false),
   DOTENV_CONFIG_PATH: z.string().optional(),
-  EMAIL_HOST: z.string().url().optional(),
+  EMAIL_HOST: z.string().optional(),
   EMAIL_PORT: z.coerce.number().int().positive().optional(),
 });
 
