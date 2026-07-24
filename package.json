@@ -7,7 +7,7 @@
     "dev": "tsx server.ts",
     "test": "npm run test:unit && npm run test:security && npm run test:integration",
     "test:security": "vitest run --config vitest.security.config.ts",
-    "test:integration": "tsx --test tests/accounting.api.test.ts tests/accounting-pagination.test.ts tests/api-response.test.ts tests/billing-security.test.ts tests/billing-midtrans-webhook.test.ts tests/feature-gating.test.ts tests/finance-security.test.ts tests/response-transform.test.ts tests/service-reception-api.test.ts tests/service-reception-print-template.test.ts tests/service-reception-security.test.ts tests/service-reception-validation.test.ts tests/service-ticket-reception.test.ts tests/service-workflow.test.ts tests/settings-security.test.ts tests/superadmin-session-security.test.ts",
+    "test:integration": "tsx --test tests/accounting.api.test.ts tests/accounting-pagination.test.ts tests/api-response.test.ts tests/billing-security.test.ts tests/billing-midtrans-webhook.test.ts tests/feature-gating.test.ts tests/finance-security.test.ts tests/pos.api.test.ts tests/response-transform.test.ts tests/service-reception-api.test.ts tests/service-reception-print-template.test.ts tests/service-reception-security.test.ts tests/service-reception-validation.test.ts tests/service-ticket-reception.test.ts tests/service-workflow.test.ts tests/settings-security.test.ts tests/superadmin-session-security.test.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
@@ -18,7 +18,6 @@
     "test:unit": "vitest run",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:migrate:production": "DOTENV_CONFIG_PATH=/etc/fixdev/fixdev.production.env FIXDEV_PROFILE=production FIXDEV_DATABASE_NAME=fixdev tsx scripts/migrate.ts",
-    "test:integration-auth": "playwright test tests/superadmin-auth-integration.spec.ts",
     "validate": "npm run lint && npm run build",
     "preflight:production": "npm run lint && npm test && npm run build"
   },

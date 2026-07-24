@@ -30,6 +30,7 @@ screenshots-bukti/
 e2e-screenshots/
 e2e_*.png
 e2e_*.jpg
+debug_*.png
 **/C:/**
 
 # ── OS / editor junk ──
