@@ -1889,9 +1889,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!headers.has("X-Tenant-ID")) headers.set("X-Tenant-ID", currentTenantId);
       if (!headers.has("X-Branch-ID")) headers.set("X-Branch-ID", currentBranchId);
     }
+    const method = String(options.method || "GET").toUpperCase();
     try {
       const impersonationSession = JSON.parse(localStorage.getItem("saas_impersonation_session") || "null");
-      const method = String(options.method || "GET").toUpperCase();
       if (impersonationSession?.accessMode === "READ_ONLY" && !["GET", "HEAD", "OPTIONS"].includes(method)) {
         throw new Error("Sesi impersonasi hanya-baca. Aksi perubahan diblokir.");
       }
@@ -1901,6 +1901,18 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error: any) {
       if (error?.message === "Sesi impersonasi hanya-baca. Aksi perubahan diblokir.") throw error;
       localStorage.removeItem("saas_impersonation_session");
+    }
+    if (isControlPlaneEndpoint && !["GET", "HEAD", "OPTIONS"].includes(method)) {
+      try {
+        const superadminSession = JSON.parse(localStorage.getItem("saas_superadmin_session") || "null");
+        if (superadminSession?.id && superadminSession?.mode === "EDIT" && new Date(superadminSession.expiresAt).getTime() > Date.now()) {
+          if (!headers.has("X-SuperAdmin-Session-Id")) {
+            headers.set("X-SuperAdmin-Session-Id", superadminSession.id);
+          }
+        }
+      } catch {
+        localStorage.removeItem("saas_superadmin_session");
+      }
     }
     if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");

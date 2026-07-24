@@ -7,6 +7,8 @@ import { useConfirm } from "../ui/ConfirmDialog";
 import { useSaaS } from "../../context/SaaSContext";
 import { readJsonResponse } from "../../utils/apiResponse";
 
+const rupiah = (value: number) => `Rp ${Math.round(value).toLocaleString("id-ID")}`;
+
 interface TenantsManagerProps {
   tenants: Tenant[];
   products: any[];
@@ -60,6 +62,27 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   const { confirm } = useConfirm();
   const { apiFetch, refreshData } = useSaaS();
   const [isDeletingTenant, setIsDeletingTenant] = useState(false);
+  const [billingPlans, setBillingPlans] = useState<Record<string, { priceMonthly: number }>>({});
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await apiFetch("/api/billing/plans");
+        const data = await readJsonResponse<any>(response, "Paket billing");
+        const plansMap: Record<string, { priceMonthly: number }> = {};
+        (data.plans || []).forEach((plan: any) => {
+          plansMap[plan.tier] = { priceMonthly: plan.priceMonthly };
+        });
+        setBillingPlans(plansMap);
+      } catch {}
+    };
+    fetchPlans();
+  }, [apiFetch]);
+
+  const getTierPrice = (tier: string) => {
+    const plan = billingPlans[tier];
+    return plan ? rupiah(plan.priceMonthly) : "Rp 0";
+  };
 
   const deleteTenantPermanently = async (tenantId: string, tenantName: string) => {
     if (await confirm({
@@ -363,11 +386,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                         {t.tier}
                       </span>
                       <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-semibold">
-                        {t.tier === SubscriptionTier.ENTERPRISE
-                          ? "Rp 1.500.000 / bln"
-                          : t.tier === SubscriptionTier.PRO
-                            ? "Rp 250.000 / bln"
-                            : "Rp 100.000 / bln"}
+                        {getTierPrice(t.tier)} / bln
                       </p>
                     </td>
 

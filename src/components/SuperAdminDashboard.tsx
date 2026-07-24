@@ -50,7 +50,71 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
 
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
-  const readOnlyMode = false;
+
+  const [consoleSession, setConsoleSession] = useState<{ id: string; mode: string; expiresAt: string } | null>(null);
+  const readOnlyMode = consoleSession?.mode !== "EDIT";
+
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        const existing = JSON.parse(localStorage.getItem("saas_superadmin_session") || "null");
+        if (existing?.id && existing?.mode === "EDIT" && new Date(existing.expiresAt).getTime() > Date.now()) {
+          setConsoleSession(existing);
+          return;
+        }
+        const response = await apiFetch("/api/superadmin/console-session/start", {
+          method: "POST",
+          body: JSON.stringify({ mode: "EDIT", durationMinutes: 120 }),
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          if (data.code === "SUPERADMIN_SESSION_EXPIRED" || data.code === "SUPERADMIN_SESSION_REQUIRED") {
+            localStorage.removeItem("saas_superadmin_session");
+          }
+          setConsoleSession(null);
+          return;
+        }
+        const data = await response.json();
+        if (data.session) {
+          localStorage.setItem("saas_superadmin_session", JSON.stringify(data.session));
+          setConsoleSession(data.session);
+        }
+      } catch {
+        setConsoleSession(null);
+      }
+    };
+    initSession();
+    return () => {
+      const session = JSON.parse(localStorage.getItem("saas_superadmin_session") || "null");
+      if (session?.id) {
+        apiFetch(`/api/superadmin/console-session/${session.id}/end`, { method: "POST" }).catch(() => {});
+        localStorage.removeItem("saas_superadmin_session");
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!consoleSession?.id) return;
+    const interval = setInterval(async () => {
+      const existing = JSON.parse(localStorage.getItem("saas_superadmin_session") || "null");
+      if (!existing?.id || new Date(existing.expiresAt).getTime() <= Date.now() + 300000) {
+        try {
+          const response = await apiFetch("/api/superadmin/console-session/start", {
+            method: "POST",
+            body: JSON.stringify({ mode: "EDIT", durationMinutes: 120 }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.session) {
+              localStorage.setItem("saas_superadmin_session", JSON.stringify(data.session));
+              setConsoleSession(data.session);
+            }
+          }
+        } catch {}
+      }
+    }, 600000);
+    return () => clearInterval(interval);
+  }, [consoleSession?.id]);
 
   // Tenant Infrastructure Configuration States
   const [selectedTenantForConfig, setSelectedTenantForConfig] = useState<
@@ -72,6 +136,27 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
     TenantStatus.ACTIVE,
   );
   const [billingSubTab, setBillingSubTab] = useState("billing-plans");
+  const [billingPlans, setBillingPlans] = useState<Record<string, { priceMonthly: number }>>({});
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await apiFetch("/api/billing/plans");
+        const data = await response.json();
+        const plansMap: Record<string, { priceMonthly: number }> = {};
+        (data.plans || []).forEach((plan: any) => {
+          plansMap[plan.tier] = { priceMonthly: plan.priceMonthly };
+        });
+        setBillingPlans(plansMap);
+      } catch {}
+    };
+    fetchPlans();
+  }, [apiFetch]);
+
+  const getTierPrice = (tier: string) => {
+    const plan = billingPlans[tier];
+    return plan ? plan.priceMonthly : 0;
+  };
 
   // Global calculations
   const totalTenants = tenants.length;
@@ -87,9 +172,7 @@ export const SuperAdminDashboard: React.FC<{ activeTab?: string; onSetTab?: (tab
 
   const mrr = tenants.reduce((sum, t) => {
     if (t.status === TenantStatus.ACTIVE || t.status === TenantStatus.TRIAL) {
-      if (t.tier === SubscriptionTier.BASIC) return sum + 100000;
-      if (t.tier === SubscriptionTier.PRO) return sum + 250000;
-      if (t.tier === SubscriptionTier.ENTERPRISE) return sum + 1500000;
+      return sum + getTierPrice(t.tier || SubscriptionTier.BASIC);
     }
     return sum;
   }, 0);
