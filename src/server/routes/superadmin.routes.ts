@@ -16,6 +16,7 @@ import {
   createIncident,
   updateIncident,
   getTenantDetail,
+  getTenantOperationalSummary,
   listAudit,
   listBackupJobs,
   listInvitations,
@@ -50,6 +51,7 @@ router.get("/overview", requireSuperAdminPermission("overview:view"), getOvervie
 router.get("/tenants", requireSuperAdminPermission("tenants:view_all"), listTenants);
 router.get("/tenants/availability", requireSuperAdminPermission("tenants:manage_registration"), checkTenantAvailability);
 router.get("/tenants/:id", requireSuperAdminPermission("tenants:view_detail"), getTenantDetail);
+router.get("/tenants/:id/operational-summary", requireSuperAdminPermission("tenants:view_detail"), getTenantOperationalSummary);
 router.get("/tenants/:id/invitations", requireSuperAdminPermission("tenants:view_invitations"), listInvitations);
 router.get("/audit", requireSuperAdminPermission("audit:view_all"), listAudit);
 router.get("/backups", requireSuperAdminPermission("platform:view_backups"), listBackupJobs);

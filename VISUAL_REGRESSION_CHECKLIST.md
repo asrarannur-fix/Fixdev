@@ -28,6 +28,12 @@ Cek regresi visual sebelum rilis. Fokus pada konsistensi UI lintas modul.
 
 ## Catatan Perubahan Landing Page
 - Landing page diarahkan untuk konversi penyewa dengan hero bisnis, mockup dashboard orisinal, alur kerja, CTA, dan tampilan premium.
+
+## Catatan Perubahan Tata Letak (Layout) (2026-07-24)
+- Spacer sidebar diperbaiki dari `w-[84px]` menjadi `w-[64px]` agar sesuai lebar sidebar collapsed.
+- Canvas utama dibatasi `max-w-7xl mx-auto` agar konten tidak terlalu meregang di layar lebar.
+- `TenantDashboard` dihapus `min-h-screen bg-slate-50 dark:bg-zinc-900` (redundan dengan induk).
+- CSS hack `#dynamic-subtab-selector` dengan negative `margin-top` dihapus; layout spacing sekarang mengandalkan struktur container yang benar.
 - Modul kini menampilkan subfitur nyata Servis, POS, Inventory, Keuangan, HR, CRM, keamanan, WhatsApp, workflow, dan integrasi.
 - Paket dan harga dimuat dinamis dari endpoint `/api/billing/plans`; tidak ada hardcode paket di komponen.
 - Ditambahkan bagian testimoni pengguna bergaya lokal Makassar tanpa gambar atau aset eksternal.

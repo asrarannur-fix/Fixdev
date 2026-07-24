@@ -857,3 +857,61 @@ export async function createTenantInvitation(req: Request, res: Response) {
     res.status(500).json({ error: "Undangan tenant gagal dibuat." });
   }
 }
+
+export async function getTenantOperationalSummary(req: Request, res: Response) {
+  try {
+    const tenantId = req.params.id;
+    const [
+      serviceSummary,
+      posSummary,
+      inventorySummary,
+      accountingSummary,
+      hrSummary,
+      crmSummary,
+      supportSummary,
+      workflowSummary,
+    ] = await Promise.all([
+      dbQuery(`SELECT COUNT(*)::int AS open_tickets, COALESCE(SUM(estimated_cost),0)::numeric AS total_estimated_cost, COUNT(*) FILTER (WHERE warranty_expires_at IS NOT NULL AND warranty_expires_at >= now())::int AS active_warranties FROM service_tickets WHERE tenant_id=$1`, [tenantId]).catch(() => ({ rows: [{ open_tickets: 0, total_estimated_cost: 0, active_warranties: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*)::int AS transaction_count, COALESCE(SUM(grand_total),0)::numeric AS total_grand_total, COUNT(*) FILTER (WHERE void_reference_id IS NOT NULL)::int AS void_count FROM pos_transactions WHERE tenant_id=$1 AND created_at >= date_trunc('day', now())`, [tenantId]).catch(() => ({ rows: [{ transaction_count: 0, total_grand_total: 0, void_count: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*)::int AS total_products, COUNT(*) FILTER (WHERE quantity <= 0)::int AS out_of_stock, COUNT(*) FILTER (WHERE quantity <= reorder_point)::int AS low_stock FROM products WHERE tenant_id=$1`, [tenantId]).catch(() => ({ rows: [{ total_products: 0, out_of_stock: 0, low_stock: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*)::int AS journal_count, COUNT(*) FILTER (WHERE is_posted = true)::int AS posted_count, COALESCE(SUM(total_debit),0)::numeric AS total_debit, COALESCE(SUM(total_credit),0)::numeric AS total_credit FROM journal_entries WHERE tenant_id=$1 AND created_at >= date_trunc('month', now())`, [tenantId]).catch(() => ({ rows: [{ journal_count: 0, posted_count: 0, total_debit: 0, total_credit: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*)::int AS employee_count, COUNT(*) FILTER (WHERE status = 'ACTIVE')::int AS active_employees FROM employees WHERE tenant_id=$1`, [tenantId]).catch(() => ({ rows: [{ employee_count: 0, active_employees: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*)::int AS active_deals, COALESCE(SUM(value),0)::numeric AS pipeline_value FROM pipeline_deals WHERE tenant_id=$1 AND stage NOT IN ('WON','LOST')`, [tenantId]).catch(() => ({ rows: [{ active_deals: 0, pipeline_value: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*)::int AS open_tickets FROM support_tickets WHERE tenant_id=$1 AND status NOT IN ('CLOSED','RESOLVED')`, [tenantId]).catch(() => ({ rows: [{ open_tickets: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*)::int AS active_workflows, COUNT(*)::int AS executed_today FROM erp_workflows WHERE tenant_id=$1 AND created_at >= date_trunc('day', now())`, [tenantId]).catch(() => ({ rows: [{ active_workflows: 0, executed_today: 0 }] } as any)),
+    ]);
+
+    const modules = {
+      service: serviceSummary.rows[0],
+      pos: posSummary.rows[0],
+      inventory: inventorySummary.rows[0],
+      accounting: accountingSummary.rows[0],
+      hr: hrSummary.rows[0],
+      crm: crmSummary.rows[0],
+      support: supportSummary.rows[0],
+      workflow: workflowSummary.rows[0],
+    };
+
+    const alerts = [];
+    if ((modules.service.open_tickets || 0) > 0) alerts.push({ module: "SERVICE", label: "Tiket servis terbuka", count: modules.service.open_tickets });
+    if ((modules.pos.void_count || 0) > 0) alerts.push({ module: "POS", label: "Void nota hari ini", count: modules.pos.void_count });
+    if ((modules.inventory.out_of_stock || 0) > 0) alerts.push({ module: "INVENTORY", label: "Stok habis", count: modules.inventory.out_of_stock });
+    if ((modules.accounting.total_debit || 0) !== (modules.accounting.total_credit || 0)) alerts.push({ module: "ACCOUNTING", label: "Jurnal belum balance", count: 1 });
+    if ((modules.hr.employee_count || 0) === 0) alerts.push({ module: "HR", label: "Belum ada data karyawan", count: 1 });
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      tenantId,
+      modules,
+      alerts,
+      health: {
+        status: alerts.length === 0 ? "ok" : "warning",
+        moduleCount: Object.keys(modules).length,
+        alertCount: alerts.length,
+      },
+    });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId: req.params.id }, "Tenant operational summary failed");
+    res.status(500).json({ error: "Ringkasan operasional tenant gagal dimuat." });
+  }
+}

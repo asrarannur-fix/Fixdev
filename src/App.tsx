@@ -559,7 +559,7 @@ const MainAppContent: React.FC = () => {
 
         {/* Spacer for desktop sidebar when it's absolute */}
         {navigationMode !== "horizontal" && (
-          <div className="hidden lg:block w-[84px] shrink-0 border-r border-slate-200/65 dark:border-zinc-900" />
+          <div className="hidden lg:block w-[64px] shrink-0 border-r border-slate-200/65 dark:border-zinc-900" />
         )}
 
         {/* Main Content Pane */}
@@ -620,6 +620,7 @@ const MainAppContent: React.FC = () => {
             className="flex-1 overflow-y-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-24 lg:pb-6"
             id="canvas-main-area"
           >
+            <div className="mx-auto w-full max-w-7xl">
             <AppErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 {/* Render Super Admin Workspace */}
@@ -668,6 +669,7 @@ const MainAppContent: React.FC = () => {
                 )}
               </Suspense>
             </AppErrorBoundary>
+            </div>
           </main>
         </div>
 

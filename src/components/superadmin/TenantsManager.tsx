@@ -6,6 +6,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 
 import { useSaaS } from "../../context/SaaSContext";
 import { readJsonResponse } from "../../utils/apiResponse";
+import { fetchTenantOperationalSummary } from "../../services/superadminApi";
 
 const rupiah = (value: number) => `Rp ${Math.round(value).toLocaleString("id-ID")}`;
 
@@ -123,6 +124,8 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   const [detailTab, setDetailTab] = useState("summary");
   const [detailData, setDetailData] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [operationalSummary, setOperationalSummary] = useState<any>(null);
+  const [operationalLoading, setOperationalLoading] = useState(false);
 
   const manageInvitation = async (action: "revoke" | "resend", invitation?: any) => {
     if (!detailTenant) return;
@@ -143,18 +146,24 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   const openTenantDetail = async (tenant: Tenant) => {
     setDetailTenant(tenant);
     setDetailTab("summary");
+    setDetailData(null);
+    setOperationalSummary(null);
     setDetailLoading(true);
+    setOperationalLoading(true);
     try {
-      const [detailResponse, invitationResponse] = await Promise.all([
+      const [detailResponse, invitationResponse, operationalResponse] = await Promise.all([
         apiFetch(`/api/superadmin/tenants/${tenant.id}`),
         apiFetch(`/api/superadmin/tenants/${tenant.id}/invitations`),
+        fetchTenantOperationalSummary(apiFetch, tenant.id, readOnlyMode),
       ]);
       const detail = await readJsonResponse<any>(detailResponse, "Detail tenant");
       const invitation = await readJsonResponse<any>(invitationResponse, "Undangan tenant");
+      const operational = await readJsonResponse<any>(operationalResponse, "Ringkasan operasional tenant");
       setDetailData({ ...detail, invitations: invitation.invitations || [] });
+      setOperationalSummary(operational);
     } catch (error: any) {
       showToast(error.message, "error");
-    } finally { setDetailLoading(false); }
+    } finally { setDetailLoading(false); setOperationalLoading(false); }
   };
   const [newTenantName, setNewTenantName] = useState("");
   const [newOwnerName, setNewOwnerName] = useState("");
@@ -631,6 +640,34 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                       {detailTab === "infrastructure" && <dl className="grid gap-3 text-sm"><div><dt className="text-slate-500">Subdomain</dt><dd className="font-bold">{detailData.tenant.subdomain}</dd></div><div><dt className="text-slate-500">Storage aktual</dt><dd className="font-bold">{detailData.tenant.storageUsedBytes == null ? "Belum diukur" : `${Math.round(Number(detailData.tenant.storageUsedBytes)/1048576)} MB`}</dd></div></dl>}
               {detailTab === "features" && <div className="flex flex-wrap gap-2">{(detailData.tenant.settings?.limits?.features || detailTenant.limits?.features || []).map((feature:string)=><span key={feature} className="rounded-full bg-accent-lighter px-3 py-1 text-xs font-bold text-accent dark:bg-indigo-950/30 dark:text-indigo-300">{feature}</span>)}</div>}
               {detailTab === "audit" && <div className="space-y-2">{detailData.audit.map((event:any)=><div key={event.id} className="rounded-xl border border-slate-200 p-3 text-xs dark:border-zinc-800"><div className="flex justify-between"><b>{event.action}</b><span>{event.outcome}</span></div><p className="mt-1 text-slate-500">{new Date(event.createdAt).toLocaleString("id-ID")}</p></div>)}</div>}
+              {detailTab === "operational" && <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase text-slate-500">Kesehatan Modul</h4>
+                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${operationalSummary?.health.status === "ok" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"}`}>{operationalSummary ? operationalSummary.health.status.toUpperCase() : "-"} · {operationalSummary ? operationalSummary.health.alertCount : 0} alert</span>
+                </div>
+                {operationalLoading ? <p className="py-10 text-center text-sm text-slate-500">Memuat data operasional…</p> : operationalSummary ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {(Object.entries(operationalSummary.modules || {}) as any[]).map(([module, data]) => (
+                        <div key={module} className="rounded-xl border border-slate-200 p-3 text-xs dark:border-zinc-800">
+                          <p className="text-[10px] font-black text-slate-500">{module.toUpperCase()}</p>
+                          <p className="mt-1 font-black text-slate-900 dark:text-white">{(data as any).open_tickets != null ? `Tiket ${(data as any).open_tickets}` : JSON.stringify(data)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {operationalSummary.alerts?.length ? (
+                      <div className="space-y-2">
+                        {operationalSummary.alerts.map((alert:any, idx:number) => (
+                          <div key={idx} className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+                            <span className="font-bold">{alert.module}: {alert.label}</span>
+                            <span className="font-black">{alert.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="text-xs text-slate-500">Tidak ada alert operasional untuk tenant ini.</p>}
+                  </>
+                ) : <p className="py-10 text-center text-sm text-slate-500">Ringkasan operasional belum tersedia.</p>}
+              </div>}
             </>}</div>
           </section>
         </div>

@@ -52,3 +52,14 @@ export async function startSuperAdminImpersonation(
   });
   return readJsonResponse<{ success: true; session: ImpersonationSession }>(response, "Sesi impersonasi");
 }
+
+export async function fetchTenantOperationalSummary(
+  apiFetch: SuperAdminFetch,
+  tenantId: string,
+  readOnly: boolean,
+) {
+  const response = await apiFetch(`/api/superadmin/tenants/${tenantId}/operational-summary`, {
+    headers: { "X-SuperAdmin-Mode": readOnly ? "read-only" : "edit" },
+  });
+  return readJsonResponse<any>(response, "Ringkasan operasional tenant");
+}

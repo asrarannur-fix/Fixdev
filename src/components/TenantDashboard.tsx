@@ -230,7 +230,7 @@ export const TenantDashboard = ({
   }, [currentTenantId, currentBranchId, branches, tenants]);
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">
+    <div className="w-full text-slate-800 dark:text-zinc-100">
       <Suspense fallback={<LoadingFallback />}>
         {activeTab === "overview" && (
           <OwnerReports
