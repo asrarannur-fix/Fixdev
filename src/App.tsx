@@ -3,50 +3,48 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, Suspense } from "react";
-import { createPortal } from "react-dom";
-import { SaaSProvider, useSaaS } from "./context/SaaSContext";
-import { ToastProvider, useToast } from "./components/ui/Toast";
-import { ConfirmProvider, useConfirm } from "./components/ui/ConfirmDialog";
-import {
-  Sidebar,
-  Topbar,
-  CommandPalette,
-  HorizontalNavbar,
-  BottomNav,
-} from "./components/layout";
-import { UserRole } from "./types";
-import { OfflineSyncModal } from "./components/OfflineSyncModal";
-import { LandingPage } from "./components/LandingPage";
-import { InvitationAcceptance } from "./components/InvitationAcceptance";
+import React, { useState, Suspense } from 'react';
+import { createPortal } from 'react-dom';
+import { SaaSProvider, useSaaS } from './context/SaaSContext';
+import { ToastProvider, useToast } from './components/ui/Toast';
+import { ConfirmProvider, useConfirm } from './components/ui/ConfirmDialog';
+import { Sidebar, Topbar, CommandPalette, HorizontalNavbar, BottomNav } from './components/layout';
+import { UserRole } from './types';
+import { OfflineSyncModal } from './components/OfflineSyncModal';
+import { LandingPage } from './components/LandingPage';
+import { InvitationAcceptance } from './components/InvitationAcceptance';
 
-import { isTrialActive } from "./lib/featureUtils";
-import { ShieldCheck, Menu } from "lucide-react";
+import { isTrialActive } from './lib/featureUtils';
+import { ShieldCheck, Menu } from 'lucide-react';
 
 // Lazy-loaded components for optimal bundle chunking and code splitting
 const SuperAdminDashboard = React.lazy(() =>
-  import("./components/SuperAdminDashboard").then((module) => ({
+  import('./components/SuperAdminDashboard').then((module) => ({
     default: module.SuperAdminDashboard,
-  })),
+  }))
 );
 const TenantDashboard = React.lazy(() =>
-  import("./components/TenantDashboard").then((module) => ({
+  import('./components/TenantDashboard').then((module) => ({
     default: module.TenantDashboard,
-  })),
+  }))
 );
 const CustomerPortal = React.lazy(() =>
-  import("./components/CustomerPortal").then((module) => ({
+  import('./components/CustomerPortal').then((module) => ({
     default: module.CustomerPortal,
-  })),
+  }))
 );
 
 const PageLoader = () => (
-  <div
-    className="flex flex-col items-center justify-center h-64 space-y-3"
-    id="lazy-page-loader"
-  >
-    <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-    <p className="text-xs font-mono text-slate-400">Loading module...</p>
+  <div className="flex flex-col items-center justify-center h-64 space-y-4" id="lazy-page-loader">
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      <p className="text-sm font-mono text-slate-500 dark:text-zinc-400">Memuat...</p>
+    </div>
+    <div className="w-full max-w-xs space-y-2">
+      <div className="h-2 bg-slate-200 dark:bg-zinc-800 rounded-full animate-pulse" />
+      <div className="h-2 bg-slate-200 dark:bg-zinc-800 rounded-full animate-pulse w-3/4" />
+      <div className="h-2 bg-slate-200 dark:bg-zinc-800 rounded-full animate-pulse w-1/2" />
+    </div>
   </div>
 );
 
@@ -54,16 +52,16 @@ class AppErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null; componentStack: string }
 > {
-  state = { error: null, componentStack: "" };
+  state = { error: null, componentStack: '' };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("[FIXDEV_RUNTIME_ERROR]", error);
-    console.error("[FIXDEV_COMPONENT_STACK]", info.componentStack);
-    this.setState({ componentStack: info.componentStack || "" });
+    console.error('[FIXDEV_RUNTIME_ERROR]', error);
+    console.error('[FIXDEV_COMPONENT_STACK]', info.componentStack);
+    this.setState({ componentStack: info.componentStack || '' });
   }
 
   render() {
@@ -71,18 +69,18 @@ class AppErrorBoundary extends React.Component<
     return (
       <div className="min-h-[420px] rounded-3xl border border-rose-200 bg-rose-50 p-8 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-100">
         <h1 className="text-xl font-black">Modul gagal dimuat</h1>
-        <p className="mt-2 text-sm opacity-80">
-          Refresh halaman. Jika masih gagal, hubungi admin.
-        </p>
+        <p className="mt-2 text-sm opacity-80">Refresh halaman. Jika masih gagal, hubungi admin.</p>
         <pre className="mt-4 max-h-64 overflow-auto rounded-xl bg-white/70 p-4 text-xs dark:bg-black/30 whitespace-pre-wrap">
-          {process.env.NODE_ENV === "development" ? this.state.error.message : "Terjadi kesalahan internal."}
+          {process.env.NODE_ENV === 'development'
+            ? this.state.error.message
+            : 'Terjadi kesalahan internal.'}
         </pre>
-        {process.env.NODE_ENV === "development" && this.state.error.stack && (
+        {process.env.NODE_ENV === 'development' && this.state.error.stack && (
           <pre className="mt-2 max-h-48 overflow-auto rounded-xl bg-white/70 p-4 text-xs dark:bg-black/30 whitespace-pre-wrap text-rose-700 dark:text-rose-300">
             {this.state.error.stack}
           </pre>
         )}
-        {process.env.NODE_ENV === "development" && this.state.componentStack && (
+        {process.env.NODE_ENV === 'development' && this.state.componentStack && (
           <details className="mt-2">
             <summary className="cursor-pointer text-xs font-bold text-rose-700 dark:text-rose-300">
               Component Stack
@@ -99,7 +97,7 @@ class AppErrorBoundary extends React.Component<
 
 const MainAppContent: React.FC = () => {
   const [invitationToken, setInvitationToken] = useState(() =>
-    new URLSearchParams(window.location.search).get("invite"),
+    new URLSearchParams(window.location.search).get('invite')
   );
   const {
     currentUser,
@@ -114,52 +112,43 @@ const MainAppContent: React.FC = () => {
   } = useSaaS();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<string>(() => {
-    const saved = localStorage.getItem("saas_active_tab");
+    const saved = localStorage.getItem('saas_active_tab');
     if (saved) return saved;
-    return "overview";
+    return 'overview';
   });
   const [activeSubTab, setActiveSubTab] = useState<string>(() => {
-    const saved = localStorage.getItem("saas_active_sub_tab");
+    const saved = localStorage.getItem('saas_active_sub_tab');
     if (saved) return saved;
-    return "overview";
+    return 'overview';
   });
   const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] =
-    useState<boolean>(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const impersonatedTenant = tenants.find((t) => t.id === currentTenantId);
   const activeTenant = impersonatedTenant;
   const tenantDisplay = impersonatedTenant?.name ?? currentUser.name;
   const impersonationSession = React.useMemo(() => {
     try {
-      return JSON.parse(
-        localStorage.getItem("saas_impersonation_session") || "null",
-      );
+      return JSON.parse(localStorage.getItem('saas_impersonation_session') || 'null');
     } catch {
       return null;
     }
   }, [isImpersonating]);
   React.useEffect(() => {
     if (!isImpersonating || !impersonationSession?.expiresAt) return;
-    const remaining =
-      new Date(impersonationSession.expiresAt).getTime() - Date.now();
+    const remaining = new Date(impersonationSession.expiresAt).getTime() - Date.now();
     if (remaining <= 0) {
-      localStorage.removeItem("saas_impersonation_session");
+      localStorage.removeItem('saas_impersonation_session');
       exitImpersonate();
       return;
     }
     const timer = window.setTimeout(() => {
-      localStorage.removeItem("saas_impersonation_session");
+      localStorage.removeItem('saas_impersonation_session');
       exitImpersonate();
-      showToast("Sesi impersonasi telah berakhir otomatis.", "info");
+      showToast('Sesi impersonasi telah berakhir otomatis.', 'info');
     }, remaining);
     return () => window.clearTimeout(timer);
-  }, [
-    isImpersonating,
-    impersonationSession?.expiresAt,
-    exitImpersonate,
-    showToast,
-  ]);
+  }, [isImpersonating, impersonationSession?.expiresAt, exitImpersonate, showToast]);
 
   // 🛡️ Safety net: paksa sembunyikan loading indicator setelah 35 detik
   // Mencegah notifikasi stuck jika ada edge case yang tidak tertangani
@@ -170,9 +159,7 @@ const MainAppContent: React.FC = () => {
       return;
     }
     const safetyTimer = setTimeout(() => {
-      console.warn(
-        "[Safety] apiLoading masih aktif setelah 35 detik — paksa dismiss.",
-      );
+      console.warn('[Safety] apiLoading masih aktif setelah 35 detik — paksa dismiss.');
       setForceHideLoading(true);
     }, 35000);
     return () => clearTimeout(safetyTimer);
@@ -188,31 +175,31 @@ const MainAppContent: React.FC = () => {
 
     window.alert = (message: string) => {
       const msg = String(message).toLowerCase();
-      let type: "success" | "error" | "info" = "info";
+      let type: 'success' | 'error' | 'info' = 'info';
 
       if (
-        msg.includes("sukses") ||
-        msg.includes("berhasil") ||
-        msg.includes("success") ||
-        msg.includes("lunas") ||
-        msg.includes("disetujui") ||
-        msg.includes("verified") ||
-        msg.includes("tersimpan")
+        msg.includes('sukses') ||
+        msg.includes('berhasil') ||
+        msg.includes('success') ||
+        msg.includes('lunas') ||
+        msg.includes('disetujui') ||
+        msg.includes('verified') ||
+        msg.includes('tersimpan')
       ) {
-        type = "success";
+        type = 'success';
       } else if (
-        msg.includes("gagal") ||
-        msg.includes("error") ||
-        msg.includes("salah") ||
-        msg.includes("ditolak") ||
-        msg.includes("blocker") ||
-        msg.includes("kesalahan") ||
-        msg.includes("wajib") ||
-        msg.includes("mohon") ||
-        msg.includes("harap") ||
-        msg.includes("silakan")
+        msg.includes('gagal') ||
+        msg.includes('error') ||
+        msg.includes('salah') ||
+        msg.includes('ditolak') ||
+        msg.includes('blocker') ||
+        msg.includes('kesalahan') ||
+        msg.includes('wajib') ||
+        msg.includes('mohon') ||
+        msg.includes('harap') ||
+        msg.includes('silakan')
       ) {
-        type = "error";
+        type = 'error';
       }
 
       showToast(message, type);
@@ -221,10 +208,7 @@ const MainAppContent: React.FC = () => {
     const handleLiveNotification = (e: any) => {
       const detail = e.detail;
       if (detail && detail.text) {
-        showToast(
-          detail.title ? `${detail.title}: ${detail.text}` : detail.text,
-          "info",
-        );
+        showToast(detail.title ? `${detail.title}: ${detail.text}` : detail.text, 'info');
       }
     };
 
@@ -234,114 +218,107 @@ const MainAppContent: React.FC = () => {
       }
     };
 
-    window.addEventListener("live_notification", handleLiveNotification);
-    window.addEventListener("saas-toast" as any, handleCustomToast);
+    window.addEventListener('live_notification', handleLiveNotification);
+    window.addEventListener('saas-toast' as any, handleCustomToast);
 
     return () => {
       window.alert = originalAlert;
-      window.removeEventListener("live_notification", handleLiveNotification);
-      window.removeEventListener("saas-toast" as any, handleCustomToast);
+      window.removeEventListener('live_notification', handleLiveNotification);
+      window.removeEventListener('saas-toast' as any, handleCustomToast);
     };
   }, [showToast]);
 
-  const [navigationMode, setNavigationMode] = useState<
-    "sidebar" | "horizontal"
-  >(() => {
-    const stored = localStorage.getItem("fixflow-navigation-mode");
-    return stored === "horizontal" ? "horizontal" : "sidebar";
+  const [navigationMode, setNavigationMode] = useState<'sidebar' | 'horizontal'>(() => {
+    const stored = localStorage.getItem('fixflow-navigation-mode');
+    return stored === 'horizontal' ? 'horizontal' : 'sidebar';
   });
 
   React.useEffect(() => {
-    localStorage.setItem("fixflow-navigation-mode", navigationMode);
+    localStorage.setItem('fixflow-navigation-mode', navigationMode);
   }, [navigationMode]);
 
   // Global Keyboard Shortcut (Ctrl+K or Cmd+K) for Command Palette
   React.useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchOpen((prev) => !prev);
       }
     };
-    window.addEventListener("keydown", handleGlobalKeyDown);
-    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
   React.useEffect(() => {
     const handleSyncTrigger = () => {
       setShowSyncModal(true);
     };
-    window.addEventListener("saas-offline-restored", handleSyncTrigger);
+    window.addEventListener('saas-offline-restored', handleSyncTrigger);
     return () => {
-      window.removeEventListener("saas-offline-restored", handleSyncTrigger);
+      window.removeEventListener('saas-offline-restored', handleSyncTrigger);
     };
   }, []);
 
-
-
   // Allowed super admin tabs
   const SUPER_ADMIN_TABS = [
-    "saas-dashboard",
-    "saas-tenants",
-    "saas-billing",
-    "billing-management",
-    "saas-operations",
-    "saas-audits",
+    'saas-dashboard',
+    'saas-tenants',
+    'saas-billing',
+    'billing-management',
+    'saas-operations',
+    'saas-audits',
   ];
 
   const handleSetTab = (tab: string, subTab?: string) => {
     // Normalize SA clicks to safe known tab
     const finalTab =
-      isControlPlane &&
-      !SUPER_ADMIN_TABS.includes(tab) &&
-      tab !== "customer-portal"
-        ? "saas-dashboard"
+      isControlPlane && !SUPER_ADMIN_TABS.includes(tab) && tab !== 'customer-portal'
+        ? 'saas-dashboard'
         : tab;
     setActiveTab(finalTab);
-    localStorage.setItem("saas_active_tab", finalTab);
+    localStorage.setItem('saas_active_tab', finalTab);
     setIsMobileSidebarOpen(false);
     if (subTab) {
       setActiveSubTab(subTab);
-      localStorage.setItem("saas_active_sub_tab", subTab);
+      localStorage.setItem('saas_active_sub_tab', subTab);
     } else {
-      let finalSub = "overview";
-      if (finalTab === "overview") finalSub = "overview";
-      else if (finalTab === "services") finalSub = "list";
-      else if (finalTab === "pos") finalSub = "cashier";
-      else if (finalTab === "inventory") finalSub = "stock";
-      else if (finalTab === "accounting") finalSub = "coa";
-      else if (finalTab === "hr") finalSub = "attendance";
-      else if (finalTab === "crm") finalSub = "customers";
-      else if (finalTab === "settings")
-        finalSub = isControlPlane ? "storage" : "branding";
-      else if (finalTab === "fraud") finalSub = "audit-log";
-      else if (finalTab === "billing-management") finalSub = "billing-plans";
+      let finalSub = 'overview';
+      if (finalTab === 'overview') finalSub = 'overview';
+      else if (finalTab === 'services') finalSub = 'list';
+      else if (finalTab === 'pos') finalSub = 'cashier';
+      else if (finalTab === 'inventory') finalSub = 'stock';
+      else if (finalTab === 'accounting') finalSub = 'coa';
+      else if (finalTab === 'hr') finalSub = 'attendance';
+      else if (finalTab === 'crm') finalSub = 'customers';
+      else if (finalTab === 'settings') finalSub = isControlPlane ? 'storage' : 'branding';
+      else if (finalTab === 'fraud') finalSub = 'audit-log';
+      else if (finalTab === 'billing-management') finalSub = 'billing-plans';
 
       setActiveSubTab(finalSub);
-      localStorage.setItem("saas_active_sub_tab", finalSub);
+      localStorage.setItem('saas_active_sub_tab', finalSub);
     }
   };
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ticketParam = params.get("ticket");
-    const subParam = params.get("sub");
-    if (ticketParam && subParam !== "warranty-claim") {
-      setActiveTab("customer-portal");
-      setActiveSubTab("overview");
+    const ticketParam = params.get('ticket');
+    const subParam = params.get('sub');
+    if (ticketParam && subParam !== 'warranty-claim') {
+      setActiveTab('customer-portal');
+      setActiveSubTab('overview');
       return;
     }
 
-    const savedTab = localStorage.getItem("saas_active_tab");
-    const savedSubTab = localStorage.getItem("saas_active_sub_tab");
+    const savedTab = localStorage.getItem('saas_active_tab');
+    const savedSubTab = localStorage.getItem('saas_active_sub_tab');
     if (savedTab) {
       const isSaTab = SUPER_ADMIN_TABS.includes(savedTab);
-             if (isControlPlane && !isSaTab && savedTab !== "customer-portal") {
-        setActiveTab("saas-dashboard");
-        setActiveSubTab("dashboard");
+      if (isControlPlane && !isSaTab && savedTab !== 'customer-portal') {
+        setActiveTab('saas-dashboard');
+        setActiveSubTab('dashboard');
       } else if (isTenantWorkspace && isSaTab) {
-        setActiveTab("overview");
-        setActiveSubTab("overview");
+        setActiveTab('overview');
+        setActiveSubTab('overview');
       } else {
         setActiveTab(savedTab);
         if (savedSubTab) setActiveSubTab(savedSubTab);
@@ -349,26 +326,24 @@ const MainAppContent: React.FC = () => {
       }
     } else {
       if (isControlPlane) {
-        setActiveTab("saas-dashboard");
-        setActiveSubTab("dashboard");
+        setActiveTab('saas-dashboard');
+        setActiveSubTab('dashboard');
       } else {
-        setActiveTab("overview");
-        setActiveSubTab("overview");
+        setActiveTab('overview');
+        setActiveSubTab('overview');
       }
     }
   }, [currentUser.role]);
 
   const params = new URLSearchParams(window.location.search);
-  const isPublicTicketTrack = !!(
-    params.get("ticket") && params.get("sub") !== "warranty-claim"
-  );
+  const isPublicTicketTrack = !!(params.get('ticket') && params.get('sub') !== 'warranty-claim');
 
   if (invitationToken) {
     return (
       <InvitationAcceptance
         token={invitationToken}
         onComplete={() => {
-          window.history.replaceState({}, "", window.location.pathname);
+          window.history.replaceState({}, '', window.location.pathname);
           setInvitationToken(null);
         }}
       />
@@ -376,7 +351,7 @@ const MainAppContent: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    if (activeTab === "customer-portal") {
+    if (activeTab === 'customer-portal') {
       return (
         <div
           className="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-800 dark:text-slate-200"
@@ -387,19 +362,34 @@ const MainAppContent: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="bg-accent p-2 rounded-xl text-white shadow-md">
                 {activeTenant?.branding?.logoUrl ? (
-                  <img src={activeTenant.branding.logoUrl} alt="Logo" className="h-5 w-5" onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.nextElementSibling?.classList.remove('hidden');
-                  }} />
+                  <img
+                    src={activeTenant.branding.logoUrl}
+                    alt="Logo"
+                    className="h-5 w-5"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
                 ) : null}
-                <span className={`font-bold text-sm font-syne ${activeTenant?.branding?.logoUrl ? 'hidden' : ''}`}>
-                  {(activeTenant?.settings?.generalSettings?.appName || activeTenant?.name || "Toko").substring(0, 2).toUpperCase()}
+                <span
+                  className={`font-bold text-sm font-syne ${activeTenant?.branding?.logoUrl ? 'hidden' : ''}`}
+                >
+                  {(
+                    activeTenant?.settings?.generalSettings?.appName ||
+                    activeTenant?.name ||
+                    'Toko'
+                  )
+                    .substring(0, 2)
+                    .toUpperCase()}
                 </span>
               </div>
               <div>
                 <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-                  {activeTenant?.settings?.generalSettings?.appName?.trim() || activeTenant?.name || "Toko"}
+                  {activeTenant?.settings?.generalSettings?.appName?.trim() ||
+                    activeTenant?.name ||
+                    'Toko'}
                 </span>
                 <span className="text-[10px] text-slate-400 block -mt-1 font-mono">
                   Customer Portal
@@ -408,7 +398,7 @@ const MainAppContent: React.FC = () => {
             </div>
 
             <button
-              onClick={() => handleSetTab("overview")}
+              onClick={() => handleSetTab('overview')}
               className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md transition-all cursor-pointer hover:shadow-accent/10 active:scale-95 animate-pulse"
             >
               Masuk Sebagai Owner / Staff &rarr;
@@ -417,9 +407,7 @@ const MainAppContent: React.FC = () => {
 
           <main className="p-6">
             <Suspense fallback={<PageLoader />}>
-              <CustomerPortal
-                onBackToDashboard={() => handleSetTab("overview")}
-              />
+              <CustomerPortal onBackToDashboard={() => handleSetTab('overview')} />
             </Suspense>
           </main>
         </div>
@@ -436,7 +424,7 @@ const MainAppContent: React.FC = () => {
       {/* Impersonation Banner at the absolute top */}
       {/* Trial Banner */}
       {(() => {
-        const isTrial = activeTenant?.status === "TRIAL" && isTrialActive(activeTenant);
+        const isTrial = activeTenant?.status === 'TRIAL' && isTrialActive(activeTenant);
         if (!isTrial) return null;
         return (
           <div
@@ -445,12 +433,16 @@ const MainAppContent: React.FC = () => {
           >
             <ShieldCheck className="h-4 w-4" />
             <span>
-              Masa percobaan {Math.ceil((new Date(activeTenant.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} hari tersisa.
+              Masa percobaan{' '}
+              {Math.ceil(
+                (new Date(activeTenant.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+              )}{' '}
+              hari tersisa.
               <button
                 className="ml-2 underline font-bold"
                 onClick={() => {
-                  showToast("Redirecting to upgrade page...", "info");
-                  handleSetTab("settings", "subscription");
+                  showToast('Redirecting to upgrade page...', 'info');
+                  handleSetTab('settings', 'subscription');
                 }}
               >
                 Upgrade Sekarang!
@@ -467,50 +459,37 @@ const MainAppContent: React.FC = () => {
           id="impersonation-banner-top"
         >
           <div className="flex items-center gap-3">
-            <span className="p-1.5 bg-white/20 rounded-xl text-sm animate-pulse">
-              🕵️
-            </span>
+            <span className="p-1.5 bg-white/20 rounded-xl text-sm animate-pulse">🕵️</span>
             <div className="text-left">
               <p className="font-extrabold text-white text-xs flex items-center gap-1.5">
                 ⚡ Mode Impersonate (Bypass Aman) Aktif
               </p>
               <p className="text-white/80 text-[10px] font-normal leading-tight mt-0.5">
-                Anda saat ini mengakses sistem sebagai pemilik usaha{" "}
-                <strong className="text-white underline">
-                  {tenantDisplay}
-                </strong>
-                . Mode{" "}
+                Anda saat ini mengakses sistem sebagai pemilik usaha{' '}
+                <strong className="text-white underline">{tenantDisplay}</strong>. Mode{' '}
                 <strong>
-                  {impersonationSession?.accessMode === "FULL"
-                    ? "akses penuh"
-                    : "hanya-baca"}
+                  {impersonationSession?.accessMode === 'FULL' ? 'akses penuh' : 'hanya-baca'}
                 </strong>
                 {impersonationSession?.expiresAt && (
                   <>
-                    {" "}
-                    hingga{" "}
-                    {new Date(
-                      impersonationSession.expiresAt,
-                    ).toLocaleTimeString("id-ID")}
+                    {' '}
+                    hingga {new Date(impersonationSession.expiresAt).toLocaleTimeString('id-ID')}
                   </>
                 )}
-                . Semua aktivitas dicatat dengan alasan:{" "}
-                {impersonationSession?.reason || "dukungan operasional"}.
+                . Semua aktivitas dicatat dengan alasan:{' '}
+                {impersonationSession?.reason || 'dukungan operasional'}.
               </p>
             </div>
           </div>
           <button
             onClick={async () => {
               if (impersonationSession?.id) {
-                await apiFetch(
-                  `/api/superadmin/impersonation/${impersonationSession.id}/end`,
-                  {
-                    method: "POST",
-                    body: JSON.stringify({ reason: "USER_EXIT" }),
-                  },
-                ).catch(() => undefined);
+                await apiFetch(`/api/superadmin/impersonation/${impersonationSession.id}/end`, {
+                  method: 'POST',
+                  body: JSON.stringify({ reason: 'USER_EXIT' }),
+                }).catch(() => undefined);
               }
-              localStorage.removeItem("saas_impersonation_session");
+              localStorage.removeItem('saas_impersonation_session');
               exitImpersonate();
             }}
             className="px-4 py-2 bg-white text-amber-700 hover:bg-amber-50 rounded-xl transition-all font-black cursor-pointer hover:shadow-lg active:scale-95 text-[11px] shrink-0 shadow-sm"
@@ -528,7 +507,7 @@ const MainAppContent: React.FC = () => {
             id="api-loading-toast"
           >
             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-            <span>{apiStatus || "Sinkronisasi..."}</span>
+            <span>{apiStatus || 'Sinkronisasi...'}</span>
           </div>
         )}
 
@@ -540,11 +519,11 @@ const MainAppContent: React.FC = () => {
               className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs lg:hidden transition-opacity duration-300"
               id="sidebar-backdrop"
             />,
-            document.body,
+            document.body
           )}
 
         {/* Dynamic Navigation Sidebar */}
-        {(navigationMode === "sidebar" || isMobileSidebarOpen) && (
+        {(navigationMode === 'sidebar' || isMobileSidebarOpen) && (
           <Sidebar
             activeTab={activeTab}
             activeSubTab={activeSubTab}
@@ -558,7 +537,7 @@ const MainAppContent: React.FC = () => {
         )}
 
         {/* Spacer for desktop sidebar when it's absolute */}
-        {navigationMode !== "horizontal" && (
+        {navigationMode !== 'horizontal' && (
           <div className="hidden lg:block w-[64px] shrink-0 border-r border-slate-200/65 dark:border-zinc-900" />
         )}
 
@@ -571,9 +550,7 @@ const MainAppContent: React.FC = () => {
           <div className="hidden lg:block">
             <Topbar
               onSetTab={handleSetTab}
-              onToggleSidebar={() =>
-                setIsMobileSidebarOpen(!isMobileSidebarOpen)
-              }
+              onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
               onOpenSearch={() => setIsSearchOpen(true)}
               navigationMode={navigationMode}
               setNavigationMode={setNavigationMode}
@@ -601,9 +578,9 @@ const MainAppContent: React.FC = () => {
           )}
 
           {/* Top Horizontal Module & Subtab Navigation Ribbon */}
-          {navigationMode === "horizontal" &&
+          {navigationMode === 'horizontal' &&
             isTenantWorkspace &&
-            activeTab !== "customer-portal" && (
+            activeTab !== 'customer-portal' && (
               <HorizontalNavbar
                 activeTab={activeTab}
                 activeSubTab={activeSubTab}
@@ -621,63 +598,56 @@ const MainAppContent: React.FC = () => {
             id="canvas-main-area"
           >
             <div className="mx-auto w-full max-w-7xl">
-            <AppErrorBoundary>
-              <Suspense fallback={<PageLoader />}>
-                {/* Render Super Admin Workspace */}
-                {isControlPlane && (
-                  <div id="sa-view-wrapper">
-                    <SuperAdminDashboard
-                      activeTab={
-                        SUPER_ADMIN_TABS.includes(activeTab)
-                          ? activeTab
-                          : "saas-dashboard"
-                      }
-                      onSetTab={(tab, filter) => handleSetTab(tab, filter)}
-                    />
-                  </div>
-                )}
-
-                {/* Render Tenant ERP Workspace */}
-                {isTenantWorkspace && (
-                  <div id="tenant-view-wrapper">
-                    {(activeTab === "overview" ||
-                      activeTab === "services" ||
-                      activeTab === "pos" ||
-                      activeTab === "inventory" ||
-                      activeTab === "accounting" ||
-                      activeTab === "hr" ||
-                      activeTab === "crm" ||
-                      activeTab === "settings" ||
-                      activeTab === "fraud" ||
-                      activeTab === "data-explorer") && (
-                      <TenantDashboard
-                        activeTab={activeTab}
-                        activeSubTab={activeSubTab}
-                        setActiveSubTab={setActiveSubTab}
-                        onSetTab={handleSetTab}
-                        navigationMode={navigationMode}
+              <AppErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  {/* Render Super Admin Workspace */}
+                  {isControlPlane && (
+                    <div id="sa-view-wrapper">
+                      <SuperAdminDashboard
+                        activeTab={
+                          SUPER_ADMIN_TABS.includes(activeTab) ? activeTab : 'saas-dashboard'
+                        }
+                        onSetTab={(tab, filter) => handleSetTab(tab, filter)}
                       />
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
 
-                {/* Common Public/External Channels */}
-                {activeTab === "customer-portal" && (
-                  <CustomerPortal
-                    onBackToDashboard={() => handleSetTab("overview")}
-                  />
-                )}
-              </Suspense>
-            </AppErrorBoundary>
+                  {/* Render Tenant ERP Workspace */}
+                  {isTenantWorkspace && (
+                    <div id="tenant-view-wrapper">
+                      {(activeTab === 'overview' ||
+                        activeTab === 'services' ||
+                        activeTab === 'pos' ||
+                        activeTab === 'inventory' ||
+                        activeTab === 'accounting' ||
+                        activeTab === 'hr' ||
+                        activeTab === 'crm' ||
+                        activeTab === 'settings' ||
+                        activeTab === 'fraud' ||
+                        activeTab === 'data-explorer') && (
+                        <TenantDashboard
+                          activeTab={activeTab}
+                          activeSubTab={activeSubTab}
+                          setActiveSubTab={setActiveSubTab}
+                          onSetTab={handleSetTab}
+                          navigationMode={navigationMode}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Common Public/External Channels */}
+                  {activeTab === 'customer-portal' && (
+                    <CustomerPortal onBackToDashboard={() => handleSetTab('overview')} />
+                  )}
+                </Suspense>
+              </AppErrorBoundary>
             </div>
           </main>
         </div>
 
         {/* Offline Sync Modal Overlay */}
-        <OfflineSyncModal
-          isOpen={showSyncModal}
-          onClose={() => setShowSyncModal(false)}
-        />
+        <OfflineSyncModal isOpen={showSyncModal} onClose={() => setShowSyncModal(false)} />
 
         {/* Omni Command & Search Center Modal */}
         <CommandPalette
