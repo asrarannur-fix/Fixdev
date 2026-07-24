@@ -303,7 +303,7 @@ export const getSubscription = async (req: any, res: any) => {
         [tenantId],
       ),
       dbQuery(
-        `SELECT status, tier, trial_ends_at as "trialEndsAt", subscription_status as "subscriptionStatus"
+        `SELECT status, tier, trial_ends_at as "trialEndsAt"
          FROM tenants WHERE id = $1`,
         [tenantId],
       ),
@@ -314,6 +314,8 @@ export const getSubscription = async (req: any, res: any) => {
       status: tenant.rows[0]?.status,
       tier: tenant.rows[0]?.tier,
       trialEndsAt: tenant.rows[0]?.trialEndsAt,
+      isTrial: tenant.rows[0]?.status === "TRIAL",
+      canUpgradeNow: tenant.rows[0]?.status === "TRIAL",
       subscriptionStatus: tenant.rows[0]?.subscriptionStatus || (tenant.rows[0]?.status === "TRIAL" ? "TRIALING" : "ACTIVE"),
       invoices: invoices.rows,
       usage: usage.rows[0],
@@ -639,7 +641,7 @@ export const simulateTrialExpiryCron = async (_req: any, res: any) => {
   try {
     const expired = await dbQuery(
       `UPDATE tenants
-       SET status = 'EXPIRED'
+       SET status = 'EXPIRED', tier = 'BASIC'
        WHERE status = 'TRIAL'
          AND trial_ends_at < now()
        RETURNING id, name, trial_ends_at`,

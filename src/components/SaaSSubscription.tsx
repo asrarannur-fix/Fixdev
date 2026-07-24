@@ -1056,8 +1056,12 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                           : "bg-accent hover:bg-accent-hover text-white hover:shadow-lg hover:shadow-accent/20 shadow-md cursor-pointer"
                     }`}
                   >
-                    {isCurrent && activeTenant?.status === "ACTIVE" ? "Paket Sedang Aktif" : `Upgrade ke ${p.tier}`}{" "}
-                    {!isCurrent && <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                    {activeTenant?.status === "TRIAL"
+                      ? "Langganan Sekarang"
+                      : isCurrent && activeTenant?.status === "ACTIVE"
+                        ? "Paket Sedang Aktif"
+                        : `Upgrade ke ${p.tier}`}{" "}
+                    {activeTenant?.status !== "TRIAL" && !isCurrent && <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                   </button>
                 </div>
               );

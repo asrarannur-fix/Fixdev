@@ -801,7 +801,7 @@ export async function registerTenant(req: Request, res: Response) {
         `INSERT INTO tenants (id,name,subdomain,status,tier,trial_ends_at,settings,branding,registration_key,created_at)
          VALUES ($1,$2,$3,'TRIAL',$4,now()+interval '14 days',$5::jsonb,$6::jsonb,$7,now())
          RETURNING *`,
-        [tenantId, cleanName, cleanSubdomain, "BASIC",
+        [tenantId, cleanName, cleanSubdomain, "ENTERPRISE",
           JSON.stringify({ baseCurrency: "IDR", limits: planLimits["BASIC"], authSettings: { requireMfa: false, passwordPolicy: "medium" }, taxSettings: { taxEnabled: true, taxRate: 11, taxInclusive: false } }),
           JSON.stringify({ primaryColor: "#1e3a8a", accentColor: "#3b82f6", whiteLabelEnabled: true }), idempotencyKey],
       );
