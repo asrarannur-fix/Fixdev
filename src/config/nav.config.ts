@@ -35,6 +35,7 @@ import {
   ClipboardCheck,
   QrCode,
   Database,
+  Clock,
 } from "lucide-react";
 
 export interface NavSubTab {
@@ -143,6 +144,15 @@ export const OPERATIONAL_MODULES: NavModule[] = [
       { id: "payroll", label: "Payroll", icon: CreditCard },
       { id: "commission", label: "Komisi", icon: DollarSign },
       { id: "kasbon", label: "Kasbon", icon: CreditCard },
+      { id: "shifts", label: "Shift", icon: Clock },
+      { id: "overtime", label: "Lembur", icon: Clock },
+      { id: "contracts", label: "Kontrak", icon: ClipboardCheck },
+      { id: "documents", label: "Dokumen", icon: FileSpreadsheet },
+      { id: "performance", label: "Kinerja", icon: TrendingUp },
+      { id: "disciplinary", label: "SP & Disiplin", icon: AlertTriangle },
+      { id: "resignation", label: "Resign", icon: UserCheck },
+      { id: "export-attendance", label: "Export Absen", icon: FileSpreadsheet },
+      { id: "reports", label: "Laporan HR", icon: FileSpreadsheet },
     ],
   },
   {

@@ -3859,10 +3859,17 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         basicSalary: e.basicSalary,
         commissions: totalComm,
         allowances: 250000,
+        overtimePay: 0,
+        thrAmount: 0,
+        bpjsKesehatan: 0,
+        bpjsKetenagakerjaan: 0,
+        pph21: 0,
         deductions: totalDeductions,
+        kasbonDeduction: totalKasbon,
         netSalary: net,
         status: "PAID",
         paidAt: new Date().toISOString(),
+        breakdown: [],
       };
 
       setPayroll((prev) => [newPayroll, ...prev]);

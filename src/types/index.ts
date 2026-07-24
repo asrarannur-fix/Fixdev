@@ -24,6 +24,8 @@ export interface TenantLimits {
   users: number;
   branches: number;
   storageMb: number;
+  maxServiceTickets: number;
+  maxPosTransactions: number;
   features: string[]; // List of enabled modular features
 }
 
@@ -847,20 +849,127 @@ export interface Employee {
     status: "PENDING" | "APPROVED" | "REJECTED" | "PAID";
     approvedBy?: string;
   }[];
+  contractStartDate?: string;
+  contractEndDate?: string;
+  joinDate?: string;
+  address?: string;
+  gender?: "MALE" | "FEMALE";
+  dateOfBirth?: string;
+  npwp?: string;
+  bpjsKesehatanNo?: string;
+  bpjsKetenagakerjaanNo?: string;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  photoUrl?: string;
+  documents?: EmployeeDocument[];
+  overtimeHistory?: OvertimeRecord[];
+  disciplinaryActions?: DisciplinaryAction[];
+  trainingRecords?: TrainingRecord[];
+  resignations?: Resignation[];
+  performanceReviews?: PerformanceReview[];
+  status?: "ACTIVE" | "RESIGNED" | "TERMINATED" | "ON_LEAVE";
+  resignedAt?: string;
+  lastWorkingDate?: string;
+  exitInterviewNotes?: string;
+  settlementAmount?: number;
+}
+
+export interface EmployeeDocument {
+  id: string;
+  type: "KTP" | "SK" | "CONTRACT" | "CV" | "CERTIFICATE" | "OTHER";
+  name: string;
+  fileUrl: string;
+  uploadedAt: string;
+  expiresAt?: string;
+}
+
+export interface OvertimeRecord {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  hours: number;
+  rate: "1.5X" | "2X";
+  reason: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  approvedBy?: string;
+  totalAmount: number;
+}
+
+export interface DisciplinaryAction {
+  id: string;
+  date: string;
+  level: "SP1" | "SP2" | "SP3" | "WARNING" | "TERMINATION";
+  reason: string;
+  description: string;
+  issuedBy: string;
+  acknowledgedBy?: string;
+  attachments?: string[];
+}
+
+export interface TrainingRecord {
+  id: string;
+  title: string;
+  provider: string;
+  startDate: string;
+  endDate: string;
+  hours: number;
+  cost: number;
+  certificate?: string;
+  status: "PLANNED" | "ONGOING" | "COMPLETED";
+  notes?: string;
+}
+
+export interface Resignation {
+  id: string;
+  employeeId: string;
+  submittedAt: string;
+  lastWorkingDate: string;
+  reason: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  approvedBy?: string;
+  clearanceChecklist?: { item: string; cleared: boolean }[];
+  settlementAmount?: number;
+  exitInterviewNotes?: string;
+}
+
+export interface PerformanceReview {
+  id: string;
+  reviewDate: string;
+  period: string;
+  overallScore: number;
+  criteria: { name: string; score: number; weight: number }[];
+  reviewedBy: string;
+  comments?: string;
+  goals?: string[];
 }
 
 export interface Payroll {
   id: string;
   tenantId: string;
   employeeId: string;
-  monthYear: string; // e.g. "06-2026"
+  monthYear: string;
   basicSalary: number;
   commissions: number;
   allowances: number;
+  overtimePay: number;
+  thrAmount: number;
+  bpjsKesehatan: number;
+  bpjsKetenagakerjaan: number;
+  pph21: number;
   deductions: number;
+  kasbonDeduction: number;
   netSalary: number;
   status: "DRAFT" | "PAID";
   paidAt?: string;
+  breakdown?: {
+    label: string;
+    amount: number;
+    type: "INCOME" | "DEDUCTION";
+  }[];
 }
 
 export interface TechnicianCommission {

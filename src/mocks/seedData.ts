@@ -41,6 +41,8 @@ export const INITIAL_TENANTS: Tenant[] = [
       users: 50,
       branches: 10,
       storageMb: 10240,
+      maxServiceTickets: 1000000,
+      maxPosTransactions: 1000000,
       features: [
         "POS",
         "SERVICE",
@@ -90,6 +92,8 @@ export const INITIAL_TENANTS: Tenant[] = [
       users: 10,
       branches: 2,
       storageMb: 2048,
+      maxServiceTickets: 500,
+      maxPosTransactions: 2000,
       features: ["POS", "SERVICE", "ACCOUNTING"],
     },
     branding: {

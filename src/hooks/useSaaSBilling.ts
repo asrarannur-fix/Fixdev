@@ -12,6 +12,8 @@ export interface Plan {
     users: number;
     branches: number;
     storageMb: number;
+    maxServiceTickets: number;
+    maxPosTransactions: number;
     features: string[];
   };
 }
@@ -23,7 +25,7 @@ export const DEFAULT_PLANS: Plan[] = [
     priceMonthly: 99000,
     priceYearly: 990000,
     features: ["POS Kasir Utama", "Daftar Servis Dasar", "1 Gudang / Cabang", "Maks 3 Staff User", "Penyimpanan 500MB"],
-    limits: { users: 3, branches: 1, storageMb: 500, features: ["POS", "SERVICE"] },
+    limits: { users: 3, branches: 1, storageMb: 500, maxServiceTickets: 50, maxPosTransactions: 200, features: ["POS", "SERVICE"] },
   },
   {
     tier: SubscriptionTier.PRO,
@@ -31,7 +33,7 @@ export const DEFAULT_PLANS: Plan[] = [
     priceMonthly: 250000,
     priceYearly: 2400000,
     features: ["Semua Fitur Basic", "Double-Entry Accounting & Ledger", "WhatsApp Broadcast", "Multi-Branch & Cabang (Maks 5)", "Maks 15 Staff User", "Penyimpanan 2GB"],
-    limits: { users: 15, branches: 5, storageMb: 2048, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM"] },
+    limits: { users: 15, branches: 5, storageMb: 2048, maxServiceTickets: 500, maxPosTransactions: 2000, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM"] },
   },
   {
     tier: SubscriptionTier.ENTERPRISE,
@@ -39,7 +41,7 @@ export const DEFAULT_PLANS: Plan[] = [
     priceMonthly: 1500000,
     priceYearly: 15000000,
     features: ["Semua Fitur Pro", "Integrasi Marketplace Sync", "Workflow Builder (Automasi)", "Proteksi Keamanan & Fraud Detector", "Hingga 20 Cabang", "Hingga 100 Staff User", "Penyimpanan 10GB", "Custom Domain & White-Label"],
-    limits: { users: 100, branches: 20, storageMb: 10240, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "MARKETPLACE", "RENTAL", "SECURITY"] },
+    limits: { users: 100, branches: 20, storageMb: 10240, maxServiceTickets: 1000000, maxPosTransactions: 1000000, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "MARKETPLACE", "RENTAL", "SECURITY"] },
   },
 ];
 

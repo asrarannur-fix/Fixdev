@@ -39,7 +39,9 @@ interface Tenant {
 export function isTrialActive(tenant: Tenant): boolean {
   if (tenant.status !== "TRIAL") return false;
   const ends = tenant.trialEndsAt;
-  if (!ends) return false;
+  // A TRIAL tenant without an explicit end date is treated as actively
+  // trialing (all features unlocked). Only an explicit past end date expires it.
+  if (!ends) return true;
   return new Date(ends) > new Date();
 }
 

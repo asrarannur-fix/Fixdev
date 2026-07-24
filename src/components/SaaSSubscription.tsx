@@ -45,6 +45,8 @@ interface Plan {
     users: number;
     branches: number;
     storageMb: number;
+    maxServiceTickets: number;
+    maxPosTransactions: number;
     features: string[];
   };
 }
@@ -222,6 +224,8 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
   const [configPlanUserLimit, setConfigPlanUserLimit] = useState(3);
   const [configPlanBranchLimit, setConfigPlanBranchLimit] = useState(1);
   const [configPlanStorageLimitMb, setConfigPlanStorageLimitMb] = useState(500);
+  const [configPlanMaxServiceTickets, setConfigPlanMaxServiceTickets] = useState(50);
+  const [configPlanMaxPosTransactions, setConfigPlanMaxPosTransactions] = useState(200);
   const [configPlanFeatures, setConfigPlanFeatures] = useState<string[]>([]);
   const [configPlanBulletText, setConfigPlanBulletText] = useState("");
   const [planSuccess, setPlanSuccess] = useState("");
@@ -367,6 +371,8 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
         setConfigPlanUserLimit(selectedPlanData.limits?.users || 3);
         setConfigPlanBranchLimit(selectedPlanData.limits?.branches || 1);
         setConfigPlanStorageLimitMb(selectedPlanData.limits?.storageMb || 500);
+        setConfigPlanMaxServiceTickets(selectedPlanData.limits?.maxServiceTickets || 50);
+        setConfigPlanMaxPosTransactions(selectedPlanData.limits?.maxPosTransactions || 200);
         setConfigPlanFeatures(selectedPlanData.limits?.features || []);
         setConfigPlanBulletText(
           selectedPlanData.features ? selectedPlanData.features.join("\n") : "",
@@ -391,6 +397,8 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
       const safeUsers = Math.max(1, Math.floor(Number(configPlanUserLimit) || 1));
       const safeBranches = Math.max(1, Math.floor(Number(configPlanBranchLimit) || 1));
       const safeStorage = Math.max(1, Math.floor(Number(configPlanStorageLimitMb) || 1));
+      const safeServiceTickets = Math.max(0, Math.floor(Number(configPlanMaxServiceTickets) || 0));
+      const safePosTransactions = Math.max(0, Math.floor(Number(configPlanMaxPosTransactions) || 0));
       const cleanPlanName = configPlanName.trim();
 
       const updatedPlans = plans.map((p) => {
@@ -408,6 +416,8 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
               users: safeUsers,
               branches: safeBranches,
               storageMb: safeStorage,
+              maxServiceTickets: safeServiceTickets,
+              maxPosTransactions: safePosTransactions,
               features: configPlanFeatures,
             },
           };
@@ -1008,6 +1018,12 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       <div className="flex items-center gap-1">
                         🏢 <span>Cabang: <strong className="text-slate-900 dark:text-white">Maks {p.limits.branches}</strong></span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        🎫 <span>Tiket Servis: <strong className="text-slate-900 dark:text-white">Maks {p.limits.maxServiceTickets}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        🛒 <span>Transaksi POS: <strong className="text-slate-900 dark:text-white">Maks {p.limits.maxPosTransactions}</strong></span>
+                      </div>
                       <div className="col-span-2 flex items-center gap-1">
                         📂 <span>Cloud Space:{" "}
                         <strong className="text-slate-900 dark:text-white">
@@ -1300,6 +1316,38 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                   value={configPlanStorageLimitMb}
                   onChange={(e) =>
                     setConfigPlanStorageLimitMb(Number(e.target.value))
+                  }
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1">
+                  Maksimum Tiket Servis / Bulan
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={configPlanMaxServiceTickets}
+                  onChange={(e) =>
+                    setConfigPlanMaxServiceTickets(Number(e.target.value))
+                  }
+                  className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1">
+                  Maksimum Transaksi POS / Bulan
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={configPlanMaxPosTransactions}
+                  onChange={(e) =>
+                    setConfigPlanMaxPosTransactions(Number(e.target.value))
                   }
                   className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold text-slate-800 dark:text-zinc-200 outline-none focus:border-accent transition-colors"
                 />
