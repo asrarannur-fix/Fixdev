@@ -502,7 +502,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                           <Settings2 className="w-3.5 h-3.5" /> Limit & Fitur
                         </button>
                         <button
-                          onClick={() => deleteTenantPermanently(tenant.id, tenant.name)}
+                          onClick={() => deleteTenantPermanently(t.id, t.name)}
                           disabled={isDeletingTenant}
                           className="flex items-center justify-center gap-1.5 bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200/50 dark:border-red-900/30 px-2.5 py-1.5 rounded-lg text-[10px] font-black cursor-pointer transition-all w-full shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Hapus permanen tenant dan semua datanya. TIDAK BISA DIBATALKAN."
