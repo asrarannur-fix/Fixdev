@@ -9,6 +9,14 @@ dotenv.config({
   path: process.env.DOTENV_CONFIG_PATH || ".env",
   override: true,
 });
+import { validateEnv } from "./src/lib/envSchema.js";
+
+try {
+  validateEnv();
+} catch (err: any) {
+  console.error(`[ENV_VALIDATION] ${err.message}`);
+  process.exit(1);
+}
 import http from "http";
 import express from "express";
 import path from "path";
@@ -150,6 +158,25 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Tenant-ID,X-Branch-ID,X-SuperAdmin-Mode,X-SuperAdmin-Permissions,X-SuperAdmin-Session-Id,X-Impersonation-Session-Id,x-admin-token");
   if (req.method === "OPTIONS") return origin && !allowedOrigins.includes(origin) ? res.sendStatus(403) : res.sendStatus(204);
+  next();
+});
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    logger.info(
+      {
+        method: req.method,
+        path: req.url,
+        status: res.statusCode,
+        durationMs: duration,
+        ip: req.ip,
+        userAgent: req.get("user-agent"),
+      },
+      "request",
+    );
+  });
   next();
 });
 
