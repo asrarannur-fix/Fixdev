@@ -54,3 +54,7 @@ delete_tenant_2_clean.sql
 scripts/build_out*.txt
 scripts/err.json
 src/mocks/sed*
+
+# TypeScript build artifacts
+*.tsbuildinfo
+*.map
