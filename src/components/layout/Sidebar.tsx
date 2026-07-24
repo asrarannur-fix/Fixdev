@@ -689,23 +689,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           </div>
 
+          {/* Branch Switcher — always visible (desktop + mobile) */}
+          {currentUser.role !== UserRole.SUPER_ADMIN && tenantBranches.length > 0 && (
+            <div className="flex items-center gap-2 bg-slate-100/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-zinc-800 rounded-xl px-3 py-2 lg:border-t lg:border-slate-200/40 lg:dark:border-zinc-900 lg:rounded-none lg:bg-white lg:dark:bg-zinc-900/20 lg:px-3 lg:py-3 shrink-0">
+              <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+              <select
+                value={currentBranchId}
+                onChange={(e) => switchBranch(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+                aria-label="Ganti cabang"
+              >
+                {tenantBranches.map((b: any) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Mobile Account & System Controls */}
           <div className="lg:hidden border-t border-slate-200/40 dark:border-zinc-900 p-3 space-y-2.5 bg-white dark:bg-zinc-900/20 shrink-0">
-            {currentUser.role !== UserRole.SUPER_ADMIN && tenantBranches.length > 0 && (
-              <div className="flex items-center gap-2 bg-slate-100/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-zinc-800 rounded-xl px-3 py-2">
-                <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={currentBranchId}
-                  onChange={(e) => switchBranch(e.target.value)}
-                  className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
-                  aria-label="Ganti cabang"
-                >
-                  {tenantBranches.map((b: any) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleTheme}
