@@ -35,6 +35,12 @@ const tenantConfigSchema = z.object({
   tier: z.enum(["BASIC", "PRO", "ENTERPRISE"]).optional(),
   branding: z.object({ customDomain: z.string().trim().toLowerCase().max(253).optional() }).strict().optional(),
   storageSettings: z.object({ mode: z.string().trim().min(1).max(50), bucketName: z.string().trim().max(255) }).strict().optional(),
+  limits: z.object({
+    users: z.number().int().positive().optional(),
+    branches: z.number().int().positive().optional(),
+    storageMb: z.number().positive().optional(),
+    features: z.array(z.string()).optional(),
+  }).optional(),
 }).strict();
 
 const allowedSorts: Record<string, string> = {
@@ -467,7 +473,7 @@ export async function createIncident(req: Request, res: Response) {
   try {
     const result = await dbTransaction(async (client) => {
       const row = await client.query(`INSERT INTO platform_incidents(component,severity,status,title,details) VALUES ($1,$2,'OPEN',$3,$4) RETURNING *`, [component.trim(), severity, title.trim(), details || null]);
-      await client.query(`INSERT INTO platform_incident_events(incident_id,event_type,note,actor_user_id) VALUES ($1,$2,$3,$4)`, [row.rows[0].id, details || null, req.authActor?.userId]);
+      await client.query(`INSERT INTO platform_incident_events(incident_id,event_type,note,actor_user_id) VALUES ($1,'CREATED',$2,$3)`, [row.rows[0].id, details || null, req.authActor?.userId]);
       await adminAudit(client, req, "INCIDENT_CREATED", "platform_incident", row.rows[0].id, null, null, row.rows[0]);
       return { incident: row.rows[0] };
     });
@@ -801,8 +807,8 @@ export async function registerTenant(req: Request, res: Response) {
         `INSERT INTO tenants (id,name,subdomain,status,tier,trial_ends_at,settings,branding,registration_key,created_at)
          VALUES ($1,$2,$3,'TRIAL',$4,now()+interval '14 days',$5::jsonb,$6::jsonb,$7,now())
          RETURNING *`,
-        [tenantId, cleanName, cleanSubdomain, "ENTERPRISE",
-          JSON.stringify({ baseCurrency: "IDR", limits: planLimits["BASIC"], authSettings: { requireMfa: false, passwordPolicy: "medium" }, taxSettings: { taxEnabled: true, taxRate: 11, taxInclusive: false } }),
+        [tenantId, cleanName, cleanSubdomain, tier,
+          JSON.stringify({ baseCurrency: "IDR", limits: planLimits[tier as keyof typeof planLimits] || planLimits["BASIC"], authSettings: { requireMfa: false, passwordPolicy: "medium" }, taxSettings: { taxEnabled: true, taxRate: 11, taxInclusive: false } }),
           JSON.stringify({ primaryColor: "#1e3a8a", accentColor: "#3b82f6", whiteLabelEnabled: true }), idempotencyKey],
       );
       await client.query(`INSERT INTO branches (id,tenant_id,name,address,phone,is_active,created_at) VALUES ($1,$2,$3,$4,'',true,now())`, [branchId, tenantId, `Cabang Utama ${cleanName}`, `Alamat Utama ${cleanName}`]);

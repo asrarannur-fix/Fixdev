@@ -169,7 +169,6 @@ router.put(
   requireSuperAdminConsoleSession,
   updateRolePermissions,
 );
-router.get("/users", requireSuperAdminPermission("users:view_superadmin_users"), listSuperAdminUsers);
 router.put(
   "/users/:userId/role",
   requireSuperAdminPermission("users:assign_role"),

@@ -2230,6 +2230,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
           subdomain: updates.subdomain,
           status: updates.status,
           tier: updates.tier,
+          limits: updates.limits,
           branding: updates.branding ? { customDomain: updates.branding.customDomain } : undefined,
           storageSettings: (updates.settings as any)?.storageSettings,
         }),

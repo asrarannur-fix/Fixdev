@@ -275,7 +275,8 @@ export const requireTenantOrSuperAdminPermission = (permission: string, allowPla
 
   const requestedTenant = String(
     req.headers["x-tenant-id"] ||
-    req.query.tenantId || req.query.tenant_id || "",
+    req.query.tenantId || req.query.tenant_id ||
+    req.body?.tenantId || "",
   ).trim();
   if (!requestedTenant && !allowPlatformScope) return res.status(400).json({ error: "tenantId is required." });
 
