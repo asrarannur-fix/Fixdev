@@ -21,7 +21,7 @@ import { LandingPage } from "./components/LandingPage";
 import { InvitationAcceptance } from "./components/InvitationAcceptance";
 
 import { isTrialActive } from "./lib/featureUtils";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Menu } from "lucide-react";
 
 // Lazy-loaded components for optimal bundle chunking and code splitting
 const SuperAdminDashboard = React.lazy(() =>
@@ -284,6 +284,7 @@ const MainAppContent: React.FC = () => {
     "saas-dashboard",
     "saas-tenants",
     "saas-billing",
+    "billing-management",
     "saas-operations",
     "saas-audits",
   ];
@@ -314,6 +315,7 @@ const MainAppContent: React.FC = () => {
       else if (finalTab === "settings")
         finalSub = isControlPlane ? "storage" : "branding";
       else if (finalTab === "fraud") finalSub = "audit-log";
+      else if (finalTab === "billing-management") finalSub = "billing-plans";
 
       setActiveSubTab(finalSub);
       localStorage.setItem("saas_active_sub_tab", finalSub);
@@ -579,6 +581,16 @@ const MainAppContent: React.FC = () => {
               activeSubTab={activeSubTab}
             />
           </div>
+
+          {isControlPlane && (
+            <button
+              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+              className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800/70 rounded-2xl shadow-lg shadow-slate-900/10 text-slate-700 dark:text-slate-200 cursor-pointer active:scale-95 transition-all"
+              aria-label="Buka menu Super Admin"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
 
           {isTenantWorkspace && (
             <BottomNav
