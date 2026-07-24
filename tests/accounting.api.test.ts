@@ -97,9 +97,20 @@ test("createCashTxSchema: accepts valid CASH_IN", () => {
     type: "CASH_IN",
     amount: 1_000_000,
     description: "Setoran modal",
+    refNo: "CASH-IN-001",
     toAccountId: "a1b2c3d4-0000-4000-8000-000000000000",
   });
   assert.equal(result.success, true);
+});
+
+test("createCashTxSchema: rejects missing refNo", () => {
+  const result = createCashTxSchema.safeParse({
+    type: "CASH_IN",
+    amount: 1_000_000,
+    description: "Setoran modal",
+    toAccountId: "a1b2c3d4-0000-4000-8000-000000000000",
+  });
+  assert.equal(result.success, false);
 });
 
 test("createCashTxSchema: rejects zero amount", () => {

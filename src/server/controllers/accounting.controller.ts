@@ -42,9 +42,10 @@ export const createCashTxSchema = z.object({
   type: z.enum(["CASH_IN", "CASH_OUT"]),
   amount: z.number().positive({ message: "Jumlah harus lebih dari 0." }),
   description: z.string().min(1).max(500),
-  refNo: z.string().max(100).optional().nullable(),
+  refNo: z.string().min(3, { message: "Nomor referensi wajib diisi (min 3 karakter)." }).max(100),
   toAccountId: z.string().uuid().optional().nullable(), // for CASH_IN
   fromAccountId: z.string().uuid().optional().nullable(), // for CASH_OUT
+  sourceType: z.string().max(50).optional().default("CASH_TX"),
 });
 
 export const validateBody = (schema: z.ZodSchema) => {
@@ -324,7 +325,6 @@ export const getJournalEntries = async (req: any, res: any) => {
     res.status(500).json({ error: "Operasi akuntansi gagal diproses." });
   }
 };
-
 // ──────────────────────────────────────────
 // 6. GET JOURNAL ENTRY BY ID (with lines)
 // ──────────────────────────────────────────

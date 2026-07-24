@@ -2098,6 +2098,16 @@ export default function SaaSSubscription({ readOnlyMode = false, section = "all"
                       : "NONAKTIF"}
                   </span>
                 </div>
+                {(detailModalInvoice as any).prorationNotes && (
+                  <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 p-2.5 rounded-lg">
+                    <p className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 mb-1 flex items-center gap-1.5">
+                      <RefreshCw className="w-3 h-3" /> Penyesuaian Pro-rata
+                    </p>
+                    <p className="text-[11px] text-indigo-900 dark:text-indigo-200 leading-relaxed italic">
+                      {(detailModalInvoice as any).prorationNotes}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between items-baseline pt-2 text-sm md:text-base">

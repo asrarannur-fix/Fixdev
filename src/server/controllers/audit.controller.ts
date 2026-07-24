@@ -1,11 +1,3 @@
-/**
- * Audit Controller — DB-backed (Postgres).
- * Replaces the previous in-memory array which was lost on every restart.
- *
- * Table expected (already in postgresql-schema.sql):
- *   audit_logs(id, timestamp, endpoint, method, tenant_id, branch_id,
- *              is_valid_tenant, is_valid_branch, verified, client_ip)
- */
 import type { Request, Response, NextFunction } from "express";
 import { dbQuery } from "../../lib/db.js";
 import { logger } from "../../lib/logger.js";
@@ -81,6 +73,25 @@ export const auditMiddleware = async (
 
   next();
 };
+
+// New function for tenant-specific audit events
+export async function recordAuditEvent(
+  tenantId: string,
+  userId: string | null,
+  action: string,
+  details: string,
+  metadata: Record<string, unknown> = {},
+) {
+  try {
+    await dbQuery(
+      `INSERT INTO audit_logs (id, tenant_id, user_id, action, details, metadata, created_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5::jsonb, now())`,
+      [tenantId, userId, action, details, JSON.stringify(metadata)],
+    );
+  } catch (err: any) {
+    logger.warn({ err: err.message, tenantId, userId, action }, "[audit] Failed to persist audit event");
+  }
+}
 
 // ---------------------------------------------------------------------------
 // GET /api/admin/audit-trail

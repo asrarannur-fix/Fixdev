@@ -44,8 +44,6 @@ CREATE TABLE IF NOT EXISTS journal_entries (
     branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
     entry_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     description TEXT NOT NULL,
-    -- Legacy compatibility only; new code must use reference_no.
-    ref_no TEXT,
     reference_no TEXT NOT NULL,
     source_type TEXT, -- e.g. 'POS_SALE', 'SERVICE_PAYMENT', 'PURCHASE', 'MANUAL'
     source_id UUID,

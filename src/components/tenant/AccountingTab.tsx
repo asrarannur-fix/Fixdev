@@ -62,7 +62,30 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
 
   // UI state
   const [financeActiveTab, setFinanceActiveTab] = useState<string>("laba-rugi");
-  const [selectedFinanceMonth, setSelectedFinanceMonth] = useState("05-2024");
+  
+  const currentMonthYear = React.useMemo(() => {
+    const d = new Date();
+    return `${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getFullYear()}`;
+  }, []);
+
+  const [selectedFinanceMonth, setSelectedFinanceMonth] = useState(currentMonthYear);
+
+  const last6Months = React.useMemo(() => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const result = [];
+    const d = new Date();
+    for (let i = 0; i < 6; i++) {
+      const m = d.getMonth();
+      const y = d.getFullYear();
+      result.push({
+        label: `${months[m]} ${y}`,
+        value: `${(m + 1).toString().padStart(2, "0")}-${y}`,
+        shortLabel: months[m]
+      });
+      d.setMonth(d.getMonth() - 1);
+    }
+    return result.reverse();
+  }, []);
 
   // Manual transaction form state
   const [txSearch, setTxSearch] = useState("");
@@ -72,6 +95,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
   const [txFromAccount, setTxFromAccount] = useState("");
   const [txToAccount, setTxToAccount] = useState("");
   const [txDesc, setTxDesc] = useState("");
+  const [txRefNo, setTxRefNo] = useState("");
   const [txSubmitting, setTxSubmitting] = useState(false);
 
   // Load data on mount and when tenant/branch changes
@@ -132,7 +156,25 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanDesc = txDesc.trim();
-    if (!txAmount || !cleanDesc || !txToAccount || !txFromAccount) return;
+    const cleanRefNo = txRefNo.trim();
+    if (!txAmount || !cleanDesc || !cleanRefNo || !txToAccount || !txFromAccount) {
+      showToast("Pastikan semua field terisi.", "error");
+      return;
+    }
+
+    // Tambah validasi akun
+    const allAccountIds = accounts.map(acc => acc.id);
+    if (!allAccountIds.includes(txToAccount)) {
+      showToast("Akun tujuan tidak valid.", "error");
+      return;
+    }
+    if (!allAccountIds.includes(txFromAccount)) {
+      showToast("Akun sumber tidak valid.", "error");
+      return;
+    }    if (cleanRefNo.length < 3) {
+      showToast("Nomor referensi minimal 3 karakter", "error");
+      return;
+    }
     const amount = Math.max(0, Number(txAmount) || 0);
     if (amount <= 0) return;
 
@@ -143,7 +185,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
           type: "CASH_IN",
           amount,
           description: cleanDesc,
-          refNo: null,
+          refNo: cleanRefNo,
           toAccountId: txToAccount,
           fromAccountId: txFromAccount,
         });
@@ -152,7 +194,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
           type: "CASH_OUT",
           amount,
           description: cleanDesc,
-          refNo: null,
+          refNo: cleanRefNo,
           toAccountId: txFromAccount,
           fromAccountId: txToAccount,
         });
@@ -160,6 +202,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
       // Reset form
       setTxAmount("");
       setTxDesc("");
+      setTxRefNo("");
       setTxToAccount("");
       setTxFromAccount("");
       // Reload data
@@ -605,17 +648,18 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                       Rincian Laporan Laba Rugi
                     </h3>
                     <div className="flex gap-1">
-                      {["Apr", "Mei", "Jun"].map((m) => (
+                      {last6Months.map((m) => (
                         <button
-                          key={m}
-                          onClick={() => setSelectedFinanceMonth(m)}
+                          key={m.value}
+                          onClick={() => setSelectedFinanceMonth(m.value)}
                           className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all ${
-                            selectedFinanceMonth === m
+                            selectedFinanceMonth === m.value
                               ? "bg-slate-900 text-white"
                               : "bg-slate-200 text-slate-600 hover:bg-slate-200"
                           }`}
+                          title={m.label}
                         >
-                          {m}
+                          {m.shortLabel}
                         </button>
                       ))}
                     </div>
@@ -816,6 +860,22 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                         placeholder="Masukkan rincian keterangan..."
                         value={txDesc}
                         onChange={(e) => setTxDesc(e.target.value)}
+                        className="block w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+
+                    {/* Reference No */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">
+                        Nomor Referensi
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        min-length="3"
+                        placeholder="Contoh: INV-202407001"
+                        value={txRefNo}
+                        onChange={(e) => setTxRefNo(e.target.value)}
                         className="block w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
                       />
                     </div>

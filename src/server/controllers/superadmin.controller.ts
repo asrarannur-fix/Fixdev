@@ -283,7 +283,7 @@ export async function changeTenantStatus(req: Request, res: Response) {
         (tenant_id,previous_status,next_status,category,reason,internal_note,scheduled_reactivation_at,notify_owner,actor_user_id)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [tenant.id, tenant.status, status, category.trim(), reason.trim(), internalNote || null, scheduledReactivationAt || null, Boolean(notifyOwner), req.authActor?.userId]);
-      await adminAudit(client, req, "TENANT_SUSPENDED", "tenant", tenant.id, tenant.id, tenant, updated.rows[0], { category, notifyOwner });
+      await adminAudit(client, req, status === "SUSPENDED" ? "TENANT_SUSPENDED" : "TENANT_REACTIVATED", "tenant", tenant.id, tenant.id, tenant, updated.rows[0], { category, notifyOwner });
       return { tenant: updated.rows[0] };
     });
     if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
@@ -671,6 +671,7 @@ export async function extendSubscription(req: Request, res: Response) {
     res.status(500).json({ error: "Gagal memperpanjang langganan." });
   }
 }
+
 export async function getTenantDetail(req: Request, res: Response) {
   try {
     const [tenant, users, invoices, statusHistory, impersonations, audit] = await Promise.all([
@@ -702,7 +703,7 @@ export async function revokeInvitation(req: Request, res: Response) {
 }
 
 export async function checkTenantAvailability(req: Request, res: Response) {
-  const subdomain = String(req.query.subdomain || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const subdomain = String(req.query.subdomain || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "");
   const email = String(req.query.email || "").trim().toLowerCase();
   if (!subdomain && !email) return res.status(422).json({ error: "Subdomain atau email wajib diisi." });
   try {
@@ -716,6 +717,11 @@ export async function checkTenantAvailability(req: Request, res: Response) {
 }
 
 export async function permanentDeleteTenant(req: Request, res: Response) {
+  const { id: tenantId } = req.params;
+  const { force } = req.body || {};
+  if (force !== true) {
+    return res.status(400).json({ error: "Konfirmasi 'force: true' diperlukan untuk menghapus permanen tenant." });
+  }
   try {
     const result = await dbTransaction(async (client) => {
       const locked = await client.query(`SELECT id,name,status,tier,subdomain FROM tenants WHERE id=$1 FOR UPDATE`, [req.params.id]);
@@ -809,7 +815,7 @@ export async function registerTenant(req: Request, res: Response) {
          RETURNING id,tenant_id AS "tenantId",email,name,expires_at AS "expiresAt"`,
         [tenantId, cleanOwnerEmail, cleanOwnerName, tokenHash, token.slice(0, 8), req.authActor?.userId],
       );
-      await client.query(`INSERT INTO billing_notification_outbox (event_key,tenant_id,channel,recipient,payload,status) VALUES ($1,$2,'INTERNAL',$3,$4::jsonb,'PENDING') ON CONFLICT(event_key,channel,recipient) DO NOTHING`, [`tenant_invitation:${invitation.rows[0].id}`, tenantId, cleanOwnerEmail, JSON.stringify({ type: "TENANT_INVITATION", invitationToken: token, tenantName: cleanName, ownerName: cleanOwnerName, expiresAt: invitation.rows[0].expiresAt })]);
+      await dbQuery(`INSERT INTO billing_notification_outbox (event_key,tenant_id,channel,recipient,payload,status) VALUES ($1,$2,'INTERNAL',$3,$4::jsonb,'PENDING') ON CONFLICT(event_key,channel,recipient) DO NOTHING`, [`tenant_invitation:${invitation.rows[0].id}`, tenantId, cleanOwnerEmail, JSON.stringify({ type: "TENANT_INVITATION", invitationToken: token, tenantName: cleanName, ownerName: cleanOwnerName, expiresAt: invitation.rows[0].expiresAt })]);
       await adminAudit(client, req, "TENANT_REGISTERED", "tenant", tenantId, tenantId, null, tenant.rows[0], { invitationId: invitation.rows[0].id, ownerEmail: cleanOwnerEmail });
       return { tenant: tenant.rows[0], branchId, invitation: invitation.rows[0] };
     });
@@ -834,7 +840,7 @@ export async function createTenantInvitation(req: Request, res: Response) {
       RETURNING id,tenant_id AS "tenantId",email,name,token_prefix AS "tokenPrefix",expires_at AS "expiresAt",created_at AS "createdAt"`,
       [req.params.id, String(email).toLowerCase().trim(), name.trim(), tokenHash, token.slice(0, 8), req.authActor?.userId, Math.min(168, Math.max(1, expiresInHours))]);
     const tenant = await dbQuery(`SELECT name FROM tenants WHERE id=$1`, [req.params.id]);
-    await dbQuery(`INSERT INTO billing_notification_outbox(event_key,tenant_id,channel,recipient,payload,status) VALUES ($1,$2,'INTERNAL',$3,$4::jsonb,'PENDING') ON CONFLICT(event_key,channel,recipient) DO NOTHING`, [`tenant_invitation:${row.rows[0].id}`, req.params.id, row.rows[0].email, JSON.stringify({ type: "TENANT_INVITATION", invitationToken: token, tenantName: tenant.rows[0]?.name, ownerName: row.rows[0].name, expiresAt: row.rows[0].expiresAt })]);
+    await dbQuery(`INSERT INTO billing_notification_outbox (event_key,tenant_id,channel,recipient,payload,status) VALUES ($1,$2,'INTERNAL',$3,$4::jsonb,'PENDING') ON CONFLICT(event_key,channel,recipient) DO NOTHING`, [`tenant_invitation:${row.rows[0].id}`, req.params.id, row.rows[0].email, JSON.stringify({ type: "TENANT_INVITATION", invitationToken: token, tenantName: tenant.rows[0]?.name, ownerName: row.rows[0].name, expiresAt: row.rows[0].expiresAt })]);
     const sent = await sendInvitationEmail(row.rows[0].email, row.rows[0].name, tenant.rows[0]?.name || "Tenant", token, row.rows[0].expiresAt).catch(() => false);
     res.status(201).json({ success: true, invitation: row.rows[0], delivery: sent ? "EMAIL_SENT" : "OUTBOX_PENDING" });
   } catch (err: any) {
