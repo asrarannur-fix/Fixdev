@@ -48,22 +48,7 @@ import {
   PlatformHealth,
 } from "../types";
 
-import {
-  INITIAL_TENANTS,
-  INITIAL_BRANCHES,
-  INITIAL_WAREHOUSES,
-  INITIAL_USERS,
-  INITIAL_CUSTOMERS,
-  INITIAL_PRODUCTS,
-  INITIAL_SERVICES,
-  INITIAL_COA,
-  INITIAL_EMPLOYEES,
-  INITIAL_VOUCHERS,
-  INITIAL_AUDITS,
-  INITIAL_WORK_SHIFTS,
-  INITIAL_TRANSACTIONS,
-  seedCashTransactions,
-} from "../mocks/seedData";
+
 
 import {
   toCamelCase,
@@ -186,7 +171,6 @@ interface SaaSContextType {
   // Tenant/Branch selector
   switchTenant: (id: string) => void;
   switchBranch: (id: string) => void;
-  switchRole: (role: UserRole) => void;
 
   // Middleware and Utilities
   apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
@@ -783,8 +767,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   } catch (_) {}
 
-  const [tenants, setTenants] = useState<Tenant[]>(() =>
-    parseArray<Tenant>("saas_tenants", isBackendConfigured() ? [] : INITIAL_TENANTS),
+  const [tenants, setTenants] = useState<Tenant[]>(
+    parseArray<Tenant>("saas_tenants", []),
   );
 
   const [currentTenantId, setCurrentTenantId] = useState<string>(() => {
@@ -805,13 +789,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         if (parsed && typeof parsed === "object" && parsed.id) return parsed;
       }
     } catch (_) {}
-    return isBackendConfigured()
-      ? ({ id: "", name: "", email: "", role: UserRole.ANONYMOUS, permissions: [], branchIds: [], loginHistory: [], activeSessions: [], mfaEnabled: false } as User)
-      : INITIAL_USERS[0];
+    return { id: "", name: "", email: "", role: UserRole.ANONYMOUS, permissions: [], branchIds: [], loginHistory: [], activeSessions: [], mfaEnabled: false } as User;
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() =>
-    !isBackendConfigured() &&
     localStorage.getItem("saas_is_authenticated") === "true" &&
     !!localStorage.getItem("saas_curr_user"),
   );
@@ -1258,7 +1239,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     sessionStorage.clear();
     resetSync();
     setIsAuthenticated(false);
-    setCurrentUser(INITIAL_USERS[0]);
+    setCurrentUser({ id: "", name: "", email: "", role: UserRole.ANONYMOUS, permissions: [], branchIds: [], loginHistory: [], activeSessions: [], mfaEnabled: false } as User);
 
     const client = getAuthClient();
     if (client) {
@@ -1276,67 +1257,27 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const [users, setUsers] = useState<User[]>(() => {
-    return parseArray<User>("saas_users", isBackendConfigured() ? [] : INITIAL_USERS);
+    return parseArray<User>("saas_users", []);
   });
 
-  const [workflows, setWorkflows] = useState<ERPWorkflow[]>(() =>
-    parseArray<ERPWorkflow>("saas_workflows", [
-      {
-        id: "wf-invoice-remind",
-        tenantId: "tenant-owner-1",
-        name: "Pengingat Tagihan Tertunggak > 30 Hari",
-        triggerType: "INVOICE_UNPAID",
-        triggerCondition: "> 30",
-        actionType: "WHATSAPP",
-        actionPayload:
-          "Halo {customer_name}, invoice tagihan Anda #{invoice_no} senilai Rp {amount} telah tertunggak lebih dari {condition} hari. Mohon segera melakukan pembayaran. Terima kasih!",
-        isActive: true,
-        executionCount: 12,
-        lastTriggeredAt: "2026-06-29T10:15:00Z",
-      },
-      {
-        id: "wf-stock-alert",
-        tenantId: "tenant-owner-1",
-        name: "Peringatan Stok Tipis (< 5 unit)",
-        triggerType: "STOCK_LOW",
-        triggerCondition: "< 5",
-        actionType: "EMAIL",
-        actionPayload:
-          "⚠️ PERINGATAN: Stok produk {product_name} sisa {stock_qty} unit (di bawah ambang batas {condition} unit). Hubungi supplier segera!",
-        isActive: true,
-        executionCount: 5,
-        lastTriggeredAt: "2026-06-28T14:30:00Z",
-      },
-      {
-        id: "wf-ticket-create",
-        tenantId: "tenant-owner-1",
-        name: "Notifikasi Otomatis Tiket Masuk Baru",
-        triggerType: "TICKET_CREATED",
-        triggerCondition: "all",
-        actionType: "WHATSAPP",
-        actionPayload:
-          "Hai {customer_name}, tiket reparasi Anda #{ticket_no} ({device_name}) telah diterima di sistem kami. Teknisi kami akan segera memproses diagnosis. Pantau status di {portal_url}",
-        isActive: true,
-        executionCount: 45,
-        lastTriggeredAt: "2026-06-30T09:20:00Z",
-      },
-    ]),
+  const [workflows, setWorkflows] = useState<ERPWorkflow[]>(
+    parseArray<ERPWorkflow>("saas_workflows", []),
   );
 
   const [branches, setBranches] = useState<Branch[]>(() => {
-    return parseArray<Branch>("saas_branches", isBackendConfigured() ? [] : INITIAL_BRANCHES);
+    return parseArray<Branch>("saas_branches", []);
   });
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>(() => {
-    return parseArray<Warehouse>("saas_warehouses", isBackendConfigured() ? [] : INITIAL_WAREHOUSES);
+    return parseArray<Warehouse>("saas_warehouses", []);
   });
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
-    return parseArray<Customer>("saas_customers", isBackendConfigured() ? [] : INITIAL_CUSTOMERS);
+    return parseArray<Customer>("saas_customers", []);
   });
 
   const [products, setProducts] = useState<InventoryProduct[]>(() => {
-    return parseArray<InventoryProduct>("saas_products", isBackendConfigured() ? [] : INITIAL_PRODUCTS);
+    return parseArray<InventoryProduct>("saas_products", []);
   });
 
   const [microComponents, setMicroComponents] = useState<MicroComponent[]>([]);
@@ -1344,7 +1285,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   const [microComponentsError, setMicroComponentsError] = useState("");
 
   const [services, setServices] = useState<ServiceTicket[]>(() => {
-    return parseArray<ServiceTicket>("saas_services", isBackendConfigured() ? [] : INITIAL_SERVICES);
+    return parseArray<ServiceTicket>("saas_services", []);
   });
 
   const [fieldVisits, setFieldVisits] = useState<FieldServiceVisit[]>(() => {
@@ -1356,11 +1297,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const [transactions, setTransactions] = useState<POSTransaction[]>(() => {
-    return parseArray<POSTransaction>("saas_transactions", isBackendConfigured() ? [] : INITIAL_TRANSACTIONS);
+    return parseArray<POSTransaction>("saas_transactions", []);
   });
 
   const [accounts, setAccounts] = useState<COAAccount[]>(() => {
-    return parseArray<COAAccount>("saas_accounts", isBackendConfigured() ? [] : INITIAL_COA);
+    return parseArray<COAAccount>("saas_accounts", []);
   });
 
   const [journals, setJournals] = useState<JournalEntry[]>(() => {
@@ -1369,16 +1310,16 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>(
     () => {
-      return parseArray<CashTransaction>("saas_cash_tx", isBackendConfigured() ? [] : seedCashTransactions("tenant-owner-1"));
+      return parseArray<CashTransaction>("saas_cash_tx", []);
     },
   );
 
   const [employees, setEmployees] = useState<Employee[]>(() => {
-    return parseArray<Employee>("saas_employees", isBackendConfigured() ? [] : INITIAL_EMPLOYEES);
+    return parseArray<Employee>("saas_employees", []);
   });
 
   const [workShifts, setWorkShifts] = useState<WorkShift[]>(() => {
-    return parseArray<WorkShift>("saas_work_shifts", isBackendConfigured() ? [] : INITIAL_WORK_SHIFTS);
+    return parseArray<WorkShift>("saas_work_shifts", []);
   });
 
   const [payroll, setPayroll] = useState<Payroll[]>(() => {
@@ -1390,7 +1331,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const [vouchers, setVouchers] = useState<Voucher[]>(() => {
-    return parseArray<Voucher>("saas_vouchers", isBackendConfigured() ? [] : INITIAL_VOUCHERS);
+    return parseArray<Voucher>("saas_vouchers", []);
   });
 
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(() => {
@@ -1403,164 +1344,25 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [internalMessages, setInternalMessages] = useState<InternalMessage[]>(
     () =>
-      parseArray<InternalMessage>("saas_internal_messages", [
-        {
-          id: "msg-init-1",
-          tenantId: "tenant-owner-1",
-          sender: "Agus Admin (Pusat)",
-          senderRole: "ADMIN",
-          message:
-            "Halo tim teknisi, mohon pastikan mencatat detail komponen yang diganti di kolom diagnosa untuk mempermudah klaim garansi.",
-          timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
-        },
-        {
-          id: "msg-init-2",
-          tenantId: "tenant-owner-1",
-          sender: "Agus Admin (Pusat)",
-          senderRole: "ADMIN",
-          message:
-            "Bagi yang bertugas lapangan hari ini, pastikan cek GPS di aplikasi dan selesaikan form check-out beserta foto bukti.",
-          timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-        },
-      ]),
+      parseArray<InternalMessage>("saas_internal_messages", []),
   );
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    if (isBackendConfigured()) return [];
-    return parseArray<AuditLog>("saas_audit_logs", INITIAL_AUDITS);
+    return parseArray<AuditLog>("saas_audit_logs", []);
   });
 
   const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>(() => {
-    if (isBackendConfigured()) return [];
     return parseArray<FraudAlert>("saas_fraud", []);
   });
 
   const [stockMovements, setStockMovements] = useState<StockMovement[]>(() => {
-    if (isBackendConfigured()) return [];
-    return parseArray<StockMovement>("saas_stock_movements", [
-      {
-        id: "mov-init-1",
-        tenantId: "tenant-owner-1",
-        productId: "prod-lcd",
-        warehouseId: "wh-mks-1",
-        type: "IN",
-        quantity: 8,
-        referenceNo: "INIT-STOCK",
-        note: "Stok awal migrasi sistem",
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "mov-init-2",
-        tenantId: "tenant-owner-1",
-        productId: "prod-ssd",
-        warehouseId: "wh-mks-1",
-        type: "IN",
-        quantity: 10,
-        referenceNo: "INIT-STOCK",
-        note: "Stok awal migrasi sistem",
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "mov-init-3",
-        tenantId: "tenant-owner-1",
-        productId: "prod-ssd",
-        warehouseId: "wh-mks-2",
-        type: "IN",
-        quantity: 2,
-        referenceNo: "INIT-STOCK",
-        note: "Stok kanibalan untuk SSD",
-        timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ]);
+    return parseArray<StockMovement>("saas_stock_movements", []);
   });
 
   const [inventoryTransfers, setInventoryTransfers] = useState<
     InventoryTransfer[]
   >(() => {
-    if (isBackendConfigured()) return [];
-    return parseArray<InventoryTransfer>("saas_inventory_transfers", [
-      {
-        id: "trf-seed-1",
-        tenantId: "tenant-owner-1",
-        transferNo: "TRF-20260601",
-        originWarehouseId: "wh-mks-1",
-        destinationWarehouseId: "wh-mks-2",
-        items: [{ productId: "prod-lcd", quantity: 2 }],
-        status: "RECEIVED",
-        note: "Transfer urgent LCD Touchscreen untuk pengerjaan servis laptop",
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(
-          Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000,
-        ).toISOString(),
-        history: [
-          {
-            status: "REQUEST_CREATED",
-            timestamp: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000,
-            ).toISOString(),
-            note: "Permintaan dibuat otomatis oleh sistem",
-          },
-          {
-            status: "PACKED",
-            timestamp: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000,
-            ).toISOString(),
-            note: "Barang telah dikemas rapi dengan pelindung bubble wrap",
-          },
-          {
-            status: "SHIPPED",
-            timestamp: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000,
-            ).toISOString(),
-            note: "Dikirim via Kurir Eksternal (GrabExpress)",
-          },
-          {
-            status: "RECEIVED",
-            timestamp: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000,
-            ).toISOString(),
-            note: "Diterima dan dikonfirmasi lengkap oleh Admin Cabang Hertasning",
-          },
-        ],
-      },
-      {
-        id: "trf-seed-2",
-        tenantId: "tenant-owner-1",
-        transferNo: "TRF-20260602",
-        originWarehouseId: "wh-mks-1",
-        destinationWarehouseId: "wh-mks-2",
-        items: [{ productId: "prod-ssd", quantity: 3 }],
-        status: "SHIPPED",
-        note: "Mutasi rutin SSD 256GB",
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(
-          Date.now() - 1 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000,
-        ).toISOString(),
-        history: [
-          {
-            status: "REQUEST_CREATED",
-            timestamp: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000,
-            ).toISOString(),
-            note: "Permintaan transfer stok harian",
-          },
-          {
-            status: "PACKED",
-            timestamp: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000,
-            ).toISOString(),
-            note: "Selesai packing",
-          },
-          {
-            status: "SHIPPED",
-            timestamp: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000,
-            ).toISOString(),
-            note: "Sedang dibawa kurir toko",
-          },
-        ],
-      },
-    ]);
+    return parseArray<InventoryTransfer>("saas_inventory_transfers", []);
   });
 
   // ==========================================
@@ -1993,25 +1795,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     addLog("Switch Branch", `Pindah akses ke cabang ID: ${id}`, "AUTH");
   };
 
-  const switchRole = (role: UserRole) => {
-    const foundUser = INITIAL_USERS.find((u) => u.role === role);
-    if (foundUser) {
-      setCurrentUser(foundUser);
-      if (foundUser.tenantId) {
-        setCurrentTenantId(foundUser.tenantId);
-        let b = branches.filter((br) => br.tenantId === foundUser.tenantId);
-        if (foundUser.branchIds && foundUser.branchIds.length > 0) {
-          b = b.filter((br) => foundUser.branchIds?.includes(br.id));
-        }
-        if (b.length > 0) setCurrentBranchId(b[0].id);
-      }
-      addLog(
-        "Switch Role Simulator",
-        `Mengubah peran aktif menjadi: ${role}`,
-        "AUTH",
-      );
-    }
-  };
+
 
   const [platformHealth, setPlatformHealth] = useState<PlatformHealth>(() => ({
     status: isBackendConfigured() ? "checking" : "local",
@@ -2079,20 +1863,15 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
     setWarehouses((prev) => [...prev, newWH]);
     await syncToApi("warehouses", "insert", newWH);
 
-    // Setup standard COA for new tenant
-    const coaSeed = INITIAL_COA.map((c) => ({
-      ...c,
-      id: generateUUID(),
-      tenantId: id,
-      balance: c.code.startsWith("10")
-        ? c.code === "10100"
-          ? 5000000
-          : 25000000
-        : 0,
-    }));
-    setAccounts((prev) => [...prev, ...coaSeed]);
-    for (const coa of coaSeed) {
-      await syncToApi("accounts", "insert", coa);
+    // Initialize COA accounts (via API if backend configured, else client-side for demo)
+    if (isBackendConfigured()) {
+      const response = await apiFetch("/api/tenant/init-coa", {
+        method: "POST",
+        body: JSON.stringify({ tenantId: id }),
+      });
+      if (!response.ok) throw new Error("Gagal inisialisasi COA tenant.");
+      const initialCoa = await response.json();
+      setAccounts((prev) => [...prev, ...initialCoa]);
     }
 
     addLog(
@@ -4692,7 +4471,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({
         apiFetch,
         switchTenant,
         switchBranch,
-        switchRole,
         addTenant,
         updateTenantStatus,
         impersonateTenant,

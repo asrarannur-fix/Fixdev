@@ -38,6 +38,7 @@ import superadminRoutes from "./src/server/routes/superadmin.routes.js";
 import { telegramTestHandler } from "./src/server/controllers/telegram.controller.js"; // Keep for now
 import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.controller.js"; // Keep for now
 import { publicTenantContextHandler } from "./src/server/controllers/publicTenant.controller.js";
+import { acceptInvitation, validateInvitation } from "./src/server/controllers/invitation.controller.js";
 import { tenantHostResolver } from "./src/middleware/tenantHost.middleware.js"; // Re-import
 import billingRoutes from "./src/server/routes/billing.routes.js"; // Re-import
 
@@ -62,7 +63,7 @@ if (runtimeMode !== "test" && process.env.FIXDEV_DATABASE_NAME && process.env.DA
 const portValue = isProduction ? process.env.PORT || "3000" : process.env.DEV_PORT || "3001";
 const PORT = Number(portValue);
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error(`Invalid server port: ${portValue}`);
-const appUrl = process.env.APP_URL || (isProduction ? "https://fixdev.web.id" : `http://localhost:${PORT}`);
+const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
 const parsedAppUrl = new URL(appUrl);
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || appUrl).split(",").map((value) => value.trim().replace(/\/$/, "")).filter(Boolean);
 if (isProduction) {
@@ -174,6 +175,12 @@ app.use("/api/", apiRateLimiterMiddleware);
 // Apply stricter rate limiting to sensitive public endpoints
 app.use("/api/service-tracking", publicApiLimiter);
 app.use("/api/invitations", publicApiLimiter); // This is general for auth.routes now
+
+// Invitation acceptance/validation are public-but-tokenless flows that must be
+// reachable at /api/invitations/accept and /api/invitations/validate.
+// (auth.routes mounts them under /api/auth which is incorrect for these paths.)
+app.post("/api/invitations/accept", acceptInvitation);
+app.get("/api/invitations/validate", validateInvitation);
 
 // Apply Multi-Tenant Audit Middleware
 app.use(auditMiddleware);
