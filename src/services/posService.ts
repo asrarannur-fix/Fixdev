@@ -376,29 +376,13 @@ export async function processPOSTransaction(
   const netSales = subtotal - totalDisc;
   const debitCode = paymentDebitAccountCode(parsed.paymentMethod);
   const debitAcctId = await ensureAccount(client, tenantId, debitCode);
-  const salesAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='40100' LIMIT 1`,
-    [tenantId]
-  );
-  const taxAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='20100' LIMIT 1`,
-    [tenantId]
-  );
-  const hppAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='50100' LIMIT 1`,
-    [tenantId]
-  );
-  const inventoryAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='10200' LIMIT 1`,
-    [tenantId]
-  );
-
-  if (!salesAcct.rows[0]) {
-    throw new Error('Akun penjualan (40100) wajib tersedia sebelum transaksi POS.');
-  }
+  const salesAcctId = await ensureAccount(client, tenantId, '40100');
+  const taxAcctId = await ensureAccount(client, tenantId, '20100');
+  const hppAcctId = await ensureAccount(client, tenantId, '50100');
+  const inventoryAcctId = await ensureAccount(client, tenantId, '10200');
 
   let journalCreated = false;
-  if (salesAcct.rows[0]) {
+  {
     const journalRes = await client.query(
       `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
        VALUES (gen_random_uuid(), $1, $2, $3, $4, 'POS_SALE', $5) RETURNING id`,
@@ -415,16 +399,16 @@ export async function processPOSTransaction(
     await client.query(
       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
        VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
-      [journalId, salesAcct.rows[0].id, netSales]
+      [journalId, salesAcctId, netSales]
     );
-    if (taxAcct.rows[0] && taxAmount > 0) {
+    if (taxAmount > 0) {
       await client.query(
         `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
          VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
-        [journalId, taxAcct.rows[0].id, taxAmount]
+        [journalId, taxAcctId, taxAmount]
       );
     }
-    if (hppAcct.rows[0] && inventoryAcct.rows[0]) {
+    if (hppAcctId && inventoryAcctId) {
       let totalCogs = 0;
       for (const item of items) {
         if (item.productId) {
@@ -439,7 +423,7 @@ export async function processPOSTransaction(
         await client.query(
           `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
            VALUES (gen_random_uuid(), $1, $2, $3, 0), (gen_random_uuid(), $1, $4, 0, $3)`,
-          [journalId, hppAcct.rows[0].id, totalCogs, inventoryAcct.rows[0].id]
+          [journalId, hppAcctId, totalCogs, inventoryAcctId]
         );
       }
     }
@@ -716,38 +700,29 @@ export async function processPartialRefund(
   );
   const journalId = journalRes.rows[0].id;
 
-  const cashAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='10100' LIMIT 1`,
-    [tenantId]
-  );
-  const salesAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='40100' LIMIT 1`,
-    [tenantId]
-  );
-  const taxAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='20100' LIMIT 1`,
-    [tenantId]
-  );
+  const cashAcctId = await ensureAccount(client, tenantId, '10100');
+  const salesAcctId = await ensureAccount(client, tenantId, '40100');
+  const taxAcctId = await ensureAccount(client, tenantId, '20100');
 
-  if (cashAcct.rows[0]) {
+  if (cashAcctId) {
     await client.query(
       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
        VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
-      [journalId, cashAcct.rows[0].id, netRefund]
+      [journalId, cashAcctId, netRefund]
     );
   }
-  if (salesAcct.rows[0]) {
+  if (salesAcctId) {
     await client.query(
       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
        VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
-      [journalId, salesAcct.rows[0].id, refundAmount]
+      [journalId, salesAcctId, refundAmount]
     );
   }
-  if (taxAcct.rows[0] && refundTax > 0) {
+  if (refundTax > 0) {
     await client.query(
       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
        VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
-      [journalId, taxAcct.rows[0].id, refundTax]
+      [journalId, taxAcctId, refundTax]
     );
   }
 
