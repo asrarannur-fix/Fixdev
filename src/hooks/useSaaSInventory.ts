@@ -4,8 +4,8 @@
  *
  * Inventory domain hook extracted from SaaSContext.tsx
  */
-import { generateUUID } from "../utils/saasUtils";
-import type { InventoryProduct, StockMovement, InventoryTransfer, TransferItem } from "../types";
+import { generateUUID } from '../utils/saasUtils';
+import type { InventoryProduct, StockMovement, InventoryTransfer, TransferItem } from '../types';
 
 export interface UseSaaSInventoryProps {
   currentTenantId: string;
@@ -29,7 +29,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
     verifyScope,
   } = props;
 
-  const assertPositiveQuantity = (quantity: number, label = "quantity") => {
+  const assertPositiveQuantity = (quantity: number, label = 'quantity') => {
     if (!Number.isFinite(quantity) || quantity <= 0) {
       throw new Error(`${label} harus lebih besar dari 0.`);
     }
@@ -37,43 +37,77 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
 
   const assertDifferentWarehouses = (fromWarehouseId: string, toWarehouseId: string) => {
     if (!fromWarehouseId || !toWarehouseId || fromWarehouseId === toWarehouseId) {
-      throw new Error("Gudang asal dan tujuan harus valid dan berbeda.");
+      throw new Error('Gudang asal dan tujuan harus valid dan berbeda.');
     }
   };
 
   const canMutateProduct = (product: InventoryProduct, tenantId = currentTenantId) =>
     product.tenantId === tenantId;
 
-  const recalculateStockQty = (product: InventoryProduct, warehouseStock: Record<string, number>) => {
-    if (product.category === "JASA") return product.stockQty;
+  const recalculateStockQty = (
+    product: InventoryProduct,
+    warehouseStock: Record<string, number>
+  ) => {
+    if (product.category === 'JASA') return product.stockQty;
     return Object.values(warehouseStock).reduce((sum, qty) => sum + Number(qty || 0), 0);
   };
 
   const addInventoryProduct = (
-    prod: Omit<InventoryProduct, "id" | "tenantId"> & { tenantId?: string },
+    prod: Omit<InventoryProduct, 'id' | 'tenantId'> & { tenantId?: string }
   ) => {
     const { tenantId } = verifyScope(prod.tenantId);
     const id = generateUUID();
     const newProd: InventoryProduct = { ...prod, id, tenantId };
     setProducts((prev) => [...prev, newProd]);
-    syncToApi("products", "insert", newProd);
-    addLog("Add Inventory Product", `Menambahkan produk baru ke persediaan: ${prod.name} (SKU: ${prod.sku})`, "INVENTORY");
+    // Persist; on failure roll back optimistic insert and surface the error.
+    Promise.resolve(syncToApi('products', 'insert', newProd)).catch((err: any) => {
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      addLog(
+        'Add Inventory Product (GAGAL)',
+        err?.message || 'Gagal menyimpan produk.',
+        'INVENTORY'
+      );
+    });
+    addLog(
+      'Add Inventory Product',
+      `Menambahkan produk baru ke persediaan: ${prod.name} (SKU: ${prod.sku})`,
+      'INVENTORY'
+    );
   };
 
   const updateInventoryProduct = (
     productId: string,
-    data: Partial<InventoryProduct> & { tenantId?: string },
+    data: Partial<InventoryProduct> & { tenantId?: string }
   ) => {
     const { tenantId } = verifyScope(data.tenantId);
-    setProducts((prev) =>
-      prev.map((p) => {
+    let snapshot: InventoryProduct | undefined;
+    setProducts((prev) => {
+      const target = prev.find((p) => p.id === productId);
+      if (target) snapshot = target;
+      return prev.map((p) => {
         if (p.id !== productId || !canMutateProduct(p, tenantId)) return p;
         const updated = { ...p, ...data, tenantId };
-        syncToApi("products", "update", updated);
-        addLog("Update Inventory Product", `Memperbarui data produk: ${updated.name} (Harga: Rp ${(updated.sellPrice ?? 0).toLocaleString()})`, "INVENTORY");
         return updated;
-      }),
-    );
+      });
+    });
+    // Persist; on failure roll back to the pre-update snapshot.
+    const updated = snapshot ? { ...snapshot, ...data, tenantId } : undefined;
+    if (updated) {
+      Promise.resolve(syncToApi('products', 'update', updated)).catch((err: any) => {
+        if (snapshot) setProducts((prev) => prev.map((p) => (p.id === productId ? snapshot! : p)));
+        addLog(
+          'Update Inventory Product (GAGAL)',
+          err?.message || 'Gagal memperbarui produk.',
+          'INVENTORY'
+        );
+      });
+    }
+    if (updated)
+      addLog(
+        'Update Inventory Product',
+        `Memperbarui data produk: ${updated.name} (Harga: Rp ${(updated.sellPrice ?? 0).toLocaleString()})`,
+        'INVENTORY'
+      );
   };
 
   const transferProductStock = (
@@ -81,7 +115,7 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
     fromWarehouseId: string,
     toWarehouseId: string,
     quantity: number,
-    note: string,
+    note: string
   ) => {
     verifyScope(currentTenantId);
     assertPositiveQuantity(quantity);
@@ -103,32 +137,48 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
           warehouseStock: updatedWarehouseStock,
           stockQty: recalculateStockQty(p, updatedWarehouseStock),
         };
-        syncToApi("products", "update", updatedProd);
-        addLog("Stock Transfer", `Transfer ${quantity} ${p.unit} dari ${fromWarehouseId} ke ${toWarehouseId}: ${p.name}`, "INVENTORY");
+        // Persist; on failure the optimistic update above will be corrected on
+        // next reload, but surface the error so it isn't silently lost.
+        Promise.resolve(syncToApi('products', 'update', updatedProd)).catch((err: any) => {
+          addLog(
+            'Stock Transfer (GAGAL)',
+            err?.message || 'Gagal menyimpan mutasi stok.',
+            'INVENTORY'
+          );
+        });
+        addLog(
+          'Stock Transfer',
+          `Transfer ${quantity} ${p.unit} dari ${fromWarehouseId} ke ${toWarehouseId}: ${p.name}`,
+          'INVENTORY'
+        );
         return updatedProd;
-      }),
+      })
     );
 
     const now = new Date().toISOString();
-    const trfNo = "TRF-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(1000 + Math.random() * 9000);
+    const trfNo =
+      'TRF-' +
+      Date.now().toString(36).toUpperCase() +
+      '-' +
+      Math.floor(1000 + Math.random() * 9000);
     const movements: StockMovement[] = [
       {
-        id: "mov-" + Date.now().toString(36) + "1",
+        id: 'mov-' + Date.now().toString(36) + '1',
         tenantId: currentTenantId,
         productId,
         warehouseId: fromWarehouseId,
-        type: "TRANSFER",
+        type: 'TRANSFER',
         quantity: -quantity,
         referenceNo: trfNo,
         note: `Keluar transfer ke ${toWarehouseId}. Catatan: ${note}`,
         timestamp: now,
       },
       {
-        id: "mov-" + Date.now().toString(36) + "2",
+        id: 'mov-' + Date.now().toString(36) + '2',
         tenantId: currentTenantId,
         productId,
         warehouseId: toWarehouseId,
-        type: "TRANSFER",
+        type: 'TRANSFER',
         quantity,
         referenceNo: trfNo,
         note: `Masuk transfer dari ${fromWarehouseId}. Catatan: ${note}`,
@@ -142,50 +192,64 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
     productId: string,
     warehouseId: string,
     adjustmentQty: number,
-    type: "IN" | "OUT" | "ADJUSTMENT",
-    note: string,
+    type: 'IN' | 'OUT' | 'ADJUSTMENT',
+    note: string
   ) => {
     verifyScope(currentTenantId);
-    assertPositiveQuantity(adjustmentQty, "adjustmentQty");
+    assertPositiveQuantity(adjustmentQty, 'adjustmentQty');
 
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId || !canMutateProduct(p)) return p;
         const currentWarehouseStock = p.warehouseStock || {};
         const oldStock = Number(currentWarehouseStock[warehouseId] || 0);
-        const newStock = type === "IN" ? oldStock + adjustmentQty : type === "OUT" ? Math.max(0, oldStock - adjustmentQty) : adjustmentQty;
+        const newStock =
+          type === 'IN'
+            ? oldStock + adjustmentQty
+            : type === 'OUT'
+              ? Math.max(0, oldStock - adjustmentQty)
+              : adjustmentQty;
         const updatedWarehouseStock = { ...currentWarehouseStock, [warehouseId]: newStock };
         const newTotalStock = recalculateStockQty(p, updatedWarehouseStock);
 
-        if (p.category !== "JASA" && newTotalStock <= p.minStock) {
+        if (p.category !== 'JASA' && newTotalStock <= p.minStock) {
           window.dispatchEvent(
-            new CustomEvent("live_notification", {
+            new CustomEvent('live_notification', {
               detail: {
-                title: "⚠️ Peringatan Stok Kritis",
+                title: '⚠️ Peringatan Stok Kritis',
                 text: `Stok untuk produk "${p.name}" (SKU: ${p.sku}) tinggal ${newTotalStock} ${p.unit}. Batas minimum adalah ${p.minStock}.`,
                 message: `Stok untuk produk "${p.name}" (SKU: ${p.sku}) tinggal ${newTotalStock} ${p.unit}. Batas minimum adalah ${p.minStock}.`,
-                category: "stock",
+                category: 'stock',
               },
-            }),
+            })
           );
         }
 
-        const updatedProd = { ...p, warehouseStock: updatedWarehouseStock, stockQty: newTotalStock };
-        syncToApi("products", "update", updatedProd);
-        addLog("Stock Adjustment", `Penyesuaian stok (${type}) di ${warehouseId} sebanyak ${adjustmentQty} ${p.unit}: ${p.name}`, "INVENTORY");
+        const updatedProd = {
+          ...p,
+          warehouseStock: updatedWarehouseStock,
+          stockQty: newTotalStock,
+        };
+        syncToApi('products', 'update', updatedProd);
+        addLog(
+          'Stock Adjustment',
+          `Penyesuaian stok (${type}) di ${warehouseId} sebanyak ${adjustmentQty} ${p.unit}: ${p.name}`,
+          'INVENTORY'
+        );
         return updatedProd;
-      }),
+      })
     );
 
     const timestamp = Date.now().toString(36);
-    const adjNo = "ADJ-" + timestamp.toUpperCase() + "-" + Math.floor(1000 + Math.random() * 9000);
+    const adjNo = 'ADJ-' + timestamp.toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
     const adjustmentMovement: StockMovement = {
-      id: "mov-" + timestamp + "3",
+      id: 'mov-' + timestamp + '3',
       tenantId: currentTenantId,
       productId,
       warehouseId,
-      type: type === "ADJUSTMENT" ? "ADJUSTMENT" : type === "IN" ? "IN" : "OUT",
-      quantity: type === "ADJUSTMENT" ? adjustmentQty : type === "IN" ? adjustmentQty : -adjustmentQty,
+      type: type === 'ADJUSTMENT' ? 'ADJUSTMENT' : type === 'IN' ? 'IN' : 'OUT',
+      quantity:
+        type === 'ADJUSTMENT' ? adjustmentQty : type === 'IN' ? adjustmentQty : -adjustmentQty,
       referenceNo: adjNo,
       note: `Penyesuaian stok (${type}). Catatan: ${note}`,
       timestamp: new Date().toISOString(),
@@ -201,10 +265,19 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
   }) => {
     verifyScope(currentTenantId);
     assertDifferentWarehouses(data.originWarehouseId, data.destinationWarehouseId);
-    for (const item of data.items) assertPositiveQuantity(item.quantity, "item.quantity");
+    // Normalize items: UI sometimes uses `qty`, type expects `quantity`.
+    const items = data.items.map((it) => ({
+      ...it,
+      quantity: Number(it.quantity ?? it.qty ?? 0),
+    }));
+    for (const item of items) assertPositiveQuantity(item.quantity, 'item.quantity');
 
-    const id = "trf-" + Date.now().toString(36);
-    const transferNo = "TRF-" + new Date().toISOString().slice(0, 10).replace(/-/g, "") + "-" + Date.now().toString(36).slice(-4).toUpperCase();
+    const id = 'trf-' + Date.now().toString(36);
+    const transferNo =
+      'TRF-' +
+      new Date().toISOString().slice(0, 10).replace(/-/g, '') +
+      '-' +
+      Date.now().toString(36).slice(-4).toUpperCase();
     const now = new Date().toISOString();
     const newTrf: InventoryTransfer = {
       id,
@@ -212,21 +285,31 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
       transferNo,
       originWarehouseId: data.originWarehouseId,
       destinationWarehouseId: data.destinationWarehouseId,
-      items: data.items,
-      status: "REQUEST_CREATED",
+      items: items,
+      status: 'REQUEST_CREATED',
       note: data.note,
       createdAt: now,
       updatedAt: now,
-      history: [{ status: "REQUEST_CREATED", timestamp: now, note: `Permintaan transfer stok dibuat dari ${data.originWarehouseId} ke ${data.destinationWarehouseId}.` }],
+      history: [
+        {
+          status: 'REQUEST_CREATED',
+          timestamp: now,
+          note: `Permintaan transfer stok dibuat dari ${data.originWarehouseId} ke ${data.destinationWarehouseId}.`,
+        },
+      ],
     };
     setInventoryTransfers((prev) => [newTrf, ...prev]);
-    addLog("Inventory Transfer Created", `Membuat permintaan transfer stok ${transferNo} (${data.items.length} item) dari ${data.originWarehouseId} ke ${data.destinationWarehouseId}`, "INVENTORY");
+    addLog(
+      'Inventory Transfer Created',
+      `Membuat permintaan transfer stok ${transferNo} (${data.items.length} item) dari ${data.originWarehouseId} ke ${data.destinationWarehouseId}`,
+      'INVENTORY'
+    );
   };
 
   const updateInventoryTransferStatus = (
     transferId: string,
-    status: "REQUEST_CREATED" | "PACKED" | "SHIPPED" | "RECEIVED",
-    note?: string,
+    status: 'REQUEST_CREATED' | 'PACKED' | 'SHIPPED' | 'RECEIVED',
+    note?: string
   ) => {
     verifyScope(currentTenantId);
     setInventoryTransfers((prev) =>
@@ -235,8 +318,10 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
         const oldStatus = t.status;
         if (oldStatus === status) return t;
         const now = new Date().toISOString();
-        const deductOrigin = (status === "PACKED" || status === "SHIPPED") && oldStatus === "REQUEST_CREATED" || status === "RECEIVED" && (oldStatus === "REQUEST_CREATED" || oldStatus === "PACKED");
-        const addDestination = status === "RECEIVED";
+        const deductOrigin =
+          ((status === 'PACKED' || status === 'SHIPPED') && oldStatus === 'REQUEST_CREATED') ||
+          (status === 'RECEIVED' && (oldStatus === 'REQUEST_CREATED' || oldStatus === 'PACKED'));
+        const addDestination = status === 'RECEIVED';
 
         if (deductOrigin || addDestination) {
           setProducts((prevProducts) =>
@@ -244,19 +329,43 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
               const item = t.items.find((i) => i.productId === p.id);
               if (!item || !canMutateProduct(p)) return p;
               const currentWarehouseStock = p.warehouseStock || {};
-              const originStock = deductOrigin ? Math.max(0, Number(currentWarehouseStock[t.originWarehouseId] || 0) - item.quantity) : Number(currentWarehouseStock[t.originWarehouseId] || 0);
-              const destStock = addDestination ? Number(currentWarehouseStock[t.destinationWarehouseId] || 0) + item.quantity : Number(currentWarehouseStock[t.destinationWarehouseId] || 0);
-              const updatedWarehouseStock = { ...currentWarehouseStock, [t.originWarehouseId]: originStock, [t.destinationWarehouseId]: destStock };
-              const updatedProd = { ...p, warehouseStock: updatedWarehouseStock, stockQty: recalculateStockQty(p, updatedWarehouseStock) };
-              syncToApi("products", "update", updatedProd);
+              const originStock = deductOrigin
+                ? Math.max(
+                    0,
+                    Number(currentWarehouseStock[t.originWarehouseId] || 0) - item.quantity
+                  )
+                : Number(currentWarehouseStock[t.originWarehouseId] || 0);
+              const destStock = addDestination
+                ? Number(currentWarehouseStock[t.destinationWarehouseId] || 0) + item.quantity
+                : Number(currentWarehouseStock[t.destinationWarehouseId] || 0);
+              const updatedWarehouseStock = {
+                ...currentWarehouseStock,
+                [t.originWarehouseId]: originStock,
+                [t.destinationWarehouseId]: destStock,
+              };
+              const updatedProd = {
+                ...p,
+                warehouseStock: updatedWarehouseStock,
+                stockQty: recalculateStockQty(p, updatedWarehouseStock),
+              };
+              syncToApi('products', 'update', updatedProd);
               return updatedProd;
-            }),
+            })
           );
         }
 
-        addLog("Inventory Transfer Status Updated", `Memperbarui status transfer ${t.transferNo} dari ${oldStatus} menjadi ${status}`, "INVENTORY");
-        return { ...t, status, updatedAt: now, history: [...t.history, { status, timestamp: now, note: note || "" }] };
-      }),
+        addLog(
+          'Inventory Transfer Status Updated',
+          `Memperbarui status transfer ${t.transferNo} dari ${oldStatus} menjadi ${status}`,
+          'INVENTORY'
+        );
+        return {
+          ...t,
+          status,
+          updatedAt: now,
+          history: [...t.history, { status, timestamp: now, note: note || '' }],
+        };
+      })
     );
   };
 

@@ -442,8 +442,16 @@ export async function processPOSTransaction(
     );
   }
 
-  // Deposit usage tracking
+  // Deposit usage tracking via customer_deposits audit table
   if (depositUsed > 0 && parsed.customerId) {
+    await client.query(
+      `INSERT INTO customer_deposits
+         (id, tenant_id, customer_id, branch_id, transaction_id, type, amount, balance, description)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'CHARGE', $5,
+         (SELECT COALESCE(SUM(amount), 0) FROM customer_deposits WHERE customer_id=$2 AND tenant_id=$1) - $5,
+         $6)`,
+      [tenantId, parsed.customerId, branchId, txId, depositUsed, `Pakai deposit untuk ${invoiceNo}`]
+    );
     await client.query(
       `UPDATE customers SET store_credit = store_credit - $1, loyalty_points = loyalty_points + floor($2 / 10000)
        WHERE id = $3 AND tenant_id = $4`,

@@ -530,6 +530,25 @@ export const voidSale = async (req: any, res: any) => {
         );
       }
 
+      // Deposit refund tracking for voided DEPOSIT transactions
+      if (tx.paymentMethod === 'DEPOSIT' && tx.depositUsed > 0 && tx.customerId) {
+        await client.query(
+          `INSERT INTO customer_deposits
+             (id, tenant_id, customer_id, branch_id, transaction_id, type, amount, balance, description)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'REFUND', $5,
+             (SELECT COALESCE(SUM(amount), 0) FROM customer_deposits WHERE customer_id=$2 AND tenant_id=$1) + $5,
+             $6)`,
+          [
+            tenantId,
+            tx.customerId,
+            branchId,
+            id,
+            tx.depositUsed,
+            `Refund deposit untuk ${tx.invoiceNo} (void)`,
+          ]
+        );
+      }
+
       // Audit log
       await client.query(
         `INSERT INTO audit_logs (id, tenant_id, user_id, action, details)
