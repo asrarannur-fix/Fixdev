@@ -15,7 +15,17 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "on-first-retry",
     headless: true,
-    launchOptions: { args: ["--no-sandbox", "--disable-http2"] },
+    launchOptions: { 
+      args: [
+        "--no-sandbox", 
+        "--disable-http2",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-background-networking",
+        "--disable-sync"
+      ] 
+    },
     viewport: { width: 1280, height: 720 },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

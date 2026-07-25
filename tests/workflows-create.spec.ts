@@ -29,12 +29,49 @@ async function dismiss(page: Page) {
 
 async function openModule(page: Page, moduleLabel: string, subLabel?: string) {
   await dismiss(page);
-  await page.locator("aside").getByText(moduleLabel, { exact: false }).first().click({ force: true });
+  const aside = page.locator("aside");
+  // Click module button to expand accordion
+  const moduleBtn = aside.getByText(moduleLabel, { exact: false }).first();
+  await moduleBtn.click({ force: true });
   await page.waitForTimeout(400);
   await dismiss(page);
   if (subLabel) {
-    await page.getByText(subLabel, { exact: false }).first().click({ force: true });
+    // Submenu buttons are already in DOM (CSS opacity hide), click directly
+    const subBtn = aside.getByText(subLabel, { exact: false }).first();
+    await subBtn.click({ force: true });
+    // Wait for sub-tab to actually activate - force localStorage update and reload
     await page.waitForTimeout(500);
+    // Map subLabel to actual sub-tab ID for localStorage
+    const subTabMap: Record<string, string> = {
+      "Penerimaan": "new-ticket",
+      "Daftar Servis": "list",
+      "Knowledge Base": "knowledge-base",
+      "Cost Calculator": "cost-calculator",
+      "Field Service": "field-service",
+      "Rental": "rental",
+      "Warranty": "warranty-claims",
+      "QR Tracker": "qr-tracker",
+      "QC Scoring": "qc-scoring",
+      "Stok": "stock",
+      "Transfer": "stock-transfer",
+      "Lokasi": "storage-locations",
+      "Tukar Tambah": "trade-in",
+      "Kanibal": "cannibal",
+      "Komponen": "small-parts",
+      "Aset Tetap": "asset-manager",
+      "Konsinyasi": "consignment",
+      "PO": "purchase-order",
+      "Kasir": "cashier",
+      "Shift": "shifts",
+      "Riwayat": "history",
+      "Marketplace": "marketplace-hub",
+    };
+    const subTabId = subTabMap[subLabel] || subLabel.toLowerCase().replace(/\s+/g, '-');
+    await page.evaluate((subTabId) => {
+      localStorage.setItem('saas_active_sub_tab', subTabId);
+    }, subTabId);
+    await page.reload();
+    await page.waitForTimeout(1000);
     await dismiss(page);
   }
 }
@@ -47,8 +84,22 @@ test.describe("Real workflow creation per module", () => {
   test("Services: create a service ticket via Penerimaan form", async ({ page, request }) => {
     const user = await loginOwner(page, request);
     await openModule(page, "Servis", "Penerimaan");
+    await dismiss(page);
 
     const uniq = "AUTO-" + Date.now().toString().slice(-6);
+
+    // Wait for the wizard to be fully rendered - look for the customer search input
+    // The wizard only renders when localSubTab === 'new-ticket' in ServicesTab
+    await page.waitForSelector('input[placeholder="Cari nama / no. WhatsApp pelanggan..."]', { state: 'visible', timeout: 15000 });
+    
+    const custSearch = page.locator('input[placeholder="Cari nama / no. WhatsApp pelanggan..."]').first();
+    await custSearch.fill("pelanggan tidak ada " + uniq);
+    await page.waitForTimeout(500);
+    // Click "Tambah pelanggan baru" button that appears when no match
+    await page.getByRole("button", { name: /Tambah pelanggan baru/i }).first().click({ force: true });
+    await page.waitForTimeout(500);
+
+    // Now fill the new customer form
     await page.fill('input[placeholder="Nama lengkap"]', `Test Cust ${uniq}`);
     await page.fill('input[placeholder="081234567890"]', "081234567890");
     await page.fill('input[placeholder="pelanggan@email.com"]', `cust${uniq}@x.com`);
