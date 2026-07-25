@@ -4309,6 +4309,22 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const generatePayroll = (monthYear: string) => {
     const tenantStaff = employees.filter((e) => e.tenantId === currentTenantId);
+
+    // Resolve real COA accounts (fallback to first per type so journal stays valid & balanced)
+    const expenseAcc =
+      accounts.find(
+        (a) => a.type === AccountType.EXPENSE && /gaji|salary|beban/i.test(a.name || '')
+      ) || accounts.find((a) => a.type === AccountType.EXPENSE);
+    const assetAcc =
+      accounts.find((a) => a.type === AccountType.ASSET && /bank|tunai|kas/i.test(a.name || '')) ||
+      accounts.find((a) => a.type === AccountType.ASSET);
+    const kasbonAcc =
+      accounts.find((a) => a.type === AccountType.ASSET && /kasbon|piutang/i.test(a.name || '')) ||
+      assetAcc;
+    const liabilityAcc =
+      accounts.find(
+        (a) => a.type === AccountType.LIABILITY && /pajak|bpjs|utang/i.test(a.name || '')
+      ) || accounts.find((a) => a.type === AccountType.LIABILITY);
     tenantStaff.forEach((e) => {
       // Find commissions that have NOT yet been paid (PENDING) so they are not
       // double-counted if payroll is re-generated for the same period.
@@ -4391,22 +4407,26 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Credit Pajak/BPJS (Liability) = standardDeductions
       const journalLines = [
         {
-          accountId: getCOAAccount('service', currentTenantId),
+          accountId: expenseAcc?.id || getCOAAccount('service', currentTenantId),
           debit: gross,
           credit: 0,
         },
-        { accountId: getCOAAccount('bank', currentTenantId), debit: 0, credit: net },
+        {
+          accountId: assetAcc?.id || getCOAAccount('bank', currentTenantId),
+          debit: 0,
+          credit: net,
+        },
       ];
       if (totalKasbon > 0) {
         journalLines.push({
-          accountId: getCOAAccount('cash', currentTenantId),
+          accountId: kasbonAcc?.id || getCOAAccount('cash', currentTenantId),
           debit: 0,
           credit: totalKasbon,
         });
       }
       if (standardDeductions > 0) {
         journalLines.push({
-          accountId: getCOAAccount('tax', currentTenantId),
+          accountId: liabilityAcc?.id || getCOAAccount('tax', currentTenantId),
           debit: 0,
           credit: standardDeductions,
         });
