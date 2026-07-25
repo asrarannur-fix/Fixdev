@@ -126,8 +126,8 @@ export const createAccount = async (req: any, res: any) => {
     }
 
     const result = await dbQuery(
-      `INSERT INTO coa_accounts (tenant_id, code, name, type, is_group)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO coa_accounts (id, tenant_id, code, name, type, is_group)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
        RETURNING id, tenant_id as "tenantId", code, name, type, is_group as "isGroup", balance`,
       [tenantId, code, name, type, isGroup]
     );
