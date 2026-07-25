@@ -340,18 +340,16 @@ async function finalTicket(client: any, req: Request) {
 
 function sendError(res: Response, error: any) {
   const isAppError = !!error.status;
-  return res
-    .status(error.status || 500)
-    .json({
-      error: isAppError ? error.message || 'Workflow servis gagal.' : 'Workflow servis gagal.',
-    });
+  return res.status(error.status || 500).json({
+    error: isAppError ? error.message || 'Workflow servis gagal.' : 'Workflow servis gagal.',
+  });
 }
 
 export async function listServiceTickets(req: Request, res: Response) {
   try {
     const branchId = req.branchId || req.headers['x-branch-id'];
     const result = await dbQuery(
-      `SELECT ${ticketSelect()} FROM service_tickets WHERE tenant_id=$1 AND branch_id=$2 ORDER BY created_at DESC LIMIT 500`,
+      `SELECT ${ticketSelect()} FROM service_tickets WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 500`,
       [req.tenantId, branchId]
     );
     res.json({ data: result.rows });

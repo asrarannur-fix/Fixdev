@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Settings, Upload, CheckSquare } from 'lucide-react';
+import { Settings, Upload, CheckSquare, RotateCcw } from 'lucide-react';
 import { applyTenantBranding } from '../../utils/branding';
 import { logBrandingChange } from './BrandingHistory';
 
@@ -28,6 +28,16 @@ export const SettingsBranding: React.FC<any> = (props) => {
     }
   };
 
+  const resetBranding = () => {
+    setBranding({
+      ...branding,
+      primaryColor: '#0a7d3c',
+      secondaryColor: '#0ea5e9',
+      slogan: '',
+      logoUrl: '',
+    });
+  };
+
   return (
     <div className="max-w-2xl space-y-6 animate-fadeIn dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100">
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -37,9 +47,9 @@ export const SettingsBranding: React.FC<any> = (props) => {
           </div>
           <div>
             <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
-              Identitas Toko
+              Branding Toko
             </h4>
-            <p className="text-[10px] text-slate-400">Logo, warna, dan slogan bisnis Anda.</p>
+            <p className="text-[10px] text-slate-400">Logo, warna, dan slogan toko Anda.</p>
           </div>
         </div>
 
@@ -83,6 +93,43 @@ export const SettingsBranding: React.FC<any> = (props) => {
           )}
         </label>
 
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-400">Warna Utama</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={branding.primaryColor || '#0a7d3c'}
+                onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                className="h-9 w-10 rounded border border-slate-200 cursor-pointer"
+              />
+              <input
+                value={branding.primaryColor || '#0a7d3c'}
+                onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                placeholder="#0a7d3c"
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent"
+              />
+            </div>
+          </label>
+          <label className="block space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-400">Warna Aksen</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={branding.secondaryColor || '#0ea5e9'}
+                onChange={(e) => setBranding({ ...branding, secondaryColor: e.target.value })}
+                className="h-9 w-10 rounded border border-slate-200 cursor-pointer"
+              />
+              <input
+                value={branding.secondaryColor || '#0ea5e9'}
+                onChange={(e) => setBranding({ ...branding, secondaryColor: e.target.value })}
+                placeholder="#0ea5e9"
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent"
+              />
+            </div>
+          </label>
+        </div>
+
         <label className="block space-y-1">
           <span className="text-[10px] font-bold uppercase text-slate-400">Slogan</span>
           <input
@@ -92,22 +139,15 @@ export const SettingsBranding: React.FC<any> = (props) => {
             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent"
           />
         </label>
-
-        <label className="block space-y-1">
-          <span className="text-[10px] font-bold uppercase text-slate-400">Custom Domain</span>
-          <input
-            value={branding.customDomain || ''}
-            onChange={(e) => setBranding({ ...branding, customDomain: e.target.value })}
-            placeholder="shop.example.com"
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent"
-          />
-          <p className="text-[9px] text-slate-400">
-            Domain khusus untuk toko Anda. Arahkan CNAME ke domain ini.
-          </p>
-        </label>
       </div>
 
       <div className="flex flex-wrap justify-end gap-2">
+        <button
+          onClick={resetBranding}
+          className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors flex items-center gap-2"
+        >
+          <RotateCcw className="w-4 h-4" /> Reset
+        </button>
         <button
           onClick={saveBranding}
           className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-sm"

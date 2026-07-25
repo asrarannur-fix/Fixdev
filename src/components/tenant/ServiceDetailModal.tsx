@@ -2067,8 +2067,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         handoverProofName.trim() !== '';
 
                       const estCost = Number(ticket.estimatedCost) || 0;
-                      const taxAmt = Math.round(estCost * 0.11);
+                      const tenantTaxRate = Number(tenantObj?.settings?.taxSettings?.taxRate) || 11;
+                      const taxAmt = Math.round(estCost * (tenantTaxRate / 100));
                       const totalAmt = estCost + taxAmt;
+                      const downPayment = Number(ticket.downPayment) || 0;
+                      const amountDue = Math.max(0, totalAmt - downPayment);
                       const targetAccountLabel =
                         handoverPaymentMethod === PaymentMethod.TEMPO
                           ? '10300 - Piutang Usaha'
@@ -2147,7 +2150,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg text-[11px] text-amber-800 leading-relaxed shadow-3xs">
                                 📌 <strong>Informasi Piutang & Pinjaman</strong>: Penyerahan dengan
                                 status tempo akan mencatat piutang customer sebesar{' '}
-                                <strong>Rp {totalAmt.toLocaleString()}</strong> ke akun{' '}
+                                <strong>Rp {amountDue.toLocaleString()}</strong> ke akun{' '}
                                 <strong>10300 - Piutang Usaha B2B</strong>. Transaksi kas tidak
                                 bertambah sampai pembayaran piutang dilunasi oleh pelanggan di modul
                                 keuangan.
@@ -2280,14 +2283,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               <div className="space-y-1.5 text-[10px] font-mono text-slate-600">
                                 <div className="flex justify-between gap-3">
                                   <span>Debit {targetAccountLabel}</span>
-                                  <strong>Rp {totalAmt.toLocaleString()}</strong>
+                                  <strong>Rp {amountDue.toLocaleString()}</strong>
                                 </div>
                                 <div className="flex justify-between gap-3">
                                   <span>Kredit Pendapatan Servis</span>
-                                  <strong>Rp {estCost.toLocaleString()}</strong>
+                                  <strong>Rp {amountDue.toLocaleString()}</strong>
                                 </div>
-                                <div className="flex justify-between gap-3">
-                                  <span>Kredit PPN Keluaran 11%</span>
+                                <div className="flex justify-between gap-3 text-slate-400">
+                                  <span>Termasuk PPN {tenantTaxRate}%</span>
                                   <strong>Rp {taxAmt.toLocaleString()}</strong>
                                 </div>
                               </div>
@@ -2340,7 +2343,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           </div>
 
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (isRefOrProofRequired && !isHandoverValid) {
                                 showToast(
                                   'Gagal memproses: Nomor referensi atau unggah bukti transfer diperlukan!',
@@ -2357,25 +2360,25 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     : undefined,
                               };
 
-                              handoverServiceDevice(ticket.id, handoverPaymentMethod, detailsObj);
-
-                              // Clear form state
-                              setHandoverRefNo('');
-                              setHandoverProofName('');
-                              setHandoverTempoDays('30');
-                              setHandoverChecklist({
-                                accessoriesReturned: false,
-                                customerChecked: false,
-                                invoiceReady: false,
-                                warrantyReady: false,
-                              });
-
-                              showToast(
-                                handoverPaymentMethod === PaymentMethod.TEMPO
-                                  ? `Serah terima berhasil via TEMPO! Piutang dicatat sebesar Rp ${totalAmt.toLocaleString()}.`
-                                  : `Serah terima berhasil via ${handoverPaymentMethod}! Status diubah menjadi DIAMBIL.`,
-                                'success'
-                              );
+                              try {
+                                await handoverServiceDevice(
+                                  ticket.id,
+                                  handoverPaymentMethod,
+                                  detailsObj
+                                );
+                                // Only reset form after the API succeeds.
+                                setHandoverRefNo('');
+                                setHandoverProofName('');
+                                setHandoverTempoDays('30');
+                                setHandoverChecklist({
+                                  accessoriesReturned: false,
+                                  customerChecked: false,
+                                  invoiceReady: false,
+                                  warrantyReady: false,
+                                });
+                              } catch {
+                                // Error already surfaced by handoverServiceDevice toast.
+                              }
                             }}
                             disabled={
                               (isRefOrProofRequired && !isHandoverValid) || !isChecklistComplete

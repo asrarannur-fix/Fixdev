@@ -147,6 +147,43 @@ export async function processPOSTransaction(
     [branchId, tenantId]
   );
   const warehouseId = warehouseRes.rows[0]?.id;
+  if (!warehouseId) {
+    throw Object.assign(
+      new Error(
+        'Gudang tidak ditemukan untuk cabang ini. Hubungi admin agar gudang cabang dikonfigurasi terlebih dahulu.'
+      ),
+      { status: 422 }
+    );
+  }
+
+  // Pre-sale stock availability check
+  const outOfStock: string[] = [];
+  for (const i of parsed.items) {
+    if (i.productId) {
+      const stockCheck = await client.query(
+        `SELECT p.name, ps.quantity
+         FROM products p
+         JOIN product_stock ps ON ps.product_id = p.id
+         WHERE p.id = $1 AND p.tenant_id = $2 AND ps.warehouse_id = $3`,
+        [i.productId, tenantId, warehouseId]
+      );
+      if (stockCheck.rows.length === 0) {
+        outOfStock.push(i.name || i.productId);
+      } else {
+        const available = Number(stockCheck.rows[0].quantity) || 0;
+        if (available < (Number(i.quantity) || 1)) {
+          const name = stockCheck.rows[0].name || i.name || i.productId;
+          outOfStock.push(`${name} (tersedia ${available}, diminta ${i.quantity})`);
+        }
+      }
+    }
+  }
+  if (outOfStock.length > 0) {
+    throw Object.assign(new Error('Stok tidak mencukupi: ' + outOfStock.join('; ')), {
+      status: 422,
+    });
+  }
+
   let subtotal = 0;
   const items: any[] = [];
   for (const i of parsed.items) {
@@ -593,25 +630,33 @@ export async function processPartialRefund(
     const origItem = allItems[ri.itemIndex];
     if (origItem.productId) {
       const restoreWarehouseId = origItem.warehouseId || defaultWarehouseId;
-      if (restoreWarehouseId) {
-        await client.query(
-          `UPDATE product_stock SET quantity = quantity + $1
-           WHERE product_id=$2 AND warehouse_id=$3`,
-          [ri.refundQuantity, origItem.productId, restoreWarehouseId]
-        );
-        await client.query(
-          `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
-           VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
-          [
-            tenantId,
-            restoreWarehouseId,
-            origItem.productId,
-            ri.refundQuantity,
-            txId,
-            `Refund ${origItem.name} x${ri.refundQuantity}: ${ri.reason}`,
-          ]
+      if (!restoreWarehouseId) {
+        throw new Error(
+          `Gudang tidak dikonfigurasi untuk produk ${origItem.name || origItem.productId}.`
         );
       }
+      const stockRestore = await client.query(
+        `UPDATE product_stock SET quantity = quantity + $1
+         WHERE product_id=$2 AND warehouse_id=$3`,
+        [ri.refundQuantity, origItem.productId, restoreWarehouseId]
+      );
+      if (stockRestore.rowCount !== 1) {
+        throw new Error(
+          `Gagal mengembalikan stok ${origItem.name || origItem.productId}. Data stok tidak ditemukan.`
+        );
+      }
+      await client.query(
+        `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
+         VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
+        [
+          tenantId,
+          restoreWarehouseId,
+          origItem.productId,
+          ri.refundQuantity,
+          txId,
+          `Refund ${origItem.name || origItem.productId} x${ri.refundQuantity}: ${ri.reason}`,
+        ]
+      );
     }
   }
 

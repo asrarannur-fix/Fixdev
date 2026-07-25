@@ -376,9 +376,11 @@ export const ServiceList: React.FC<any> = (props) => {
                         type: 'danger',
                       })
                     ) {
-                      selectedServiceIds.forEach((id) => {
-                        updateServiceTicket(id, { deletedAt: new Date().toISOString() } as any);
-                      });
+                      for (const id of selectedServiceIds) {
+                        await updateServiceTicket(id, {
+                          deletedAt: new Date().toISOString(),
+                        } as any);
+                      }
                       setSelectedServiceIds([]);
                       showToast(
                         `${selectedServiceIds.length} tiket berhasil dihapus secara massal.`,

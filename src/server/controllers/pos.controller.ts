@@ -444,21 +444,25 @@ export const voidSale = async (req: any, res: any) => {
         [reason, id]
       );
 
-      // Restore stock + log stock movements
       const warehouseRes = await client.query(
         `SELECT id FROM warehouses WHERE branch_id=$1 AND tenant_id=$2 LIMIT 1`,
         [branchId, tenantId]
       );
       const defaultWarehouseId = warehouseRes.rows[0]?.id;
+      if (!defaultWarehouseId) {
+        throw new Error('Gudang cabang tidak dikonfigurasi — tidak bisa mengembalikan stok.');
+      }
       for (const item of tx.items) {
         if (item.productId) {
           const restoreWarehouseId = item.warehouseId || defaultWarehouseId;
-          if (!restoreWarehouseId) continue;
-          await client.query(
+          const stockRestore = await client.query(
             `UPDATE product_stock SET quantity = quantity + $1
              WHERE product_id=$2 AND warehouse_id=$3`,
             [item.quantity, item.productId, restoreWarehouseId]
           );
+          if (stockRestore.rowCount !== 1) {
+            throw new Error(`Gagal mengembalikan stok ${item.name}. Data stok tidak ditemukan.`);
+          }
           await client.query(
             `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
              VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
@@ -474,7 +478,6 @@ export const voidSale = async (req: any, res: any) => {
         }
       }
 
-      // Reversal journal
       const journalRes = await client.query(
         `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, 'POS_VOID', $5) RETURNING id`,

@@ -2514,7 +2514,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newTicket;
   };
 
-  const updateServiceTicket = (id: string, updates: Partial<ServiceTicket>) => {
+  const updateServiceTicket = async (id: string, updates: Partial<ServiceTicket>) => {
     const existing = services.find((s) => s.id === id);
     if (!existing) return;
     verifyScope(existing.tenantId);
@@ -2556,16 +2556,22 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const updatedTicket = { ...existing, ...updates, timeline };
 
+    // Optimistic update, then persist to backend. If the sync fails we roll
+    // back the optimistic state and surface the error instead of silently
+    // losing the edit (data would otherwise disappear after reload).
     setServices((prev) => prev.map((s) => (s.id === id ? updatedTicket : s)));
-    syncToApi('services', 'update', updatedTicket);
-    addLog('Update Service Ticket', `Memperbarui detail tiket servis ID: ${id}`, 'SERVICE');
-
-    // Automatically sync updated ticket to server tracking cache
-    fetch('/api/service-tracking/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket: updatedTicket }),
-    }).catch((err) => console.error('Auto-sync update ticket error:', err));
+    try {
+      await syncToApi('services', 'update', updatedTicket);
+      addLog('Update Service Ticket', `Memperbarui detail tiket servis ID: ${id}`, 'SERVICE');
+      // Soft-delete: drop the ticket from local state once persisted so the
+      // list reflects deletion immediately (backend also filters deleted_at).
+      if ((updates as any).deletedAt) {
+        setServices((prev) => prev.filter((s) => s.id !== id));
+      }
+    } catch (err: any) {
+      setServices((prev) => prev.map((s) => (s.id === id ? existing : s)));
+      showToast('Gagal menyimpan perubahan tiket: ' + (err?.message || 'unknown error'), 'error');
+    }
   };
 
   const triggerCustomerNotification = (
