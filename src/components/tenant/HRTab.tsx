@@ -14,6 +14,7 @@ import { AttendanceExport } from './hr/AttendanceExport';
 import { HRReports } from './hr/HRReports';
 import { PayrollBreakdown } from './hr/PayrollBreakdown';
 import { ShiftManagement } from './hr/ShiftManagement';
+import { HRHero } from './hr/HRHero';
 
 // Grup HR: 13 panel lama dikonsolidasi jadi 5 grup.
 // Tiap grup punya sub-nav internal yang mengirim id panel asli ke tiap komponen
@@ -80,19 +81,22 @@ export function HRTab({ activeSubTab }: { activeSubTab: string }) {
       className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_tr:hover]:bg-zinc-900"
       id="hr-pane"
     >
+      {/* Hero khusus grup non-Kehadiran (grup attendance punya hero sendiri di panelnya) */}
+      {group !== 'attendance' && <HRHero group={group} />}
+
       {/* Sub-nav internal grup (sembunyikan bila grup cuma punya 1 panel) */}
       {tabs.length > 1 && (
-        <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+        <div className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl bg-slate-100/70 p-1.5 dark:bg-zinc-900/70">
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setActive(t.id)}
               className={
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ' +
+                'flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-all ' +
                 (view === t.id
-                  ? 'bg-sky-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
+                  ? 'bg-white text-sky-700 shadow-sm ring-1 ring-slate-200 dark:bg-zinc-800 dark:text-sky-300 dark:ring-zinc-700'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100')
               }
             >
               {t.label}
