@@ -19,6 +19,10 @@ import {
   Upload,
   Filter,
   Lock,
+  Users,
+  TrendingUp,
+  UserPlus,
+  CalendarClock,
 } from 'lucide-react';
 import { AccountType, Employee, ServiceStatus } from '../../types';
 import { useToast } from '../ui/Toast';
@@ -90,144 +94,207 @@ export const HRAttendancePanel: React.FC<any> = (props) => {
   const [newEmpPos, setNewEmpPos] = React.useState('');
   const [newEmpSalary, setNewEmpSalary] = React.useState('3500000');
 
+  // --- Derived stats (computed once, reused in hero + cards) ---
+  const branchEmployees = employees.filter(
+    (e) => e.tenantId === currentTenantId && e.branchId === currentBranchId
+  );
+  const totalEmp = branchEmployees.length;
+  const presentToday = branchEmployees.filter((e) =>
+    e.attendanceHistory?.some(
+      (h) => h.date === attendanceDate && (h.status === 'PRESENT' || h.status === 'LATE')
+    )
+  ).length;
+  const lateToday = branchEmployees.filter((e) =>
+    e.attendanceHistory?.some((h) => h.date === attendanceDate && h.status === 'LATE')
+  ).length;
+  const leaveToday = branchEmployees.filter((e) =>
+    e.attendanceHistory?.some(
+      (h) => h.date === attendanceDate && (h.status === 'LEAVE' || h.status === 'ABSENT')
+    )
+  ).length;
+  const pendingLeaves = branchEmployees.reduce(
+    (sum, e) => sum + (e.leaves?.filter((l) => l.status === 'PENDING').length || 0),
+    0
+  );
+  const attendanceRate = totalEmp > 0 ? Math.round((presentToday / totalEmp) * 100) : 0;
+
   if (activeSubTab !== 'attendance') return null;
   return (
     <div className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_tr:hover]:bg-zinc-900">
-      {/* Header Card */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">
-              Modul HRD & Presensi Karyawan Terpadu
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Kelola daftar karyawan, jam masuk/pulang, persetujuan cuti, serta log kehadiran secara
-              terperinci.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setAttendanceSubTabState('log')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer border ${
-                attendanceSubTabState === 'log'
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              📋 Log Presensi
-            </button>
-            <button
-              onClick={() => setAttendanceSubTabState('leaves')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer border relative ${
-                attendanceSubTabState === 'leaves'
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              📅 Pengajuan Cuti (Leaves)
-              {employees
-                .filter((e) => e.tenantId === currentTenantId && e.branchId === currentBranchId)
-                .reduce(
-                  (sum, e) => sum + (e.leaves?.filter((l) => l.status === 'PENDING').length || 0),
-                  0
-                ) > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white animate-pulse">
-                  {employees
-                    .filter((e) => e.tenantId === currentTenantId && e.branchId === currentBranchId)
-                    .reduce(
-                      (sum, e) =>
-                        sum + (e.leaves?.filter((l) => l.status === 'PENDING').length || 0),
-                      0
-                    )}
+      {/* ===== Hero Header ===== */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-6 shadow-xl shadow-slate-900/20 dark:from-black dark:via-zinc-900 dark:to-indigo-950">
+        {/* decorative blobs */}
+        <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-indigo-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
+
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black tracking-tight text-white">
+                HRD &amp; Presensi Terpadu
+              </h3>
+              <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-300">
+                Kelola karyawan, jam masuk/pulang, cuti, dan log kehadiran dalam satu tampilan.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white ring-1 ring-white/15">
+                  <CalendarClock className="h-3 w-3" />
+                  {new Date(attendanceDate).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  })}
                 </span>
-              )}
-            </button>
-            <button
-              onClick={() => setAttendanceSubTabState('add_employee')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer border ${
-                attendanceSubTabState === 'add_employee'
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
+                {pendingLeaves > 0 && (
+                  <span className="inline-flex animate-pulse items-center gap-1 rounded-full bg-rose-500/90 px-3 py-1 text-[11px] font-bold text-white">
+                    {pendingLeaves} cuti menunggu approval
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Attendance rate ring */}
+          <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur">
+            <div
+              className="relative flex h-20 w-20 items-center justify-center rounded-full"
+              style={{
+                background: `conic-gradient(#34d399 ${attendanceRate * 3.6}deg, rgba(255,255,255,0.12) 0deg)`,
+              }}
             >
-              👤 Registrasi Staff
-            </button>
+              <div className="flex h-15 w-15 flex-col items-center justify-center rounded-full bg-slate-900 px-3 py-3 dark:bg-black">
+                <span className="text-lg font-black leading-none text-white">
+                  {attendanceRate}%
+                </span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400">
+                  Hadir
+                </span>
+              </div>
+            </div>
+            <div className="text-white">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Tingkat Kehadiran
+              </p>
+              <p className="text-2xl font-black leading-tight">
+                {presentToday}
+                <span className="text-sm font-semibold text-slate-400">/{totalEmp}</span>
+              </p>
+              <p className="text-[10px] text-slate-400">staff hadir hari ini</p>
+            </div>
           </div>
         </div>
 
-        {/* Performance Widgets (Today's Stats) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Total Karyawan
-            </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
-              {
-                employees.filter(
-                  (e) => e.tenantId === currentTenantId && e.branchId === currentBranchId
-                ).length
-              }{' '}
-              Orang
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-1">Aktif di cabang ini</span>
-          </div>
-          <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
-            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">
-              Hadir Hari Ini
-            </span>
-            <span className="text-2xl font-black text-emerald-700 mt-1 block">
-              {
-                employees
-                  .filter((e) => e.tenantId === currentTenantId && e.branchId === currentBranchId)
-                  .filter((e) =>
-                    e.attendanceHistory?.some(
-                      (h) =>
-                        h.date === attendanceDate && (h.status === 'PRESENT' || h.status === 'LATE')
-                    )
-                  ).length
-              }{' '}
-              Staff
-            </span>
-            <span className="text-[10px] text-emerald-600 block mt-1">Disiplin kerja 100%</span>
-          </div>
-          <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100/50">
-            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">
-              Terlambat (Late)
-            </span>
-            <span className="text-2xl font-black text-amber-700 mt-1 block">
-              {
-                employees
-                  .filter((e) => e.tenantId === currentTenantId && e.branchId === currentBranchId)
-                  .filter((e) =>
-                    e.attendanceHistory?.some(
-                      (h) => h.date === attendanceDate && h.status === 'LATE'
-                    )
-                  ).length
-              }{' '}
-              Staff
-            </span>
-            <span className="text-[10px] text-amber-600 block mt-1">Toleransi s/d 15 menit</span>
-          </div>
-          <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100/50">
-            <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">
-              Izin / Cuti / Sakit
-            </span>
-            <span className="text-2xl font-black text-rose-700 mt-1 block">
-              {
-                employees
-                  .filter((e) => e.tenantId === currentTenantId && e.branchId === currentBranchId)
-                  .filter((e) =>
-                    e.attendanceHistory?.some(
-                      (h) =>
-                        h.date === attendanceDate && (h.status === 'LEAVE' || h.status === 'ABSENT')
-                    )
-                  ).length
-              }{' '}
-              Staff
-            </span>
-            <span className="text-[10px] text-rose-600 block mt-1">Cuti sah terverifikasi</span>
-          </div>
+        {/* Action toggles */}
+        <div className="relative mt-5 flex flex-wrap items-center gap-2">
+          {[
+            { key: 'log', label: 'Log Presensi', Icon: Clock },
+            { key: 'leaves', label: 'Pengajuan Cuti', Icon: Calendar, badge: pendingLeaves },
+            { key: 'add_employee', label: 'Registrasi Staff', Icon: UserPlus },
+          ].map(({ key, label, Icon, badge }) => (
+            <button
+              key={key}
+              onClick={() => setAttendanceSubTabState(key)}
+              className={`relative inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                attendanceSubTabState === key
+                  ? 'bg-white text-slate-900 shadow-lg shadow-black/20'
+                  : 'bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/20'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+              {badge && badge > 0 ? (
+                <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                  {badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* ===== Stat Cards ===== */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          {
+            label: 'Total Karyawan',
+            value: totalEmp,
+            unit: 'Orang',
+            sub: 'Aktif di cabang ini',
+            Icon: Users,
+            tone: 'text-slate-700 dark:text-zinc-200',
+            ring: 'ring-slate-200 dark:ring-zinc-800',
+            iconBg: 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300',
+            bar: 'bg-slate-400',
+          },
+          {
+            label: 'Hadir Hari Ini',
+            value: presentToday,
+            unit: 'Staff',
+            sub: `${attendanceRate}% dari total`,
+            Icon: CheckCircle2,
+            tone: 'text-emerald-600',
+            ring: 'ring-emerald-100',
+            iconBg: 'bg-emerald-100 text-emerald-600',
+            bar: 'bg-emerald-500',
+          },
+          {
+            label: 'Terlambat',
+            value: lateToday,
+            unit: 'Staff',
+            sub: 'Toleransi s/d 15 menit',
+            Icon: AlertCircle,
+            tone: 'text-amber-600',
+            ring: 'ring-amber-100',
+            iconBg: 'bg-amber-100 text-amber-600',
+            bar: 'bg-amber-500',
+          },
+          {
+            label: 'Izin / Cuti / Sakit',
+            value: leaveToday,
+            unit: 'Staff',
+            sub: 'Cuti sah terverifikasi',
+            Icon: CalendarClock,
+            tone: 'text-rose-600',
+            ring: 'ring-rose-100',
+            iconBg: 'bg-rose-100 text-rose-600',
+            bar: 'bg-rose-500',
+          },
+        ].map((c) => (
+          <div
+            key={c.label}
+            className={`group relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm ring-1 ${c.ring} transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-zinc-950`}
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                {c.label}
+              </span>
+              <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${c.iconBg}`}>
+                <c.Icon className="h-4 w-4" />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className={`text-3xl font-black ${c.tone}`}>{c.value}</span>
+              <span className="text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                {c.unit}
+              </span>
+            </div>
+            <span className="mt-1 block text-[10px] text-slate-400 dark:text-zinc-500">
+              {c.sub}
+            </span>
+            <div className={`mt-2 h-1 w-full rounded-full bg-slate-100 dark:bg-zinc-800`}>
+              <div
+                className={`h-1 rounded-full ${c.bar} transition-all`}
+                style={{
+                  width:
+                    totalEmp > 0 ? `${Math.min(100, (Number(c.value) / totalEmp) * 100)}%` : '0%',
+                }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Subtab Content: Log Presensi */}
