@@ -5,6 +5,8 @@ import { logger } from '../../lib/logger.js';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
 import { redactTenantSettingsSecrets } from './bootstrap.controller.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 interface TenantSubscriptionInfo {
   id: string;
@@ -235,21 +237,21 @@ export async function getOverview(req: Request, res: Response) {
 export async function collectStorageUsage(req: Request, res: Response) {
   try {
     const uploadDir = process.env.FILE_UPLOAD_DIR || './uploads';
-    const fs = await import('fs');
-    const path = await import('path');
     const tenants = await dbQuery(`SELECT id FROM tenants ORDER BY id`);
     let measured = 0;
     for (const tenant of tenants.rows) {
       let total = 0;
       const tenantDir = path.join(uploadDir, `tenant-${tenant.id}`);
-      if (fs.existsSync(tenantDir)) {
-        const files = fs.readdirSync(tenantDir, { recursive: true, withFileTypes: true });
+      try {
+        const files = await fs.readdir(tenantDir, { recursive: true, withFileTypes: true });
         for (const file of files) {
           if (file.isFile()) {
-            const stats = fs.statSync(path.join(tenantDir, file.name));
+            const stats = await fs.stat(path.join(tenantDir, file.name));
             total += stats.size;
           }
         }
+      } catch {
+        // directory doesn't exist, total remains 0
       }
       await dbTransaction(async (client) => {
         await client.query(
@@ -285,6 +287,10 @@ export async function collectStorageUsage(req: Request, res: Response) {
 
 export async function listTenants(req: Request, res: Response) {
   const { page, pageSize, offset } = pageArgs(req);
+  const validStatuses = ['TRIAL', 'ACTIVE', 'SUSPENDED'];
+  const validTiers = ['BASIC', 'PRO', 'ENTERPRISE'];
+  const validAttention = ['trial-warning', 'storage'];
+  const validSorts = Object.keys(allowedSorts);
   const params: unknown[] = [];
   const clauses: string[] = [];
   if (req.query.search) {
@@ -294,22 +300,37 @@ export async function listTenants(req: Request, res: Response) {
     );
   }
   if (req.query.status) {
-    params.push(req.query.status);
+    const s = String(req.query.status);
+    if (!validStatuses.includes(s))
+      return res.status(422).json({ error: 'Status filter tidak valid.' });
+    params.push(s);
     clauses.push(`t.status=$${params.length}`);
   }
   if (req.query.tier) {
-    params.push(req.query.tier);
+    const t = String(req.query.tier);
+    if (!validTiers.includes(t)) return res.status(422).json({ error: 'Tier filter tidak valid.' });
+    params.push(t);
     clauses.push(`t.tier=$${params.length}`);
   }
-  if (req.query.attention === 'trial-warning')
-    clauses.push(`t.status='TRIAL' AND t.trial_ends_at BETWEEN now() AND now()+interval '7 days'`);
-  if (req.query.attention === 'storage')
-    clauses.push(
-      `t.storage_used_bytes IS NOT NULL AND t.storage_used_bytes >= COALESCE((t.settings#>>'{limits,storageMb}')::numeric,1024)*1048576*0.8`
-    );
+  if (req.query.attention) {
+    const a = String(req.query.attention);
+    if (!validAttention.includes(a))
+      return res.status(422).json({ error: 'Filter attention tidak valid.' });
+    if (a === 'trial-warning')
+      clauses.push(
+        `t.status='TRIAL' AND t.trial_ends_at BETWEEN now() AND now()+interval '7 days'`
+      );
+    if (a === 'storage')
+      clauses.push(
+        `t.storage_used_bytes IS NOT NULL AND t.storage_used_bytes >= COALESCE((t.settings#>>'{limits,storageMb}')::numeric,1024)*1048576*0.8`
+      );
+  }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const sort = allowedSorts[String(req.query.sort || 'createdAt')] || allowedSorts.createdAt;
-  const direction = String(req.query.direction).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+  const sort = validSorts.includes(String(req.query.sort || 'createdAt'))
+    ? allowedSorts[String(req.query.sort)]
+    : allowedSorts.createdAt;
+  const dir = String(req.query.direction).toLowerCase();
+  const direction = dir === 'asc' ? 'ASC' : 'DESC';
   try {
     const count = await dbQuery(
       `SELECT COUNT(*)::int AS count FROM tenants t ${where}`,
@@ -657,13 +678,26 @@ export async function endImpersonation(req: Request, res: Response) {
 
 export async function listAudit(req: Request, res: Response) {
   const { page, pageSize, offset } = pageArgs(req);
+  const validOutcomes = ['SUCCESS', 'FAILURE'];
+  const validSorts = Object.keys(allowedSorts);
   const params: unknown[] = [];
   const clauses: string[] = [];
+  if (req.query.outcome) {
+    const o = String(req.query.outcome);
+    if (!validOutcomes.includes(o))
+      return res.status(422).json({ error: 'Filter outcome tidak valid.' });
+    params.push(o);
+    clauses.push(`outcome=$${params.length}`);
+  }
+  if (req.query.action) {
+    const a = String(req.query.action).trim();
+    if (!a) return res.status(422).json({ error: 'Filter action tidak valid.' });
+    params.push(a);
+    clauses.push(`action=$${params.length}`);
+  }
   const filters: Array<[string, string]> = [
     ['tenantId', 'effective_tenant_id'],
     ['actorId', 'actor_user_id'],
-    ['outcome', 'outcome'],
-    ['action', 'action'],
   ];
   for (const [query, column] of filters)
     if (req.query[query]) {
@@ -671,10 +705,15 @@ export async function listAudit(req: Request, res: Response) {
       clauses.push(`${column}=$${params.length}`);
     }
   if (req.query.from) {
+    const fromDate = new Date(String(req.query.from));
+    if (isNaN(fromDate.getTime()))
+      return res.status(422).json({ error: 'Filter from tidak valid.' });
     params.push(req.query.from);
     clauses.push(`created_at >= $${params.length}`);
   }
   if (req.query.to) {
+    const toDate = new Date(String(req.query.to));
+    if (isNaN(toDate.getTime())) return res.status(422).json({ error: 'Filter to tidak valid.' });
     params.push(req.query.to);
     clauses.push(`created_at <= $${params.length}`);
   }
@@ -685,8 +724,11 @@ export async function listAudit(req: Request, res: Response) {
     );
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const sort = allowedSorts[String(req.query.sort || 'createdAt')] || allowedSorts.createdAt;
-  const direction = String(req.query.direction).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+  const sort = validSorts.includes(String(req.query.sort || 'createdAt'))
+    ? allowedSorts[String(req.query.sort)]
+    : allowedSorts.createdAt;
+  const dir = String(req.query.direction).toLowerCase();
+  const direction = dir === 'asc' ? 'ASC' : 'DESC';
   try {
     const count = await dbQuery(
       `SELECT COUNT(*)::int AS count FROM superadmin_audit_events ${where}`,
@@ -717,12 +759,10 @@ export async function createBackupJob(req: Request, res: Response) {
   if (!['SNAPSHOT', 'RESTORE_DRY_RUN', 'RESTORE'].includes(mode))
     return res.status(422).json({ error: 'Mode backup tidak valid.' });
   if (mode === 'RESTORE')
-    return res
-      .status(501)
-      .json({
-        error:
-          'Eksekusi restore database belum tersedia. Jalankan dry-run lalu gunakan prosedur restore terkelola.',
-      });
+    return res.status(501).json({
+      error:
+        'Eksekusi restore database belum tersedia. Jalankan dry-run lalu gunakan prosedur restore terkelola.',
+    });
   if (
     mode === 'RESTORE_DRY_RUN' &&
     (!summary || typeof summary !== 'object' || !Number.isInteger(schemaVersion))
@@ -1366,12 +1406,12 @@ export async function permanentDeleteTenant(req: Request, res: Response) {
       await client.query(`DELETE FROM tenants WHERE id=$1`, [tenant.id]);
 
       // Delete associated file storage
-      const fs = await import('fs');
-      const path = await import('path');
       const uploadDir = process.env.FILE_UPLOAD_DIR || './uploads';
       const tenantDir = path.join(uploadDir, `tenant-${tenant.id}`);
-      if (fs.existsSync(tenantDir)) {
-        fs.rmSync(tenantDir, { recursive: true, force: true });
+      try {
+        await fs.rm(tenantDir, { recursive: true, force: true });
+      } catch {
+        // directory doesn't exist or already removed
       }
 
       return { tenant: { id: tenant.id, name: tenant.name, subdomain: tenant.subdomain } };
@@ -1400,8 +1440,6 @@ export async function registerTenant(req: Request, res: Response) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-  const uniqueSuffix = randomUUID().slice(0, 8); // Use first 8 chars of a UUID
-  const cleanSubdomain = `${baseSlug}-${uniqueSuffix}`;
 
   const idempotencyKey = randomUUID(); // Always generate a new one on the backend
 
@@ -1452,6 +1490,22 @@ export async function registerTenant(req: Request, res: Response) {
         cleanOwnerEmail,
       ]);
       if (duplicateEmail.rows[0]) return { code: 409, error: 'Email owner sudah terdaftar.' };
+
+      let cleanSubdomain = '';
+      let attempts = 0;
+      while (attempts < 5) {
+        const uniqueSuffix = randomUUID().slice(0, 16);
+        const candidate = `${baseSlug}-${uniqueSuffix}`;
+        const existing = await client.query(`SELECT id FROM tenants WHERE subdomain=$1`, [
+          candidate,
+        ]);
+        if (existing.rows.length === 0) {
+          cleanSubdomain = candidate;
+          break;
+        }
+        attempts++;
+      }
+      if (!cleanSubdomain) return { code: 409, error: 'Subdomain sudah ada, coba lagi.' };
 
       const tenantId = randomUUID();
       const branchId = randomUUID();
@@ -1556,14 +1610,12 @@ export async function registerTenant(req: Request, res: Response) {
     });
     // Return the full invitation token so automated flows (E2E, provisioning)
     // can accept the owner invitation without reading email/outbox.
-    return res
-      .status(201)
-      .json({
-        success: true,
-        ...result,
-        invitationToken: token,
-        delivery: deliveryQueued ? 'EMAIL_SENT' : 'OUTBOX_PENDING',
-      });
+    return res.status(201).json({
+      success: true,
+      ...result,
+      invitationToken: token,
+      delivery: deliveryQueued ? 'EMAIL_SENT' : 'OUTBOX_PENDING',
+    });
   } catch (err: any) {
     logger.error({ err: err.message }, 'Tenant registration failed');
     return res.status(500).json({ error: 'Registrasi tenant gagal.' });
@@ -1615,13 +1667,11 @@ export async function createTenantInvitation(req: Request, res: Response) {
       token,
       row.rows[0].expiresAt
     ).catch(() => false);
-    res
-      .status(201)
-      .json({
-        success: true,
-        invitation: row.rows[0],
-        delivery: sent ? 'EMAIL_SENT' : 'OUTBOX_PENDING',
-      });
+    res.status(201).json({
+      success: true,
+      invitation: row.rows[0],
+      delivery: sent ? 'EMAIL_SENT' : 'OUTBOX_PENDING',
+    });
   } catch (err: any) {
     if (err.code === '23505')
       return res.status(409).json({ error: 'Undangan aktif untuk email ini sudah tersedia.' });
