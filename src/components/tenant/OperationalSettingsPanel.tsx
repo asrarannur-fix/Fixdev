@@ -181,7 +181,15 @@ export const OperationalSettingsPanel: React.FC<Props> = ({
           },
         },
       };
-      await updateTenant(currentTenantId, { settings: settingsMap[activeSection] });
+      await updateTenant(currentTenantId, {
+        settings: {
+          ...settingsMap.service,
+          ...settingsMap.pos,
+          ...settingsMap.stok,
+          ...settingsMap.accounting,
+          ...settingsMap.hr,
+        },
+      });
       showToast('Pengaturan operasional berhasil disimpan!', 'success');
     } catch (error: any) {
       showToast(error.message || 'Pengaturan operasional gagal disimpan.', 'error');
@@ -644,7 +652,7 @@ export const OperationalSettingsPanel: React.FC<Props> = ({
                 text="Toleransi Keterlambatan (Menit)"
                 sub="Karyawan dianggap terlambat jika melebihi batas ini setelah jam masuk."
               />
-              <NumInput val={graceLate} onChange={setGraceLate} min={0} max={120} />
+              <NumInput val={graceLate} onChange={setGraceLate} min={0} max={1440} />
             </div>
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
               <div>

@@ -220,9 +220,6 @@ const schemas = {
       templates: z.array(templateSchema).max(200).optional(),
     })
     .strict(),
-  moduleConfigs: z
-    .record(z.string().trim().min(1).max(100), z.object({ enabled: bool.optional() }).strict())
-    .refine((value) => Object.keys(value).length <= 100),
   moduleParams: z
     .object({
       warrantyDays: z.number().int().min(0).max(365).optional(),

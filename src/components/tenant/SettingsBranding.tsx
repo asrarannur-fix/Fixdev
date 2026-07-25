@@ -1,27 +1,12 @@
 import * as React from 'react';
-import { Settings, Upload, RotateCcw, CheckSquare } from 'lucide-react';
+import { Settings, Upload, CheckSquare } from 'lucide-react';
 import { applyTenantBranding } from '../../utils/branding';
 import { logBrandingChange } from './BrandingHistory';
 
-/**
- * Branding sederhana untuk penyewa: logo, warna, dan slogan.
- * Fitur teknis (custom domain, white-label, preset, font, export/import,
- * history, live preview) sengaja dihilangkan agar clean dan mudah dipakai.
- */
 export const SettingsBranding: React.FC<any> = (props) => {
   const { activeTenant, branding, setBranding, showToast, updateTenant } = props;
 
   const importRef = React.useRef<HTMLInputElement>(null);
-
-  const DEFAULT_PRIMARY = '#4f46e5';
-  const DEFAULT_SECONDARY = '#0ea5e9';
-
-  const resetToDefault = () => {
-    const next = { ...branding, primaryColor: DEFAULT_PRIMARY, secondaryColor: DEFAULT_SECONDARY };
-    setBranding(next);
-    applyTenantBranding(next, activeTenant?.name);
-    showToast('Warna direset ke default', 'info');
-  };
 
   const handleLogoUpload = (file: File) => {
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 1024 * 1024) {
@@ -56,59 +41,6 @@ export const SettingsBranding: React.FC<any> = (props) => {
             </h4>
             <p className="text-[10px] text-slate-400">Logo, warna, dan slogan bisnis Anda.</p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Warna utama</span>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={branding.primaryColor || DEFAULT_PRIMARY}
-                onChange={(e) => {
-                  const next = { ...branding, primaryColor: e.target.value };
-                  setBranding(next);
-                  applyTenantBranding(next, activeTenant?.name);
-                }}
-                className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
-              />
-              <input
-                type="text"
-                value={branding.primaryColor || DEFAULT_PRIMARY}
-                onChange={(e) => {
-                  const next = { ...branding, primaryColor: e.target.value };
-                  setBranding(next);
-                  applyTenantBranding(next, activeTenant?.name);
-                }}
-                className="flex-1 px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg"
-              />
-            </div>
-          </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Warna aksen</span>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={branding.secondaryColor || DEFAULT_SECONDARY}
-                onChange={(e) => {
-                  const next = { ...branding, secondaryColor: e.target.value };
-                  setBranding(next);
-                  applyTenantBranding(next, activeTenant?.name);
-                }}
-                className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
-              />
-              <input
-                type="text"
-                value={branding.secondaryColor || DEFAULT_SECONDARY}
-                onChange={(e) => {
-                  const next = { ...branding, secondaryColor: e.target.value };
-                  setBranding(next);
-                  applyTenantBranding(next, activeTenant?.name);
-                }}
-                className="flex-1 px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg"
-              />
-            </div>
-          </label>
         </div>
 
         <label className="block space-y-1">
@@ -160,16 +92,22 @@ export const SettingsBranding: React.FC<any> = (props) => {
             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent"
           />
         </label>
+
+        <label className="block space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400">Custom Domain</span>
+          <input
+            value={branding.customDomain || ''}
+            onChange={(e) => setBranding({ ...branding, customDomain: e.target.value })}
+            placeholder="shop.example.com"
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-accent"
+          />
+          <p className="text-[9px] text-slate-400">
+            Domain khusus untuk toko Anda. Arahkan CNAME ke domain ini.
+          </p>
+        </label>
       </div>
 
       <div className="flex flex-wrap justify-end gap-2">
-        <button
-          onClick={resetToDefault}
-          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg cursor-pointer transition-all flex items-center gap-1.5"
-          title="Reset warna ke default"
-        >
-          <RotateCcw className="w-3.5 h-3.5" /> Reset
-        </button>
         <button
           onClick={saveBranding}
           className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-sm"

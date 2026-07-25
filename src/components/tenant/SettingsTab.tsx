@@ -1,36 +1,32 @@
-import * as React from "react";
-import { useState, useEffect, useMemo, useRef } from "react";
-import {
-  Search,
-  X,
-  Settings,
-} from "lucide-react";
-import { useSaaS } from "../../context/SaaSContext";
-import { useToast } from "../ui/Toast";
-import { useConfirm } from "../ui/ConfirmDialog";
-import { RBACManager } from "../RBACManager";
-import { BranchesManagerPanel } from "./settings/panels/BranchesManagerPanel";
-import { ModuleParameterConfig } from "../ModuleParameterConfig";
-import SaaSSubscription from "../SaaSSubscription";
-import { DeveloperApiManager } from "../DeveloperApiManager";
-import { DataImporter } from "../DataImporter";
-import { WhatsAppConnector } from "../WhatsAppConnector";
-import { NotificationEngine } from "../NotificationEngine";
-import { TelegramBotManager } from "../TelegramBotManager";
-import { VoucherManager } from "../VoucherManager";
-import { MaintenanceContractManager } from "../MaintenanceContractManager";
-import { SystemBackup } from "./SystemBackup";
-import { SecuritySettingsPanel } from "./SecuritySettingsPanel";
-import { OperationalSettingsPanel } from "./OperationalSettingsPanel";
-import { AppSettingsPanel } from "./AppSettingsPanel";
-import { BRANDING_PRESETS } from "../../config/BrandingPresets";
-import { SettingsBranding } from "./SettingsBranding";
-import { Tenant, Branch, TenantBranding } from "../../types";
-import { GROUP_ORDER, getSettingsTabs } from "../../config/settingsConfigs";
-import { SettingsPrinterTerms } from "./SettingsPrinterTerms";
-import { SettingsWorkflows } from "./SettingsWorkflows";
-import { checkQzTray, printJobAsync } from "../../utils/printJob";
-import { useServiceTrackerQr } from "../../hooks/useServiceTrackerQr";
+import * as React from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Search, X, Settings } from 'lucide-react';
+import { useSaaS } from '../../context/SaaSContext';
+import { useToast } from '../ui/Toast';
+import { useConfirm } from '../ui/ConfirmDialog';
+import { RBACManager } from '../RBACManager';
+import { BranchesManagerPanel } from './settings/panels/BranchesManagerPanel';
+import { ModuleParameterConfig } from '../ModuleParameterConfig';
+import SaaSSubscription from '../SaaSSubscription';
+import { DeveloperApiManager } from '../DeveloperApiManager';
+import { DataImporter } from '../DataImporter';
+import { WhatsAppConnector } from '../WhatsAppConnector';
+import { NotificationEngine } from '../NotificationEngine';
+import { TelegramBotManager } from '../TelegramBotManager';
+import { VoucherManager } from '../VoucherManager';
+import { MaintenanceContractManager } from '../MaintenanceContractManager';
+import { SystemBackup } from './SystemBackup';
+import { SecuritySettingsPanel } from './SecuritySettingsPanel';
+import { OperationalSettingsPanel } from './OperationalSettingsPanel';
+import { AppSettingsPanel } from './AppSettingsPanel';
+import { BRANDING_PRESETS } from '../../config/BrandingPresets';
+import { SettingsBranding } from './SettingsBranding';
+import { Tenant, Branch, TenantBranding } from '../../types';
+import { GROUP_ORDER, getSettingsTabs } from '../../config/settingsConfigs';
+import { SettingsPrinterTerms } from './SettingsPrinterTerms';
+import { SettingsWorkflows } from './SettingsWorkflows';
+import { checkQzTray, printJobAsync } from '../../utils/printJob';
+import { useServiceTrackerQr } from '../../hooks/useServiceTrackerQr';
 
 interface SettingsTabProps {
   activeSubTab: string;
@@ -68,28 +64,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const { handleDirectPrintLabel } = useServiceTrackerQr(services || [], currentTenantId, apiFetch);
 
   const tenantObj = tenants.find((t: Tenant) => t.id === currentTenantId);
-  const tenantBranchesCount = branches.filter(
-    (b: Branch) => b.tenantId === currentTenantId,
-  ).length;
+  const tenantBranchesCount = branches.filter((b: Branch) => b.tenantId === currentTenantId).length;
 
   const currentUserPermissions = currentUser?.permissions ?? [];
 
   // Local state for Settings
-  const [searchQuery, setSearchQuery] = useState("");
-  const [skActiveTab, setSkActiveTab] = useState("general");
-  const [brandingPreviewTab, setBrandingPreviewTab] = useState("login");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [skActiveTab, setSkActiveTab] = useState('general');
+  const [brandingPreviewTab, setBrandingPreviewTab] = useState('login');
   const [domainVerified, setDomainVerified] = useState(!!tenantObj?.customDomainVerifiedAt);
   const [isVerifyingDomain, setIsVerifyingDomain] = useState(false);
-  
+
   // Single branding state object
   const [branding, setBranding] = useState<TenantBranding>({
     primaryColor: tenantObj?.branding?.primaryColor || BRANDING_PRESETS.blue.primaryColor,
     secondaryColor: tenantObj?.branding?.secondaryColor || BRANDING_PRESETS.blue.secondaryColor,
-    logoUrl: tenantObj?.branding?.logoUrl || "",
-    slogan: tenantObj?.branding?.slogan || "",
+    logoUrl: tenantObj?.branding?.logoUrl || '',
+    slogan: tenantObj?.branding?.slogan || '',
     fontFamily: tenantObj?.branding?.fontFamily || BRANDING_PRESETS.blue.fontFamily,
-    portalHelpTitle: tenantObj?.branding?.portalHelpTitle || "Pusat Bantuan & Garansi",
-    portalContactText: tenantObj?.branding?.portalContactText || "Hubungi toko untuk bantuan dan informasi garansi.",
+    portalHelpTitle: tenantObj?.branding?.portalHelpTitle || 'Pusat Bantuan & Garansi',
+    portalContactText:
+      tenantObj?.branding?.portalContactText || 'Hubungi toko untuk bantuan dan informasi garansi.',
 
     accentColor: tenantObj?.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
     whiteLabelEnabled: tenantObj?.branding?.whiteLabelEnabled || false,
@@ -98,118 +93,139 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const verifyDomain = (domain: string) => {
     setDomainVerified(false);
     if (!domain.trim()) {
-      showToast("Masukkan custom domain terlebih dahulu.", "error");
+      showToast('Masukkan custom domain terlebih dahulu.', 'error');
       return;
     }
     showToast(
-      "Verifikasi DNS otomatis belum tersedia. Domain belum dianggap aktif; arahkan CNAME lalu verifikasi dari infrastruktur hosting.",
-      "warning",
+      'Verifikasi DNS otomatis belum tersedia. Domain belum dianggap aktif; arahkan CNAME lalu verifikasi dari infrastruktur hosting.',
+      'warning'
     );
   };
 
-
   const [paperSize, setPaperSize] = useState(
-    tenantObj?.settings?.printConfig?.paperSize || "thermal_80",
+    tenantObj?.settings?.printConfig?.paperSize || 'thermal_80'
   );
-  const [printMode, setPrintMode] = useState<"browser" | "qz">(tenantObj?.settings?.printConfig?.printMode || "browser");
-  const [printerName, setPrinterName] = useState(tenantObj?.settings?.printConfig?.printerName || "");
+  const [printMode, setPrintMode] = useState<'browser' | 'qz'>(
+    tenantObj?.settings?.printConfig?.printMode || 'browser'
+  );
+  const [printerName, setPrinterName] = useState(
+    tenantObj?.settings?.printConfig?.printerName || ''
+  );
   const [labelWidth, setLabelWidth] = useState(
-    Math.min(600, Math.max(200, Number(tenantObj?.settings?.printConfig?.labelWidth) || 320)),
+    Math.min(600, Math.max(200, Number(tenantObj?.settings?.printConfig?.labelWidth) || 320))
   );
   const [labelHeight, setLabelHeight] = useState(
-    Math.min(400, Math.max(100, Number(tenantObj?.settings?.printConfig?.labelHeight) || 180)),
+    Math.min(400, Math.max(100, Number(tenantObj?.settings?.printConfig?.labelHeight) || 180))
   );
   const [labelFontSize, setLabelFontSize] = useState<string>(
-    tenantObj?.settings?.printConfig?.labelFontSize || "sm",
+    tenantObj?.settings?.printConfig?.labelFontSize || 'sm'
   );
   const [labelShowQr, setLabelShowQr] = useState(
-    tenantObj?.settings?.printConfig?.labelShowQr ?? true,
+    tenantObj?.settings?.printConfig?.labelShowQr ?? true
   );
   const [labelShowLogo, setLabelShowLogo] = useState(
-    tenantObj?.settings?.printConfig?.labelShowLogo ?? true,
+    tenantObj?.settings?.printConfig?.labelShowLogo ?? true
   );
   const [labelCustomText, setLabelCustomText] = useState(
-    tenantObj?.settings?.printConfig?.labelCustomText || "",
+    tenantObj?.settings?.printConfig?.labelCustomText || ''
   );
   const [customHeaderTitle, setCustomHeaderTitle] = useState(
-    tenantObj?.settings?.printConfig?.customHeaderTitle || "",
+    tenantObj?.settings?.printConfig?.customHeaderTitle || ''
   );
   const [customFooterText, setCustomFooterText] = useState(
-    tenantObj?.settings?.printConfig?.customFooterText || "",
+    tenantObj?.settings?.printConfig?.customFooterText || ''
   );
   const activeTenant = tenantObj;
   const [printFontSize, setPrintFontSize] = useState(
-    tenantObj?.settings?.printConfig?.printFontSize || "sm",
+    tenantObj?.settings?.printConfig?.printFontSize || 'sm'
   );
   const [printMargin, setPrintMargin] = useState<number>(
-    tenantObj?.settings?.printConfig?.printMargin ?? 12,
+    tenantObj?.settings?.printConfig?.printMargin ?? 12
   );
   const [printHeaderLogo, setPrintHeaderLogo] = useState(
-    tenantObj?.settings?.printConfig?.printHeaderLogo ?? true,
+    tenantObj?.settings?.printConfig?.printHeaderLogo ?? true
   );
   const [printQrCode, setPrintQrCode] = useState(
-    tenantObj?.settings?.printConfig?.printQrCode ?? true,
+    tenantObj?.settings?.printConfig?.printQrCode ?? true
   );
   const [printCustomerNotes, setPrintCustomerNotes] = useState(
-    tenantObj?.settings?.printConfig?.printCustomerNotes ?? true,
+    tenantObj?.settings?.printConfig?.printCustomerNotes ?? true
   );
   const [printTermsAndConditions, setPrintTermsAndConditions] = useState(
-    tenantObj?.settings?.printConfig?.printTermsAndConditions ?? true,
+    tenantObj?.settings?.printConfig?.printTermsAndConditions ?? true
   );
   const [showTermsInTracking, setShowTermsInTracking] = useState(
-    tenantObj?.settings?.printConfig?.showTermsInTracking ?? true,
+    tenantObj?.settings?.printConfig?.showTermsInTracking ?? true
   );
-  const [printPreviewType, setPrintPreviewType] = useState<"nota" | "label">(
-    "nota",
-  );
-  const [qzStatus, setQzStatus] = useState("Belum dicek");
+  const [printPreviewType, setPrintPreviewType] = useState<'nota' | 'label'>('nota');
+  const [qzStatus, setQzStatus] = useState('Belum dicek');
   const [qzPrinters, setQzPrinters] = useState<string[]>([]);
   const [qzChecking, setQzChecking] = useState(false);
 
   const [termsSalesText, setTermsSalesText] = useState(
-    tenantObj?.settings?.printConfig?.termsSalesText || "",
+    tenantObj?.settings?.printConfig?.termsSalesText || ''
   );
   const [termsRentalText, setTermsRentalText] = useState(
-    tenantObj?.settings?.printConfig?.termsRentalText || "",
+    tenantObj?.settings?.printConfig?.termsRentalText || ''
   );
   const [termsAndConditionsText, setTermsAndConditionsText] = useState(
-    tenantObj?.settings?.printConfig?.termsAndConditionsText || "",
+    tenantObj?.settings?.printConfig?.termsAndConditionsText || ''
   );
   const printConfigRef = useRef<Record<string, any>>(tenantObj?.settings?.printConfig || {});
   const printSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const [showAddWorkflowModal, setShowAddWorkflowModal] = useState(false);
-  const [wfName, setWfName] = useState("");
+  const [wfName, setWfName] = useState('');
   const [wfTriggerType, setWfTriggerType] = useState<
-    "INVOICE_UNPAID" | "TICKET_CREATED" | "STOCK_LOW" | "SHIFT_CLOSED"
-  >("TICKET_CREATED");
-  const [wfTriggerCondition, setWfTriggerCondition] = useState("");
+    'INVOICE_UNPAID' | 'TICKET_CREATED' | 'STOCK_LOW' | 'SHIFT_CLOSED'
+  >('TICKET_CREATED');
+  const [wfTriggerCondition, setWfTriggerCondition] = useState('');
   const [wfActionType, setWfActionType] = useState<
-    "WHATSAPP" | "EMAIL" | "JOURNAL_ENTRY" | "FRAUD_ALERT"
-  >("WHATSAPP");
-  const [wfActionPayload, setWfActionPayload] = useState("");
+    'WHATSAPP' | 'EMAIL' | 'JOURNAL_ENTRY' | 'FRAUD_ALERT'
+  >('WHATSAPP');
+  const [wfActionPayload, setWfActionPayload] = useState('');
 
   const checkPrinterConnection = async () => {
     setQzChecking(true);
     const result = await checkQzTray();
     setQzPrinters(result.printers);
-    setQzStatus(result.connected ? `Terhubung (${result.printers.length} printer)` : result.error || "Tidak terhubung");
+    setQzStatus(
+      result.connected
+        ? `Terhubung (${result.printers.length} printer)`
+        : result.error || 'Tidak terhubung'
+    );
     setQzChecking(false);
   };
   const testConfiguredPrinter = async () => {
     const config = printConfigRef.current;
-    const result = await printJobAsync({ title: "Tes Printer", printConfig: config, html: `<div style="font-family:Arial;text-align:center;padding:20px"><b>TES PRINTER</b><br/>Printer: ${config.printerName || "Browser"}<br/>${new Date().toLocaleString("id-ID")}</div>` });
-    showToast(result.transport === "qz" ? "Test print QZ Tray berhasil dikonfirmasi." : result.transport === "browser" ? "QZ tidak aktif. Browser print dialog dibuka." : result.error || "Test print gagal.", result.ok ? "success" : "error");
+    const result = await printJobAsync({
+      title: 'Tes Printer',
+      printConfig: config,
+      html: `<div style="font-family:Arial;text-align:center;padding:20px"><b>TES PRINTER</b><br/>Printer: ${config.printerName || 'Browser'}<br/>${new Date().toLocaleString('id-ID')}</div>`,
+    });
+    showToast(
+      result.transport === 'qz'
+        ? 'Test print QZ Tray berhasil dikonfirmasi.'
+        : result.transport === 'browser'
+          ? 'QZ tidak aktif. Browser print dialog dibuka.'
+          : result.error || 'Test print gagal.',
+      result.ok ? 'success' : 'error'
+    );
   };
-
 
   const savePrinterSettings = async (options?: any) => {
     if (!options || !tenantObj) return;
     // Serialize writes. Rapid controls must merge against latest queued config, not stale tenantObj.
     const updated = { ...printConfigRef.current, ...options };
     printConfigRef.current = updated;
-    if (options.printMode !== undefined) { setPrintMode(options.printMode); updated.printMode = options.printMode; }
-    if (options.printerName !== undefined) { setPrinterName(options.printerName); updated.printerName = options.printerName; }
+    if (options.printMode !== undefined) {
+      setPrintMode(options.printMode);
+      updated.printMode = options.printMode;
+    }
+    if (options.printerName !== undefined) {
+      setPrinterName(options.printerName);
+      updated.printerName = options.printerName;
+    }
 
     if (options.paperSize !== undefined) {
       setPaperSize(options.paperSize);
@@ -292,7 +308,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const save = printSaveQueueRef.current.then(async () => {
       await updateTenant(currentTenantId, {
         settings: {
-          ...(tenantObj.settings || {}),
           printConfig: printConfigRef.current,
         },
       });
@@ -300,9 +315,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     printSaveQueueRef.current = save.catch(() => undefined);
     try {
       await save;
-      showToast("Pengaturan cetak berhasil disimpan!", "success");
+      showToast('Pengaturan cetak berhasil disimpan!', 'success');
     } catch (error: any) {
-      showToast(error.message || "Gagal menyimpan pengaturan cetak.", "error");
+      showToast(error.message || 'Gagal menyimpan pengaturan cetak.', 'error');
     }
   };
 
@@ -311,11 +326,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setBranding({
       primaryColor: tenantObj.branding?.primaryColor || BRANDING_PRESETS.blue.primaryColor,
       secondaryColor: tenantObj.branding?.secondaryColor || BRANDING_PRESETS.blue.secondaryColor,
-      logoUrl: tenantObj.branding?.logoUrl || "",
-      slogan: tenantObj.branding?.slogan || "",
+      logoUrl: tenantObj.branding?.logoUrl || '',
+      slogan: tenantObj.branding?.slogan || '',
       fontFamily: tenantObj.branding?.fontFamily || BRANDING_PRESETS.blue.fontFamily,
-      portalHelpTitle: tenantObj.branding?.portalHelpTitle || "Pusat Bantuan & Garansi",
-      portalContactText: tenantObj.branding?.portalContactText || "Hubungi toko untuk bantuan dan informasi garansi.",
+      portalHelpTitle: tenantObj.branding?.portalHelpTitle || 'Pusat Bantuan & Garansi',
+      portalContactText:
+        tenantObj.branding?.portalContactText ||
+        'Hubungi toko untuk bantuan dan informasi garansi.',
 
       accentColor: tenantObj.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
       whiteLabelEnabled: tenantObj.branding?.whiteLabelEnabled || false,
@@ -323,76 +340,76 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const pc = tenantObj?.settings?.printConfig || {};
     printConfigRef.current = { ...pc };
     printSaveQueueRef.current = Promise.resolve();
-    setPrintMode(pc.printMode || "browser");
-    setPrinterName(pc.printerName || "");
+    setPrintMode(pc.printMode || 'browser');
+    setPrinterName(pc.printerName || '');
 
-    setPaperSize(pc.paperSize || "thermal_80");
+    setPaperSize(pc.paperSize || 'thermal_80');
     setLabelWidth(Math.min(600, Math.max(200, Number(pc.labelWidth) || 320)));
     setLabelHeight(Math.min(400, Math.max(100, Number(pc.labelHeight) || 180)));
-    setLabelFontSize(pc.labelFontSize || "sm");
+    setLabelFontSize(pc.labelFontSize || 'sm');
     setLabelShowQr(pc.labelShowQr ?? true);
     setLabelShowLogo(pc.labelShowLogo ?? true);
-    setLabelCustomText(pc.labelCustomText || "");
-    setCustomHeaderTitle(pc.customHeaderTitle || "");
-    setCustomFooterText(pc.customFooterText || "");
-    setPrintFontSize(pc.printFontSize || "sm");
+    setLabelCustomText(pc.labelCustomText || '');
+    setCustomHeaderTitle(pc.customHeaderTitle || '');
+    setCustomFooterText(pc.customFooterText || '');
+    setPrintFontSize(pc.printFontSize || 'sm');
     setPrintMargin(pc.printMargin ?? 12);
     setPrintHeaderLogo(pc.printHeaderLogo ?? true);
     setPrintQrCode(pc.printQrCode ?? true);
     setPrintCustomerNotes(pc.printCustomerNotes ?? true);
     setPrintTermsAndConditions(pc.printTermsAndConditions ?? true);
     setShowTermsInTracking(pc.showTermsInTracking ?? true);
-    setTermsSalesText(pc.termsSalesText || "");
-    setTermsRentalText(pc.termsRentalText || "");
-    setTermsAndConditionsText(pc.termsAndConditionsText || "");
+    setTermsSalesText(pc.termsSalesText || '');
+    setTermsRentalText(pc.termsRentalText || '');
+    setTermsAndConditionsText(pc.termsAndConditionsText || '');
     setDomainVerified(false);
     setIsVerifyingDomain(false);
   }, [tenantObj]);
 
   const settingsTabs = useMemo(
     () => getSettingsTabs(currentUser?.role, currentUserPermissions),
-    [currentUser?.role, currentUserPermissions],
+    [currentUser?.role, currentUserPermissions]
   );
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const filtered = useMemo(
     () =>
       normalizedSearchQuery
         ? settingsTabs.filter((t) => {
-            const groupLabel = GROUP_ORDER.find((g) => g.key === t.group)?.label || "";
+            const groupLabel = GROUP_ORDER.find((g) => g.key === t.group)?.label || '';
             return (
-              (t.label || "").toLowerCase().includes(normalizedSearchQuery) ||
-              (t.desc || "").toLowerCase().includes(normalizedSearchQuery) ||
-              (t.id || "").toLowerCase().includes(normalizedSearchQuery) ||
+              (t.label || '').toLowerCase().includes(normalizedSearchQuery) ||
+              (t.desc || '').toLowerCase().includes(normalizedSearchQuery) ||
+              (t.id || '').toLowerCase().includes(normalizedSearchQuery) ||
               groupLabel.toLowerCase().includes(normalizedSearchQuery)
             );
           })
         : settingsTabs,
-    [normalizedSearchQuery, settingsTabs],
+    [normalizedSearchQuery, settingsTabs]
   );
   const effectiveActiveSubTab = useMemo<string | null>(
-    () => settingsTabs.some((t) => t.id === activeSubTab) ? activeSubTab : settingsTabs[0]?.id || null,
-    [settingsTabs, activeSubTab],
+    () =>
+      settingsTabs.some((t) => t.id === activeSubTab) ? activeSubTab : settingsTabs[0]?.id || null,
+    [settingsTabs, activeSubTab]
   );
   const activeTabObj = useMemo(
     () =>
       effectiveActiveSubTab
         ? settingsTabs.find((t) => t.id === effectiveActiveSubTab)
         : {
-            id: "default",
-            label: normalizedSearchQuery ? "Tidak ada hasil" : "Pusat Pengaturan",
+            id: 'default',
+            label: normalizedSearchQuery ? 'Tidak ada hasil' : 'Pusat Pengaturan',
             desc: normalizedSearchQuery
               ? `Tidak ditemukan pengaturan untuk "${searchQuery}".`
-              : "Kelola semua pengaturan bisnis Anda",
+              : 'Kelola semua pengaturan bisnis Anda',
             icon: Settings,
-            group: GROUP_ORDER[0]?.key || "perusahaan",
+            group: GROUP_ORDER[0]?.key || 'perusahaan',
           },
-    [settingsTabs, effectiveActiveSubTab, normalizedSearchQuery, searchQuery],
+    [settingsTabs, effectiveActiveSubTab, normalizedSearchQuery, searchQuery]
   );
   const activeBranch = branches.find((b) => b.id === currentBranchId);
   const groupOrder = GROUP_ORDER;
-  const activeGroup = activeTabObj.group || groupOrder[0]?.key || "perusahaan";
-  const activeGroupLabel =
-    groupOrder.find((g) => g.key === activeGroup)?.label || "Pengaturan";
+  const activeGroup = activeTabObj.group || groupOrder[0]?.key || 'perusahaan';
+  const activeGroupLabel = groupOrder.find((g) => g.key === activeGroup)?.label || 'Pengaturan';
 
   return (
     <>
@@ -411,7 +428,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery("")}
+                    onClick={() => setSearchQuery('')}
                     aria-label="Hapus pencarian"
                     className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   >
@@ -432,8 +449,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       onClick={() => setActiveSubTab?.(groupTabs[0].id)}
                       className={`w-full min-h-11 text-left px-3 py-2 rounded-full text-[11px] font-semibold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                         isActiveGroup
-                          ? "bg-indigo-500 text-white border-accent"
-                          : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
+                          ? 'bg-indigo-500 text-white border-accent'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -454,8 +471,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       onClick={() => setActiveSubTab?.(t.id)}
                       className={`min-h-11 px-3 py-2 text-[10px] rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                         effectiveActiveSubTab === t.id
-                          ? "bg-indigo-500 text-white border-accent"
-                          : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
+                          ? 'bg-indigo-500 text-white border-accent'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
                       }`}
                     >
                       {t.label}
@@ -476,14 +493,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 .filter((t) => t.group === activeGroup)
                 .map((t) => (
                   <button
-                        key={t.id}
+                    key={t.id}
                     id={`settings-tab-${t.id}`}
                     aria-label={`Pengaturan ${t.label}`}
                     onClick={() => setActiveSubTab?.(t.id)}
                     className={`min-h-11 text-[11px] font-semibold rounded-full px-3 py-2 border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                       effectiveActiveSubTab === t.id
-                        ? "bg-accent-lighter text-accent border-indigo-200"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-800"
+                        ? 'bg-accent-lighter text-accent border-indigo-200'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-800'
                     }`}
                   >
                     {t.label}
@@ -492,108 +509,195 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </div>
 
             <div className="p-6 space-y-6">
+              {effectiveActiveSubTab === 'security' && (
+                <div className="animate-fadeIn">
+                  <SecuritySettingsPanel
+                    currentTenantId={currentTenantId}
+                    tenantObj={tenantObj}
+                    updateTenant={updateTenant}
+                    showToast={showToast}
+                  />
+                </div>
+              )}
 
+              {effectiveActiveSubTab === 'operational-config' && (
+                <div className="animate-fadeIn">
+                  <OperationalSettingsPanel
+                    currentTenantId={currentTenantId}
+                    tenantObj={tenantObj}
+                    updateTenant={updateTenant}
+                  />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "security" && (
-          <div className="animate-fadeIn">
-            <SecuritySettingsPanel
-              currentTenantId={currentTenantId}
-              tenantObj={tenantObj}
-              updateTenant={updateTenant}
-              showToast={showToast}
-            />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'app-config' && (
+                <div className="animate-fadeIn">
+                  <AppSettingsPanel
+                    currentTenantId={currentTenantId}
+                    tenantObj={tenantObj}
+                    updateTenant={updateTenant}
+                  />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "operational-config" && (
-          <div className="animate-fadeIn">
-            <OperationalSettingsPanel
-              currentTenantId={currentTenantId}
-              tenantObj={tenantObj}
-              updateTenant={updateTenant}
-            />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'backup' && (
+                <div className="animate-fadeIn">
+                  <SystemBackup />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "app-config" && (
-          <div className="animate-fadeIn">
-            <AppSettingsPanel
-              currentTenantId={currentTenantId}
-              tenantObj={tenantObj}
-              updateTenant={updateTenant}
-            />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'whatsapp' && (
+                <div className="animate-fadeIn">
+                  <WhatsAppConnector />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "backup" && (
-          <div className="animate-fadeIn">
-            <SystemBackup />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'telegram' && (
+                <div className="animate-fadeIn">
+                  <TelegramBotManager />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "whatsapp" && (
-          <div className="animate-fadeIn">
-            <WhatsAppConnector />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'notifications' && (
+                <div className="animate-fadeIn">
+                  <NotificationEngine />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "telegram" && (
-          <div className="animate-fadeIn">
-            <TelegramBotManager />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'workflows' && (
+                <SettingsWorkflows
+                  {...{
+                    addWorkflow,
+                    currentTenantId,
+                    deleteWorkflow,
+                    executeWorkflow,
+                    setShowAddWorkflowModal,
+                    setWfActionPayload,
+                    setWfActionType,
+                    setWfName,
+                    setWfTriggerCondition,
+                    setWfTriggerType,
+                    showAddWorkflowModal,
+                    showConfirm,
+                    showToast,
+                    updateWorkflow,
+                    wfActionPayload,
+                    wfActionType,
+                    wfName,
+                    wfTriggerCondition,
+                    wfTriggerType,
+                    workflows,
+                  }}
+                />
+              )}
 
-        {effectiveActiveSubTab === "notifications" && (
-          <div className="animate-fadeIn">
-            <NotificationEngine />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'branding' && (
+                <SettingsBranding
+                  {...{
+                    activeTenant,
+                    branding,
+                    brandingPreviewTab,
+                    domainVerified,
+                    isVerifyingDomain,
+                    setBranding,
+                    setBrandingPreviewTab,
+                    setDomainVerified,
+                    showToast,
+                    updateTenant,
+                    verifyDomain,
+                  }}
+                />
+              )}
 
-        {effectiveActiveSubTab === "workflows" && <SettingsWorkflows {...{addWorkflow, currentTenantId, deleteWorkflow, executeWorkflow, setShowAddWorkflowModal, setWfActionPayload, setWfActionType, setWfName, setWfTriggerCondition, setWfTriggerType, showAddWorkflowModal, showConfirm, showToast, updateWorkflow, wfActionPayload, wfActionType, wfName, wfTriggerCondition, wfTriggerType, workflows}} />}
+              {effectiveActiveSubTab === 'rbac' && (
+                <div className="animate-fadeIn">
+                  <RBACManager />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "branding" && <SettingsBranding {...{activeTenant, branding, brandingPreviewTab, domainVerified, isVerifyingDomain, setBranding, setBrandingPreviewTab, setDomainVerified, showToast, updateTenant, verifyDomain}} />}
+              {effectiveActiveSubTab === 'modules-config' && (
+                <div className="animate-fadeIn">
+                  <ModuleParameterConfig />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "rbac" && (
-          <div className="animate-fadeIn">
-            <RBACManager />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'branches' && (
+                <BranchesManagerPanel currentTenantId={currentTenantId} />
+              )}
 
-        {effectiveActiveSubTab === "modules-config" && (
-          <div className="animate-fadeIn">
-            <ModuleParameterConfig />
-          </div>
-        )}
+              {effectiveActiveSubTab === 'subscription' && (
+                <div className="animate-fadeIn space-y-6">
+                  <SaaSSubscription />
+                </div>
+              )}
 
-        {effectiveActiveSubTab === "branches" && (
-          <BranchesManagerPanel currentTenantId={currentTenantId} />
-        )}
+              {effectiveActiveSubTab === 'printer-terms' && (
+                <SettingsPrinterTerms
+                  {...{
+                    activeTenant,
+                    publicBaseUrl,
+                    customFooterText,
+                    customHeaderTitle,
+                    handleDirectPrintLabel,
+                    labelCustomText,
+                    labelFontSize,
+                    labelHeight,
+                    labelShowLogo,
+                    labelShowQr,
+                    labelWidth,
+                    paperSize,
+                    printMode,
+                    printerName,
+                    qzStatus,
+                    qzPrinters,
+                    qzChecking,
+                    checkPrinterConnection,
+                    testConfiguredPrinter,
+                    printCustomerNotes,
+                    printFontSize,
+                    printHeaderLogo,
+                    printMargin,
+                    printPreviewType,
+                    printQrCode,
+                    printTermsAndConditions,
+                    savePrinterSettings,
+                    setPrintPreviewType,
+                    setSkActiveTab,
+                    showConfirm,
+                    showTermsInTracking,
+                    showToast,
+                    skActiveTab,
+                    termsAndConditionsText,
+                    termsRentalText,
+                    termsSalesText,
+                  }}
+                />
+              )}
 
-        {effectiveActiveSubTab === "subscription" && (
-          <div className="animate-fadeIn space-y-6">
-            <SaaSSubscription />
-          </div>
-        )}
-
-        {effectiveActiveSubTab === "printer-terms" && <SettingsPrinterTerms {...{activeTenant, publicBaseUrl, customFooterText, customHeaderTitle, handleDirectPrintLabel, labelCustomText, labelFontSize, labelHeight, labelShowLogo, labelShowQr, labelWidth, paperSize, printMode, printerName, qzStatus, qzPrinters, qzChecking, checkPrinterConnection, testConfiguredPrinter, printCustomerNotes, printFontSize, printHeaderLogo, printMargin, printPreviewType, printQrCode, printTermsAndConditions, savePrinterSettings, setPrintPreviewType, setSkActiveTab, showConfirm, showTermsInTracking, showToast, skActiveTab, termsAndConditionsText, termsRentalText, termsSalesText}} />}
-
-        {effectiveActiveSubTab === "developer-api" && (
-          <div className="animate-fadeIn"><DeveloperApiManager /></div>
-        )}
-        {effectiveActiveSubTab === "import-export" && (
-          <div className="animate-fadeIn"><DataImporter /></div>
-        )}
-        {effectiveActiveSubTab === "loyalty" && (
-          <div className="animate-fadeIn"><VoucherManager /></div>
-        )}
-        {effectiveActiveSubTab === "maintenance-contract" && (
-          <div className="animate-fadeIn"><MaintenanceContractManager /></div>
-        )}
+              {effectiveActiveSubTab === 'developer-api' && (
+                <div className="animate-fadeIn">
+                  <DeveloperApiManager />
+                </div>
+              )}
+              {effectiveActiveSubTab === 'import-export' && (
+                <div className="animate-fadeIn">
+                  <DataImporter />
+                </div>
+              )}
+              {effectiveActiveSubTab === 'loyalty' && (
+                <div className="animate-fadeIn">
+                  <VoucherManager />
+                </div>
+              )}
+              {effectiveActiveSubTab === 'maintenance-contract' && (
+                <div className="animate-fadeIn">
+                  <MaintenanceContractManager />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </>
   );
 };
-

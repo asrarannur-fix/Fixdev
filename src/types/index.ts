@@ -56,12 +56,6 @@ export interface TenantSettings {
     mainBranch?: string;
     divisions?: string[];
   };
-  authSettings?: {
-    allowGoogleLogin?: boolean;
-    requireMfa?: boolean;
-    passwordPolicy?: string;
-    ipWhitelist?: string[];
-  };
   taxSettings?: {
     taxEnabled?: boolean;
     taxRate?: number;
@@ -121,12 +115,33 @@ export interface TenantSettings {
     refundPrefix?: string;
     stockOpnamePrefix?: string;
   };
-  warrantyDays?: number;
-  autoReminderDays?: number;
-  stockLowThreshold?: number;
-  enableTechnicianCommission?: boolean;
-  enableKnowledgeBase?: boolean;
-  taxRate?: number;
+  moduleParams?: {
+    warrantyDays?: number;
+    autoReminderDays?: number;
+    stockLowThreshold?: number;
+    enableTechnicianCommission?: boolean;
+    enableKnowledgeBase?: boolean;
+    enableAutoReminder?: boolean;
+    enableServiceModule?: boolean;
+    enablePOSModule?: boolean;
+    enableInventoryModule?: boolean;
+    enableHRMModule?: boolean;
+    enableAccountingModule?: boolean;
+    enableCRMModule?: boolean;
+    enableCustomerPortal?: boolean;
+    requireServiceApproval?: boolean;
+    requireDownPayment?: boolean;
+    defaultDownPaymentPercent?: number;
+    enableTechnicianRating?: boolean;
+    enableCustomerFeedback?: boolean;
+    autoCloseResolvedTickets?: boolean;
+    autoCloseDays?: number;
+    enableSerialNumberTracking?: boolean;
+    enableBatchTracking?: boolean;
+    enableExpiryTracking?: boolean;
+    defaultPaymentMethod?: string;
+    currencyCode?: string;
+  };
   securitySettings?: {
     sessionTimeout?: number;
     minPasswordLength?: number;
@@ -160,12 +175,10 @@ export interface TenantSettings {
     slaHours?: number;
     autoAssignTechnician?: boolean;
   };
-  purchaseSettings?: {
+  inventorySettings?: {
     hppMethod?: string;
     defaultWarehouseId?: string;
     requireAdjustmentApproval?: boolean;
-  };
-  inventorySettings?: {
     enableStockAlert?: boolean;
   };
   accountingSettings?: {
@@ -178,13 +191,13 @@ export interface TenantSettings {
     defaultPayableAccountId?: string;
     autoJournalEnabled?: boolean;
   };
-  hrSettings?: {
+  hrmSettings?: {
     defaultWorkHours?: number;
     graceLateMinutes?: number;
     enableOvertime?: boolean;
     overtimeRate?: number;
   };
-  customerPortalSettings?: {
+  portalSettings?: {
     enableStatusCheck?: boolean;
     enableEstimateApproval?: boolean;
     enableInvoiceView?: boolean;
@@ -202,7 +215,7 @@ export interface TenantSettings {
     enablePushNotifications?: boolean;
     enableRealtimeNotifications?: boolean;
   };
-  fileUploadSettings?: {
+  uploadSettings?: {
     maxUploadSizeMb?: number;
     allowedFileTypes?: string;
     folderInvoices?: string;
@@ -1357,11 +1370,6 @@ export interface TenantOperationalSummary {
   alerts: TenantOperationalAlert[];
 }
 
-export interface SuperAdminActionItem {
-  label: string;
-  targetTab: string;
-  targetFilter?: string;
-}
 export interface ImpersonationSession {
   id: string;
   tenantId: string;

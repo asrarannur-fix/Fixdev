@@ -25,6 +25,11 @@ const SETTINGS_DOMAIN: Record<string, string> = {
   telegram: 'notification',
   notifications: 'notification',
   'developer-api': 'api',
+  'modules-config': 'moduleParams',
+  'operational-config': 'serviceSettings',
+  'printer-terms': 'printConfig',
+  workflows: 'serviceSettings',
+  'app-config': 'generalSettings',
 };
 
 export const getSettingsTabs = (
