@@ -6,8 +6,8 @@
  * screens so the app feels like a native mobile app (no bulky header).
  */
 
-import React from "react";
-import { LayoutDashboard, Wrench, ShoppingBag, Package, Menu } from "lucide-react";
+import React from 'react';
+import { LayoutDashboard, Wrench, ShoppingBag, Package, Menu, Settings } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -16,17 +16,14 @@ interface BottomNavProps {
 }
 
 const ITEMS = [
-  { id: "overview", label: "Beranda", icon: LayoutDashboard },
-  { id: "services", label: "Servis", icon: Wrench },
-  { id: "pos", label: "POS", icon: ShoppingBag },
-  { id: "inventory", label: "Stok", icon: Package },
+  { id: 'overview', label: 'Beranda', icon: LayoutDashboard },
+  { id: 'services', label: 'Servis', icon: Wrench },
+  { id: 'pos', label: 'POS', icon: ShoppingBag },
+  { id: 'inventory', label: 'Stok', icon: Package },
+  { id: 'settings', label: 'Setelan', icon: Settings },
 ];
 
-export const BottomNav: React.FC<BottomNavProps> = ({
-  activeTab,
-  onSetTab,
-  onOpenMenu,
-}) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSetTab, onOpenMenu }) => {
   return (
     <nav
       className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-slate-200/70 dark:border-zinc-800/70 pb-[env(safe-area-inset-bottom)]"
@@ -43,11 +40,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               aria-label={item.label}
               className={`flex flex-1 flex-col items-center justify-center gap-1 py-2.5 transition-colors cursor-pointer ${
                 active
-                  ? "text-accent dark:text-accent"
-                  : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                  ? 'text-accent dark:text-accent'
+                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
               }`}
             >
-              <Icon className={`w-5 h-5 transition-transform ${active ? "scale-110" : ""}`} />
+              <Icon className={`w-5 h-5 transition-transform ${active ? 'scale-110' : ''}`} />
               <span className="text-[10px] font-bold leading-none">{item.label}</span>
             </button>
           );
