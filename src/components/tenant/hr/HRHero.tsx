@@ -108,24 +108,22 @@ export const HRHero: React.FC<{ group: string }> = ({ group }) => {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${meta.gradient} p-6 shadow-xl shadow-slate-900/20`}
+      className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${meta.gradient} p-3 shadow-md shadow-slate-900/10`}
     >
       <div
-        className={`pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full ${meta.glow} blur-3xl`}
+        className={`pointer-events-none absolute -top-10 -right-10 h-24 w-24 rounded-full ${meta.glow} blur-2xl`}
       />
-      <div className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
-
-      <div className="relative flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
-          <Icon className="h-6 w-6 text-white" />
+      <div className="relative flex items-center gap-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20 backdrop-blur">
+          <Icon className="h-4 w-4 text-white" />
         </div>
         <div>
-          <h3 className="text-xl font-black tracking-tight text-white">{meta.title}</h3>
-          <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-300">{meta.subtitle}</p>
-          <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white ring-1 ring-white/15">
-            <Clock className="h-3 w-3" />
+          <h3 className="text-sm font-bold tracking-tight text-white leading-tight">
+            {meta.title}
+          </h3>
+          <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-white ring-1 ring-white/15">
+            <Clock className="h-2.5 w-2.5" />
             {new Date().toLocaleDateString('id-ID', {
-              weekday: 'long',
               day: 'numeric',
               month: 'long',
               year: 'numeric',
@@ -134,16 +132,16 @@ export const HRHero: React.FC<{ group: string }> = ({ group }) => {
         </div>
       </div>
 
-      <div className="relative mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="relative mt-2.5 grid grid-cols-2 gap-1.5 lg:grid-cols-4">
         {stats.map((s) => (
           <div
             key={s.label}
-            className="rounded-2xl bg-white/5 p-3 ring-1 ring-white/10 backdrop-blur"
+            className="rounded-lg bg-white/5 p-2 ring-1 ring-white/10 backdrop-blur"
           >
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
               {s.label}
             </p>
-            <p className={`mt-1 text-lg font-black leading-tight ${s.accent || 'text-white'}`}>
+            <p className={`mt-0.5 text-sm font-black leading-tight ${s.accent || 'text-white'}`}>
               {s.value}
             </p>
           </div>

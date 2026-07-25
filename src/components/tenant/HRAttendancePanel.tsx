@@ -96,7 +96,9 @@ export const HRAttendancePanel: React.FC<any> = (props) => {
 
   // --- Derived stats (computed once, reused in hero + cards) ---
   const branchEmployees = employees.filter(
-    (e) => e.tenantId === currentTenantId && e.branchId === currentBranchId
+    (e) =>
+      e.tenantId === currentTenantId &&
+      (!currentBranchId || !e.branchId || e.branchId === currentBranchId)
   );
   const totalEmp = branchEmployees.length;
   const presentToday = branchEmployees.filter((e) =>
@@ -121,98 +123,83 @@ export const HRAttendancePanel: React.FC<any> = (props) => {
   if (activeSubTab !== 'attendance') return null;
   return (
     <div className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_tr:hover]:bg-zinc-900">
-      {/* ===== Hero Header ===== */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-6 shadow-xl shadow-slate-900/20 dark:from-black dark:via-zinc-900 dark:to-indigo-950">
-        {/* decorative blobs */}
-        <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-indigo-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
-
-        <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black tracking-tight text-white">
-                HRD &amp; Presensi Terpadu
-              </h3>
-              <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-300">
-                Kelola karyawan, jam masuk/pulang, cuti, dan log kehadiran dalam satu tampilan.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white ring-1 ring-white/15">
-                  <CalendarClock className="h-3 w-3" />
-                  {new Date(attendanceDate).toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}
-                </span>
-                {pendingLeaves > 0 && (
-                  <span className="inline-flex animate-pulse items-center gap-1 rounded-full bg-rose-500/90 px-3 py-1 text-[11px] font-bold text-white">
-                    {pendingLeaves} cuti menunggu approval
-                  </span>
-                )}
-              </div>
-            </div>
+      {/* ===== Hero Header (compact) ===== */}
+      <div className="relative flex items-center justify-between gap-3 overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-3 shadow-md shadow-slate-900/10 dark:from-black dark:via-zinc-900 dark:to-indigo-950">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-24 w-24 rounded-full bg-indigo-500/20 blur-2xl" />
+        <div className="relative flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20 backdrop-blur">
+            <Users className="h-4 w-4 text-white" />
           </div>
-
-          {/* Attendance rate ring */}
-          <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur">
-            <div
-              className="relative flex h-20 w-20 items-center justify-center rounded-full"
-              style={{
-                background: `conic-gradient(#34d399 ${attendanceRate * 3.6}deg, rgba(255,255,255,0.12) 0deg)`,
-              }}
-            >
-              <div className="flex h-15 w-15 flex-col items-center justify-center rounded-full bg-slate-900 px-3 py-3 dark:bg-black">
-                <span className="text-lg font-black leading-none text-white">
-                  {attendanceRate}%
+          <div>
+            <h3 className="text-sm font-bold tracking-tight text-white leading-tight">
+              HRD &amp; Presensi
+            </h3>
+            <div className="mt-0.5 flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-white ring-1 ring-white/15">
+                <CalendarClock className="h-2.5 w-2.5" />
+                {new Date(attendanceDate).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+              </span>
+              {pendingLeaves > 0 && (
+                <span className="inline-flex animate-pulse items-center gap-1 rounded-full bg-rose-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  {pendingLeaves} cuti
                 </span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400">
-                  Hadir
-                </span>
-              </div>
-            </div>
-            <div className="text-white">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Tingkat Kehadiran
-              </p>
-              <p className="text-2xl font-black leading-tight">
-                {presentToday}
-                <span className="text-sm font-semibold text-slate-400">/{totalEmp}</span>
-              </p>
-              <p className="text-[10px] text-slate-400">staff hadir hari ini</p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Action toggles */}
-        <div className="relative mt-5 flex flex-wrap items-center gap-2">
-          {[
-            { key: 'log', label: 'Log Presensi', Icon: Clock },
-            { key: 'leaves', label: 'Pengajuan Cuti', Icon: Calendar, badge: pendingLeaves },
-            { key: 'add_employee', label: 'Registrasi Staff', Icon: UserPlus },
-          ].map(({ key, label, Icon, badge }) => (
-            <button
-              key={key}
-              onClick={() => setAttendanceSubTabState(key)}
-              className={`relative inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
-                attendanceSubTabState === key
-                  ? 'bg-white text-slate-900 shadow-lg shadow-black/20'
-                  : 'bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/20'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-              {badge && badge > 0 ? (
-                <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
-                  {badge}
-                </span>
-              ) : null}
-            </button>
-          ))}
+        {/* Attendance rate ring (small) */}
+        <div className="relative flex shrink-0 items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 ring-1 ring-white/10 backdrop-blur">
+          <div
+            className="relative flex h-10 w-10 items-center justify-center rounded-full"
+            style={{
+              background: `conic-gradient(#34d399 ${attendanceRate * 3.6}deg, rgba(255,255,255,0.12) 0deg)`,
+            }}
+          >
+            <div className="flex h-7 w-7 flex-col items-center justify-center rounded-full bg-slate-900 dark:bg-black">
+              <span className="text-[10px] font-black leading-none text-white">
+                {attendanceRate}%
+              </span>
+            </div>
+          </div>
+          <div className="text-white">
+            <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Hadir</p>
+            <p className="text-sm font-black leading-tight">
+              {presentToday}
+              <span className="text-[11px] font-semibold text-slate-400">/{totalEmp}</span>
+            </p>
+          </div>
         </div>
+      </div>
+
+      {/* Action toggles (mini toolbar, below hero) */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {[
+          { key: 'log', label: 'Log Presensi', Icon: Clock },
+          { key: 'leaves', label: 'Pengajuan Cuti', Icon: Calendar, badge: pendingLeaves },
+          { key: 'add_employee', label: 'Registrasi Staff', Icon: UserPlus },
+        ].map(({ key, label, Icon, badge }) => (
+          <button
+            key={key}
+            onClick={() => setAttendanceSubTabState(key)}
+            className={`relative inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
+              attendanceSubTabState === key
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700'
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+            {badge && badge > 0 ? (
+              <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                {badge}
+              </span>
+            ) : null}
+          </button>
+        ))}
       </div>
 
       {/* ===== Stat Cards ===== */}

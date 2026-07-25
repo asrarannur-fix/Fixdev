@@ -63,6 +63,7 @@ import tenantRoutes from "./src/server/routes/tenant.routes.js";
 import serviceTrackerRoutes from "./src/server/routes/serviceTracker.routes.js";
 import serviceReceptionRoutes from "./src/server/routes/serviceReception.routes.js";
 import serviceWorkflowRoutes from "./src/server/routes/serviceWorkflow.routes.js";
+import rentalRoutes from "./src/server/routes/rental.routes.js";
 import microComponentsRoutes from "./src/server/routes/microComponents.routes.js";
 import apiV1Routes from "./src/server/routes/apiV1.routes.js";
 import posRoutes from "./src/server/routes/pos.routes.js";
@@ -308,6 +309,7 @@ app.post("/api/tenant/telegram/test", requireJwt, requireTenantScope, requireSet
 app.post("/api/tenant/whatsapp/test", requireJwt, requireTenantScope, requireSettingsDomain("whatsapp"), whatsappTestHandler);
 app.use("/api/service-receptions", serviceReceptionRoutes);
 app.use("/api/services", serviceWorkflowRoutes);
+app.use("/api/rental", rentalRoutes);
 app.use("/api/micro-components", microComponentsRoutes);
 app.use("/api/pos", posRoutes);
 app.use("/api/accounting", requireJwt, requireTenantScope, requireFeature("ACCOUNTING"), accountingRoutes);

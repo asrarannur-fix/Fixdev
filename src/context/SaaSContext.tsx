@@ -3492,6 +3492,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...emp,
       id,
       tenantId: currentTenantId,
+      branchId: currentBranchId,
       attendanceHistory: [],
       leaves: [],
     };
