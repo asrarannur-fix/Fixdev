@@ -464,8 +464,8 @@ export const voidSale = async (req: any, res: any) => {
             throw new Error(`Gagal mengembalikan stok ${item.name}. Data stok tidak ditemukan.`);
           }
           await client.query(
-            `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
-             VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
+            `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, quantity_change, reference_no, note)
+             VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4::numeric, $4::integer, $5, $6)`,
             [
               tenantId,
               restoreWarehouseId,

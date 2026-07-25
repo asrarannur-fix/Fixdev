@@ -338,8 +338,8 @@ export async function processPOSTransaction(
         throw new Error('Stok tidak mencukupi atau produk tidak ditemukan di gudang.');
       }
       await client.query(
-        `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
-         VALUES (gen_random_uuid(), $1, $2, $3, 'POS_SALE', -$4, $5, $6)`,
+        `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, quantity_change, reference_no, note)
+         VALUES (gen_random_uuid(), $1, $2, $3, 'POS_SALE', -$4::numeric, (-$4)::integer, $5, $6)`,
         [
           tenantId,
           warehouseId,
@@ -654,8 +654,8 @@ export async function processPartialRefund(
         );
       }
       await client.query(
-        `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
-         VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4, $5, $6)`,
+        `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, quantity_change, reference_no, note)
+         VALUES (gen_random_uuid(), $1, $2, $3, 'POS_REFUND', $4::numeric, $4::integer, $5, $6)`,
         [
           tenantId,
           restoreWarehouseId,

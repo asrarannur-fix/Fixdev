@@ -326,7 +326,7 @@ export async function receiveGoods(req: Request, res: Response) {
         );
         await client.query(
           `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, quantity_change, reference_no, note)
-           VALUES (gen_random_uuid(), $1, $2, $3, 'PURCHASE_RECEIPT', $4, $4, $5, $6)`,
+           VALUES (gen_random_uuid(), $1, $2, $3, 'PURCHASE_RECEIPT', $4::numeric, $4::integer, $5, $6)`,
           [
             tenantId,
             warehouseId,
