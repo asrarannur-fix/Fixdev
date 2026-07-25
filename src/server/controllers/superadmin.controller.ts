@@ -327,9 +327,8 @@ export async function listTenants(req: Request, res: Response) {
       );
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const sort = validSorts.includes(String(req.query.sort || 'createdAt'))
-    ? allowedSorts[String(req.query.sort)]
-    : allowedSorts.createdAt;
+  const reqSort = String(req.query.sort || 'createdAt');
+  const sort = validSorts.includes(reqSort) ? allowedSorts[reqSort] : allowedSorts.createdAt;
   const dir = String(req.query.direction).toLowerCase();
   const direction = dir === 'asc' ? 'ASC' : 'DESC';
   try {
@@ -726,9 +725,8 @@ export async function listAudit(req: Request, res: Response) {
     );
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const sort = validSorts.includes(String(req.query.sort || 'createdAt'))
-    ? allowedSorts[String(req.query.sort)]
-    : allowedSorts.createdAt;
+  const reqSort = String(req.query.sort || 'createdAt');
+  const sort = validSorts.includes(reqSort) ? allowedSorts[reqSort] : allowedSorts.createdAt;
   const dir = String(req.query.direction).toLowerCase();
   const direction = dir === 'asc' ? 'ASC' : 'DESC';
   try {
