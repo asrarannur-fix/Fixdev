@@ -4,6 +4,20 @@ import { dbTransaction, dbQuery } from '../../lib/db.js';
 import { ensureAccount, paymentDebitAccountCode } from '../lib/coa.js';
 import type { WhatsAppTemplate } from '../../types/index.js';
 
+// Rate limiting: track last transition time per ticket
+const ticketTransitionTimes: Map<string, number> = new Map();
+const TRANSITION_COOLDOWN_MS = 5000; // 5 seconds cooldown per ticket
+
+function checkTransitionCooldown(ticketId: string): { ok: boolean; remainingMs?: number } {
+  const lastTime = ticketTransitionTimes.get(ticketId);
+  if (!lastTime) return { ok: true };
+  const elapsed = Date.now() - lastTime;
+  if (elapsed < TRANSITION_COOLDOWN_MS) {
+    return { ok: false, remainingMs: TRANSITION_COOLDOWN_MS - elapsed };
+  }
+  return { ok: true };
+}
+
 export const SERVICE_TRANSITIONS: Record<string, string[]> = {
   DITERIMA: ['ANTRIAN', 'DIAGNOSA', 'DIBATALKAN'],
   ANTRIAN: ['DIAGNOSA', 'DIBATALKAN'],
@@ -374,8 +388,16 @@ export async function getServiceTicket(req: Request, res: Response) {
 export async function transitionServiceTicket(req: Request, res: Response) {
   const parsed = transitionSchema.safeParse(req.body);
   if (!parsed.success) return res.status(422).json({ error: 'Status atau catatan tidak valid.' });
+  const ticketId = req.params.id;
+  const cooldown = checkTransitionCooldown(ticketId);
+  if (!cooldown.ok) {
+    return res
+      .status(429)
+      .json({ error: `Tunggu ${cooldown.remainingMs} detik sebelum ubah status lagi.` });
+  }
   try {
     const ticket = await dbTransaction(async (client) => {
+      ticketTransitionTimes.set(ticketId, Date.now());
       const current = await lockedTicket(client, req);
       const to = parsed.data.status;
       // Status pasca-pembayaran WAJIB lewat handoverServiceTicket (potong stok,
