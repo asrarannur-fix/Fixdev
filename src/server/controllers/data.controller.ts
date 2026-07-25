@@ -201,6 +201,13 @@ async function syncProductWarehouseStock(
           status: 422,
         });
       }
+      // Capture the previous quantity so we can record a movement delta.
+      const before = await client.query(
+        `SELECT quantity FROM product_stock WHERE product_id=$1 AND warehouse_id=$2`,
+        [productId, warehouseId]
+      );
+      const oldQty = Number(before.rows[0]?.quantity) || 0;
+
       const result = await client.query(
         `INSERT INTO product_stock (product_id, warehouse_id, quantity)
          SELECT $1, $2, $3
@@ -217,6 +224,23 @@ async function syncProductWarehouseStock(
         throw Object.assign(new Error('Produk atau gudang tidak ditemukan pada tenant aktif.'), {
           status: 422,
         });
+      }
+
+      // Audit trail: record the stock delta (skip if unchanged).
+      const delta = quantity - oldQty;
+      if (delta !== 0) {
+        await client.query(
+          `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, quantity_change, reference_no, note)
+           VALUES (gen_random_uuid(), $1, $2, $3, 'ADJUSTMENT', $4, $4::integer, $5, $6)`,
+          [
+            tenantId,
+            warehouseId,
+            productId,
+            delta,
+            'SYNC',
+            `Penyesuaian stok via sinkronisasi (${delta > 0 ? '+' : ''}${delta})`,
+          ]
+        );
       }
     }
   });
@@ -311,6 +335,18 @@ export async function dataSyncHandler(req: Request, res: Response) {
       table === 'service_tickets' ? SERVICE_TICKET_ALLOWED_COLUMNS : await getTableColumns(table);
 
     const sanitizedPayload = sanitizePayloadForTable(table, data, allowedColumns);
+    // Lightweight domain validation for products (reject empty name / negative
+    // prices before they corrupt pricing & valuation downstream).
+    if (table === 'products') {
+      if (sanitizedPayload.name !== undefined && !String(sanitizedPayload.name).trim()) {
+        return res.status(422).json({ error: 'Nama produk tidak boleh kosong.' });
+      }
+      for (const f of ['sell_price', 'purchase_cost']) {
+        if (sanitizedPayload[f] !== undefined && Number(sanitizedPayload[f]) < 0) {
+          return res.status(422).json({ error: `Nilai ${f} tidak boleh negatif.` });
+        }
+      }
+    }
     const safePayload =
       table === 'tenants'
         ? {

@@ -254,14 +254,20 @@ export async function receiveGoods(req: Request, res: Response) {
         throw e;
       }
 
-      // Inherit supplier from PO when not explicitly provided
+      // Always validate PO ownership (even when supplierId is supplied) so a
+      // cross-tenant purchaseOrderId cannot be mutated or linked.
       let supplierId = parsed.data.supplierId || null;
-      if (!supplierId && parsed.data.purchaseOrderId) {
+      if (parsed.data.purchaseOrderId) {
         const poSup = await client.query(
           `SELECT supplier_id FROM purchase_orders WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
           [parsed.data.purchaseOrderId, tenantId]
         );
-        supplierId = poSup.rows[0]?.supplier_id || null;
+        if (!poSup.rows[0]) {
+          const e: any = new Error('Purchase order tidak ditemukan untuk tenant ini.');
+          e.status = 422;
+          throw e;
+        }
+        if (!supplierId) supplierId = poSup.rows[0].supplier_id || null;
       }
 
       const total = items.reduce((s, i) => s + i.quantity * i.unitCost, 0);
@@ -288,9 +294,10 @@ export async function receiveGoods(req: Request, res: Response) {
       const receiptId = gr.rows[0].id;
 
       for (const it of items) {
-        // Verify product ownership
+        // Verify product ownership (lock the row to avoid a concurrent-receipt
+        // race on the weighted-average cost calculation below).
         const prod = await client.query(
-          `SELECT purchase_cost FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
+          `SELECT purchase_cost FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1 FOR UPDATE`,
           [it.productId, tenantId]
         );
         if (!prod.rows[0]) {
@@ -346,8 +353,9 @@ export async function receiveGoods(req: Request, res: Response) {
         if (parsed.data.purchaseOrderId) {
           await client.query(
             `UPDATE purchase_order_items SET received_quantity = received_quantity + $3
-             WHERE purchase_order_id=$1 AND product_id=$2`,
-            [parsed.data.purchaseOrderId, it.productId, it.quantity]
+             WHERE purchase_order_id=$1 AND product_id=$2
+               AND EXISTS (SELECT 1 FROM purchase_orders po WHERE po.id=$1 AND po.tenant_id=$4)`,
+            [parsed.data.purchaseOrderId, it.productId, it.quantity, tenantId]
           );
         }
       }

@@ -292,8 +292,8 @@ export async function processPOSTransaction(
   const year = new Date().getFullYear();
   await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [tenantId]);
   const seqRes = await client.query(
-    `SELECT COUNT(*)::int AS cnt FROM pos_transactions WHERE EXTRACT(YEAR FROM created_at)=$1`,
-    [year]
+    `SELECT COUNT(*)::int AS cnt FROM pos_transactions WHERE tenant_id=$2 AND EXTRACT(YEAR FROM created_at)=$1`,
+    [year, tenantId]
   );
   const invoiceNo = `INV/POS/${year}/${((seqRes.rows[0]?.cnt ?? 0) + 1).toString().padStart(5, '0')}`;
 

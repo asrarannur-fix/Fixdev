@@ -318,9 +318,12 @@ export function useSaaSInventory(props: UseSaaSInventoryProps) {
         const oldStatus = t.status;
         if (oldStatus === status) return t;
         const now = new Date().toISOString();
+        // Deduct origin exactly once: only on the first transition OUT of
+        // REQUEST_CREATED (→PACKED, →SHIPPED, or →RECEIVED directly).
+        // Arriving at RECEIVED from PACKED/SHIPPED must NOT deduct again.
         const deductOrigin =
-          ((status === 'PACKED' || status === 'SHIPPED') && oldStatus === 'REQUEST_CREATED') ||
-          (status === 'RECEIVED' && (oldStatus === 'REQUEST_CREATED' || oldStatus === 'PACKED'));
+          oldStatus === 'REQUEST_CREATED' &&
+          (status === 'PACKED' || status === 'SHIPPED' || status === 'RECEIVED');
         const addDestination = status === 'RECEIVED';
 
         if (deductOrigin || addDestination) {
