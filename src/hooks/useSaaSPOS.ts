@@ -113,7 +113,7 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
 
     const posSettings = getPosSettings();
     // enforce max discount
-    const maxDiscPerc = Number(posSettings.maxDiscountPercentage || 100);
+    const maxDiscPerc = Number(posSettings.maxDiscount || 100);
     for (const item of cart) {
       const maxDiscAmt = (Number(item.product.sellPrice || 0) * maxDiscPerc) / 100;
       if (item.discount > maxDiscAmt) {

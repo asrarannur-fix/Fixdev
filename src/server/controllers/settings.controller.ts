@@ -223,6 +223,54 @@ const schemas = {
   moduleConfigs: z
     .record(z.string().trim().min(1).max(100), z.object({ enabled: bool.optional() }).strict())
     .refine((value) => Object.keys(value).length <= 100),
+  moduleParams: z
+    .object({
+      warrantyDays: z.number().int().min(0).max(365).optional(),
+      autoReminderDays: z.number().int().min(0).max(365).optional(),
+      stockLowThreshold: z.number().int().min(0).max(9999).optional(),
+      enableTechnicianCommission: bool.optional(),
+      enableKnowledgeBase: bool.optional(),
+      enableAutoReminder: bool.optional(),
+      enableServiceModule: bool.optional(),
+      enablePOSModule: bool.optional(),
+      enableInventoryModule: bool.optional(),
+      enableHRMModule: bool.optional(),
+      enableAccountingModule: bool.optional(),
+      enableCRMModule: bool.optional(),
+      enableCustomerPortal: bool.optional(),
+      requireServiceApproval: bool.optional(),
+      requireDownPayment: bool.optional(),
+      defaultDownPaymentPercent: z.number().int().min(0).max(100).optional(),
+      maxDiscountPercent: z.number().int().min(0).max(100).optional(),
+      enableTechnicianRating: bool.optional(),
+      enableCustomerFeedback: bool.optional(),
+      autoCloseResolvedTickets: bool.optional(),
+      autoCloseDays: z.number().int().min(1).max(90).optional(),
+      enableSerialNumberTracking: bool.optional(),
+      enableBatchTracking: bool.optional(),
+      enableExpiryTracking: bool.optional(),
+      defaultPaymentMethod: text(50).optional(),
+      currencyCode: text(5).optional(),
+    })
+    .strict(),
+  taxSettings: z
+    .object({
+      taxRate: z.number().min(0).max(100).optional(),
+      taxEnabled: bool.optional(),
+      taxInclusive: bool.optional(),
+    })
+    .strict(),
+  documentConfig: z
+    .object({
+      ticketPrefix: text(10).optional(),
+      invoicePrefix: text(10).optional(),
+      posInvoicePrefix: text(10).optional(),
+      purchaseOrderPrefix: text(10).optional(),
+      paymentPrefix: text(10).optional(),
+      refundPrefix: text(10).optional(),
+      stockOpnamePrefix: text(10).optional(),
+    })
+    .strict(),
 } satisfies Record<string, z.ZodType>;
 
 export type SettingsDomain = keyof typeof schemas;

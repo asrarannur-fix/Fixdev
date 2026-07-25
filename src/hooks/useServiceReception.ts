@@ -290,7 +290,8 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       customerApprovalStatus: 'PENDING',
       assignedTechId: newSrvTechId || undefined,
       partsUsed: [],
-      warrantyMonths: newSrvWarranty ?? Math.round((tenantObj?.settings?.warrantyDays ?? 90) / 30),
+      warrantyMonths:
+        newSrvWarranty ?? Math.round((tenantObj?.settings?.moduleParams?.warrantyDays ?? 90) / 30),
       isOutsourced: newSrvIsOutsourced,
       outsourcedVendorId: newSrvOutsourcedVendor,
       outsourcingCost: Number(newSrvOutsourcingCost) || 0,
@@ -323,7 +324,9 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       setNewSrvDevice('');
       setNewSrvBrand('');
       setNewSrvSerial('');
-      setNewSrvWarranty(Math.round((tenantObj?.settings?.warrantyDays ?? 90) / 30) || 3);
+      setNewSrvWarranty(
+        Math.round((tenantObj?.settings?.moduleParams?.warrantyDays ?? 90) / 30) || 3
+      );
       setNewSrvDownPayment('0');
       setNewSrvIsCheckOnly(false);
       setNewSrvPhysicalCondition('Mulus / Normal Wear');
