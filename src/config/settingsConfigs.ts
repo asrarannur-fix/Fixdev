@@ -40,8 +40,8 @@ export const getSettingsTabs = (
   return [
     {
       id: 'branding',
-      label: 'Branding & White-Label',
-      desc: 'Kustomisasi logo, warna corporate, tipografi global, dan setup custom domain DNS mapping untuk identitas bisnis mandiri.',
+      label: 'Branding Toko',
+      desc: 'Atur logo, warna, dan slogan toko Anda.',
       icon: Smartphone,
       group: 'perusahaan',
     },
