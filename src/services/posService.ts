@@ -276,8 +276,9 @@ export async function processPOSTransaction(
 
   // Validate split payments
   const splitPayments = Array.isArray(parsed.splitPayments) ? parsed.splitPayments : null;
+  let splitTotal = 0;
   if (splitPayments && splitPayments.length > 0) {
-    const splitTotal = splitPayments.reduce((s, p) => s + Number(p.amount), 0);
+    splitTotal = splitPayments.reduce((s, p) => s + Number(p.amount), 0);
     if (Math.abs(splitTotal - grandTotal) > 1) {
       throw Object.assign(
         new Error(
@@ -288,7 +289,17 @@ export async function processPOSTransaction(
     }
   }
 
-  // Generate invoice with advisory lock
+  // Effective amount paid: when split payments are used, the real paid amount
+  // is the sum of splits (also fixes the amountPaid stored for split sales).
+  const effectivePaid = splitPayments && splitPayments.length > 0 ? splitTotal : amountPaid;
+  // Recompute change against the effective amount.
+  const effectiveChange = Math.max(0, effectivePaid - cashDue);
+  // Reject underpayment for non-credit sales (TEMPO may leave a receivable).
+  if (parsed.paymentMethod !== 'TEMPO' && effectivePaid < cashDue - 1) {
+    throw Object.assign(new Error('Pembayaran kurang dari total yang harus dibayar.'), {
+      status: 422,
+    });
+  }
   const year = new Date().getFullYear();
   await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [tenantId]);
   const seqRes = await client.query(
@@ -317,8 +328,8 @@ export async function processPOSTransaction(
       taxAmount,
       grandTotal,
       parsed.paymentMethod,
-      amountPaid,
-      changeAmount,
+      effectivePaid,
+      effectiveChange,
       depositUsed,
       parsed.paymentDetails || null,
       parsed.notes || null,
@@ -491,7 +502,7 @@ export async function saveHoldCart(
 ): Promise<string> {
   const result = await client.query(
     `INSERT INTO pos_holds (tenant_id, branch_id, shift_id, customer_id, items, discount_amount, deposit_used, payment_method, payment_details, notes, created_by)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11)
      RETURNING id`,
     [
       tenantId,
@@ -587,9 +598,13 @@ export async function processPartialRefund(
     }
     const origItem = allItems[idx];
     const maxQty = Number(origItem.quantity) || 0;
-    if (partial.quantity <= 0 || partial.quantity > maxQty) {
+    const alreadyRefunded = Number(origItem.refundedQty) || 0;
+    // Block over-refund: cumulative refunded must not exceed sold quantity.
+    if (partial.quantity <= 0 || alreadyRefunded + partial.quantity > maxQty) {
       throw Object.assign(
-        new Error(`Quantity refund untuk item ke-${idx} tidak valid. Maks ${maxQty}.`),
+        new Error(
+          `Quantity refund untuk item ke-${idx} tidak valid. Sudah refund ${alreadyRefunded}, maks ${maxQty}.`
+        ),
         { status: 422 }
       );
     }
@@ -602,7 +617,12 @@ export async function processPartialRefund(
     const unitPrice = Number(origItem.unitPrice) || 0;
     const itemRefund = unitPrice * partial.quantity;
     refundAmount += itemRefund;
-    refundItems.push({ ...origItem, refundQuantity: partial.quantity, reason: partial.reason });
+    refundItems.push({
+      ...origItem,
+      itemIndex: idx,
+      refundQuantity: partial.quantity,
+      reason: partial.reason,
+    });
   }
 
   if (refundAmount <= 0) {

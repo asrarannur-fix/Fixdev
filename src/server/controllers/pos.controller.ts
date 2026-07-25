@@ -421,7 +421,8 @@ export const voidSale = async (req: any, res: any) => {
       const txRes = await client.query(
         `SELECT id, invoice_no as "invoiceNo", items, grand_total as "grandTotal",
                 subtotal, discount_amount as "discountAmount", tax_amount as "taxAmount",
-                payment_method as "paymentMethod", is_refunded, shift_id as "shiftId"
+                payment_method as "paymentMethod", is_refunded, shift_id as "shiftId",
+                customer_id as "customerId", deposit_used as "depositUsed"
          FROM pos_transactions WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 FOR UPDATE`,
         [id, tenantId, branchId]
       );
@@ -530,8 +531,9 @@ export const voidSale = async (req: any, res: any) => {
         );
       }
 
-      // Deposit refund tracking for voided DEPOSIT transactions
-      if (tx.paymentMethod === 'DEPOSIT' && tx.depositUsed > 0 && tx.customerId) {
+      // Deposit refund tracking: refund the deposit used on the original sale,
+      // regardless of which payment method was combined with the deposit.
+      if (tx.depositUsed > 0 && tx.customerId) {
         await client.query(
           `INSERT INTO customer_deposits
              (id, tenant_id, customer_id, branch_id, transaction_id, type, amount, balance, description)
