@@ -63,6 +63,9 @@ export async function createSupplier(req: Request, res: Response) {
 }
 
 export async function updateSupplier(req: Request, res: Response) {
+  if (!/^[0-9a-fA-F-]{36}$/.test(String(req.params.id))) {
+    return res.status(400).json({ error: 'Invalid supplier id format.' });
+  }
   const parsed = supplierSchema.partial().safeParse(req.body);
   if (!parsed.success) return res.status(422).json({ error: 'Data supplier tidak valid.' });
   try {
@@ -148,6 +151,20 @@ export async function createPurchaseOrder(req: Request, res: Response) {
   const parsed = poSchema.safeParse(req.body);
   if (!parsed.success)
     return res.status(422).json({ error: 'Data PO tidak valid.', details: parsed.error.flatten() });
+  // supplierId (when supplied without supplierName) must belong to this tenant.
+  if (parsed.data.supplierId) {
+    try {
+      const sup = await dbQuery(`SELECT id FROM suppliers WHERE id=$1 AND tenant_id=$2 LIMIT 1`, [
+        parsed.data.supplierId,
+        req.tenantId,
+      ]);
+      if (!sup.rows[0]) {
+        return res.status(422).json({ error: 'Supplier tidak ditemukan untuk tenant ini.' });
+      }
+    } catch (e) {
+      return res.status(422).json({ error: 'Supplier tidak ditemukan untuk tenant ini.' });
+    }
+  }
   try {
     const result = await dbTransaction(async (client) => {
       const total = parsed.data.items.reduce((s, i) => s + i.quantity * i.unitCost, 0);
@@ -184,6 +201,9 @@ export async function createPurchaseOrder(req: Request, res: Response) {
 }
 
 export async function cancelPurchaseOrder(req: Request, res: Response) {
+  if (!/^[0-9a-fA-F-]{36}$/.test(String(req.params.id))) {
+    return res.status(400).json({ error: 'Invalid purchase order id format.' });
+  }
   try {
     const r = await dbQuery(
       `UPDATE purchase_orders SET status='CANCELLED', updated_at=NOW()
@@ -268,6 +288,18 @@ export async function receiveGoods(req: Request, res: Response) {
           throw e;
         }
         if (!supplierId) supplierId = poSup.rows[0].supplier_id || null;
+      } else if (parsed.data.supplierId) {
+        // GRN without a PO: validate the supplied supplier belongs to this tenant
+        // so a foreign-tenant supplier UUID cannot be linked/contaminate payables.
+        const sup = await client.query(
+          `SELECT id FROM suppliers WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
+          [parsed.data.supplierId, tenantId]
+        );
+        if (!sup.rows[0]) {
+          const e: any = new Error('Supplier tidak ditemukan untuk tenant ini.');
+          e.status = 422;
+          throw e;
+        }
       }
 
       const total = items.reduce((s, i) => s + i.quantity * i.unitCost, 0);
@@ -349,14 +381,32 @@ export async function receiveGoods(req: Request, res: Response) {
           [receiptId, it.productId, it.name, it.quantity, it.unitCost]
         );
 
-        // Update linked PO item received quantity
+        // Update linked PO item received quantity (reject over-receiving)
         if (parsed.data.purchaseOrderId) {
-          await client.query(
-            `UPDATE purchase_order_items SET received_quantity = received_quantity + $3
+          const poItem = await client.query(
+            `SELECT quantity, received_quantity FROM purchase_order_items
              WHERE purchase_order_id=$1 AND product_id=$2
-               AND EXISTS (SELECT 1 FROM purchase_orders po WHERE po.id=$1 AND po.tenant_id=$4)`,
-            [parsed.data.purchaseOrderId, it.productId, it.quantity, tenantId]
+               AND EXISTS (SELECT 1 FROM purchase_orders po WHERE po.id=$1 AND po.tenant_id=$3)
+             LIMIT 1`,
+            [parsed.data.purchaseOrderId, it.productId, tenantId]
           );
+          if (poItem.rows[0]) {
+            const ordered = Number(poItem.rows[0].quantity) || 0;
+            const received = Number(poItem.rows[0].received_quantity) || 0;
+            if (received + it.quantity > ordered) {
+              const e: any = new Error(
+                `Penerimaan melebihi jumlah PO untuk ${it.name} (dipesan ${ordered}, diterima ${received + it.quantity}).`
+              );
+              e.status = 422;
+              throw e;
+            }
+            await client.query(
+              `UPDATE purchase_order_items SET received_quantity = received_quantity + $3
+               WHERE purchase_order_id=$1 AND product_id=$2
+                 AND EXISTS (SELECT 1 FROM purchase_orders po WHERE po.id=$1 AND po.tenant_id=$4)`,
+              [parsed.data.purchaseOrderId, it.productId, it.quantity, tenantId]
+            );
+          }
         }
       }
 

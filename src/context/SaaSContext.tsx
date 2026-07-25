@@ -3808,7 +3808,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateEmployee = (employeeId: string, data: Partial<Employee>) => {
     setEmployees((prev) =>
       prev.map((emp) => {
-        if (emp.id !== employeeId) return emp;
+        if (emp.id !== employeeId || emp.tenantId !== currentTenantId) return emp;
         const updated = { ...emp, ...data };
         syncModuleRecord('employees', employeeId, updated, 'update');
         return updated;
@@ -3859,7 +3859,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ) => {
     setEmployees((prev) =>
       prev.map((emp) => {
-        if (emp.id !== employeeId) return emp;
+        if (emp.id !== employeeId || emp.tenantId !== currentTenantId) return emp;
         const advances = emp.cashAdvances || [];
         const updatedAdvances = advances.map((a) => {
           if (a.id !== advanceId) return a;
@@ -4308,7 +4308,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const approvedKasbon = (e.cashAdvances || []).filter((ca) => ca.status === 'APPROVED');
       const totalKasbon = approvedKasbon.reduce((sum, ca) => sum + ca.amount, 0);
 
-      const gross = e.basicSalary + totalComm;
+      const gross = (e.basicSalary ?? 0) + totalComm;
       const standardDeductions = 150000; // standard deduction BPJS/Tax
       const totalDeductions = standardDeductions + totalKasbon;
       const net = gross - totalDeductions;
@@ -4318,7 +4318,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tenantId: currentTenantId,
         employeeId: e.id,
         monthYear,
-        basicSalary: e.basicSalary,
+        basicSalary: e.basicSalary ?? 0,
         commissions: totalComm,
         allowances: 250000,
         overtimePay: 0,
@@ -4352,18 +4352,22 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
       }
 
-      // post to double entry ledger
-      // For double entry: Debit Gaji (Expense) = gross
+      // post to double entry ledger (must balance: total debit === total credit)
+      // Debit Beban Gaji (Expense) = gross
       // Credit Kas/Bank (Asset) = net
-      // Credit Kasbon (Asset/Piutang) = totalKasbon
+      // Credit Piutang Kasbon (Asset) = totalKasbon
       // Credit Pajak/BPJS (Liability) = standardDeductions
-      // (For simplicity in the existing code, it was debit net, credit net. Let's make it more accurate or stick to a simple one)
       const journalLines = [
+        {
+          accountId: getCOAAccount('service', currentTenantId),
+          debit: gross,
+          credit: 0,
+        },
         { accountId: getCOAAccount('bank', currentTenantId), debit: 0, credit: net },
       ];
       if (totalKasbon > 0) {
         journalLines.push({
-          accountId: getCOAAccount('bank', currentTenantId),
+          accountId: getCOAAccount('cash', currentTenantId),
           debit: 0,
           credit: totalKasbon,
         });

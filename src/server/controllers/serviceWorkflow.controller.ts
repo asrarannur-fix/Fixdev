@@ -942,6 +942,13 @@ export async function requestServicePart(req: Request, res: Response) {
           parsed.data.serialNumber || null,
         ]
       );
+      // Roll the reserved part cost into the ticket's estimated_cost so invoices
+      // and estimates reflect spare-part charges (previously only locally bumped).
+      await client.query(
+        `UPDATE service_tickets SET estimated_cost = COALESCE(estimated_cost,0) + $1
+         WHERE id=$2 AND tenant_id=$3`,
+        [Number(parsed.data.quantity) * Number(product.rows[0].sell_price), ticket.id, req.tenantId]
+      );
       const parts = await client.query(
         `SELECT id,product_id AS "productId",warehouse_id AS "warehouseId",name,quantity::float,
           unit_price::float AS "unitPrice",(quantity*unit_price)::float AS "totalPrice",serial_number AS "serialNumber",status
@@ -967,6 +974,11 @@ export async function cancelServicePart(req: Request, res: Response) {
   try {
     const data = await dbTransaction(async (client) => {
       const ticket = await lockedTicket(client, req);
+      const cancelledPart = await client.query(
+        `SELECT id, (quantity * unit_price)::float AS cost
+         FROM service_parts WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status IN ('REQUESTED','RESERVED') LIMIT 1`,
+        [req.params.partId, req.tenantId, ticket.id]
+      );
       const removed = await client.query(
         `UPDATE service_parts SET status='CANCELLED',updated_at=NOW()
          WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status IN ('REQUESTED','RESERVED') RETURNING id`,
@@ -977,6 +989,13 @@ export async function cancelServicePart(req: Request, res: Response) {
         error.status = 404;
         throw error;
       }
+      // Roll back the cancelled part cost from the ticket's estimated_cost.
+      const cancelledCost = Number(cancelledPart.rows[0]?.cost) || 0;
+      await client.query(
+        `UPDATE service_tickets SET estimated_cost = GREATEST(0, COALESCE(estimated_cost,0) - $1), updated_at=NOW()
+         WHERE id=$2 AND tenant_id=$3`,
+        [cancelledCost, ticket.id, req.tenantId]
+      );
       const parts = await client.query(
         `SELECT id,product_id AS "productId",warehouse_id AS "warehouseId",name,quantity::float,
           unit_price::float AS "unitPrice",(quantity*unit_price)::float AS "totalPrice",serial_number AS "serialNumber",status

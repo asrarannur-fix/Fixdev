@@ -2090,7 +2090,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         <div className="space-y-3.5 border border-slate-200/85 p-4 rounded-xl bg-slate-50/70 w-full text-left shadow-sm">
                           <div className="flex justify-between items-center bg-accent-lighter/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
                             <span className="text-slate-600">
-                              Total Tagihan Pelunasan (PPN 11%):
+                              Total Tagihan Pelunasan (PPN {tenantTaxRate}%):
                             </span>
                             <span className="text-accent font-mono text-sm font-bold">
                               Rp {totalAmt.toLocaleString()}
@@ -2358,6 +2358,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   handoverPaymentMethod === PaymentMethod.TEMPO
                                     ? parseInt(handoverTempoDays, 10)
                                     : undefined,
+                                taxRate: tenantTaxRate,
                               };
 
                               try {
