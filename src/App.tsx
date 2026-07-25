@@ -607,7 +607,8 @@ const MainAppContent: React.FC = () => {
                         activeTab={
                           SUPER_ADMIN_TABS.includes(activeTab) ? activeTab : 'saas-dashboard'
                         }
-                        onSetTab={(tab, filter) => handleSetTab(tab, filter)}
+                        activeSubTab={activeSubTab}
+                        onSetTab={(tab, subTab) => handleSetTab(tab, subTab)}
                       />
                     </div>
                   )}

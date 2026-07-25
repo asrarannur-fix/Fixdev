@@ -22,8 +22,9 @@ import { InvoiceTemplateEditor } from './superadmin/InvoiceTemplateEditor';
 
 export const SuperAdminDashboard: React.FC<{
   activeTab?: string;
-  onSetTab?: (tab: string, filter?: string) => void;
-}> = ({ activeTab, onSetTab }) => {
+  activeSubTab?: string;
+  onSetTab?: (tab: string, subTab?: string) => void;
+}> = ({ activeTab, activeSubTab, onSetTab }) => {
   const {
     tenants,
     addTenant,
