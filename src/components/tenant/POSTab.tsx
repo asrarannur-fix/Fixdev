@@ -87,6 +87,7 @@ export const POSTab: React.FC<POSTabProps> = ({
   const [shiftLoading, setShiftLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [voidLoading, setVoidLoading] = useState(false);
+  const [voucherCode, setVoucherCode] = useState('');
   const { showToast } = useToast();
   const {
     currentTenantId: contextTenantId,
@@ -134,17 +135,21 @@ export const POSTab: React.FC<POSTabProps> = ({
       showToast('Fungsi checkout tidak tersedia.', 'error');
       return;
     }
-    const details =
-      splitEnabled && splitAmount
-        ? JSON.stringify({
-            splitMethod: splitPaymentMethod,
-            splitNominal: Number(splitAmount) || 0,
-          })
-        : '';
+    let details = '';
+    if (voucherCode.trim()) {
+      details = `VOUCHER:${voucherCode.trim()}`;
+    }
+    if (splitEnabled && splitAmount) {
+      details = JSON.stringify({
+        splitMethod: splitPaymentMethod,
+        splitNominal: Number(splitAmount) || 0,
+      });
+    }
     handlePOSCheckout(details);
     setSplitEnabled(false);
     setSplitAmount('');
-  }, [handlePOSCheckout, splitEnabled, splitPaymentMethod, splitAmount]);
+    setVoucherCode('');
+  }, [handlePOSCheckout, splitEnabled, splitPaymentMethod, splitAmount, voucherCode]);
 
   const effectiveGetBranchStock = getBranchStock ?? (() => 10);
 
@@ -517,6 +522,20 @@ export const POSTab: React.FC<POSTabProps> = ({
                         placeholder="Rp..."
                         value={posAmountPaid}
                         onChange={(e) => setPosAmountPaid(e.target.value)}
+                        className="w-full text-xs px-3 py-1.5 border border-slate-200 rounded-lg outline-none"
+                      />
+                    </div>
+
+                    {/* Voucher Code */}
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                        Kode Voucher (opsional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Masukkan kode voucher..."
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
                         className="w-full text-xs px-3 py-1.5 border border-slate-200 rounded-lg outline-none"
                       />
                     </div>
