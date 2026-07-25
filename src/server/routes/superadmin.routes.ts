@@ -51,6 +51,7 @@ router.use(requireJwt, requireSuperAdmin);
 // GET routes are read-only and safe; console-session guard auto-skips them.
 router.get('/overview', requireSuperAdminPermission('overview:view'), getOverview);
 router.get('/tenants', requireSuperAdminPermission('tenants:view_all'), listTenants);
+router.get('/tenants/:id', requireSuperAdminPermission('tenants:view_detail'), getTenantDetail);
 router.get(
   '/tenants/availability',
   requireSuperAdminPermission('tenants:manage_registration'),

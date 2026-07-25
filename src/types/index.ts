@@ -1022,7 +1022,7 @@ export interface OvertimeRecord {
   hours: number;
   rate: '1.5X' | '2X';
   reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAID';
   approvedBy?: string;
   totalAmount: number;
 }

@@ -418,9 +418,10 @@ export async function updateTenantConfig(req: Request, res: Response) {
       if (current.version !== parsed.data.expectedVersion)
         return { code: 409, error: 'Data tenant telah berubah. Muat ulang halaman.' };
 
-      const nextSettings = parsed.data.storageSettings
-        ? { ...(current.settings || {}), storageSettings: parsed.data.storageSettings }
-        : current.settings;
+      const nextSettings = { ...(current.settings || {}) };
+      if (parsed.data.storageSettings) nextSettings.storageSettings = parsed.data.storageSettings;
+      if (parsed.data.limits)
+        nextSettings.limits = { ...(nextSettings.limits || {}), ...parsed.data.limits };
       const nextBranding = parsed.data.branding
         ? { ...(current.branding || {}), ...parsed.data.branding }
         : current.branding;

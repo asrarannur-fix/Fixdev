@@ -135,7 +135,10 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({ activeSubTab }) =>
       }
 
       try {
-        const pl = await fetchProfitAndLoss();
+        const [mY, m] = selectedFinanceMonth.split('-');
+        const from = `${mY}-${m}-01`;
+        const to = `${mY}-${m}-31`;
+        const pl = await fetchProfitAndLoss(from, to);
         setProfitLoss(pl);
       } catch (e: any) {
         console.error('P&L error:', e);
@@ -157,6 +160,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({ activeSubTab }) =>
   }, [
     currentTenantId,
     currentBranchId,
+    selectedFinanceMonth,
     fetchAccounts,
     fetchJournalEntries,
     fetchTrialBalance,
@@ -224,9 +228,12 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({ activeSubTab }) =>
       setJournals(jnls ?? []);
       // Refresh financial reports so totals reflect the new entry immediately.
       try {
+        const [mY, m] = selectedFinanceMonth.split('-');
+        const from = `${mY}-${m}-01`;
+        const to = `${mY}-${m}-31`;
         const [tb, pl, bs] = await Promise.all([
           fetchTrialBalance(),
-          fetchProfitAndLoss(),
+          fetchProfitAndLoss(from, to),
           fetchBalanceSheet(),
         ]);
         setTrialBalance(tb);
@@ -304,20 +311,33 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({ activeSubTab }) =>
     }));
   }, [journals, accounts]);
 
-  // Monthly breakdown for P&L display (using profitLoss or fallback to raw totals)
+  // Monthly breakdown for P&L display — derived from the REAL per-account
+  // revenue/expense returned by the backend (not hardcoded zeroes).
   const monthlyBreakdown = React.useMemo(() => {
+    const rev = profitLoss?.data?.revenue || [];
+    const exp = profitLoss?.data?.expense || [];
+    const sumByName = (rows: any[], keys: string[]) =>
+      rows
+        .filter((r) => keys.some((k) => (r.name || '').toLowerCase().includes(k)))
+        .reduce((s, r) => s + Number(r.balance), 0);
+    const repairRevenue = sumByName(rev, ['jasa', 'servis', 'service', 'repair', 'jasa servis']);
+    const productRevenue = sumByName(rev, ['penjualan', 'produk', 'barang', 'sale']);
+    const sparepartHPP = sumByName(exp, ['hpp', 'pokok', 'sparepart', 'suku cadang']);
+    const staffSalary = sumByName(exp, ['gaji', 'salary', 'payroll', 'karyawan', 'staff']);
+    const otherRevenue = Math.max(0, totalRevenue - repairRevenue - productRevenue);
+    const otherExpense = Math.max(0, totalExpense - sparepartHPP - staffSalary);
     return {
-      totalRevenue: totalRevenue,
-      totalExpense: totalExpense,
-      netProfit: netProfit,
-      repairRevenue: 0,
-      productRevenue: 0,
-      otherRevenue: totalRevenue,
-      sparepartHPP: 0,
-      staffSalary: 0,
-      otherExpense: totalExpense,
+      totalRevenue,
+      totalExpense,
+      netProfit,
+      repairRevenue,
+      productRevenue,
+      otherRevenue,
+      sparepartHPP,
+      staffSalary,
+      otherExpense,
     };
-  }, [totalRevenue, totalExpense, netProfit]);
+  }, [profitLoss, totalRevenue, totalExpense, netProfit]);
 
   return (
     <>

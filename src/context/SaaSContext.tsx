@@ -4298,17 +4298,22 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const generatePayroll = (monthYear: string) => {
     const tenantStaff = employees.filter((e) => e.tenantId === currentTenantId);
     tenantStaff.forEach((e) => {
-      // Find commissions
+      // Find commissions that have NOT yet been paid (PENDING) so they are not
+      // double-counted if payroll is re-generated for the same period.
       const employeeComms = commissions.filter(
         (c) => c.employeeId === e.id && c.status === 'PENDING'
       );
-      const totalComm = employeeComms.reduce((sum, c) => sum + c.amount, 0);
+      const totalComm = employeeComms.reduce((sum, c) => sum + (c.amount || 0), 0);
 
       // Find unpaid approved kasbon
       const approvedKasbon = (e.cashAdvances || []).filter((ca) => ca.status === 'APPROVED');
-      const totalKasbon = approvedKasbon.reduce((sum, ca) => sum + ca.amount, 0);
+      const totalKasbon = approvedKasbon.reduce((sum, ca) => sum + (ca.amount || 0), 0);
 
-      const gross = (e.basicSalary ?? 0) + totalComm;
+      // Find approved overtime that has NOT yet been paid, and include it in pay.
+      const approvedOvertime = (e.overtimeHistory || []).filter((o) => o.status === 'APPROVED');
+      const totalOvertime = approvedOvertime.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+      const gross = (e.basicSalary ?? 0) + totalComm + totalOvertime;
       const standardDeductions = 150000; // standard deduction BPJS/Tax
       const totalDeductions = standardDeductions + totalKasbon;
       const net = gross - totalDeductions;
@@ -4321,7 +4326,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         basicSalary: e.basicSalary ?? 0,
         commissions: totalComm,
         allowances: 250000,
-        overtimePay: 0,
+        overtimePay: totalOvertime,
         thrAmount: 0,
         bpjsKesehatan: 0,
         bpjsKetenagakerjaan: 0,
@@ -4337,7 +4342,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPayroll((prev) => [newPayroll, ...prev]);
       syncModuleRecord('payroll', newPayroll.id, newPayroll, 'insert');
 
-      // Update cash advances to PAID
+      // Mark paid cash advances as PAID so they are not duplicated next run.
       if (approvedKasbon.length > 0) {
         setEmployees((prev) =>
           prev.map((emp) => {
@@ -4346,6 +4351,21 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...emp,
               cashAdvances: (emp.cashAdvances || []).map((ca) =>
                 ca.status === 'APPROVED' ? { ...ca, status: 'PAID' } : ca
+              ),
+            };
+          })
+        );
+      }
+
+      // Mark approved overtime as PAID so it is not double-paid on re-run.
+      if (approvedOvertime.length > 0) {
+        setEmployees((prev) =>
+          prev.map((emp) => {
+            if (emp.id !== e.id) return emp;
+            return {
+              ...emp,
+              overtimeHistory: (emp.overtimeHistory || []).map((o) =>
+                o.status === 'APPROVED' ? { ...o, status: 'PAID' } : o
               ),
             };
           })

@@ -373,15 +373,25 @@ export async function dataSyncHandler(req: Request, res: Response) {
     const idCol = 'id';
 
     if (action === 'insert') {
-      const cols = Object.keys(payload);
+      // Many tenant tables declare `id uuid NOT NULL` with no column default, so
+      // an insert that omits `id` (e.g. a record created on the client) would 500
+      // with "null value in column \"id\" violates not-null constraint". Supply a
+      // generated uuid when missing/invalid so the create path always succeeds.
+      const hasId =
+        payload[idCol] !== undefined &&
+        payload[idCol] !== null &&
+        String(payload[idCol]).trim() !== '';
+      const cols = hasId ? Object.keys(payload) : [...Object.keys(payload), idCol];
       // Cast jsonb-typed values (plain objects/arrays) explicitly so node-postgres
       // does not infer a conflicting `json` type that fails to bind to `jsonb` columns.
       const vals = cols.map((c, i) => {
         const v = payload[c];
+        if (c === idCol) return 'COALESCE($' + (i + 1) + ', gen_random_uuid())';
         return v !== null && typeof v === 'object' ? `$${i + 1}::jsonb` : `$${i + 1}`;
       });
+      const params = hasId ? Object.values(payload) : [...Object.values(payload), null];
       const query = `INSERT INTO ${table} (${cols.join(',')}) VALUES (${vals.join(',')}) ON CONFLICT (id) DO NOTHING RETURNING id`;
-      const result = await withDb(async (c) => c.query(query, Object.values(payload)));
+      const result = await withDb(async (c) => c.query(query, params));
       const insertedId = (result as any).rows[0]?.id;
       if (table === 'journal_entries' && data.lines?.length) {
         for (const ln of data.lines.map((line: any) => ({
