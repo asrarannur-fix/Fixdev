@@ -1,6 +1,29 @@
 # Log Perubahan Super Admin
 
-## 2026-07-24 - Operational Oversight Superadmin (Tenant Health + Module Alerts)
+## 2026-07-25 - Perbaikan Super Admin Controller (superadmin.controller.ts)
+
+### Ringkasan
+- Memperbaiki risiko keamanan dan keandalan pada controller Super Admin.
+- Menambahkan validasi parameter query pada endpoint listTenants dan listAudit.
+- Mengurangi risiko collision subdomain pada registrasi tenant.
+
+### Detail Perubahan
+
+#### Backend - superadmin.controller.ts
+- **Import fs/promises**: Menggunakan import top-level `fs/promises` dan `path` alih-alih dynamic import di dalam fungsi `collectStorageUsage` dan `permanentDeleteTenant` untuk konsistensi dan kinerja.
+- **Validasi query params listTenants**: Menambahkan validasi untuk `status` (harus salah satu dari TRIAL/ACTIVE/SUSPENDED), `tier` (BASIC/PRO/ENTERPRISE), `attention` (trial-warning/storage), `sort`, dan `direction`.
+- **Validasi query params listAudit**: Menambahkan validasi untuk `outcome` (SUCCESS/FAILURE), `action`, `tenantId`, `actorId`, `from`/`to` (format tanggal), `search`, `sort`, dan `direction`.
+- **Subdomain collision fix registerTenant**: Meningkatkan entropy suffix dari 8 menjadi 16 karakter hex, dan menambahkan pengecekan database untuk memastikan subdomain yang di-generate belum ada (retry hingga 5 kali).
+
+### Validasi
+| Jenis | Status |
+|-------|--------|
+| Lint (eslint) | 0 errors |
+| TypeScript | ✅ Bersih |
+| Unit test | ✅ 23 lulus |
+| Security test | ✅ 23 lulus |
+
+---
 
 ### Ringkasan
 - Menambahkan kemampuan operational oversight read-only untuk superadmin: ringkasan operasional per tenant, alert kesehatan modul, dan status kesehatan terintegrasi.

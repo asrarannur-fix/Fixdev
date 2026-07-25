@@ -1,27 +1,17 @@
-import * as React from "react";
-import { useState } from "react";
-import { Lock, Search, FileSpreadsheet, PlusCircle, Check } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { useSaaS } from "../../context/SaaSContext";
-import { useAccounting } from "../../hooks/useAccounting";
-import { useToast } from "../ui/Toast";
-import { AccountType } from "../../types";
+import * as React from 'react';
+import { useState } from 'react';
+import { Lock, Search, FileSpreadsheet, PlusCircle, Check } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useSaaS } from '../../context/SaaSContext';
+import { useAccounting } from '../../hooks/useAccounting';
+import { useToast } from '../ui/Toast';
+import { AccountType } from '../../types';
 
 interface AccountingTabProps {
   activeSubTab: string;
 }
 
-export const AccountingTab: React.FC<AccountingTabProps> = ({
-  activeSubTab,
-}) => {
+export const AccountingTab: React.FC<AccountingTabProps> = ({ activeSubTab }) => {
   const { showToast } = useToast();
 
   const { currentTenantId, currentBranchId } = useSaaS();
@@ -61,17 +51,30 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
   const [profitLossLoading, setProfitLossLoading] = useState(true);
 
   // UI state
-  const [financeActiveTab, setFinanceActiveTab] = useState<string>("laba-rugi");
-  
+  const [financeActiveTab, setFinanceActiveTab] = useState<string>('laba-rugi');
+
   const currentMonthYear = React.useMemo(() => {
     const d = new Date();
-    return `${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getFullYear()}`;
+    return `${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`;
   }, []);
 
   const [selectedFinanceMonth, setSelectedFinanceMonth] = useState(currentMonthYear);
 
   const last6Months = React.useMemo(() => {
-    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
     const result = [];
     const d = new Date();
     for (let i = 0; i < 6; i++) {
@@ -79,8 +82,8 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
       const y = d.getFullYear();
       result.push({
         label: `${months[m]} ${y}`,
-        value: `${(m + 1).toString().padStart(2, "0")}-${y}`,
-        shortLabel: months[m]
+        value: `${(m + 1).toString().padStart(2, '0')}-${y}`,
+        shortLabel: months[m],
       });
       d.setMonth(d.getMonth() - 1);
     }
@@ -88,14 +91,14 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
   }, []);
 
   // Manual transaction form state
-  const [txSearch, setTxSearch] = useState("");
-  const [txFilterType, setTxFilterType] = useState("ALL");
-  const [txType, setTxType] = useState<"CASH_IN" | "CASH_OUT">("CASH_IN");
-  const [txAmount, setTxAmount] = useState("");
-  const [txFromAccount, setTxFromAccount] = useState("");
-  const [txToAccount, setTxToAccount] = useState("");
-  const [txDesc, setTxDesc] = useState("");
-  const [txRefNo, setTxRefNo] = useState("");
+  const [txSearch, setTxSearch] = useState('');
+  const [txFilterType, setTxFilterType] = useState('ALL');
+  const [txType, setTxType] = useState<'CASH_IN' | 'CASH_OUT'>('CASH_IN');
+  const [txAmount, setTxAmount] = useState('');
+  const [txFromAccount, setTxFromAccount] = useState('');
+  const [txToAccount, setTxToAccount] = useState('');
+  const [txDesc, setTxDesc] = useState('');
+  const [txRefNo, setTxRefNo] = useState('');
   const [txSubmitting, setTxSubmitting] = useState(false);
 
   // Load data on mount and when tenant/branch changes
@@ -104,7 +107,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
       try {
         // Load accounts
         const accts = await fetchAccounts();
-        setAccounts(accts);
+        setAccounts(accts ?? []);
         setAccountsError(null);
       } catch (e: any) {
         setAccountsError(e.message);
@@ -114,7 +117,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
 
       try {
         const jnls = await fetchJournalEntries();
-        setJournals(jnls);
+        setJournals(jnls ?? []);
         setJournalsError(null);
       } catch (e: any) {
         setJournalsError(e.message);
@@ -126,7 +129,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         const tb = await fetchTrialBalance();
         setTrialBalance(tb);
       } catch (e: any) {
-        console.error("Trial balance error:", e);
+        console.error('Trial balance error:', e);
       } finally {
         setTrialBalanceLoading(false);
       }
@@ -135,7 +138,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         const pl = await fetchProfitAndLoss();
         setProfitLoss(pl);
       } catch (e: any) {
-        console.error("P&L error:", e);
+        console.error('P&L error:', e);
       } finally {
         setProfitLossLoading(false);
       }
@@ -144,35 +147,44 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         const bs = await fetchBalanceSheet();
         setBalanceSheet(bs);
       } catch (e: any) {
-        console.error("Balance sheet error:", e);
+        console.error('Balance sheet error:', e);
       } finally {
         setBalanceSheetLoading(false);
       }
     };
 
     loadAll();
-  }, [currentTenantId, currentBranchId, fetchAccounts, fetchJournalEntries, fetchTrialBalance, fetchProfitAndLoss, fetchBalanceSheet]);
+  }, [
+    currentTenantId,
+    currentBranchId,
+    fetchAccounts,
+    fetchJournalEntries,
+    fetchTrialBalance,
+    fetchProfitAndLoss,
+    fetchBalanceSheet,
+  ]);
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanDesc = txDesc.trim();
     const cleanRefNo = txRefNo.trim();
     if (!txAmount || !cleanDesc || !cleanRefNo || !txToAccount || !txFromAccount) {
-      showToast("Pastikan semua field terisi.", "error");
+      showToast('Pastikan semua field terisi.', 'error');
       return;
     }
 
     // Tambah validasi akun
-    const allAccountIds = accounts.map(acc => acc.id);
+    const allAccountIds = accounts.map((acc) => acc.id);
     if (!allAccountIds.includes(txToAccount)) {
-      showToast("Akun tujuan tidak valid.", "error");
+      showToast('Akun tujuan tidak valid.', 'error');
       return;
     }
     if (!allAccountIds.includes(txFromAccount)) {
-      showToast("Akun sumber tidak valid.", "error");
+      showToast('Akun sumber tidak valid.', 'error');
       return;
-    }    if (cleanRefNo.length < 3) {
-      showToast("Nomor referensi minimal 3 karakter", "error");
+    }
+    if (cleanRefNo.length < 3) {
+      showToast('Nomor referensi minimal 3 karakter', 'error');
       return;
     }
     const amount = Math.max(0, Number(txAmount) || 0);
@@ -180,9 +192,9 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
 
     setTxSubmitting(true);
     try {
-      if (txType === "CASH_IN") {
+      if (txType === 'CASH_IN') {
         await createCashTransaction({
-          type: "CASH_IN",
+          type: 'CASH_IN',
           amount,
           description: cleanDesc,
           refNo: cleanRefNo,
@@ -191,7 +203,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         });
       } else {
         await createCashTransaction({
-          type: "CASH_OUT",
+          type: 'CASH_OUT',
           amount,
           description: cleanDesc,
           refNo: cleanRefNo,
@@ -200,18 +212,31 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         });
       }
       // Reset form
-      setTxAmount("");
-      setTxDesc("");
-      setTxRefNo("");
-      setTxToAccount("");
-      setTxFromAccount("");
+      setTxAmount('');
+      setTxDesc('');
+      setTxRefNo('');
+      setTxToAccount('');
+      setTxFromAccount('');
       // Reload data
       const accts = await fetchAccounts();
-      setAccounts(accts);
+      setAccounts(accts ?? []);
       const jnls = await fetchJournalEntries();
-      setJournals(jnls);
+      setJournals(jnls ?? []);
+      // Refresh financial reports so totals reflect the new entry immediately.
+      try {
+        const [tb, pl, bs] = await Promise.all([
+          fetchTrialBalance(),
+          fetchProfitAndLoss(),
+          fetchBalanceSheet(),
+        ]);
+        setTrialBalance(tb);
+        setProfitLoss(pl);
+        setBalanceSheet(bs);
+      } catch (_) {
+        // non-fatal: reports will refresh on next tab focus
+      }
     } catch (e: any) {
-      showToast(e.message || "Gagal menambahkan transaksi", "error");
+      showToast(e.message || 'Gagal menambahkan transaksi', 'error');
     } finally {
       setTxSubmitting(false);
     }
@@ -220,13 +245,30 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
   // Revenue & Expense accounts for display (derived from accounts state)
   const revenueAccounts = accounts.filter((a) => a.type === AccountType.REVENUE);
   const expenseAccounts = accounts.filter((a) => a.type === AccountType.EXPENSE);
-  const totalRevenue = profitLoss?.summary?.totalRevenue ?? revenueAccounts.reduce((sum, a) => sum + (a.balance || 0), 0);
-  const totalExpense = profitLoss?.summary?.totalExpense ?? expenseAccounts.reduce((sum, a) => sum + (a.balance || 0), 0);
-  const netProfit = profitLoss?.summary?.netProfit ?? (totalRevenue - totalExpense);
+  const totalRevenue =
+    profitLoss?.summary?.totalRevenue ??
+    revenueAccounts.reduce((sum, a) => sum + (a.balance || 0), 0);
+  const totalExpense =
+    profitLoss?.summary?.totalExpense ??
+    expenseAccounts.reduce((sum, a) => sum + (a.balance || 0), 0);
+  const netProfit = profitLoss?.summary?.netProfit ?? totalRevenue - totalExpense;
 
   // Compute dynamic monthly chart data from real journal entries
   const monthlyData = React.useMemo(() => {
-    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
     const currentYear = new Date().getFullYear();
     const dataMap = Array.from({ length: 12 }, (_, i) => ({
       name: months[i],
@@ -256,9 +298,9 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
     // Make sure we return at least a default or only months with activity/reasonable fallbacks
     return dataMap.map((d) => ({
       ...d,
-      income: Math.max(0, d.income),
-      expense: Math.max(0, d.expense),
-      profit: Math.max(0, d.income - d.expense),
+      income: Number(d.income) || 0,
+      expense: Number(d.expense) || 0,
+      profit: (Number(d.income) || 0) - (Number(d.expense) || 0),
     }));
   }, [journals, accounts]);
 
@@ -280,7 +322,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
   return (
     <>
       <div className="space-y-6" id="accounting-pane">
-        {activeSubTab === "coa" && (
+        {activeSubTab === 'coa' && (
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
               <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
@@ -294,57 +336,55 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
               <p className="text-xs text-red-500 italic text-center py-8">{accountsError}</p>
             )}
             {!accountsLoading && !accountsError && (
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
-                <tr>
-                  <th className="px-4 py-3">Kode Akun</th>
-                  <th className="px-4 py-3">Nama Rekening</th>
-                  <th className="px-4 py-3">Klasifikasi</th>
-                  <th className="px-4 py-3 text-right">Saldo Saat Ini</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {accounts.map((acc) => (
-                    <tr key={acc.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3.5 font-mono font-bold text-slate-700">
-                        {acc.code}
-                      </td>
-                      <td className="px-4 py-3.5 font-semibold text-slate-800">
-                        {acc.name}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
-                            acc.type === AccountType.ASSET
-                              ? "bg-blue-100 text-blue-800"
-                              : acc.type === AccountType.REVENUE
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-slate-100 text-slate-800"
-                          }`}
-                        >
-                          {acc.type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-800">
-                        Rp {(acc.balance ?? 0).toLocaleString("id-ID")}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[640px]">
+                  <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono">
+                    <tr>
+                      <th className="px-4 py-3">Kode Akun</th>
+                      <th className="px-4 py-3">Nama Rekening</th>
+                      <th className="px-4 py-3">Klasifikasi</th>
+                      <th className="px-4 py-3 text-right">Saldo Saat Ini</th>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {accounts.map((acc) => (
+                      <tr key={acc.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3.5 font-mono font-bold text-slate-700">
+                          {acc.code}
+                        </td>
+                        <td className="px-4 py-3.5 font-semibold text-slate-800">{acc.name}</td>
+                        <td className="px-4 py-3.5">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
+                              acc.type === AccountType.ASSET
+                                ? 'bg-blue-100 text-blue-800'
+                                : acc.type === AccountType.REVENUE
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-slate-100 text-slate-800'
+                            }`}
+                          >
+                            {acc.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-800">
+                          Rp {(acc.balance ?? 0).toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
 
-        {activeSubTab === "ledger" && (
+        {activeSubTab === 'ledger' && (
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
               <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
                 Jurnal Umum (Double-Entry Log)
               </h3>
-              <span className="text-[10px] text-slate-400 font-mono">
-                Posted - Lock Policy
-              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Posted - Lock Policy</span>
             </div>
             {journalsLoading && (
               <p className="text-xs text-slate-400 italic text-center py-8">Memuat jurnal...</p>
@@ -353,30 +393,28 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
               <p className="text-xs text-red-500 italic text-center py-8">{journalsError}</p>
             )}
             {!journalsLoading && !journalsError && (
-            <div className="divide-y divide-slate-200">
-              {journals.length === 0 ? (
-                <p className="text-xs text-slate-400 italic text-center py-8">
-                  Belum ada jurnal umum terposting.
-                </p>
-              ) : (
-                journals.map((j) => (
+              <div className="divide-y divide-slate-200">
+                {journals.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic text-center py-8">
+                    Belum ada jurnal umum terposting.
+                  </p>
+                ) : (
+                  journals.map((j) => (
                     <div key={j.id} className="p-4 bg-slate-50/50 space-y-3">
                       <div className="flex items-center justify-between text-xs">
                         <div>
                           <span className="font-bold text-blue-600 font-mono">
-                            {j.refNo || "NO-REF"}
+                            {j.refNo || 'NO-REF'}
                           </span>
                           <span className="text-slate-400 text-[10px] font-mono ml-2">
-                            ({new Date(j.entryDate).toLocaleDateString("id-ID")})
+                            ({new Date(j.entryDate).toLocaleDateString('id-ID')})
                           </span>
                         </div>
                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[9px] font-mono rounded">
-                          {j.sourceType || "MANUAL"}
+                          {j.sourceType || 'MANUAL'}
                         </span>
                       </div>
-                      <p className="text-xs font-semibold text-slate-700">
-                        “{j.description}”
-                      </p>
+                      <p className="text-xs font-semibold text-slate-700">“{j.description}”</p>
                       <div className="border border-slate-200 rounded-lg overflow-hidden bg-white text-xs">
                         <table className="w-full text-left">
                           <thead className="bg-slate-50 font-mono text-[9px] text-slate-400">
@@ -389,25 +427,19 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                           <tbody>
                             {(j.lines || []).map((line: any, lIdx: number) => {
                               const accName =
-                                accounts.find((a) => a.id === line.accountId)
-                                  ?.name || "Rekening";
+                                accounts.find((a) => a.id === line.accountId)?.name || 'Rekening';
                               return (
-                                <tr
-                                  key={lIdx}
-                                  className="border-t border-slate-100"
-                                >
-                                  <td className="px-3 py-1.5">
-                                    {accName}
-                                  </td>
+                                <tr key={lIdx} className="border-t border-slate-100">
+                                  <td className="px-3 py-1.5">{accName}</td>
                                   <td className="px-3 py-1.5 text-right font-mono text-slate-600">
                                     {line.debit > 0
                                       ? `Rp ${(line.debit ?? 0).toLocaleString()}`
-                                      : "-"}
+                                      : '-'}
                                   </td>
                                   <td className="px-3 py-1.5 text-right font-mono text-slate-600">
                                     {line.credit > 0
                                       ? `Rp ${(line.credit ?? 0).toLocaleString()}`
-                                      : "-"}
+                                      : '-'}
                                   </td>
                                 </tr>
                               );
@@ -417,13 +449,13 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                       </div>
                     </div>
                   ))
-              )}
-            </div>
+                )}
+              </div>
             )}
           </div>
         )}
 
-        {activeSubTab === "statements" && (
+        {activeSubTab === 'statements' && (
           <div className="space-y-6 animate-fadeIn" id="finance-module">
             {/* Top Dynamic Stats widgets */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -433,11 +465,10 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                 </span>
                 <div className="flex items-baseline justify-between mt-2">
                   <span className="text-lg font-bold font-mono text-slate-800">
-                    Rp{" "}
-                    {(
-                      accounts.find((a) => a.code === "10100")?.balance ||
-                      0
-                    ).toLocaleString("id-ID")}
+                    Rp{' '}
+                    {(accounts.find((a) => a.code === '10100')?.balance || 0).toLocaleString(
+                      'id-ID'
+                    )}
                   </span>
                   <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold font-mono">
                     10100
@@ -451,10 +482,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                 </span>
                 <div className="flex items-baseline justify-between mt-2">
                   <span className="text-lg font-bold font-mono text-emerald-600">
-                    + Rp{" "}
-                    {(monthlyBreakdown?.totalRevenue ?? 0).toLocaleString(
-                      "id-ID",
-                    )}
+                    + Rp {(monthlyBreakdown?.totalRevenue ?? 0).toLocaleString('id-ID')}
                   </span>
                   <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold font-mono">
                     IN
@@ -468,10 +496,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                 </span>
                 <div className="flex items-baseline justify-between mt-2">
                   <span className="text-lg font-bold font-mono text-rose-600">
-                    - Rp{" "}
-                    {(monthlyBreakdown?.totalExpense ?? 0).toLocaleString(
-                      "id-ID",
-                    )}
+                    - Rp {(monthlyBreakdown?.totalExpense ?? 0).toLocaleString('id-ID')}
                   </span>
                   <span className="text-[9px] bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded font-bold font-mono">
                     OUT
@@ -482,8 +507,8 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
               <div
                 className={`border rounded-xl p-4 shadow-sm flex flex-col justify-between transition-all ${
                   (monthlyBreakdown?.netProfit ?? 0) >= 0
-                    ? "bg-emerald-50/20 border-emerald-200"
-                    : "bg-rose-50/20 border-rose-200"
+                    ? 'bg-emerald-50/20 border-emerald-200'
+                    : 'bg-rose-50/20 border-rose-200'
                 }`}
               >
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -492,24 +517,19 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                 <div className="flex items-baseline justify-between mt-2">
                   <span
                     className={`text-lg font-bold font-mono ${
-                      (monthlyBreakdown?.netProfit ?? 0) >= 0
-                        ? "text-emerald-700"
-                        : "text-rose-700"
+                      (monthlyBreakdown?.netProfit ?? 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'
                     }`}
                   >
-                    Rp{" "}
-                    {(monthlyBreakdown?.netProfit ?? 0).toLocaleString("id-ID")}
+                    Rp {(monthlyBreakdown?.netProfit ?? 0).toLocaleString('id-ID')}
                   </span>
                   <span
                     className={`text-[9px] px-1.5 py-0.5 rounded font-bold font-mono ${
                       (monthlyBreakdown?.netProfit ?? 0) >= 0
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-rose-100 text-rose-800"
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-rose-100 text-rose-800'
                     }`}
                   >
-                    {(monthlyBreakdown?.netProfit ?? 0) >= 0
-                      ? "PROFIT"
-                      : "LOSS"}
+                    {(monthlyBreakdown?.netProfit ?? 0) >= 0 ? 'PROFIT' : 'LOSS'}
                   </span>
                 </div>
               </div>
@@ -518,31 +538,31 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
             {/* Internal Finance Tabs */}
             <div className="flex border-b border-slate-200 gap-1 bg-slate-50 p-1 rounded-xl border">
               <button
-                onClick={() => setFinanceActiveTab("laba-rugi")}
+                onClick={() => setFinanceActiveTab('laba-rugi')}
                 className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                  financeActiveTab === "laba-rugi"
-                    ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                    : "text-slate-500 hover:text-slate-800"
+                  financeActiveTab === 'laba-rugi'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 📊 Tren Laba Rugi Bulanan
               </button>
               <button
-                onClick={() => setFinanceActiveTab("transaksi")}
+                onClick={() => setFinanceActiveTab('transaksi')}
                 className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                  financeActiveTab === "transaksi"
-                    ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                    : "text-slate-500 hover:text-slate-800"
+                  financeActiveTab === 'transaksi'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 💸 Pencatatan Kas Masuk/Keluar
               </button>
               <button
-                onClick={() => setFinanceActiveTab("neraca")}
+                onClick={() => setFinanceActiveTab('neraca')}
                 className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                  financeActiveTab === "neraca"
-                    ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                    : "text-slate-500 hover:text-slate-800"
+                  financeActiveTab === 'neraca'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 🏛️ Neraca Akuntansi (Ledger)
@@ -550,7 +570,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
             </div>
 
             {/* Tab Panels */}
-            {financeActiveTab === "laba-rugi" && (
+            {financeActiveTab === 'laba-rugi' && (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 animate-fadeIn">
                 {/* Visual Chart - Left 3 cols */}
                 <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -565,16 +585,13 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                     </div>
                     <div className="text-[10px] flex items-center gap-3">
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>{" "}
-                        Pemasukan
+                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> Pemasukan
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 bg-rose-500 rounded-full"></span>{" "}
-                        Pengeluaran
+                        <span className="w-2.5 h-2.5 bg-rose-500 rounded-full"></span> Pengeluaran
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 bg-blue-500 rounded-full"></span>{" "}
-                        Laba Bersih
+                        <span className="w-2.5 h-2.5 bg-blue-500 rounded-full"></span> Laba Bersih
                       </span>
                     </div>
                   </div>
@@ -585,11 +602,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                         data={monthlyData}
                         margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                       >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          vertical={false}
-                          stroke="#f1f5f9"
-                        />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis
                           dataKey="month"
                           stroke="#94a3b8"
@@ -602,40 +615,23 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                           fontSize={10}
                           tickLine={false}
                           axisLine={false}
-                          tickFormatter={(val) =>
-                            `Rp ${(val / 1000000).toFixed(1)}jt`
-                          }
+                          tickFormatter={(val) => `Rp ${(val / 1000000).toFixed(1)}jt`}
                         />
                         <Tooltip
                           formatter={(value: any) => [
-                            `Rp ${value !== undefined && value !== null ? value.toLocaleString("id-ID") : "0"}`,
+                            `Rp ${value !== undefined && value !== null ? value.toLocaleString('id-ID') : '0'}`,
                           ]}
                           contentStyle={{
-                            backgroundColor: "#0f172a",
-                            borderRadius: "8px",
-                            border: "none",
-                            color: "#fff",
-                            fontSize: "11px",
+                            backgroundColor: '#0f172a',
+                            borderRadius: '8px',
+                            border: 'none',
+                            color: '#fff',
+                            fontSize: '11px',
                           }}
                         />
-                        <Bar
-                          dataKey="income"
-                          fill="#10b981"
-                          radius={[4, 4, 0, 0]}
-                          barSize={20}
-                        />
-                        <Bar
-                          dataKey="expense"
-                          fill="#f43f5e"
-                          radius={[4, 4, 0, 0]}
-                          barSize={20}
-                        />
-                        <Bar
-                          dataKey="profit"
-                          fill="#3b82f6"
-                          radius={[4, 4, 0, 0]}
-                          barSize={20}
-                        />
+                        <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Bar dataKey="expense" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Bar dataKey="profit" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -654,8 +650,8 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                           onClick={() => setSelectedFinanceMonth(m.value)}
                           className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all ${
                             selectedFinanceMonth === m.value
-                              ? "bg-slate-900 text-white"
-                              : "bg-slate-200 text-slate-600 hover:bg-slate-200"
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-slate-200 text-slate-600 hover:bg-slate-200'
                           }`}
                           title={m.label}
                         >
@@ -678,39 +674,27 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                       <div className="flex justify-between pl-3 text-slate-600">
                         <span>Pendapatan Jasa Servis</span>
                         <span className="font-mono text-emerald-600 font-semibold">
-                          + Rp{" "}
-                          {(
-                            monthlyBreakdown?.repairRevenue ?? 0
-                          ).toLocaleString("id-ID")}
+                          + Rp {(monthlyBreakdown?.repairRevenue ?? 0).toLocaleString('id-ID')}
                         </span>
                       </div>
                       <div className="flex justify-between pl-3 text-slate-600">
                         <span>Penjualan Suku Cadang & Retail</span>
                         <span className="font-mono text-emerald-600 font-semibold">
-                          + Rp{" "}
-                          {(
-                            monthlyBreakdown?.productRevenue ?? 0
-                          ).toLocaleString("id-ID")}
+                          + Rp {(monthlyBreakdown?.productRevenue ?? 0).toLocaleString('id-ID')}
                         </span>
                       </div>
                       {(monthlyBreakdown?.otherRevenue ?? 0) > 0 && (
                         <div className="flex justify-between pl-3 text-slate-600">
                           <span>Pendapatan Lain-lain</span>
                           <span className="font-mono text-emerald-600 font-semibold">
-                            + Rp{" "}
-                            {(
-                              monthlyBreakdown?.otherRevenue ?? 0
-                            ).toLocaleString("id-ID")}
+                            + Rp {(monthlyBreakdown?.otherRevenue ?? 0).toLocaleString('id-ID')}
                           </span>
                         </div>
                       )}
                       <div className="flex justify-between font-bold text-slate-800 pl-3 border-t border-slate-100 pt-1">
                         <span>Total Pendapatan</span>
                         <span className="font-mono">
-                          Rp{" "}
-                          {(monthlyBreakdown?.totalRevenue ?? 0).toLocaleString(
-                            "id-ID",
-                          )}
+                          Rp {(monthlyBreakdown?.totalRevenue ?? 0).toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>
@@ -723,39 +707,27 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                       <div className="flex justify-between pl-3 text-slate-600">
                         <span>HPP Suku Cadang Terpakai / Restok</span>
                         <span className="font-mono text-rose-600 font-semibold">
-                          - Rp{" "}
-                          {(monthlyBreakdown?.sparepartHPP ?? 0).toLocaleString(
-                            "id-ID",
-                          )}
+                          - Rp {(monthlyBreakdown?.sparepartHPP ?? 0).toLocaleString('id-ID')}
                         </span>
                       </div>
                       <div className="flex justify-between pl-3 text-slate-600">
                         <span>Beban Gaji & Komisi Teknisi</span>
                         <span className="font-mono text-rose-600 font-semibold">
-                          - Rp{" "}
-                          {(monthlyBreakdown?.staffSalary ?? 0).toLocaleString(
-                            "id-ID",
-                          )}
+                          - Rp {(monthlyBreakdown?.staffSalary ?? 0).toLocaleString('id-ID')}
                         </span>
                       </div>
                       {(monthlyBreakdown?.otherExpense ?? 0) > 0 && (
                         <div className="flex justify-between pl-3 text-slate-600">
                           <span>Beban Operasional Lainnya</span>
                           <span className="font-mono text-rose-600 font-semibold">
-                            - Rp{" "}
-                            {(
-                              monthlyBreakdown?.otherExpense ?? 0
-                            ).toLocaleString("id-ID")}
+                            - Rp {(monthlyBreakdown?.otherExpense ?? 0).toLocaleString('id-ID')}
                           </span>
                         </div>
                       )}
                       <div className="flex justify-between font-bold text-slate-800 pl-3 border-t border-slate-100 pt-1">
                         <span>Total Pengeluaran</span>
                         <span className="font-mono">
-                          Rp{" "}
-                          {(monthlyBreakdown?.totalExpense ?? 0).toLocaleString(
-                            "id-ID",
-                          )}
+                          Rp {(monthlyBreakdown?.totalExpense ?? 0).toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>
@@ -768,14 +740,11 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                       <span
                         className={`font-mono text-sm font-extrabold px-2.5 py-1 rounded-lg ${
                           (monthlyBreakdown?.netProfit ?? 0) >= 0
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-rose-50 text-rose-700"
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-rose-50 text-rose-700'
                         }`}
                       >
-                        Rp{" "}
-                        {(monthlyBreakdown?.netProfit ?? 0).toLocaleString(
-                          "id-ID",
-                        )}
+                        Rp {(monthlyBreakdown?.netProfit ?? 0).toLocaleString('id-ID')}
                       </span>
                     </div>
                   </div>
@@ -783,7 +752,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
               </div>
             )}
 
-            {financeActiveTab === "transaksi" && (
+            {financeActiveTab === 'transaksi' && (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 animate-fadeIn">
                 {/* Left form - 2 cols */}
                 <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 h-fit">
@@ -805,22 +774,22 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => setTxType("CASH_IN")}
+                          onClick={() => setTxType('CASH_IN')}
                           className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 ${
-                            txType === "CASH_IN"
-                              ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                            txType === 'CASH_IN'
+                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                           }`}
                         >
                           📥 Kas Masuk (Pemasukan)
                         </button>
                         <button
                           type="button"
-                          onClick={() => setTxType("CASH_OUT")}
+                          onClick={() => setTxType('CASH_OUT')}
                           className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 ${
-                            txType === "CASH_OUT"
-                              ? "bg-rose-600 border-rose-500 text-white shadow-sm"
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                            txType === 'CASH_OUT'
+                              ? 'bg-rose-600 border-rose-500 text-white shadow-sm'
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                           }`}
                         >
                           📤 Kas Keluar (Pengeluaran)
@@ -887,8 +856,8 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                           Akun Debit (Sumber)
                         </label>
                         <select
-                          value={txToAccount}
-                          onChange={(e) => setTxToAccount(e.target.value)}
+                          value={txFromAccount}
+                          onChange={(e) => setTxFromAccount(e.target.value)}
                           className="block w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 bg-white"
                         >
                           <option value="">Pilih Akun...</option>
@@ -905,8 +874,8 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                           Akun Kredit (Tujuan)
                         </label>
                         <select
-                          value={txFromAccount}
-                          onChange={(e) => setTxFromAccount(e.target.value)}
+                          value={txToAccount}
+                          onChange={(e) => setTxToAccount(e.target.value)}
                           className="block w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 bg-white"
                         >
                           <option value="">Pilih Akun...</option>
@@ -923,9 +892,9 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                     <button
                       type="submit"
                       className={`w-full py-2.5 text-xs font-bold rounded-lg transition-all text-white shadow flex items-center justify-center gap-1.5 cursor-pointer ${
-                        txType === "CASH_IN"
-                          ? "bg-slate-900 hover:bg-slate-900"
-                          : "bg-slate-900 hover:bg-slate-900"
+                        txType === 'CASH_IN'
+                          ? 'bg-slate-900 hover:bg-slate-900'
+                          : 'bg-slate-900 hover:bg-slate-900'
                       }`}
                     >
                       <Check className="w-4 h-4" /> Simpan Transaksi Ke Kas
@@ -971,87 +940,87 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                         <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                           <th className="px-3 py-2">ID & Tanggal</th>
                           <th className="px-3 py-2">Deskripsi & Operator</th>
-                          <th className="px-3 py-2 text-center">
-                            Akun Debit/Kredit
-                          </th>
+                          <th className="px-3 py-2 text-center">Akun Debit/Kredit</th>
                           <th className="px-3 py-2 text-right">Nominal</th>
                         </tr>
                       </thead>
                       <tbody>
                         {journals.length === 0 ? (
                           <tr>
-                            <td
-                              colSpan={4}
-                              className="px-3 py-8 text-center text-slate-400"
-                            >
+                            <td colSpan={4} className="px-3 py-8 text-center text-slate-400">
                               Tidak ada transaksi kas yang sesuai filter.
                             </td>
                           </tr>
                         ) : (
-                          journals.map((tx) => {
-                            const dateString = new Date(
-                              tx.timestamp,
-                            ).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
+                          journals
+                            .filter((tx) => tx.sourceType === 'CASH_TX')
+                            .map((tx) => {
+                              const dateString = new Date(
+                                tx.entryDate || tx.createdAt
+                              ).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              });
 
-                            const debName =
-                              accounts.find(
-                                (a) => a.id === tx.toAccountId,
-                              )?.name || "Debit";
-                            const credName =
-                              accounts.find(
-                                (a) => a.id === tx.fromAccountId,
-                              )?.name || "Kredit";
+                              const debitLine = (tx.lines || []).find(
+                                (l: any) => Number(l.debit) > 0
+                              );
+                              const creditLine = (tx.lines || []).find(
+                                (l: any) => Number(l.credit) > 0
+                              );
+                              const debName =
+                                accounts.find((a) => a.id === debitLine?.accountId)?.name ||
+                                'Debit';
+                              const credName =
+                                accounts.find((a) => a.id === creditLine?.accountId)?.name ||
+                                'Kredit';
+                              const amount = Number(debitLine?.debit || creditLine?.credit || 0);
+                              // CASH_IN: cash (asset) debited; CASH_OUT: cash credited.
+                              const isCashIn =
+                                !!creditLine &&
+                                Number(creditLine.credit) > 0 &&
+                                accounts.find((a) => a.id === creditLine.accountId)?.type ===
+                                  'LIABILITY';
 
-                            return (
-                              <tr
-                                key={tx.id}
-                                className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
-                              >
-                                <td className="px-3 py-2.5">
-                                  <div className="font-semibold text-slate-800 font-mono text-[9px]">
-                                    {tx.id}
-                                  </div>
-                                  <div className="text-slate-400 text-[9px] mt-0.5">
-                                    {dateString}
-                                  </div>
-                                </td>
-                                <td className="px-3 py-2.5 max-w-[180px] truncate">
-                                  <div className="font-medium text-slate-800">
-                                    {tx.description}
-                                  </div>
-                                  <div className="text-slate-400 text-[9px] mt-0.5">
-                                    Oleh: {tx.operator}
-                                  </div>
-                                </td>
-                                <td className="px-3 py-2.5 text-center">
-                                  <div className="text-[10px] text-slate-700 font-medium">
-                                    D: {debName}
-                                  </div>
-                                  <div className="text-[10px] text-slate-400 mt-0.5">
-                                    K: {credName}
-                                  </div>
-                                </td>
-                                <td className="px-3 py-2.5 text-right font-mono font-bold">
-                                  <span
-                                    className={
-                                      tx.type === "CASH_IN"
-                                        ? "text-emerald-600"
-                                        : "text-rose-600"
-                                    }
-                                  >
-                                    {tx.type === "CASH_IN" ? "+" : "-"} Rp{" "}
-                                    {(tx.amount ?? 0).toLocaleString("id-ID")}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })
+                              return (
+                                <tr
+                                  key={tx.id}
+                                  className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
+                                >
+                                  <td className="px-3 py-2.5">
+                                    <div className="font-semibold text-slate-800 font-mono text-[9px]">
+                                      {tx.refNo || tx.id}
+                                    </div>
+                                    <div className="text-slate-400 text-[9px] mt-0.5">
+                                      {dateString}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2.5 max-w-[180px] truncate">
+                                    <div className="font-medium text-slate-800">
+                                      {tx.description}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2.5 text-center">
+                                    <div className="text-[10px] text-slate-700 font-medium">
+                                      D: {debName}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 mt-0.5">
+                                      K: {credName}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2.5 text-right font-mono font-bold">
+                                    <span
+                                      className={isCashIn ? 'text-emerald-600' : 'text-rose-600'}
+                                    >
+                                      {isCashIn ? '+' : '-'} Rp {amount.toLocaleString('id-ID')}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
                         )}
                       </tbody>
                     </table>
@@ -1060,7 +1029,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
               </div>
             )}
 
-            {financeActiveTab === "neraca" && (
+            {financeActiveTab === 'neraca' && (
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden animate-fadeIn max-w-4xl mx-auto">
                 <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                   <div>
@@ -1072,7 +1041,12 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                     </p>
                   </div>
                   <span className="text-[10px] font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-bold">
-                    Per {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                    Per{' '}
+                    {new Date().toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
                   </span>
                 </div>
                 {balanceSheetLoading ? (
@@ -1082,58 +1056,94 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Aset */}
                       <div className="space-y-3">
-                        <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">Aset (Assets)</p>
+                        <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">
+                          Aset (Assets)
+                        </p>
                         {balanceSheet.assets.map((a: any) => (
                           <div key={a.id} className="flex justify-between text-[11px] pl-2">
-                            <span className="text-slate-600">{a.code} - {a.name}</span>
-                            <span className="font-mono font-semibold text-slate-800">Rp {Number(a.balance).toLocaleString("id-ID")}</span>
+                            <span className="text-slate-600">
+                              {a.code} - {a.name}
+                            </span>
+                            <span className="font-mono font-semibold text-slate-800">
+                              Rp {Number(a.balance).toLocaleString('id-ID')}
+                            </span>
                           </div>
                         ))}
                         <div className="border-t border-dashed border-slate-200 pt-2.5 flex justify-between font-bold text-slate-800 text-xs">
                           <span>TOTAL AKTIVA (ASET)</span>
-                          <span className="font-mono text-slate-900">Rp {balanceSheet.totalAssets.toLocaleString("id-ID")}</span>
+                          <span className="font-mono text-slate-900">
+                            Rp {balanceSheet.totalAssets.toLocaleString('id-ID')}
+                          </span>
                         </div>
                       </div>
                       {/* Kewajiban & Ekuitas */}
                       <div className="space-y-3 md:border-l md:border-slate-100 md:pl-6">
-                        <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">Kewajiban & Ekuitas (Pasiva)</p>
+                        <p className="font-bold text-slate-900 border-b border-slate-200 pb-1 text-[10px] uppercase tracking-wider">
+                          Kewajiban & Ekuitas (Pasiva)
+                        </p>
                         {balanceSheet.liabilities.map((a: any) => (
                           <div key={a.id} className="flex justify-between text-[11px] pl-2">
-                            <span className="text-slate-600">{a.code} - {a.name}</span>
-                            <span className="font-mono font-semibold text-slate-800">Rp {Number(a.balance).toLocaleString("id-ID")}</span>
+                            <span className="text-slate-600">
+                              {a.code} - {a.name}
+                            </span>
+                            <span className="font-mono font-semibold text-slate-800">
+                              Rp {Number(a.balance).toLocaleString('id-ID')}
+                            </span>
                           </div>
                         ))}
                         {balanceSheet.equity.map((a: any) => (
                           <div key={a.id} className="flex justify-between text-[11px] pl-2">
-                            <span className="text-slate-600">{a.code} - {a.name}</span>
-                            <span className="font-mono font-semibold text-slate-800">Rp {Number(a.balance).toLocaleString("id-ID")}</span>
+                            <span className="text-slate-600">
+                              {a.code} - {a.name}
+                            </span>
+                            <span className="font-mono font-semibold text-slate-800">
+                              Rp {Number(a.balance).toLocaleString('id-ID')}
+                            </span>
                           </div>
                         ))}
                         {balanceSheet.retainedEarnings !== 0 && (
                           <div className="flex justify-between text-[11px] pl-2">
                             <span className="text-slate-600">Laba Ditahan (Retained Earnings)</span>
-                            <span className="font-mono font-semibold text-emerald-700">Rp {Math.max(0, balanceSheet.retainedEarnings).toLocaleString("id-ID")}</span>
+                            <span
+                              className={`font-mono font-semibold ${Number(balanceSheet.retainedEarnings) < 0 ? 'text-red-600' : 'text-emerald-700'}`}
+                            >
+                              Rp {Number(balanceSheet.retainedEarnings).toLocaleString('id-ID')}
+                            </span>
                           </div>
                         )}
                         <div className="border-t border-dashed border-slate-200 pt-2.5 flex justify-between font-bold text-slate-800 text-xs">
                           <span>TOTAL PASIVA</span>
-                          <span className="font-mono text-slate-900">Rp {balanceSheet.totalEquity.toLocaleString("id-ID")}</span>
+                          <span className="font-mono text-slate-900">
+                            Rp{' '}
+                            {(
+                              Number(balanceSheet.totalLiabilities) +
+                              Number(balanceSheet.totalEquity)
+                            ).toLocaleString('id-ID')}
+                          </span>
                         </div>
                       </div>
                     </div>
                     {balanceSheet.isBalanced && (
                       <div className="text-center text-emerald-600 text-[10px] font-semibold pt-3 border-t border-slate-100">
-                        ✓ Neraca Seimbang (Aset = Pasiva: Rp {balanceSheet.totalAssets.toLocaleString("id-ID")})
+                        ✓ Neraca Seimbang (Aset = Pasiva: Rp{' '}
+                        {balanceSheet.totalAssets.toLocaleString('id-ID')})
                       </div>
                     )}
                     {!balanceSheet.isBalanced && (
                       <div className="text-center text-amber-600 text-[10px] font-semibold pt-3 border-t border-slate-100">
-                        ⚠ Selisih: Rp {Math.abs(balanceSheet.totalAssets - balanceSheet.totalEquity).toLocaleString("id-ID")}
+                        ⚠ Selisih: Rp{' '}
+                        {Math.abs(
+                          Number(balanceSheet.totalAssets) -
+                            (Number(balanceSheet.totalLiabilities) +
+                              Number(balanceSheet.totalEquity))
+                        ).toLocaleString('id-ID')}
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="p-10 text-center text-slate-400">Gagal memuat neraca. Periksa data jurnal.</div>
+                  <div className="p-10 text-center text-slate-400">
+                    Gagal memuat neraca. Periksa data jurnal.
+                  </div>
                 )}
               </div>
             )}
