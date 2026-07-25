@@ -10,6 +10,16 @@ import { z } from 'zod';
 import { dbQuery, dbTransaction, getPool } from '../../lib/db.js';
 import { logger } from '../../lib/logger.js';
 import { paymentDebitAccountCode, ensureAccount } from '../lib/coa.js';
+import {
+  processPOSTransaction,
+  processPartialRefund,
+  saveHoldCart,
+  recallHoldCart,
+  deleteHoldCart,
+  validateVoucher,
+  getReceiptData,
+  getPOSAnalytics,
+} from '../../services/posService.js';
 
 // ──────────────────────────────────────────
 // ZOD SCHEMAS
@@ -323,288 +333,53 @@ export const getShifts = async (req: any, res: any) => {
 // 5. CREATE SALE (checkout — atomic: transaction + stock + journal + audit)
 // ──────────────────────────────────────────
 
-export interface POSBody {
-  customerId?: string | null;
-  items: Array<{
-    productId?: string | null;
-    name?: string;
-    quantity: number;
-    unitPrice?: number;
-    discount?: number;
-  }>;
-  paymentMethod: string;
-  amountPaid?: number;
-  discountAmount?: number;
-  depositUsed?: number;
-  paymentDetails?: string | null;
-  notes?: string | null;
-  splitPayments?: Array<{ method: string; amount: number }> | null;
-}
+// ──────────────────────────────────────────
+// 5. POS SERVICE DELEGATION (createSale uses processPOSTransaction from posService)
+// ──────────────────────────────────────────
 
-/**
- * Shared POS transaction processor used by both internal routes and API v1.
- * Runs inside a caller-provided dbTransaction client.
- */
-export async function processPOSTransaction(
-  client: any,
-  {
-    tenantId,
-    branchId,
-    userId,
-    parsed,
-  }: {
-    tenantId: string;
-    branchId: string;
-    userId: string;
-    parsed: POSBody;
-  }
-) {
-  // ── 5a. Find active shift ──
-  const shiftRes = await client.query(
-    `SELECT id FROM pos_shifts WHERE tenant_id=$1 AND branch_id=$2 AND cashier_id=$3 AND status='OPEN' ORDER BY opened_at DESC LIMIT 1`,
-    [tenantId, branchId, userId]
-  );
-  if (shiftRes.rows.length === 0) {
-    throw Object.assign(new Error('Tidak ada shift kasir aktif. Buka shift terlebih dahulu.'), {
-      status: 422,
-    });
-  }
-  const shiftId = shiftRes.rows[0].id;
+export const partialRefundSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        itemIndex: z.number().int().min(0),
+        quantity: z.number().int().positive({ message: 'Quantity refund minimal 1.' }),
+        reason: z.string().min(3, { message: 'Alasan minimal 3 karakter.' }).max(500),
+      })
+    )
+    .min(1, { message: 'Minimal 1 item untuk di-refund.' }),
+});
 
-  // ── 5b. Resolve active warehouse and prices from DB ──
-  const warehouseRes = await client.query(
-    `SELECT id FROM warehouses WHERE branch_id=$1 AND tenant_id=$2 LIMIT 1`,
-    [branchId, tenantId]
-  );
-  const warehouseId = warehouseRes.rows[0]?.id;
-  let subtotal = 0;
-  const items: any[] = [];
-  for (const i of parsed.items) {
-    let price = 0;
-    let productName = i.name || 'Item';
-    if (i.productId) {
-      const prodRes = await client.query(
-        `SELECT name, sell_price FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
-        [i.productId, tenantId]
-      );
-      if (prodRes.rows.length > 0) {
-        price = Number(prodRes.rows[0].sell_price) || 0;
-        productName = prodRes.rows[0].name;
-      }
-    } else {
-      price = Number(i.unitPrice) || 0;
-    }
-    const qty = Number(i.quantity) || 1;
-    const disc = Number(i.discount) || 0;
-    const lineSub = price * qty;
-    subtotal += lineSub - disc;
-    items.push({
-      productId: i.productId || null,
-      name: productName,
-      quantity: qty,
-      unitPrice: price,
-      discount: disc,
-      tax: 0,
-      total: lineSub - disc,
-      warehouseId,
-    });
-  }
+export const holdCartSchema = z.object({
+  customerId: z.string().uuid().optional().nullable(),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().uuid().optional().nullable(),
+        name: z.string().optional(),
+        quantity: z.number().int().positive({ message: 'Quantity minimal 1.' }),
+        unitPrice: z.number().nonnegative().optional(),
+        discount: z.number().nonnegative().optional().default(0),
+      })
+    )
+    .min(1, { message: 'Minimal 1 item.' }),
+  discountAmount: z.number().nonnegative().optional().default(0),
+  depositUsed: z.number().nonnegative().optional().default(0),
+  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'DEPOSIT', 'TEMPO']),
+  paymentDetails: z.string().max(500).optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
+});
 
-  // ── 5c. Calculate totals (read tax rate from tenant settings) ──
-  const tenantRes = await client.query(`SELECT settings FROM tenants WHERE id=$1 LIMIT 1`, [
-    tenantId,
-  ]);
-  const taxRate = tenantRes.rows[0]?.settings?.taxSettings?.taxRate ?? 11;
-  const disc = Number(parsed.discountAmount) || 0;
-  const base = Math.max(0, subtotal - disc);
-  const taxAmount = Math.round((base * taxRate) / 100);
-  const grandTotal = base + taxAmount;
+export const applyVoucherSchema = z.object({
+  code: z.string().min(1, { message: 'Kode voucher wajib diisi.' }).max(50),
+});
 
-  // ── 5d. Handle payments ──
-  const depositUsed = Math.min(grandTotal, Math.max(0, Number(parsed.depositUsed) || 0));
-  const cashDue = Math.max(0, grandTotal - depositUsed);
-  const amountPaid = Math.max(0, Number(parsed.amountPaid) || (depositUsed ? 0 : grandTotal));
-  const changeAmount = Math.max(0, amountPaid - cashDue);
+export const receiptPrintSchema = z.object({
+  format: z.enum(['THERMAL', 'A4']).optional().default('THERMAL'),
+});
 
-  // ── 5d-bis. Validate split payments (if provided, amounts must sum to grandTotal) ──
-  const splitPayments = Array.isArray(parsed.splitPayments) ? parsed.splitPayments : null;
-  if (splitPayments && splitPayments.length > 0) {
-    const splitTotal = splitPayments.reduce((s, p) => s + Number(p.amount), 0);
-    if (Math.abs(splitTotal - grandTotal) > 1) {
-      throw Object.assign(
-        new Error(
-          `Total split payment (Rp${splitTotal.toLocaleString('id-ID')}) tidak sesuai grand total (Rp${grandTotal.toLocaleString('id-ID')}).`
-        ),
-        { status: 422 }
-      );
-    }
-  }
-
-  // ── 5e. Generate invoice number ──
-  const year = new Date().getFullYear();
-  await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [tenantId]);
-  const seqRes = await client.query(
-    `SELECT COUNT(*)::int AS cnt FROM pos_transactions WHERE EXTRACT(YEAR FROM created_at)=$1`,
-    [year]
-  );
-  const invoiceNo = `INV/POS/${year}/${((seqRes.rows[0]?.cnt ?? 0) + 1).toString().padStart(5, '0')}`;
-
-  // ── 5f. Insert transaction ──
-  const txRes = await client.query(
-    `INSERT INTO pos_transactions
-     (tenant_id, branch_id, shift_id, invoice_no, customer_id, items, subtotal,
-      discount_amount, tax_amount, grand_total, payment_method, amount_paid,
-      change_amount, deposit_used, payment_details, notes, is_refunded, posted_to_ledger, status)
-   VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,FALSE,FALSE,'COMPLETED')
-   RETURNING id, invoice_no as "invoiceNo", grand_total as "grandTotal", created_at as "timestamp"`,
-    [
-      tenantId,
-      branchId,
-      shiftId,
-      invoiceNo,
-      parsed.customerId || null,
-      JSON.stringify(items),
-      subtotal,
-      disc,
-      taxAmount,
-      grandTotal,
-      parsed.paymentMethod,
-      amountPaid,
-      changeAmount,
-      depositUsed,
-      parsed.paymentDetails || null,
-      parsed.notes || null,
-    ]
-  );
-  const txId = txRes.rows[0].id;
-
-  // ── 5g. Deduct stock (with FOR UPDATE on read) + log stock movements ──
-  for (const item of items) {
-    if (item.productId && warehouseId) {
-      const stockUpdate = await client.query(
-        `UPDATE product_stock SET quantity = quantity - $1
-       WHERE product_id=$2 AND warehouse_id=$3 AND quantity >= $1`,
-        [item.quantity, item.productId, warehouseId]
-      );
-      if (stockUpdate.rowCount !== 1) {
-        throw new Error('Stok tidak mencukupi atau produk tidak ditemukan di gudang.');
-      }
-      await client.query(
-        `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, reference_no, note)
-       VALUES (gen_random_uuid(), $1, $2, $3, 'POS_SALE', -$4, $5, $6)`,
-        [
-          tenantId,
-          warehouseId,
-          item.productId,
-          item.quantity,
-          txId,
-          `Penjualan ${item.name} x${item.quantity}`,
-        ]
-      );
-    }
-  }
-
-  // ── 5h. Accounting journal (double-entry) ──
-  const netSales = subtotal - disc;
-  const debitCode = paymentDebitAccountCode(parsed.paymentMethod);
-  const debitAcctId = await ensureAccount(client, tenantId, debitCode);
-  const salesAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='40100' LIMIT 1`,
-    [tenantId]
-  );
-  const taxAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='20100' LIMIT 1`,
-    [tenantId]
-  );
-  const hppAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='50100' LIMIT 1`,
-    [tenantId]
-  );
-  const inventoryAcct = await client.query(
-    `SELECT id FROM coa_accounts WHERE tenant_id=$1 AND code='10200' LIMIT 1`,
-    [tenantId]
-  );
-
-  if (!salesAcct.rows[0]) {
-    throw new Error('Akun penjualan (40100) wajib tersedia sebelum transaksi POS.');
-  }
-
-  let journalCreated = false;
-  if (salesAcct.rows[0]) {
-    const journalRes = await client.query(
-      `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 'POS_SALE', $5) RETURNING id`,
-      [tenantId, branchId, `POS Penjualan ${invoiceNo}`, invoiceNo, userId]
-    );
-    const journalId = journalRes.rows[0].id;
-    journalCreated = true;
-
-    // Debit: Cash/Bank/Piutang (based on payment method)
-    await client.query(
-      `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
-     VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
-      [journalId, debitAcctId, grandTotal]
-    );
-    // Credit: Revenue
-    await client.query(
-      `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
-     VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
-      [journalId, salesAcct.rows[0].id, netSales]
-    );
-    // Credit: Tax payable
-    if (taxAcct.rows[0] && taxAmount > 0) {
-      await client.query(
-        `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
-       VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
-        [journalId, taxAcct.rows[0].id, taxAmount]
-      );
-    }
-    // Debit: HPP, Credit: Inventory (if items have COGS)
-    if (hppAcct.rows[0] && inventoryAcct.rows[0]) {
-      let totalCogs = 0;
-      for (const item of items) {
-        if (item.productId) {
-          const costRes = await client.query(
-            `SELECT purchase_cost FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
-            [item.productId, tenantId]
-          );
-          totalCogs += (Number(costRes.rows[0]?.purchase_cost) || 0) * item.quantity;
-        }
-      }
-      if (totalCogs > 0) {
-        await client.query(
-          `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
-         VALUES (gen_random_uuid(), $1, $2, $3, 0), (gen_random_uuid(), $1, $4, 0, $3)`,
-          [journalId, hppAcct.rows[0].id, totalCogs, inventoryAcct.rows[0].id]
-        );
-      }
-    }
-  }
-
-  // ── 5h-bis. Mark posted_to_ledger after journal creation ──
-  if (journalCreated) {
-    await client.query(`UPDATE pos_transactions SET posted_to_ledger = TRUE WHERE id = $1`, [txId]);
-  }
-
-  // ── 5i. Audit log ──
-  await client.query(
-    `INSERT INTO audit_logs (id, tenant_id, user_id, action, details)
-   VALUES (gen_random_uuid(), $1, $2, 'POS_SALE', $3)`,
-    [
-      tenantId,
-      userId,
-      `Transaksi ${invoiceNo} — Rp${grandTotal.toLocaleString('id-ID')} (${parsed.paymentMethod}) — ${items.length} item`,
-    ]
-  );
-
-  return {
-    id: txId,
-    invoiceNo,
-    grandTotal: Number(grandTotal),
-    timestamp: txRes.rows[0].timestamp,
-    items,
-  };
-}
+// ──────────────────────────────────────────
+// 5. CREATE SALE (delegated to posService.processPOSTransaction)
+// ──────────────────────────────────────────
 
 export const createSale = async (req: any, res: any) => {
   const tenantId = req.tenantId;
@@ -629,10 +404,6 @@ export const createSale = async (req: any, res: any) => {
       .json({ error: err.status ? err.message : 'Operasi POS gagal diproses.' });
   }
 };
-
-// ──────────────────────────────────────────
-// 6. VOID SALE (with stock restoration + reversal journal + audit)
-// ──────────────────────────────────────────
 export const voidSale = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const branchId = req.branchId;
@@ -873,6 +644,155 @@ export const getSaleById = async (req: any, res: any) => {
     if (result.rows.length === 0)
       return res.status(404).json({ message: 'Transaksi tidak ditemukan.' });
     res.json({ data: result.rows[0] });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Operasi POS gagal diproses.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 9. PARTIAL REFUND
+// ──────────────────────────────────────────
+
+export const partialRefund = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const branchId = req.branchId;
+  const userId = req.authActor?.userId;
+  const { id } = req.params;
+  const parsed = req.validatedBody;
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      return processPartialRefund(client, tenantId, branchId, userId, id, parsed);
+    });
+    res.json({
+      data: result,
+      message: `Partial refund Rp${result.refundAmount.toLocaleString('id-ID')} berhasil diproses.`,
+    });
+  } catch (err: any) {
+    logger.error({ err: err.message, id, tenantId }, '[pos.partialRefund] Error');
+    res
+      .status(err.status || 500)
+      .json({ error: err.status ? err.message : 'Refund parsial gagal diproses.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 10. HOLD CART
+// ──────────────────────────────────────────
+
+export const holdCart = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const branchId = req.branchId;
+  const userId = req.authActor?.userId;
+  const { id } = req.params;
+  const parsed = req.validatedBody;
+
+  try {
+    const holdId = await dbTransaction(async (client) => {
+      return saveHoldCart(client, tenantId, branchId, id || null, userId, parsed);
+    });
+    res.status(201).json({ data: { holdId }, message: 'Keranjang ditahan (hold) successfully.' });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId, branchId }, '[pos.holdCart] Error');
+    res.status(500).json({ error: 'Gagal menahan keranjang.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 11. RECALL HOLD CART
+// ──────────────────────────────────────────
+
+export const recallHold = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const branchId = req.branchId;
+  const { id } = req.params;
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      return recallHoldCart(client, tenantId, branchId, id);
+    });
+    if (!result) {
+      return res.status(404).json({ message: 'Hold tidak ditemukan atau sudah di-recall.' });
+    }
+    res.json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Operasi POS gagal diproses.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 12. DELETE HOLD CART
+// ──────────────────────────────────────────
+
+export const deleteHold = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const branchId = req.branchId;
+  const { id } = req.params;
+
+  try {
+    await dbTransaction(async (client) => {
+      return deleteHoldCart(client, tenantId, branchId, id);
+    });
+    res.json({ message: 'Hold berhasil dihapus.' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Operasi POS gagal diproses.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 13. APPLY VOUCHER
+// ──────────────────────────────────────────
+
+export const applyVoucher = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const { code } = req.validatedBody;
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      return validateVoucher(client, tenantId, code);
+    });
+    res.json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Validasi voucher gagal.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 14. PRINT RECEIPT (reprint)
+// ──────────────────────────────────────────
+
+export const reprintReceipt = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const branchId = req.branchId;
+  const { id } = req.params;
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      return getReceiptData(client, tenantId, branchId, id);
+    });
+    if (!result) {
+      return res.status(404).json({ message: 'Transaksi tidak ditemukan.' });
+    }
+    res.json({ data: result });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Operasi POS gagal diproses.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 15. POS ANALYTICS
+// ──────────────────────────────────────────
+
+export const posAnalytics = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const branchId = req.branchId;
+  const { days } = req.query;
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      return getPOSAnalytics(client, tenantId, branchId, Number(days) || 30);
+    });
+    res.json({ data: result });
   } catch (err: any) {
     res.status(500).json({ error: 'Operasi POS gagal diproses.' });
   }

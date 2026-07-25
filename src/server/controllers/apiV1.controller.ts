@@ -13,7 +13,7 @@
 import { createHash, randomBytes, randomUUID } from 'crypto';
 import { z } from 'zod';
 import { getPool, dbTransaction } from '../../lib/db.js';
-import { processPOSTransaction } from './pos.controller.js';
+import { processPOSTransaction } from '../../services/posService.js';
 
 // ==========================================
 // ZOD VALIDATION SCHEMAS
@@ -820,12 +820,10 @@ export const createInventory = async (req: any, res: any) => {
       }
     }
 
-    res
-      .status(201)
-      .json({
-        data: { ...product, stockQty: qty },
-        message: 'Inventory product created successfully.',
-      });
+    res.status(201).json({
+      data: { ...product, stockQty: qty },
+      message: 'Inventory product created successfully.',
+    });
   } catch (err: any) {
     res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
