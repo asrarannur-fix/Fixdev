@@ -191,6 +191,29 @@ export const POSTab: React.FC<POSTabProps> = ({
       return;
     }
     try {
+      // Sync to backend API if shift is active
+      if (activeShift?.id) {
+        const payload = {
+          customerId: selectedPosCust || null,
+          items: effectiveCart.map((c) => ({
+            productId: c.product.id,
+            name: c.product.name,
+            quantity: c.qty,
+            unitPrice: c.product.sellPrice,
+            discount: c.discount,
+          })),
+          paymentMethod: posPaymentMethod,
+          amountPaid: posAmountPaid ? Number(posAmountPaid) : undefined,
+          discountAmount: effectiveCart.reduce((acc, c) => acc + (c.discount ?? 0), 0),
+          depositUsed: effectiveDeposit,
+          paymentDetails: '',
+        };
+        await apiFetch(`/pos/sales/${activeShift.id}/hold`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
       const newHeld = {
         id: Date.now().toString(),
         cart: effectiveCart,
@@ -200,9 +223,7 @@ export const POSTab: React.FC<POSTabProps> = ({
       await persistHeldCart(newHeld, 'insert');
       const updated = [...heldCarts, newHeld];
       setHeldCarts(updated);
-      // Clear current cart/deposit
       if (posCart) {
-        // Parent cart: rely on parent handler to clear (or clear local state if fallback)
         setInternalCart([]);
         setInternalDeposit(0);
       } else {
@@ -218,10 +239,8 @@ export const POSTab: React.FC<POSTabProps> = ({
   const handleRecallSale = async (heldId: string) => {
     const target = heldCarts.find((h) => h.id === heldId);
     if (!target) return;
-    // Restore cart
     setInternalCart(target.cart);
     setInternalDeposit(target.deposit);
-    // Remove from held
     await persistHeldCart(target, 'delete');
     const updated = heldCarts.filter((h) => h.id !== heldId);
     setHeldCarts(updated);
