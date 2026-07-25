@@ -3,8 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import express from "express";
-import { requireRoles, requireJwt, requireTenantScope, requireFeature } from "../../middleware/auth.middleware.js";
+import express from 'express';
+import {
+  requireRoles,
+  requireJwt,
+  requireTenantScope,
+  requireFeature,
+} from '../../middleware/auth.middleware.js';
 import {
   sanctumAuthMiddleware,
   checkAbilities,
@@ -15,7 +20,6 @@ import {
   ticketUpdateSchema,
   inventorySchema,
   inventoryUpdateSchema,
-  saleSchema,
   createToken,
   getAuthMe,
   listTokens,
@@ -38,7 +42,8 @@ import {
   getSales,
   getSaleById,
   createSale,
-} from "../controllers/apiV1.controller.js";
+} from '../controllers/apiV1.controller.js';
+import { posSaleSchema } from '../controllers/pos.controller.js';
 
 const router = express.Router();
 
@@ -48,16 +53,16 @@ const router = express.Router();
 
 // Token issuance requires a verified application identity and tenant scope.
 router.post(
-  "/auth/token",
+  '/auth/token',
   requireJwt,
   requireTenantScope,
-  requireRoles("OWNER", "ADMIN", "SUPER_ADMIN"),
-  createToken,
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  createToken
 );
 
-router.get("/auth/me", sanctumAuthMiddleware, getAuthMe);
-router.get("/auth/tokens", sanctumAuthMiddleware, listTokens);
-router.delete("/auth/tokens/:id", sanctumAuthMiddleware, revokeToken);
+router.get('/auth/me', sanctumAuthMiddleware, getAuthMe);
+router.get('/auth/tokens', sanctumAuthMiddleware, listTokens);
+router.delete('/auth/tokens/:id', sanctumAuthMiddleware, revokeToken);
 
 // ==========================================
 // B. CORE REST MODULES (SANCTUM PROTECTED)
@@ -65,135 +70,110 @@ router.delete("/auth/tokens/:id", sanctumAuthMiddleware, revokeToken);
 
 // 1. Customer Management
 router.get(
-  "/customers",
+  '/customers',
   sanctumAuthMiddleware,
   requireTenantScope,
-  requireFeature("CRM"),
-  checkAbilities(["customers:read"]),
-  getCustomers,
+  requireFeature('CRM'),
+  checkAbilities(['customers:read']),
+  getCustomers
 );
 router.get(
-  "/customers/:id",
+  '/customers/:id',
   sanctumAuthMiddleware,
   requireTenantScope,
-  requireFeature("CRM"),
-  checkAbilities(["customers:read"]),
-  getCustomerById,
+  requireFeature('CRM'),
+  checkAbilities(['customers:read']),
+  getCustomerById
 );
 router.post(
-  "/customers",
+  '/customers',
   sanctumAuthMiddleware,
   requireTenantScope,
-  requireFeature("CRM"),
-  checkAbilities(["customers:write"]),
+  requireFeature('CRM'),
+  checkAbilities(['customers:write']),
   validateBody(customerSchema),
-  createCustomer,
+  createCustomer
 );
 router.put(
-  "/customers/:id",
+  '/customers/:id',
   sanctumAuthMiddleware,
   requireTenantScope,
-  requireFeature("CRM"),
-  checkAbilities(["customers:write"]),
+  requireFeature('CRM'),
+  checkAbilities(['customers:write']),
   validateBody(customerUpdateSchema),
-  updateCustomer,
+  updateCustomer
 );
 router.delete(
-  "/customers/:id",
+  '/customers/:id',
   sanctumAuthMiddleware,
   requireTenantScope,
-  requireFeature("CRM"),
-  checkAbilities(["customers:write"]),
-  deleteCustomer,
+  requireFeature('CRM'),
+  checkAbilities(['customers:write']),
+  deleteCustomer
 );
 
 // 2. Service Ticketing
-router.get(
-  "/tickets",
-  sanctumAuthMiddleware,
-  checkAbilities(["tickets:read"]),
-  getTickets,
-);
-router.get(
-  "/tickets/:id",
-  sanctumAuthMiddleware,
-  checkAbilities(["tickets:read"]),
-  getTicketById,
-);
+router.get('/tickets', sanctumAuthMiddleware, checkAbilities(['tickets:read']), getTickets);
+router.get('/tickets/:id', sanctumAuthMiddleware, checkAbilities(['tickets:read']), getTicketById);
 router.post(
-  "/tickets",
+  '/tickets',
   sanctumAuthMiddleware,
-  checkAbilities(["tickets:write"]),
+  checkAbilities(['tickets:write']),
   validateBody(ticketSchema),
-  createTicket,
+  createTicket
 );
 router.put(
-  "/tickets/:id",
+  '/tickets/:id',
   sanctumAuthMiddleware,
-  checkAbilities(["tickets:write"]),
+  checkAbilities(['tickets:write']),
   validateBody(ticketUpdateSchema),
-  updateTicket,
+  updateTicket
 );
 router.delete(
-  "/tickets/:id",
+  '/tickets/:id',
   sanctumAuthMiddleware,
-  checkAbilities(["tickets:write"]),
-  deleteTicket,
+  checkAbilities(['tickets:write']),
+  deleteTicket
 );
 
 // 3. Inventory Control
+router.get('/inventory', sanctumAuthMiddleware, checkAbilities(['inventory:read']), getInventory);
 router.get(
-  "/inventory",
+  '/inventory/:id',
   sanctumAuthMiddleware,
-  checkAbilities(["inventory:read"]),
-  getInventory,
-);
-router.get(
-  "/inventory/:id",
-  sanctumAuthMiddleware,
-  checkAbilities(["inventory:read"]),
-  getInventoryById,
+  checkAbilities(['inventory:read']),
+  getInventoryById
 );
 router.post(
-  "/inventory",
+  '/inventory',
   sanctumAuthMiddleware,
-  checkAbilities(["inventory:write"]),
+  checkAbilities(['inventory:write']),
   validateBody(inventorySchema),
-  createInventory,
+  createInventory
 );
 router.put(
-  "/inventory/:id",
+  '/inventory/:id',
   sanctumAuthMiddleware,
-  checkAbilities(["inventory:write"]),
+  checkAbilities(['inventory:write']),
   validateBody(inventoryUpdateSchema),
-  updateInventory,
+  updateInventory
 );
 router.delete(
-  "/inventory/:id",
+  '/inventory/:id',
   sanctumAuthMiddleware,
-  checkAbilities(["inventory:write"]),
-  deleteInventory,
+  checkAbilities(['inventory:write']),
+  deleteInventory
 );
 
 // 4. Sales & POS Transactions
-router.get(
-  "/sales",
-  sanctumAuthMiddleware,
-  checkAbilities(["sales:read"]),
-  getSales,
-);
-router.get(
-  "/sales/:id",
-  sanctumAuthMiddleware,
-  checkAbilities(["sales:read"]),
-  getSaleById,
-);
+router.get('/sales', sanctumAuthMiddleware, checkAbilities(['sales:read']), getSales);
+router.get('/sales/:id', sanctumAuthMiddleware, checkAbilities(['sales:read']), getSaleById);
 router.post(
-  "/sales",
+  '/sales',
   sanctumAuthMiddleware,
-  checkAbilities(["sales:write"]),
-  validateBody(saleSchema),
-  createSale,
+  checkAbilities(['sales:write']),
+  validateBody(posSaleSchema),
+  createSale
 );
 
 // ==========================================
@@ -201,275 +181,272 @@ router.post(
 // ==========================================
 
 // Raw OpenAPI Spec JSON
-router.get("/openapi.json", (req, res) => {
+router.get('/openapi.json', (req, res) => {
   res.json({
-    openapi: "3.0.3",
+    openapi: '3.0.3',
     info: {
-      title: "FixDev ERP - Unified REST API Specification",
+      title: 'FixDev ERP - Unified REST API Specification',
       description:
-        "Comprehensive REST API for the FixDev ERP platform. Integrate and orchestrate operations including customers, service ticketing, warehouses inventory, and cash/POS sales data with enterprise security rules.",
-      version: "1.0.0",
+        'Comprehensive REST API for the FixDev ERP platform. Integrate and orchestrate operations including customers, service ticketing, warehouses inventory, and cash/POS sales data with enterprise security rules.',
+      version: '1.0.0',
       contact: {
-        name: "SaaS Dev Team",
-        email: "support@fixdev.web.id",
+        name: 'SaaS Dev Team',
+        email: 'support@fixdev.web.id',
       },
     },
     servers: [
       {
-        url: "/api/v1",
-        description: "Standard Tenancy Root API Gateway",
+        url: '/api/v1',
+        description: 'Standard Tenancy Root API Gateway',
       },
     ],
     components: {
       securitySchemes: {
         SanctumBearerAuth: {
-          type: "http",
-          scheme: "bearer",
+          type: 'http',
+          scheme: 'bearer',
           description:
-            "Enter your Laravel Sanctum Personal Access Token. Example: `<generated-token>`",
+            'Enter your Laravel Sanctum Personal Access Token. Example: `<generated-token>`',
         },
       },
       schemas: {
         Customer: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "string" },
-            tenantId: { type: "string" },
-            name: { type: "string" },
-            email: { type: "string" },
-            phone: { type: "string" },
-            address: { type: "string" },
-            segment: { type: "string", enum: ["PERSONAL", "CORPORATE"] },
-            companyName: { type: "string" },
-            notes: { type: "string" },
-            tags: { type: "array", items: { type: "string" } },
-            loyaltyPoints: { type: "number" },
-            storeCredit: { type: "number" },
-            totalSpend: { type: "number" },
+            id: { type: 'string' },
+            tenantId: { type: 'string' },
+            name: { type: 'string' },
+            email: { type: 'string' },
+            phone: { type: 'string' },
+            address: { type: 'string' },
+            segment: { type: 'string', enum: ['PERSONAL', 'CORPORATE'] },
+            companyName: { type: 'string' },
+            notes: { type: 'string' },
+            tags: { type: 'array', items: { type: 'string' } },
+            loyaltyPoints: { type: 'number' },
+            storeCredit: { type: 'number' },
+            totalSpend: { type: 'number' },
           },
-          required: ["name", "phone"],
+          required: ['name', 'phone'],
         },
         ServiceTicket: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "string" },
-            tenantId: { type: "string" },
-            branchId: { type: "string" },
-            ticketNo: { type: "string" },
-            customerId: { type: "string" },
-            deviceName: { type: "string" },
-            deviceBrandModel: { type: "string" },
-            deviceCategory: { type: "string" },
-            customerComplaints: { type: "string" },
-            estimatedCost: { type: "number" },
+            id: { type: 'string' },
+            tenantId: { type: 'string' },
+            branchId: { type: 'string' },
+            ticketNo: { type: 'string' },
+            customerId: { type: 'string' },
+            deviceName: { type: 'string' },
+            deviceBrandModel: { type: 'string' },
+            deviceCategory: { type: 'string' },
+            customerComplaints: { type: 'string' },
+            estimatedCost: { type: 'number' },
             customerApprovalStatus: {
-              type: "string",
-              enum: ["PENDING", "APPROVED", "REJECTED"],
+              type: 'string',
+              enum: ['PENDING', 'APPROVED', 'REJECTED'],
             },
-            status: { type: "string" },
-            warrantyMonths: { type: "number" },
-            isOutsourced: { type: "boolean" },
+            status: { type: 'string' },
+            warrantyMonths: { type: 'number' },
+            isOutsourced: { type: 'boolean' },
             timeline: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  status: { type: "string" },
-                  note: { type: "string" },
-                  timestamp: { type: "string" },
-                  operator: { type: "string" },
+                  status: { type: 'string' },
+                  note: { type: 'string' },
+                  timestamp: { type: 'string' },
+                  operator: { type: 'string' },
                 },
               },
             },
-            accessoriesLeft: { type: "array", items: { type: "string" } },
-            createdAt: { type: "string" },
-            updatedAt: { type: "string" },
+            accessoriesLeft: { type: 'array', items: { type: 'string' } },
+            createdAt: { type: 'string' },
+            updatedAt: { type: 'string' },
           },
-          required: ["customerId", "deviceName", "customerComplaints"],
+          required: ['customerId', 'deviceName', 'customerComplaints'],
         },
         InventoryProduct: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "string" },
-            tenantId: { type: "string" },
-            name: { type: "string" },
-            sku: { type: "string" },
-            barcode: { type: "string" },
+            id: { type: 'string' },
+            tenantId: { type: 'string' },
+            name: { type: 'string' },
+            sku: { type: 'string' },
+            barcode: { type: 'string' },
             category: {
-              type: "string",
-              enum: ["SPAREPART", "AKSESORIS", "JASA", "LAINNYA"],
+              type: 'string',
+              enum: ['SPAREPART', 'AKSESORIS', 'JASA', 'LAINNYA'],
             },
-            purchaseCost: { type: "number" },
-            sellPrice: { type: "number" },
-            unit: { type: "string" },
-            stockQty: { type: "number" },
-            grade: { type: "string" },
-            isConsignment: { type: "boolean" },
+            purchaseCost: { type: 'number' },
+            sellPrice: { type: 'number' },
+            unit: { type: 'string' },
+            stockQty: { type: 'number' },
+            grade: { type: 'string' },
+            isConsignment: { type: 'boolean' },
           },
-          required: ["name", "sku", "category", "purchaseCost", "sellPrice"],
+          required: ['name', 'sku', 'category', 'purchaseCost', 'sellPrice'],
         },
         POSTransaction: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "string" },
-            tenantId: { type: "string" },
-            branchId: { type: "string" },
-            invoiceNo: { type: "string" },
-            customerId: { type: "string" },
-            subtotal: { type: "number" },
-            discountAmount: { type: "number" },
-            taxAmount: { type: "number" },
-            grandTotal: { type: "number" },
-            paymentMethod: { type: "string" },
-            amountPaid: { type: "number" },
-            changeAmount: { type: "number" },
-            timestamp: { type: "string" },
-            isRefunded: { type: "boolean" },
+            id: { type: 'string' },
+            tenantId: { type: 'string' },
+            branchId: { type: 'string' },
+            invoiceNo: { type: 'string' },
+            customerId: { type: 'string' },
+            subtotal: { type: 'number' },
+            discountAmount: { type: 'number' },
+            taxAmount: { type: 'number' },
+            grandTotal: { type: 'number' },
+            paymentMethod: { type: 'string' },
+            amountPaid: { type: 'number' },
+            changeAmount: { type: 'number' },
+            timestamp: { type: 'string' },
+            isRefunded: { type: 'boolean' },
             items: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  productId: { type: "string" },
-                  name: { type: "string" },
-                  quantity: { type: "number" },
-                  unitPrice: { type: "number" },
-                  total: { type: "number" },
+                  productId: { type: 'string' },
+                  name: { type: 'string' },
+                  quantity: { type: 'number' },
+                  unitPrice: { type: 'number' },
+                  total: { type: 'number' },
                 },
               },
             },
           },
         },
         TokenExchangeRequest: {
-          type: "object",
+          type: 'object',
           properties: {
             email: {
-              type: "string",
-              format: "email",
-              example: "owner@example.com",
+              type: 'string',
+              format: 'email',
+              example: 'owner@example.com',
             },
-            tokenName: { type: "string", example: "Mobile CRM Key" },
+            tokenName: { type: 'string', example: 'Mobile CRM Key' },
             abilities: {
-              type: "array",
-              items: { type: "string" },
-              example: ["*"],
+              type: 'array',
+              items: { type: 'string' },
+              example: ['*'],
             },
           },
-          required: ["email"],
+          required: ['email'],
         },
         TokenExchangeResponse: {
-          type: "object",
+          type: 'object',
           properties: {
-            token: { type: "string" },
-            token_type: { type: "string", example: "Bearer" },
-            abilities: { type: "array", items: { type: "string" } },
-            name: { type: "string" },
-            tenantId: { type: "string" },
-            branchId: { type: "string" },
-            createdAt: { type: "string" },
+            token: { type: 'string' },
+            token_type: { type: 'string', example: 'Bearer' },
+            abilities: { type: 'array', items: { type: 'string' } },
+            name: { type: 'string' },
+            tenantId: { type: 'string' },
+            branchId: { type: 'string' },
+            createdAt: { type: 'string' },
           },
         },
       },
     },
     paths: {
-      "/auth/token": {
+      '/auth/token': {
         post: {
-          summary: "Create Sanctum Personal Access Token",
+          summary: 'Create Sanctum Personal Access Token',
           description:
-            "Generates a Laravel Sanctum-style API Token by checking the credentials (email) of a registered business owner or staff.",
+            'Generates a Laravel Sanctum-style API Token by checking the credentials (email) of a registered business owner or staff.',
           requestBody: {
             required: true,
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/TokenExchangeRequest" },
+              'application/json': {
+                schema: { $ref: '#/components/schemas/TokenExchangeRequest' },
               },
             },
           },
           responses: {
             201: {
-              description: "Token generated successfully.",
+              description: 'Token generated successfully.',
               content: {
-                "application/json": {
+                'application/json': {
                   schema: {
-                    $ref: "#/components/schemas/TokenExchangeResponse",
+                    $ref: '#/components/schemas/TokenExchangeResponse',
                   },
                 },
               },
             },
             401: {
-              description:
-                "Unauthenticated: User does not match any register records.",
+              description: 'Unauthenticated: User does not match any register records.',
             },
             422: {
-              description: "Unprocessable entity: Email field is required.",
+              description: 'Unprocessable entity: Email field is required.',
             },
           },
         },
       },
-      "/auth/tokens": {
+      '/auth/tokens': {
         get: {
-          summary: "List Active Personal Access Tokens",
+          summary: 'List Active Personal Access Tokens',
           security: [{ SanctumBearerAuth: [] }],
           responses: {
             200: {
-              description:
-                "Array of tokens belonging to the authenticated context.",
+              description: 'Array of tokens belonging to the authenticated context.',
               content: {
-                "application/json": {
-                  schema: { type: "array", items: { type: "object" } },
+                'application/json': {
+                  schema: { type: 'array', items: { type: 'object' } },
                 },
               },
             },
           },
         },
       },
-      "/auth/tokens/{id}": {
+      '/auth/tokens/{id}': {
         delete: {
-          summary: "Revoke Personal Access Token",
+          summary: 'Revoke Personal Access Token',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           responses: {
-            200: { description: "Token revoked successfully." },
-            404: { description: "Token not found." },
+            200: { description: 'Token revoked successfully.' },
+            404: { description: 'Token not found.' },
           },
         },
       },
-      "/customers": {
+      '/customers': {
         get: {
-          summary: "List Customers",
+          summary: 'List Customers',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "search",
-              in: "query",
-              schema: { type: "string" },
-              description: "Filter by name, email, phone, or company",
+              name: 'search',
+              in: 'query',
+              schema: { type: 'string' },
+              description: 'Filter by name, email, phone, or company',
             },
             {
-              name: "segment",
-              in: "query",
-              schema: { type: "string", enum: ["PERSONAL", "CORPORATE"] },
+              name: 'segment',
+              in: 'query',
+              schema: { type: 'string', enum: ['PERSONAL', 'CORPORATE'] },
             },
           ],
           responses: {
             200: {
-              description:
-                "List of filtered customers isolated to the authenticated tenant.",
+              description: 'List of filtered customers isolated to the authenticated tenant.',
               content: {
-                "application/json": {
+                'application/json': {
                   schema: {
-                    type: "object",
+                    type: 'object',
                     properties: {
                       data: {
-                        type: "array",
-                        items: { $ref: "#/components/schemas/Customer" },
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/Customer' },
                       },
                     },
                   },
@@ -479,105 +456,105 @@ router.get("/openapi.json", (req, res) => {
           },
         },
         post: {
-          summary: "Create Customer",
+          summary: 'Create Customer',
           security: [{ SanctumBearerAuth: [] }],
           requestBody: {
             required: true,
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/Customer" },
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Customer' },
               },
             },
           },
           responses: {
-            201: { description: "Customer created successfully." },
-            422: { description: "Validation Error." },
+            201: { description: 'Customer created successfully.' },
+            422: { description: 'Validation Error.' },
           },
         },
       },
-      "/customers/{id}": {
+      '/customers/{id}': {
         get: {
-          summary: "Get Customer Details",
+          summary: 'Get Customer Details',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           responses: {
             200: {
               content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/Customer" },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/Customer' },
                 },
               },
             },
-            404: { description: "Customer not found." },
+            404: { description: 'Customer not found.' },
           },
         },
         put: {
-          summary: "Update Customer details",
+          summary: 'Update Customer details',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           requestBody: {
             required: true,
-            content: { "application/json": { schema: { type: "object" } } },
+            content: { 'application/json': { schema: { type: 'object' } } },
           },
           responses: {
-            200: { description: "Customer updated successfully." },
-            404: { description: "Customer not found." },
+            200: { description: 'Customer updated successfully.' },
+            404: { description: 'Customer not found.' },
           },
         },
         delete: {
-          summary: "Delete Customer",
+          summary: 'Delete Customer',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           responses: {
-            200: { description: "Customer deleted successfully." },
-            404: { description: "Customer not found." },
+            200: { description: 'Customer deleted successfully.' },
+            404: { description: 'Customer not found.' },
           },
         },
       },
-      "/tickets": {
+      '/tickets': {
         get: {
-          summary: "List Service Tickets",
+          summary: 'List Service Tickets',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "status",
-              in: "query",
-              schema: { type: "string" },
-              description: "Filter by ticket status",
+              name: 'status',
+              in: 'query',
+              schema: { type: 'string' },
+              description: 'Filter by ticket status',
             },
-            { name: "search", in: "query", schema: { type: "string" } },
+            { name: 'search', in: 'query', schema: { type: 'string' } },
           ],
           responses: {
             200: {
               content: {
-                "application/json": {
+                'application/json': {
                   schema: {
-                    type: "object",
+                    type: 'object',
                     properties: {
                       data: {
-                        type: "array",
-                        items: { $ref: "#/components/schemas/ServiceTicket" },
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/ServiceTicket' },
                       },
                     },
                   },
@@ -587,97 +564,97 @@ router.get("/openapi.json", (req, res) => {
           },
         },
         post: {
-          summary: "Create Service Ticket",
+          summary: 'Create Service Ticket',
           security: [{ SanctumBearerAuth: [] }],
           requestBody: {
             required: true,
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/ServiceTicket" },
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ServiceTicket' },
               },
             },
           },
           responses: {
-            201: { description: "Ticket created." },
+            201: { description: 'Ticket created.' },
           },
         },
       },
-      "/tickets/{id}": {
+      '/tickets/{id}': {
         get: {
-          summary: "Get Service Ticket details",
+          summary: 'Get Service Ticket details',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           responses: {
             200: {
               content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/ServiceTicket" },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ServiceTicket' },
                 },
               },
             },
           },
         },
         put: {
-          summary: "Update Ticket Details or Status",
+          summary: 'Update Ticket Details or Status',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           requestBody: {
             required: true,
-            content: { "application/json": { schema: { type: "object" } } },
+            content: { 'application/json': { schema: { type: 'object' } } },
           },
           responses: {
-            200: { description: "Ticket updated." },
+            200: { description: 'Ticket updated.' },
           },
         },
         delete: {
-          summary: "Delete Service Ticket",
+          summary: 'Delete Service Ticket',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           responses: {
-            200: { description: "Ticket deleted." },
+            200: { description: 'Ticket deleted.' },
           },
         },
       },
-      "/inventory": {
+      '/inventory': {
         get: {
-          summary: "List Inventory Products",
+          summary: 'List Inventory Products',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
-            { name: "category", in: "query", schema: { type: "string" } },
-            { name: "search", in: "query", schema: { type: "string" } },
+            { name: 'category', in: 'query', schema: { type: 'string' } },
+            { name: 'search', in: 'query', schema: { type: 'string' } },
           ],
           responses: {
             200: {
               content: {
-                "application/json": {
+                'application/json': {
                   schema: {
-                    type: "object",
+                    type: 'object',
                     properties: {
                       data: {
-                        type: "array",
+                        type: 'array',
                         items: {
-                          $ref: "#/components/schemas/InventoryProduct",
+                          $ref: '#/components/schemas/InventoryProduct',
                         },
                       },
                     },
@@ -688,91 +665,89 @@ router.get("/openapi.json", (req, res) => {
           },
         },
         post: {
-          summary: "Add New Product / Component",
+          summary: 'Add New Product / Component',
           security: [{ SanctumBearerAuth: [] }],
           requestBody: {
             required: true,
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/InventoryProduct" },
+              'application/json': {
+                schema: { $ref: '#/components/schemas/InventoryProduct' },
               },
             },
           },
           responses: {
-            201: { description: "Product added." },
+            201: { description: 'Product added.' },
           },
         },
       },
-      "/inventory/{id}": {
+      '/inventory/{id}': {
         get: {
-          summary: "Get Product Details",
+          summary: 'Get Product Details',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           responses: {
             200: {
               content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/InventoryProduct" },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/InventoryProduct' },
                 },
               },
             },
           },
         },
         put: {
-          summary: "Update Product specifications or stock",
+          summary: 'Update Product specifications or stock',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           requestBody: {
             required: true,
-            content: { "application/json": { schema: { type: "object" } } },
+            content: { 'application/json': { schema: { type: 'object' } } },
           },
-          responses: { 200: { description: "Product updated." } },
+          responses: { 200: { description: 'Product updated.' } },
         },
         delete: {
-          summary: "Delete Product",
+          summary: 'Delete Product',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
-          responses: { 200: { description: "Product deleted." } },
+          responses: { 200: { description: 'Product deleted.' } },
         },
       },
-      "/sales": {
+      '/sales': {
         get: {
-          summary: "List Sales / POS Transactions",
+          summary: 'List Sales / POS Transactions',
           security: [{ SanctumBearerAuth: [] }],
-          parameters: [
-            { name: "paymentMethod", in: "query", schema: { type: "string" } },
-          ],
+          parameters: [{ name: 'paymentMethod', in: 'query', schema: { type: 'string' } }],
           responses: {
             200: {
               content: {
-                "application/json": {
+                'application/json': {
                   schema: {
-                    type: "object",
+                    type: 'object',
                     properties: {
                       data: {
-                        type: "array",
-                        items: { $ref: "#/components/schemas/POSTransaction" },
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/POSTransaction' },
                       },
                     },
                   },
@@ -782,56 +757,56 @@ router.get("/openapi.json", (req, res) => {
           },
         },
         post: {
-          summary: "Create Sales POS Order",
+          summary: 'Create Sales POS Order',
           security: [{ SanctumBearerAuth: [] }],
           requestBody: {
             required: true,
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
+                  type: 'object',
                   properties: {
-                    customerId: { type: "string" },
+                    customerId: { type: 'string' },
                     items: {
-                      type: "array",
+                      type: 'array',
                       items: {
-                        type: "object",
+                        type: 'object',
                         properties: {
-                          productId: { type: "string" },
-                          quantity: { type: "number" },
+                          productId: { type: 'string' },
+                          quantity: { type: 'number' },
                         },
                       },
                     },
-                    paymentMethod: { type: "string" },
-                    discountAmount: { type: "number" },
+                    paymentMethod: { type: 'string' },
+                    discountAmount: { type: 'number' },
                   },
-                  required: ["items", "paymentMethod"],
+                  required: ['items', 'paymentMethod'],
                 },
               },
             },
           },
           responses: {
-            201: { description: "Transaction completed successfully." },
+            201: { description: 'Transaction completed successfully.' },
           },
         },
       },
-      "/sales/{id}": {
+      '/sales/{id}': {
         get: {
-          summary: "Get Sale Order Details",
+          summary: 'Get Sale Order Details',
           security: [{ SanctumBearerAuth: [] }],
           parameters: [
             {
-              name: "id",
-              in: "path",
+              name: 'id',
+              in: 'path',
               required: true,
-              schema: { type: "string" },
+              schema: { type: 'string' },
             },
           ],
           responses: {
             200: {
               content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/POSTransaction" },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/POSTransaction' },
                 },
               },
             },
@@ -843,7 +818,7 @@ router.get("/openapi.json", (req, res) => {
 });
 
 // Interactive Swagger UI
-router.get("/docs", (req, res) => {
+router.get('/docs', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="en">

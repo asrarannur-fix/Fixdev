@@ -10,20 +10,21 @@
  * Auth tokens are stored in the database, not in memory.
  */
 
-import { createHash, randomBytes, randomUUID } from "crypto";
-import { z } from "zod";
-import { getPool } from "../../lib/db.js";
+import { createHash, randomBytes, randomUUID } from 'crypto';
+import { z } from 'zod';
+import { getPool, dbTransaction } from '../../lib/db.js';
+import { processPOSTransaction } from './pos.controller.js';
 
 // ==========================================
 // ZOD VALIDATION SCHEMAS
 // ==========================================
 
 export const customerSchema = z.object({
-  name: z.string().min(1, { message: "Name is required." }).max(255),
-  email: z.string().email({ message: "Invalid email format." }).optional().nullable(),
-  phone: z.string().min(5, { message: "Phone must be at least 5 digits." }).max(50),
+  name: z.string().min(1, { message: 'Name is required.' }).max(255),
+  email: z.string().email({ message: 'Invalid email format.' }).optional().nullable(),
+  phone: z.string().min(5, { message: 'Phone must be at least 5 digits.' }).max(50),
   address: z.string().max(1000).optional().nullable(),
-  segment: z.enum(["PERSONAL", "CORPORATE"]).default("PERSONAL"),
+  segment: z.enum(['PERSONAL', 'CORPORATE']).default('PERSONAL'),
   companyName: z.string().max(255).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
 });
@@ -31,10 +32,10 @@ export const customerSchema = z.object({
 export const customerUpdateSchema = customerSchema.partial();
 
 export const ticketSchema = z.object({
-  customerId: z.string().uuid({ message: "Invalid Customer ID format (UUID required)." }),
-  deviceName: z.string().min(1, { message: "Device name is required." }).max(255),
+  customerId: z.string().uuid({ message: 'Invalid Customer ID format (UUID required).' }),
+  deviceName: z.string().min(1, { message: 'Device name is required.' }).max(255),
   deviceBrandModel: z.string().max(255).optional().nullable(),
-  customerComplaints: z.string().min(1, { message: "Customer complaints are required." }),
+  customerComplaints: z.string().min(1, { message: 'Customer complaints are required.' }),
   estimatedCost: z.number().nonnegative().optional().default(0),
   deviceCategory: z.string().max(100).optional().nullable(),
   accessoriesLeft: z.array(z.string()).optional().default([]),
@@ -49,13 +50,13 @@ export const ticketUpdateSchema = z.object({
 });
 
 export const inventorySchema = z.object({
-  name: z.string().min(1, { message: "Product name is required." }).max(255),
-  sku: z.string().min(1, { message: "SKU is required." }).max(100),
+  name: z.string().min(1, { message: 'Product name is required.' }).max(255),
+  sku: z.string().min(1, { message: 'SKU is required.' }).max(100),
   barcode: z.string().max(100).optional().nullable(),
-  category: z.enum(["SPAREPART", "AKSESORIS", "JASA", "LAINNYA"]),
-  purchaseCost: z.number().nonnegative({ message: "Purchase cost cannot be negative." }),
-  sellPrice: z.number().nonnegative({ message: "Sell price cannot be negative." }),
-  unit: z.string().default("pcs"),
+  category: z.enum(['SPAREPART', 'AKSESORIS', 'JASA', 'LAINNYA']),
+  purchaseCost: z.number().nonnegative({ message: 'Purchase cost cannot be negative.' }),
+  sellPrice: z.number().nonnegative({ message: 'Sell price cannot be negative.' }),
+  unit: z.string().default('pcs'),
   stockQty: z.number().int().nonnegative().optional().default(0),
 });
 
@@ -63,15 +64,17 @@ export const inventoryUpdateSchema = inventorySchema.partial();
 
 export const saleSchema = z.object({
   customerId: z.string().uuid().optional().nullable(),
-  items: z.array(
-    z.object({
-      productId: z.string().uuid().optional().nullable(),
-      name: z.string().optional(),
-      quantity: z.number().int().positive({ message: "Quantity must be at least 1." }),
-      unitPrice: z.number().nonnegative().optional(),
-    })
-  ).min(1, { message: "At least 1 sale item is required." }),
-  paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "QRIS", "EDC", "E_WALLET", "DEPOSIT", "TEMPO"]),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().uuid().optional().nullable(),
+        name: z.string().optional(),
+        quantity: z.number().int().positive({ message: 'Quantity must be at least 1.' }),
+        unitPrice: z.number().nonnegative().optional(),
+      })
+    )
+    .min(1, { message: 'At least 1 sale item is required.' }),
+  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'DEPOSIT', 'TEMPO']),
   discountAmount: z.number().nonnegative().optional().default(0),
   amountPaid: z.number().nonnegative().optional(),
 });
@@ -86,12 +89,12 @@ export const validateBody = (schema: z.ZodSchema) => {
       if (err instanceof z.ZodError) {
         const errors: Record<string, string[]> = {};
         err.issues.forEach((e) => {
-          const path = e.path.join(".");
+          const path = e.path.join('.');
           if (!errors[path]) errors[path] = [];
           errors[path].push(e.message);
         });
         return res.status(422).json({
-          message: "The given data was invalid.",
+          message: 'The given data was invalid.',
           errors,
         });
       }
@@ -137,7 +140,7 @@ export interface PersonalAccessToken {
 async function findToken(tokenValue: string): Promise<PersonalAccessToken | null> {
   // Check DB only; plaintext legacy rows are handled below for migration compatibility.
   try {
-    const tokenHash = createHash("sha256").update(tokenValue).digest("hex");
+    const tokenHash = createHash('sha256').update(tokenValue).digest('hex');
     const result = await dbQuery(
       `SELECT id, name, abilities, last_used_at as "lastUsedAt", created_at as "createdAt",
               tenant_id as "tenantId", branch_id as "branchId"
@@ -145,13 +148,13 @@ async function findToken(tokenValue: string): Promise<PersonalAccessToken | null
        WHERE (token_hash = $1 OR (token_hash IS NULL AND token = $2))
          AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())
        LIMIT 1`,
-      [tokenHash, tokenValue],
+      [tokenHash, tokenValue]
     );
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
     return {
       ...row,
-      abilities: typeof row.abilities === "string" ? JSON.parse(row.abilities) : row.abilities,
+      abilities: typeof row.abilities === 'string' ? JSON.parse(row.abilities) : row.abilities,
     };
   } catch {
     return null;
@@ -164,43 +167,51 @@ async function findToken(tokenValue: string): Promise<PersonalAccessToken | null
 
 export const sanctumAuthMiddleware = async (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
-      message: "Unauthenticated.",
+      message: 'Unauthenticated.',
       error: "Authorization header with 'Bearer <token>' is missing or invalid.",
     });
   }
 
-  const tokenValue = authHeader.split(" ")[1];
+  const tokenValue = authHeader.split(' ')[1];
   const tokenRecord = await findToken(tokenValue);
 
   if (!tokenRecord) {
     return res.status(401).json({
-      message: "Unauthenticated.",
-      error: "The provided Personal Access Token is invalid or has been revoked.",
+      message: 'Unauthenticated.',
+      error: 'The provided Personal Access Token is invalid or has been revoked.',
     });
   }
 
   // Update last used timestamp without persisting or logging the plaintext token.
-  const tokenHash = createHash("sha256").update(tokenValue).digest("hex");
-  dbQuery("UPDATE api_tokens SET last_used_at = now() WHERE token_hash = $1 OR (token_hash IS NULL AND token = $2)", [tokenHash, tokenValue]).catch(() => {});
+  const tokenHash = createHash('sha256').update(tokenValue).digest('hex');
+  dbQuery(
+    'UPDATE api_tokens SET last_used_at = now() WHERE token_hash = $1 OR (token_hash IS NULL AND token = $2)',
+    [tokenHash, tokenValue]
+  ).catch(() => {});
 
   if (req.hostTenant && req.hostTenant.id !== tokenRecord.tenantId) {
     return res.status(403).json({
-      message: "Forbidden.",
-      error: "The token is not valid for this tenant host.",
+      message: 'Forbidden.',
+      error: 'The token is not valid for this tenant host.',
     });
   }
 
   if (tokenRecord.branchId) {
     try {
       const branch = await dbQuery(
-        "SELECT id FROM branches WHERE id=$1 AND tenant_id=$2 AND is_active=true LIMIT 1",
-        [tokenRecord.branchId, tokenRecord.tenantId],
+        'SELECT id FROM branches WHERE id=$1 AND tenant_id=$2 AND is_active=true LIMIT 1',
+        [tokenRecord.branchId, tokenRecord.tenantId]
       );
-      if (!branch.rows[0]) return res.status(403).json({ message: "Forbidden.", error: "The token branch is invalid." });
+      if (!branch.rows[0])
+        return res
+          .status(403)
+          .json({ message: 'Forbidden.', error: 'The token branch is invalid.' });
     } catch {
-      return res.status(503).json({ message: "Service unavailable.", error: "Token scope could not be validated." });
+      return res
+        .status(503)
+        .json({ message: 'Service unavailable.', error: 'Token scope could not be validated.' });
     }
   }
 
@@ -214,15 +225,15 @@ export const sanctumAuthMiddleware = async (req: any, res: any, next: any) => {
 export const checkAbilities = (abilitiesRequired: string[]) => {
   return (req: any, res: any, next: any) => {
     const token = req.sanctumToken as PersonalAccessToken;
-    if (!token) return res.status(401).json({ message: "Unauthenticated." });
+    if (!token) return res.status(401).json({ message: 'Unauthenticated.' });
 
-    if (token.abilities.includes("*")) return next();
+    if (token.abilities.includes('*')) return next();
 
     const hasRequired = abilitiesRequired.every((a) => token.abilities.includes(a));
     if (!hasRequired) {
       return res.status(403).json({
-        message: "Forbidden.",
-        error: `Your token lacks: [${abilitiesRequired.join(", ")}]. Has: [${token.abilities.join(", ")}].`,
+        message: 'Forbidden.',
+        error: `Your token lacks: [${abilitiesRequired.join(', ')}]. Has: [${token.abilities.join(', ')}].`,
       });
     }
     next();
@@ -237,50 +248,70 @@ export const createToken = async (req: any, res: any) => {
   const { tokenName, abilities } = req.body || {};
   const tenantId = req.tenantId;
   if (!tenantId || !req.authActor) {
-    return res.status(403).json({ message: "A verified tenant identity is required." });
+    return res.status(403).json({ message: 'A verified tenant identity is required.' });
   }
 
   const allowedAbilities = new Set([
-    "customers:read", "customers:write", "tickets:read", "tickets:write",
-    "inventory:read", "inventory:write", "sales:read", "sales:write",
+    'customers:read',
+    'customers:write',
+    'tickets:read',
+    'tickets:write',
+    'inventory:read',
+    'inventory:write',
+    'sales:read',
+    'sales:write',
   ]);
-  const requestedAbilities = Array.isArray(abilities) ? abilities : ["customers:read"];
-  const tokenAbilities = requestedAbilities.filter((ability: unknown): ability is string =>
-    typeof ability === "string" && allowedAbilities.has(ability),
+  const requestedAbilities = Array.isArray(abilities) ? abilities : ['customers:read'];
+  const tokenAbilities = requestedAbilities.filter(
+    (ability: unknown): ability is string =>
+      typeof ability === 'string' && allowedAbilities.has(ability)
   );
   if (tokenAbilities.length === 0 || tokenAbilities.length !== requestedAbilities.length) {
-    return res.status(422).json({ message: "One or more requested token abilities are invalid." });
+    return res.status(422).json({ message: 'One or more requested token abilities are invalid.' });
   }
 
   let branchId: string | null = null;
   try {
     const branchResult = await dbQuery(
       `SELECT branch_id FROM user_branches WHERE user_id = $1 LIMIT 1`,
-      [req.authActor.userId],
+      [req.authActor.userId]
     );
     branchId = branchResult.rows[0]?.branch_id || null;
   } catch {}
 
-  const secret = randomBytes(32).toString("base64url");
+  const secret = randomBytes(32).toString('base64url');
   const tokenString = `km_pat_${secret}`;
-  const tokenHash = createHash("sha256").update(tokenString).digest("hex");
+  const tokenHash = createHash('sha256').update(tokenString).digest('hex');
   const tokenId = randomUUID();
-  const resolvedName = String(tokenName || `API Token for ${req.authActor.email || req.authActor.userId}`).slice(0, 100);
+  const resolvedName = String(
+    tokenName || `API Token for ${req.authActor.email || req.authActor.userId}`
+  ).slice(0, 100);
 
   try {
     await dbQuery(
       `INSERT INTO api_tokens
          (id, token, token_hash, token_prefix, name, abilities, tenant_id, branch_id, created_by, created_at)
        VALUES ($1, NULL, $2, $3, $4, $5::jsonb, $6, $7, $8, now())`,
-       [tokenId, tokenHash, tokenString.slice(0, 16), resolvedName, JSON.stringify(tokenAbilities), tenantId, branchId, req.authActor.userId],
+      [
+        tokenId,
+        tokenHash,
+        tokenString.slice(0, 16),
+        resolvedName,
+        JSON.stringify(tokenAbilities),
+        tenantId,
+        branchId,
+        req.authActor.userId,
+      ]
     );
   } catch (err: any) {
-    return res.status(500).json({ message: "Token could not be persisted.", error: "Token tidak dapat disimpan." });
+    return res
+      .status(500)
+      .json({ message: 'Token could not be persisted.', error: 'Token tidak dapat disimpan.' });
   }
 
   return res.status(201).json({
     token: tokenString,
-    token_type: "Bearer",
+    token_type: 'Bearer',
     abilities: tokenAbilities,
     name: resolvedName,
     tenantId,
@@ -291,7 +322,7 @@ export const createToken = async (req: any, res: any) => {
 
 export const getAuthMe = async (req: any, res: any) => {
   const token = req.sanctumToken as PersonalAccessToken | undefined;
-  if (!token) return res.status(401).json({ message: "Unauthenticated." });
+  if (!token) return res.status(401).json({ message: 'Unauthenticated.' });
 
   res.json({
     authenticated: true,
@@ -313,7 +344,7 @@ export const listTokens = async (req: any, res: any) => {
     const result = await dbQuery(
       `SELECT id, name, abilities, last_used_at as "lastUsedAt", created_at as "createdAt", tenant_id as "tenantId"
        FROM api_tokens WHERE tenant_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC`,
-      [tenantId],
+      [tenantId]
     );
     res.json(result.rows);
   } catch {
@@ -327,14 +358,14 @@ export const revokeToken = async (req: any, res: any) => {
   try {
     const result = await dbQuery(
       `UPDATE api_tokens SET revoked_at = now() WHERE id = $1 AND tenant_id = $2 RETURNING id`,
-      [id, tenantId],
+      [id, tenantId]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Token not found." });
+      return res.status(404).json({ message: 'Token not found.' });
     }
-    res.json({ success: true, message: "Personal Access Token successfully revoked." });
+    res.json({ success: true, message: 'Personal Access Token successfully revoked.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -346,7 +377,7 @@ export const getCustomers = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const { search, segment } = req.query;
 
-  const conditions: string[] = ["tenant_id = $1"];
+  const conditions: string[] = ['tenant_id = $1'];
   const params: any[] = [tenantId];
   let idx = 2;
 
@@ -358,13 +389,13 @@ export const getCustomers = async (req: any, res: any) => {
   if (search) {
     const q = `%${search}%`;
     conditions.push(
-      `(name ILIKE $${idx} OR email ILIKE $${idx} OR phone ILIKE $${idx} OR company_name ILIKE $${idx})`,
+      `(name ILIKE $${idx} OR email ILIKE $${idx} OR phone ILIKE $${idx} OR company_name ILIKE $${idx})`
     );
     params.push(q);
     idx++;
   }
 
-  const where = conditions.join(" AND ");
+  const where = conditions.join(' AND ');
   try {
     const result = await dbQuery(
       `SELECT id, tenant_id as "tenantId", name, email, phone, address, segment,
@@ -374,11 +405,11 @@ export const getCustomers = async (req: any, res: any) => {
               created_at as "createdAt"
        FROM customers WHERE ${where}
        ORDER BY created_at DESC LIMIT 500`,
-      params,
+      params
     );
     res.json({ data: result.rows, meta: { total: result.rows.length, tenantId } });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -392,14 +423,14 @@ export const getCustomerById = async (req: any, res: any) => {
               store_credit as "storeCredit", sales_pipeline_stage as "salesPipelineStage",
               notes, created_at as "createdAt"
        FROM customers WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
-      [id, tenantId],
+      [id, tenantId]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Customer resource not found." });
+      return res.status(404).json({ message: 'Customer resource not found.' });
     }
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -409,10 +440,10 @@ export const createCustomer = async (req: any, res: any) => {
 
   if (!name || !phone) {
     return res.status(422).json({
-      message: "Validation Error",
+      message: 'Validation Error',
       errors: {
-        name: !name ? ["The name field is required."] : [],
-        phone: !phone ? ["The phone field is required."] : [],
+        name: !name ? ['The name field is required.'] : [],
+        phone: !phone ? ['The phone field is required.'] : [],
       },
     });
   }
@@ -429,14 +460,14 @@ export const createCustomer = async (req: any, res: any) => {
         email || null,
         phone,
         address || null,
-        (segment || "PERSONAL").toUpperCase(),
+        (segment || 'PERSONAL').toUpperCase(),
         companyName || null,
         notes || null,
-      ],
+      ]
     );
-    res.status(201).json({ data: result.rows[0], message: "Customer created successfully." });
+    res.status(201).json({ data: result.rows[0], message: 'Customer created successfully.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -457,14 +488,14 @@ export const updateCustomer = async (req: any, res: any) => {
          notes = COALESCE($9, notes)
        WHERE id = $1 AND tenant_id = $2
        RETURNING id, name, email, phone, address, segment, company_name as "companyName", notes`,
-      [id, tenantId, name, email, phone, address, segment, companyName, notes],
+      [id, tenantId, name, email, phone, address, segment, companyName, notes]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Customer not found." });
+      return res.status(404).json({ message: 'Customer not found.' });
     }
-    res.json({ data: result.rows[0], message: "Customer updated successfully." });
+    res.json({ data: result.rows[0], message: 'Customer updated successfully.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -473,15 +504,15 @@ export const deleteCustomer = async (req: any, res: any) => {
   const { id } = req.params;
   try {
     const result = await dbQuery(
-      "DELETE FROM customers WHERE id = $1 AND tenant_id = $2 RETURNING id",
-      [id, tenantId],
+      'DELETE FROM customers WHERE id = $1 AND tenant_id = $2 RETURNING id',
+      [id, tenantId]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Customer not found." });
+      return res.status(404).json({ message: 'Customer not found.' });
     }
-    res.json({ message: "Customer successfully deleted." });
+    res.json({ message: 'Customer successfully deleted.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -494,7 +525,7 @@ export const getTickets = async (req: any, res: any) => {
   const branchId = req.branchId;
   const { status, customerId, search } = req.query;
 
-  const conditions: string[] = ["tenant_id = $1", "branch_id = $2"];
+  const conditions: string[] = ['tenant_id = $1', 'branch_id = $2'];
   const params: any[] = [tenantId, branchId];
   let idx = 3;
 
@@ -508,12 +539,14 @@ export const getTickets = async (req: any, res: any) => {
   }
   if (search) {
     const q = `%${search}%`;
-    conditions.push(`(ticket_no ILIKE $${idx} OR device_name ILIKE $${idx} OR device_brand_model ILIKE $${idx})`);
+    conditions.push(
+      `(ticket_no ILIKE $${idx} OR device_name ILIKE $${idx} OR device_brand_model ILIKE $${idx})`
+    );
     params.push(q);
     idx++;
   }
 
-  const where = conditions.join(" AND ");
+  const where = conditions.join(' AND ');
   try {
     const result = await dbQuery(
       `SELECT id, tenant_id as "tenantId", branch_id as "branchId", ticket_no as "ticketNo",
@@ -525,11 +558,11 @@ export const getTickets = async (req: any, res: any) => {
               is_outsourced as "isOutsourced", created_at as "createdAt"
        FROM service_tickets WHERE ${where}
        ORDER BY created_at DESC LIMIT 500`,
-      params,
+      params
     );
     res.json({ data: result.rows, meta: { total: result.rows.length, tenantId, branchId } });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -548,29 +581,37 @@ export const getTicketById = async (req: any, res: any) => {
               is_outsourced as "isOutsourced", created_at as "createdAt",
               initial_checklist as "initialChecklist", initial_photos as "initialPhotos"
        FROM service_tickets WHERE id = $1 AND tenant_id = $2 AND branch_id = $3 LIMIT 1`,
-      [id, tenantId, branchId],
+      [id, tenantId, branchId]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Service ticket not found." });
+      return res.status(404).json({ message: 'Service ticket not found.' });
     }
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
 export const createTicket = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const branchId = req.branchId;
-  const { customerId, deviceName, deviceBrandModel, customerComplaints, estimatedCost, deviceCategory, accessoriesLeft } = req.body;
+  const {
+    customerId,
+    deviceName,
+    deviceBrandModel,
+    customerComplaints,
+    estimatedCost,
+    deviceCategory,
+    accessoriesLeft,
+  } = req.body;
 
   if (!customerId || !deviceName || !customerComplaints) {
     return res.status(422).json({
-      message: "Validation Error",
+      message: 'Validation Error',
       errors: {
-        customerId: !customerId ? ["customerId is required."] : [],
-        deviceName: !deviceName ? ["deviceName is required."] : [],
-        customerComplaints: !customerComplaints ? ["customerComplaints is required."] : [],
+        customerId: !customerId ? ['customerId is required.'] : [],
+        deviceName: !deviceName ? ['deviceName is required.'] : [],
+        customerComplaints: !customerComplaints ? ['customerComplaints is required.'] : [],
       },
     });
   }
@@ -588,12 +629,20 @@ export const createTicket = async (req: any, res: any) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'DITERIMA', 'PENDING', 0, false)
        RETURNING id, tenant_id as "tenantId", branch_id as "branchId", ticket_no as "ticketNo",
                  customer_id as "customerId", device_name as "deviceName", status, created_at as "createdAt"`,
-      [tenantId, branchId, ticketNo, customerId, deviceName, deviceBrandModel || "Unknown",
-       customerComplaints, Number(estimatedCost) || 0],
+      [
+        tenantId,
+        branchId,
+        ticketNo,
+        customerId,
+        deviceName,
+        deviceBrandModel || 'Unknown',
+        customerComplaints,
+        Number(estimatedCost) || 0,
+      ]
     );
-    res.status(201).json({ data: result.rows[0], message: "Service ticket created successfully." });
+    res.status(201).json({ data: result.rows[0], message: 'Service ticket created successfully.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -613,15 +662,23 @@ export const updateTicket = async (req: any, res: any) => {
          warranty_months = COALESCE($7, warranty_months)
        WHERE id = $1 AND tenant_id = $2 AND branch_id = $8
        RETURNING id, status, tech_diagnosis as "techDiagnosis", estimated_cost as "estimatedCost"`,
-      [id, tenantId, status, techDiagnosis, estimatedCost !== undefined ? Number(estimatedCost) : null,
-        assignedTechId, warrantyMonths !== undefined ? Number(warrantyMonths) : null, branchId],
+      [
+        id,
+        tenantId,
+        status,
+        techDiagnosis,
+        estimatedCost !== undefined ? Number(estimatedCost) : null,
+        assignedTechId,
+        warrantyMonths !== undefined ? Number(warrantyMonths) : null,
+        branchId,
+      ]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Service ticket not found." });
+      return res.status(404).json({ message: 'Service ticket not found.' });
     }
-    res.json({ data: result.rows[0], message: "Service ticket updated successfully." });
+    res.json({ data: result.rows[0], message: 'Service ticket updated successfully.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -631,15 +688,15 @@ export const deleteTicket = async (req: any, res: any) => {
   const { id } = req.params;
   try {
     const result = await dbQuery(
-      "DELETE FROM service_tickets WHERE id = $1 AND tenant_id = $2 AND branch_id = $3 RETURNING id",
-      [id, tenantId, branchId],
+      'DELETE FROM service_tickets WHERE id = $1 AND tenant_id = $2 AND branch_id = $3 RETURNING id',
+      [id, tenantId, branchId]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Service ticket not found." });
+      return res.status(404).json({ message: 'Service ticket not found.' });
     }
-    res.json({ message: "Service ticket successfully deleted." });
+    res.json({ message: 'Service ticket successfully deleted.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -651,7 +708,7 @@ export const getInventory = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const { search, category } = req.query;
 
-  const conditions: string[] = ["p.tenant_id = $1"];
+  const conditions: string[] = ['p.tenant_id = $1'];
   const params: any[] = [tenantId];
   let idx = 2;
 
@@ -666,7 +723,7 @@ export const getInventory = async (req: any, res: any) => {
     idx++;
   }
 
-  const where = conditions.join(" AND ");
+  const where = conditions.join(' AND ');
   try {
     const result = await dbQuery(
       `SELECT p.id, p.tenant_id as "tenantId", p.name, p.sku, p.barcode, p.category,
@@ -679,11 +736,11 @@ export const getInventory = async (req: any, res: any) => {
        WHERE ${where}
        GROUP BY p.id
        ORDER BY p.created_at DESC LIMIT 500`,
-      params,
+      params
     );
     res.json({ data: result.rows, meta: { total: result.rows.length, tenantId } });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -701,14 +758,14 @@ export const getInventoryById = async (req: any, res: any) => {
        LEFT JOIN product_stock ps ON ps.product_id = p.id
        WHERE p.id = $1 AND p.tenant_id = $2
        GROUP BY p.id LIMIT 1`,
-      [id, tenantId],
+      [id, tenantId]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Product resource not found." });
+      return res.status(404).json({ message: 'Product resource not found.' });
     }
     res.json({ data: result.rows[0] });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -718,13 +775,13 @@ export const createInventory = async (req: any, res: any) => {
 
   if (!name || !sku || !category || purchaseCost === undefined || sellPrice === undefined) {
     return res.status(422).json({
-      message: "Validation Error",
+      message: 'Validation Error',
       errors: {
-        name: !name ? ["The product name is required."] : [],
-        sku: !sku ? ["The product SKU is required."] : [],
-        category: !category ? ["The category field is required."] : [],
-        purchaseCost: purchaseCost === undefined ? ["purchaseCost is required."] : [],
-        sellPrice: sellPrice === undefined ? ["sellPrice is required."] : [],
+        name: !name ? ['The product name is required.'] : [],
+        sku: !sku ? ['The product SKU is required.'] : [],
+        category: !category ? ['The category field is required.'] : [],
+        purchaseCost: purchaseCost === undefined ? ['purchaseCost is required.'] : [],
+        sellPrice: sellPrice === undefined ? ['sellPrice is required.'] : [],
       },
     });
   }
@@ -735,30 +792,42 @@ export const createInventory = async (req: any, res: any) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 5)
        RETURNING id, tenant_id as "tenantId", name, sku, barcode, category,
                  purchase_cost as "purchaseCost", sell_price as "sellPrice", unit`,
-      [tenantId, name, sku, barcode || sku, (category as string).toUpperCase(),
-       Number(purchaseCost), Number(sellPrice), unit || "pcs"],
+      [
+        tenantId,
+        name,
+        sku,
+        barcode || sku,
+        (category as string).toUpperCase(),
+        Number(purchaseCost),
+        Number(sellPrice),
+        unit || 'pcs',
+      ]
     );
     const product = result.rows[0];
 
     // Initialize stock in first warehouse of this tenant
     const qty = Number(stockQty) || 0;
     if (qty > 0) {
-      const warehouseRes = await dbQuery(
-        `SELECT id FROM warehouses WHERE tenant_id = $1 LIMIT 1`,
-        [tenantId],
-      );
+      const warehouseRes = await dbQuery(`SELECT id FROM warehouses WHERE tenant_id = $1 LIMIT 1`, [
+        tenantId,
+      ]);
       if (warehouseRes.rows.length > 0) {
         await dbQuery(
           `INSERT INTO product_stock (product_id, warehouse_id, quantity) VALUES ($1, $2, $3)
            ON CONFLICT (product_id, warehouse_id) DO UPDATE SET quantity = EXCLUDED.quantity`,
-          [product.id, warehouseRes.rows[0].id, qty],
+          [product.id, warehouseRes.rows[0].id, qty]
         );
       }
     }
 
-    res.status(201).json({ data: { ...product, stockQty: qty }, message: "Inventory product created successfully." });
+    res
+      .status(201)
+      .json({
+        data: { ...product, stockQty: qty },
+        message: 'Inventory product created successfully.',
+      });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -779,15 +848,24 @@ export const updateInventory = async (req: any, res: any) => {
          unit = COALESCE($9, unit)
        WHERE id = $1 AND tenant_id = $2
        RETURNING id, name, sku, category, purchase_cost as "purchaseCost", sell_price as "sellPrice"`,
-      [id, tenantId, name, sku, barcode, category, purchaseCost !== undefined ? Number(purchaseCost) : null,
-        sellPrice !== undefined ? Number(sellPrice) : null, unit],
+      [
+        id,
+        tenantId,
+        name,
+        sku,
+        barcode,
+        category,
+        purchaseCost !== undefined ? Number(purchaseCost) : null,
+        sellPrice !== undefined ? Number(sellPrice) : null,
+        unit,
+      ]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Product not found." });
+      return res.status(404).json({ message: 'Product not found.' });
     }
-    res.json({ data: result.rows[0], message: "Product updated successfully." });
+    res.json({ data: result.rows[0], message: 'Product updated successfully.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -796,15 +874,15 @@ export const deleteInventory = async (req: any, res: any) => {
   const { id } = req.params;
   try {
     const result = await dbQuery(
-      "DELETE FROM products WHERE id = $1 AND tenant_id = $2 RETURNING id",
-      [id, tenantId],
+      'DELETE FROM products WHERE id = $1 AND tenant_id = $2 RETURNING id',
+      [id, tenantId]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Product not found." });
+      return res.status(404).json({ message: 'Product not found.' });
     }
-    res.json({ message: "Product successfully deleted." });
+    res.json({ message: 'Product successfully deleted.' });
   } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -815,12 +893,16 @@ export const deleteInventory = async (req: any, res: any) => {
 export const getSales = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const branchId = req.branchId;
-  const { paymentMethod, customerId } = req.query;
+  const { paymentMethod, customerId, page, limit } = req.query;
 
-  const conditions: string[] = ["tenant_id = $1", "branch_id = $2"];
-  const params: any[] = [tenantId, branchId];
-  let idx = 3;
+  const conditions: string[] = ['tenant_id = $1'];
+  const params: any[] = [tenantId];
+  let idx = 2;
 
+  if (branchId) {
+    conditions.push(`branch_id = $${idx++}`);
+    params.push(branchId);
+  }
   if (paymentMethod) {
     conditions.push(`payment_method = $${idx++}`);
     params.push((paymentMethod as string).toUpperCase());
@@ -830,22 +912,43 @@ export const getSales = async (req: any, res: any) => {
     params.push(customerId);
   }
 
-  const where = conditions.join(" AND ");
+  const where = conditions.join(' AND ');
+  const pageSize = Math.min(Math.max(Number(limit) || 50, 1), 200);
+  const currentPage = Math.max(Number(page) || 1, 1);
+  const offset = (currentPage - 1) * pageSize;
+
   try {
+    const countRes = await dbQuery(
+      `SELECT COUNT(*)::int AS total FROM pos_transactions WHERE ${where}`,
+      params
+    );
+    const total = countRes.rows[0]?.total ?? 0;
+
     const result = await dbQuery(
       `SELECT id, tenant_id as "tenantId", branch_id as "branchId", shift_id as "shiftId",
               invoice_no as "invoiceNo", customer_id as "customerId", items,
               subtotal, discount_amount as "discountAmount", tax_amount as "taxAmount",
               grand_total as "grandTotal", payment_method as "paymentMethod",
               amount_paid as "amountPaid", change_amount as "changeAmount",
-              is_refunded as "isRefunded", timestamp
+              is_refunded as "isRefunded", status,
+              created_at as "timestamp"
        FROM pos_transactions WHERE ${where}
-       ORDER BY timestamp DESC LIMIT 500`,
-      params,
+       ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      [...params, pageSize, offset]
     );
-    res.json({ data: result.rows, meta: { total: result.rows.length, tenantId, branchId } });
-  } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+    res.json({
+      data: result.rows,
+      meta: {
+        total,
+        page: currentPage,
+        limit: pageSize,
+        totalPages: Math.ceil(total / pageSize),
+        tenantId,
+        branchId,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
@@ -860,145 +963,53 @@ export const getSaleById = async (req: any, res: any) => {
               subtotal, discount_amount as "discountAmount", tax_amount as "taxAmount",
               grand_total as "grandTotal", payment_method as "paymentMethod",
               amount_paid as "amountPaid", change_amount as "changeAmount",
-              is_refunded as "isRefunded", timestamp
+              is_refunded as "isRefunded", status,
+              created_at as "timestamp"
        FROM pos_transactions WHERE id = $1 AND tenant_id = $2 AND branch_id = $3 LIMIT 1`,
-      [id, tenantId, branchId],
+      [id, tenantId, branchId]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Sale transaction not found." });
+      return res.status(404).json({ message: 'Sale transaction not found.' });
     }
     res.json({ data: result.rows[0] });
-  } catch (err: any) {
-    res.status(500).json({ error: "Operasi API gagal diproses." });
+  } catch (err) {
+    res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
 
 export const createSale = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const branchId = req.branchId;
-  const { customerId, items, paymentMethod, discountAmount, amountPaid } = req.body;
+  const token = req.sanctumToken as PersonalAccessToken | undefined;
 
-  if (!items || !Array.isArray(items) || items.length === 0) {
+  if (!branchId) {
     return res.status(422).json({
-      message: "The given data was invalid.",
-      errors: { items: ["The items array is required and must contain at least 1 item."] },
-    });
-  }
-  if (!paymentMethod) {
-    return res.status(422).json({
-      message: "The given data was invalid.",
-      errors: { paymentMethod: ["The paymentMethod is required."] },
+      message: 'The given data was invalid.',
+      errors: { branchId: ['branchId is required for POS transactions via API.'] },
     });
   }
 
-  // Find active shift for this branch
-  let shiftId: string | null = null;
+  const parsed = {
+    ...req.body,
+    paymentMethod: (req.body.paymentMethod || 'CASH').toUpperCase(),
+  };
+
   try {
-    const shiftRes = await dbQuery(
-      `SELECT id FROM pos_shifts WHERE branch_id = $1 AND status = 'OPEN' ORDER BY opened_at DESC LIMIT 1`,
-      [branchId],
-    );
-    shiftId = shiftRes.rows[0]?.id || null;
-  } catch {}
-
-  if (!shiftId) {
-    return res.status(422).json({
-      message: "No active POS shift found for this branch. Please open a shift first.",
+    const result = await dbTransaction(async (client) => {
+      return processPOSTransaction(client, {
+        tenantId,
+        branchId,
+        userId: token?.id || 'API',
+        parsed,
+      });
     });
-  }
-
-  // Resolve product prices from DB
-  let subtotal = 0;
-  const calculatedItems: any[] = [];
-  for (const i of items) {
-    let price = 0;
-    let productName = i.name || "Unknown Component";
-    if (i.productId) {
-      try {
-        const prodRes = await dbQuery(
-          `SELECT name, sell_price FROM products WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
-          [i.productId, tenantId],
-        );
-        if (prodRes.rows.length > 0) {
-          price = Number(prodRes.rows[0].sell_price) || 0;
-          productName = prodRes.rows[0].name;
-        }
-      } catch {}
-    } else {
-      price = Number(i.unitPrice) || 0;
-    }
-    const qty = Number(i.quantity) || 1;
-    const itemTotal = price * qty;
-    subtotal += itemTotal;
-    calculatedItems.push({
-      productId: i.productId || null,
-      name: productName,
-      quantity: qty,
-      unitPrice: price,
-      discount: 0,
-      tax: 0,
-      total: itemTotal,
-    });
-  }
-
-  const disc = Number(discountAmount) || 0;
-  const tax = Math.round((subtotal - disc) * 0.11); // Standard PPN 11%
-  const grandTotal = subtotal - disc + tax;
-  const paid = Number(amountPaid) || grandTotal;
-  const change = Math.max(0, paid - grandTotal);
-
-  const year = new Date().getFullYear();
-  const invoiceNo = `INV-${year}${Date.now().toString().slice(-5)}${Math.floor(10 + Math.random() * 90)}`;
-
-  const pool = getPool();
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-
-    const txResult = await client.query(
-      `INSERT INTO pos_transactions
-         (tenant_id, branch_id, shift_id, invoice_no, customer_id, items, subtotal,
-          discount_amount, tax_amount, grand_total, payment_method, amount_paid, change_amount, is_refunded)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12, $13, false)
-       RETURNING id, invoice_no as "invoiceNo", grand_total as "grandTotal", timestamp`,
-      [
-        tenantId, branchId, shiftId, invoiceNo, customerId || null,
-        JSON.stringify(calculatedItems), subtotal, disc, tax, grandTotal,
-        (paymentMethod as string).toUpperCase(), paid, change,
-      ],
-    );
-
-    // Deduct atomically. Insufficient stock or wrong tenant rolls back the sale.
-    for (const item of calculatedItems) {
-      if (item.productId) {
-        const stockResult = await client.query(
-          `UPDATE product_stock ps
-           SET quantity = ps.quantity - $1
-           WHERE ps.product_id = $2
-             AND ps.quantity >= $1
-             AND ps.warehouse_id = (
-               SELECT w.id FROM warehouses w
-               WHERE w.branch_id = $4 AND w.tenant_id = $3
-               LIMIT 1
-             )`,
-          [item.quantity, item.productId, tenantId, branchId],
-        );
-        if (stockResult.rowCount !== 1) {
-          throw new Error(`Stok tidak cukup untuk produk ${item.productId}.`);
-        }
-      }
-    }
-
-    await client.query("COMMIT");
-
     res.status(201).json({
-      data: { ...txResult.rows[0], items: calculatedItems },
-      message: "Sale transaction processed successfully.",
+      data: result,
+      message: 'Sale transaction processed successfully.',
     });
   } catch (err: any) {
-    await client.query("ROLLBACK");
-    res.status(500).json({ error: "Operasi API gagal diproses." });
-  } finally {
-    client.release();
+    res
+      .status(err.status || 500)
+      .json({ error: err.status ? err.message : 'Operasi API gagal diproses.' });
   }
 };

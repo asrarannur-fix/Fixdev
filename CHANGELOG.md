@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-25
+### POS Module — refactor, unifikasi logika, dan perbaikan kritis
+- **Hapus duplikat logika API v1 `createSale`**: API v1 (`/api/v1/sales`) sekarang delegasi ke shared `processPOSTransaction` dari `pos.controller.ts`. Sebelumnya punya logika terpisah tanpa advisory lock, jurnal akuntansi, stock movement log, atau oversell guard SQL.
+- **Unifikasi format invoice**: API v1 sekarang menghasilkan `INV/POS/YYYY/NNNNN` (sama dengan internal), bukan `INV-{year}{timestamp}{random}` yang berbeda.
+- **Validasi split payment di server**: `processPOSTransaction` mengecek apakah total split payments sesuai grand total (toleransi Rp1). Jika tidak cocok, lempar error 422.
+- **`posted_to_ledger` diupdate setelah jurnal dibuat**: Flag `posted_to_ledger` pada `pos_transactions` sekarang diupdate ke `TRUE` setelah jurnal berhasil dibuat (sebelumnya selalu `FALSE`).
+- **TEMPO payment → Piutang**: Jurnal POS sekarang menggunakan `paymentDebitAccountCode()` dari `coa.ts`. TEMPO didebit ke akun `10300` (Piutang Pelanggan), bukan `10100` (Kas). Reversal void juga mengkredit akun yang benar.
+- **Pagination di `getSales`**: Kedua endpoint (internal `/api/pos/sales` dan API v1 `/api/v1/sales`) mendukung query `?page=&limit=` (default 50, max 200). Response menyertakan `meta.total`, `meta.page`, `meta.totalPages`.
+- **Fix kolom `timestamp` → `created_at`**: API v1 sebelumnya merujuk kolom `timestamp` yang tidak ada di tabel `pos_transactions`; sekarang pakai `created_at` yang benar.
+- **API v1 pakai Zod schema POS**: Route `/api/v1/sales` POST sekarang validasi pakai `posSaleSchema` dari `pos.controller.ts`, konsisten dengan internal.
+- File terkait: `src/server/controllers/pos.controller.ts`, `src/server/controllers/apiV1.controller.ts`, `src/server/routes/apiV1.routes.ts`.
+- Verifikasi: lint 0 error, tsc clean, 23 unit tests pass.
+
 ## 2026-07-24
 ### Billing & Trial — perbaikan lifecycle dan visual paket tertinggi saat trial
 - **Tampilan paket tertinggi saat trial**: `registerTenant` membuat tenant dengan `tier=ENTERPRISE` + `status=TRIAL` (sebelumnya diturunkan ke BASIC saat registrasi). Penyewa selama masa trial kini terlihat menggunakan **paket tertinggi (Enterprise)**, bukan Basic.
