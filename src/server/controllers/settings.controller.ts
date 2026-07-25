@@ -460,6 +460,19 @@ export async function updateUserRbac(req: Request, res: Response) {
     res.status(500).json({ error: 'RBAC pengguna gagal disimpan.' });
   }
 }
+export async function getBranches(req: Request, res: Response) {
+  try {
+    const result = await dbQuery(
+      `SELECT * FROM branches WHERE tenant_id=$1 AND deleted_at IS NULL ORDER BY created_at ASC`,
+      [req.tenantId]
+    );
+    res.json({ data: result.rows });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId: req.tenantId }, 'Branch list failed');
+    res.status(500).json({ error: 'Daftar cabang gagal dimuat.' });
+  }
+}
+
 export async function createBranch(req: Request, res: Response) {
   const body = branchSchema.safeParse(req.body);
   if (!body.success) return res.status(422).json({ error: 'Data cabang tidak valid.' });

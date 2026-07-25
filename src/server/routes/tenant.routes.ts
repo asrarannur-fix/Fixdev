@@ -2,6 +2,7 @@ import express from 'express';
 import { getTenantData } from '../controllers/tenant.controller.js';
 import {
   createBranch,
+  getBranches,
   getSettingsDomain,
   updateRbacMatrix,
   updateSettingsDomain,
@@ -24,6 +25,7 @@ router.put('/settings/:domain', requireSettingsDomain(), updateSettingsDomain);
 router.put('/rbac/matrix', requireRoles('OWNER', 'ADMIN'), updateRbacMatrix);
 router.put('/rbac/users/:userId', requireRoles('OWNER', 'ADMIN'), updateUserRbac);
 router.post('/branches', requireRoles('OWNER', 'ADMIN'), createBranch);
+router.get('/branches', requireJwt, requireTenantScope, getBranches);
 router.put('/branches/:id', requireRoles('OWNER', 'ADMIN'), updateBranch);
 router.delete('/branches/:id', requireRoles('OWNER', 'ADMIN'), deleteBranch);
 
