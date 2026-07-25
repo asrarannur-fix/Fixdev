@@ -5,7 +5,7 @@ import { useSaaS } from '../context/SaaSContext';
 import { useToast } from './ui/Toast';
 import { PaymentMethod } from '../types';
 import { usePrintConfig } from '../hooks/usePrintConfig';
-import { printFrame } from '../utils/printJob';
+import { printJobAsync } from '../utils/printJob';
 import {
   getPrintBaseCss,
   getPrintHeaderHtml,
@@ -172,11 +172,6 @@ export const TenantDashboard = ({
     (tx: any) => {
       const branchName = branches.find((b) => b.id === currentBranchId)?.name || '';
       const cust = customers.find((c) => c.id === tx.customerId);
-      const win = window.open('', '_blank');
-      if (!win) {
-        showToast('Popup diblokir! Izinkan popup untuk cetak.', 'error');
-        return;
-      }
       const escapeHtml = (value: string) =>
         value
           .replace(/&/g, '&amp;')
@@ -198,8 +193,7 @@ export const TenantDashboard = ({
         'Terima kasih telah berbelanja di ' + tenantName
       );
       const termsHtml = getPrintTermsHtml(printConfig, 'sales');
-      win.document.write(`
-      <html><head><title>Struk POS - ${safeInvoiceNo}</title>
+      const html = `<html><head><title>Struk POS - ${safeInvoiceNo}</title>
       <style>
         ${getPrintBaseCss(printConfig)}
         .line { border-top: 1px dashed #999; margin: 8px 0; }
@@ -220,14 +214,8 @@ export const TenantDashboard = ({
       <p class="center">Metode: ${safePaymentMethod}</p>
       ${footerHtml}
       ${termsHtml}
-      </body></html>
-    `);
-      win.document.close();
-      printFrame(
-        { contentWindow: win } as unknown as HTMLIFrameElement,
-        printConfig,
-        'POS Receipt'
-      );
+      </body></html>`;
+      void printJobAsync({ title: 'POS Receipt', html, printConfig });
     },
     [branches, currentBranchId, customers, printConfig, showToast]
   );
