@@ -53,6 +53,8 @@ module.exports = {
         NODE_ENV: 'development',
         FIXDEV_PROFILE: 'development',
         FIXDEV_DATABASE_NAME: 'fixdev_dev',
+        JWT_SECRET: 'fixdev_jwt_secret_2026_min_32_chars_secure',
+        ADMIN_TOKEN: 'fixdev_admin_token_2026_secure',
         PORT: 3001,
         DEV_PORT: 3001,
         APP_URL: 'https://dev.fixdev.web.id',
