@@ -199,6 +199,43 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
     return res.data.data;
   };
 
-  // Keep these available for the frontend to query history, though they should ideally fetch from server now.
-  return { openShift, closeShift, createPOSTransaction, refundTransaction };
+  const holdCart = async (
+    shiftId: string | null,
+    cart: { product: InventoryProduct; qty: number; discount: number }[],
+    paymentMethod: PaymentMethod,
+    depositUsed: number,
+    discountAmount: number,
+    paymentDetails?: string
+  ) => {
+    verifyScope(currentTenantId);
+    if (!cart.length) throw new Error('Keranjang POS kosong.');
+    const res = await api.post(
+      `/pos/sales/${shiftId || ''}/hold`,
+      {
+        customerId: null,
+        items: cart.map((c) => ({
+          productId: c.product.id,
+          name: c.product.name,
+          quantity: c.qty,
+          unitPrice: c.product.sellPrice,
+          discount: c.discount,
+        })),
+        paymentMethod,
+        amountPaid: 0,
+        depositUsed,
+        discountAmount,
+        paymentDetails,
+      },
+      { headers: getHeaders() }
+    );
+    return res.data.data;
+  };
+
+  const recallHold = async (holdId: string) => {
+    verifyScope(currentTenantId);
+    const res = await api.post(`/pos/sales/${holdId}/recall`, {}, { headers: getHeaders() });
+    return res.data.data;
+  };
+
+  return { openShift, closeShift, createPOSTransaction, refundTransaction, holdCart, recallHold };
 }
