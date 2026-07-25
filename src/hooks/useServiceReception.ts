@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from 'react';
 import {
   normalizeIndonesianPhone,
   validateServiceReceptionForm,
   isValidIndonesianPhone,
-} from "../utils/serviceReceptionUtils";
-import { CATEGORY_CONFIGS } from "../config/categoryConfigs";
-import { sanitizeServiceReceptionDraft } from "../utils/serviceReceptionDraft";
+} from '../utils/serviceReceptionUtils';
+import { CATEGORY_CONFIGS } from '../config/categoryConfigs';
+import { sanitizeServiceReceptionDraft } from '../utils/serviceReceptionDraft';
 
 interface UseServiceReceptionDeps {
   customers: any[];
@@ -14,7 +14,7 @@ interface UseServiceReceptionDeps {
   currentBranchId: string | undefined;
   tenantObj: any;
   addServiceTicket: (t: any) => Promise<any>;
-  showToast: (msg: string, type?: "success" | "error" | "info") => void;
+  showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   showNewSrvCustForm: boolean;
   setShowNewSrvCustForm: (v: boolean) => void;
   setReceptionErrors: (v: string[]) => void;
@@ -48,35 +48,29 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     setAutoAssignReason,
   } = deps;
 
-  const [newSrvCustName, setNewSrvCustName] = useState<string>("");
-  const [newSrvCustPhone, setNewSrvCustPhone] = useState<string>("");
-  const [newSrvCustEmail, setNewSrvCustEmail] = useState<string>("");
-  const [newSrvCustAddress, setNewSrvCustAddress] = useState<string>("");
-  const [newSrvCustomer, setNewSrvCustomer] = useState<string>("");
-  const [newSrvEstCompletion, setNewSrvEstCompletion] = useState<string>("");
-  const [newSrvDevice, setNewSrvDevice] = useState<string>("");
-  const [newSrvBrand, setNewSrvBrand] = useState<string>("");
-  const [newSrvSerial, setNewSrvSerial] = useState<string>("");
+  const [newSrvCustName, setNewSrvCustName] = useState<string>('');
+  const [newSrvCustPhone, setNewSrvCustPhone] = useState<string>('');
+  const [newSrvCustEmail, setNewSrvCustEmail] = useState<string>('');
+  const [newSrvCustAddress, setNewSrvCustAddress] = useState<string>('');
+  const [newSrvCustomer, setNewSrvCustomer] = useState<string>('');
+  const [newSrvEstCompletion, setNewSrvEstCompletion] = useState<string>('');
+  const [newSrvDevice, setNewSrvDevice] = useState<string>('');
+  const [newSrvBrand, setNewSrvBrand] = useState<string>('');
+  const [newSrvSerial, setNewSrvSerial] = useState<string>('');
   const [newSrvWarranty, setNewSrvWarranty] = useState<number>(3);
-  const [newSrvDownPayment, setNewSrvDownPayment] = useState<string>("0");
+  const [newSrvDownPayment, setNewSrvDownPayment] = useState<string>('0');
   const [newSrvIsCheckOnly, setNewSrvIsCheckOnly] = useState<boolean>(false);
   const [newSrvPhysicalCondition, setNewSrvPhysicalCondition] =
-    useState<string>("Mulus / Normal Wear");
-  const [newSrvScreenLock, setNewSrvScreenLock] = useState<string>("");
-  const [newSrvComplaint, setNewSrvComplaint] = useState<string>("");
-  const [newSrvCategory, setNewSrvCategory] = useState<string>("Smartphone");
-  const [newSrvDynamicSpecs, setNewSrvDynamicSpecs] = useState<Record<
-    string,
-    any
-  >>({});
-  const [newSrvChecklist, setNewSrvChecklist] = useState<Record<string, boolean>>(
-    {},
-  );
+    useState<string>('Mulus / Normal Wear');
+  const [newSrvScreenLock, setNewSrvScreenLock] = useState<string>('');
+  const [newSrvComplaint, setNewSrvComplaint] = useState<string>('');
+  const [newSrvCategory, setNewSrvCategory] = useState<string>('Smartphone');
+  const [newSrvDynamicSpecs, setNewSrvDynamicSpecs] = useState<Record<string, any>>({});
+  const [newSrvChecklist, setNewSrvChecklist] = useState<Record<string, boolean>>({});
 
   // init checklist berdasarkan kategori (sama seperti di parent dulu)
   useEffect(() => {
-    const config =
-      CATEGORY_CONFIGS[newSrvCategory] || CATEGORY_CONFIGS.Other || { checklist: [] };
+    const config = CATEGORY_CONFIGS[newSrvCategory] || CATEGORY_CONFIGS.Other || { checklist: [] };
     const initial: Record<string, boolean> = {};
     config.checklist.forEach((item: string) => {
       initial[item] = false;
@@ -84,60 +78,53 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     setNewSrvChecklist(initial);
   }, [newSrvCategory]);
   const [newSrvAccessories, setNewSrvAccessories] = useState<string[]>([]);
-  const [newSrvCustomAccessories, setNewSrvCustomAccessories] =
-    useState<string>("");
-  const [newSrvStorageLocId, setNewSrvStorageLocId] = useState<string>("");
-  const [newSrvCapturedConditions, setNewSrvCapturedConditions] = useState<
-    any[]
-  >([]);
+  const [newSrvCustomAccessories, setNewSrvCustomAccessories] = useState<string>('');
+  const [newSrvStorageLocId, setNewSrvStorageLocId] = useState<string>('');
+  const [newSrvCapturedConditions, setNewSrvCapturedConditions] = useState<any[]>([]);
   const [newSrvIsOutsourced, setNewSrvIsOutsourced] = useState<boolean>(false);
-  const [newSrvOutsourcedVendor, setNewSrvOutsourcedVendor] =
-    useState<string>("");
-  const [newSrvOutsourcingCost, setNewSrvOutsourcingCost] =
-    useState<string>("");
-  const [newSrvTechId, setNewSrvTechId] = useState<string>("");
+  const [newSrvOutsourcedVendor, setNewSrvOutsourcedVendor] = useState<string>('');
+  const [newSrvOutsourcingCost, setNewSrvOutsourcingCost] = useState<string>('');
+  const [newSrvTechId, setNewSrvTechId] = useState<string>('');
 
-  const [custQuery, setCustQuery] = useState<string>("");
+  const [custQuery, setCustQuery] = useState<string>('');
 
   const receptionFormRef = useRef<HTMLFormElement | null>(null);
 
   // === AUTO-SAVE DRAFT FORM PENERIMAAN (persist saat pindah tab) ===
-  const SRV_DRAFT = "fixdev_srv_draft_v1";
+  const SRV_DRAFT = 'fixdev_srv_draft_v1';
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SRV_DRAFT);
       if (!raw) return;
       const d = JSON.parse(raw);
       setShowNewSrvCustForm(d.showNewSrvCustForm ?? false);
-      setNewSrvCustName(d.newSrvCustName ?? "");
-      setNewSrvCustPhone(d.newSrvCustPhone ?? "");
-      setNewSrvCustEmail(d.newSrvCustEmail ?? "");
-      setNewSrvCustAddress(d.newSrvCustAddress ?? "");
-      setNewSrvCustomer(d.newSrvCustomer ?? "");
-      setNewSrvEstCompletion(d.newSrvEstCompletion ?? "");
-      setNewSrvDevice(d.newSrvDevice ?? "");
-      setNewSrvBrand(d.newSrvBrand ?? "");
-      setNewSrvSerial(d.newSrvSerial ?? "");
+      setNewSrvCustName(d.newSrvCustName ?? '');
+      setNewSrvCustPhone(d.newSrvCustPhone ?? '');
+      setNewSrvCustEmail(d.newSrvCustEmail ?? '');
+      setNewSrvCustAddress(d.newSrvCustAddress ?? '');
+      setNewSrvCustomer(d.newSrvCustomer ?? '');
+      setNewSrvEstCompletion(d.newSrvEstCompletion ?? '');
+      setNewSrvDevice(d.newSrvDevice ?? '');
+      setNewSrvBrand(d.newSrvBrand ?? '');
+      setNewSrvSerial(d.newSrvSerial ?? '');
       setNewSrvWarranty(d.newSrvWarranty ?? 3);
-      setNewSrvDownPayment(d.newSrvDownPayment ?? "0");
+      setNewSrvDownPayment(d.newSrvDownPayment ?? '0');
       setNewSrvIsCheckOnly(d.newSrvIsCheckOnly ?? false);
-      setNewSrvPhysicalCondition(
-        d.newSrvPhysicalCondition ?? "Mulus / Normal Wear",
-      );
-      setNewSrvScreenLock("");
-      setNewSrvComplaint(d.newSrvComplaint ?? "");
-      setNewSrvCategory(d.newSrvCategory ?? "Smartphone");
+      setNewSrvPhysicalCondition(d.newSrvPhysicalCondition ?? 'Mulus / Normal Wear');
+      setNewSrvScreenLock('');
+      setNewSrvComplaint(d.newSrvComplaint ?? '');
+      setNewSrvCategory(d.newSrvCategory ?? 'Smartphone');
       setNewSrvDynamicSpecs(d.newSrvDynamicSpecs ?? {});
       setNewSrvAccessories(d.newSrvAccessories ?? []);
-      setNewSrvCustomAccessories(d.newSrvCustomAccessories ?? "");
-      setNewSrvStorageLocId(d.newSrvStorageLocId ?? "");
+      setNewSrvCustomAccessories(d.newSrvCustomAccessories ?? '');
+      setNewSrvStorageLocId(d.newSrvStorageLocId ?? '');
       setNewSrvCapturedConditions(d.newSrvCapturedConditions ?? []);
       setNewSrvIsOutsourced(d.newSrvIsOutsourced ?? false);
-      setNewSrvOutsourcedVendor(d.newSrvOutsourcedVendor ?? "");
-      setNewSrvOutsourcingCost(d.newSrvOutsourcingCost ?? "");
-      setNewSrvTechId(d.newSrvTechId ?? "");
+      setNewSrvOutsourcedVendor(d.newSrvOutsourcedVendor ?? '');
+      setNewSrvOutsourcingCost(d.newSrvOutsourcingCost ?? '');
+      setNewSrvTechId(d.newSrvTechId ?? '');
       setNewSrvChecklist(d.newSrvChecklist ?? {});
-      setCustQuery(d.custQuery ?? "");
+      setCustQuery(d.custQuery ?? '');
     } catch {
       /* abaikan draft rusak */
     }
@@ -227,14 +214,14 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
 
     setReceptionErrors(errors);
     if (errors.length > 0) {
-      showToast("Harap lengkapi data wajib sebelum mendaftarkan unit.", "error");
+      showToast('Harap lengkapi data wajib sebelum mendaftarkan unit.', 'error');
       requestAnimationFrame(() => {
         receptionFormRef.current
           ?.querySelector<HTMLElement>("[data-reception-error='true']")
           ?.focus();
         receptionFormRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
+          behavior: 'smooth',
+          block: 'start',
         });
       });
       return;
@@ -246,7 +233,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       const duplicateCustomer = customers.find(
         (customer) =>
           customer.tenantId === activeTenantId &&
-          normalizeIndonesianPhone(customer.phone || "") === newCustomerPhone,
+          normalizeIndonesianPhone(customer.phone || '') === newCustomerPhone
       );
 
       if (duplicateCustomer) {
@@ -254,7 +241,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
         setNewSrvCustomer(duplicateCustomer.id);
         showToast(
           `Nomor WhatsApp sudah terdaftar atas nama ${duplicateCustomer.name}. Tiket ditautkan ke pelanggan tersebut.`,
-          "info",
+          'info'
         );
       } else {
         customerData = {
@@ -263,22 +250,22 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
           email: newSrvCustEmail.trim(),
           address: newSrvCustAddress.trim(),
         };
-        customerId = "pending-server-customer";
+        customerId = 'pending-server-customer';
       }
     }
 
     if (!customerId) {
-      showToast("Pilih pelanggan atau buat pelanggan baru!", "error");
+      showToast('Pilih pelanggan atau buat pelanggan baru!', 'error');
       return;
     }
 
     if (Number(newSrvDownPayment) < 0 || Number(newSrvOutsourcingCost) < 0) {
-      showToast("Nominal biaya tidak boleh negatif.", "error");
+      showToast('Nominal biaya tidak boleh negatif.', 'error');
       return;
     }
 
     if (!newSrvDevice) {
-      showToast("Model unit wajib diisi!", "error");
+      showToast('Model unit wajib diisi!', 'error');
       return;
     }
 
@@ -286,7 +273,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     const ticketId = `TKT-${Date.now()}`;
     const newTicket: any = {
       tenantId: currentTenantId,
-      branchId: currentBranchId || "HQ",
+      branchId: currentBranchId || 'HQ',
       customerId: customerId,
       deviceName: newSrvDevice,
       deviceSerial: newSrvSerial,
@@ -300,11 +287,10 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       estimatedCost: newSrvIsCheckOnly
         ? (tenantObj?.settings?.serviceSettings?.defaultDiagnosisFee ?? 0)
         : 0,
-      customerApprovalStatus: "PENDING",
+      customerApprovalStatus: 'PENDING',
       assignedTechId: newSrvTechId || undefined,
       partsUsed: [],
-      warrantyMonths:
-        newSrvWarranty ?? Math.round((tenantObj?.settings?.warrantyDays ?? 90) / 30),
+      warrantyMonths: newSrvWarranty ?? Math.round((tenantObj?.settings?.warrantyDays ?? 90) / 30),
       isOutsourced: newSrvIsOutsourced,
       outsourcedVendorId: newSrvOutsourcedVendor,
       outsourcingCost: Number(newSrvOutsourcingCost) || 0,
@@ -317,8 +303,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       screenLockPin: newSrvScreenLock,
       estimatedCompletionDate: newSrvEstCompletion,
       capturedConditions: newSrvCapturedConditions,
-      dynamicFields:
-        Object.keys(newSrvDynamicSpecs).length > 0 ? newSrvDynamicSpecs : undefined,
+      dynamicFields: Object.keys(newSrvDynamicSpecs).length > 0 ? newSrvDynamicSpecs : undefined,
       storageLocationId: newSrvStorageLocId || undefined,
       customerData,
     };
@@ -328,42 +313,42 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       setJustCreatedTicket(createdTicket);
       setPreviewReceptionTicket(createdTicket);
       setReceptionErrors([]);
-      setNewSrvCustomer("");
+      setNewSrvCustomer('');
       setShowNewSrvCustForm(false);
-      setNewSrvCustName("");
-      setNewSrvCustPhone("");
-      setNewSrvCustEmail("");
-      setNewSrvCustAddress("");
-      setNewSrvEstCompletion("");
-      setNewSrvDevice("");
-      setNewSrvBrand("");
-      setNewSrvSerial("");
-      setNewSrvWarranty(3);
-      setNewSrvDownPayment("0");
+      setNewSrvCustName('');
+      setNewSrvCustPhone('');
+      setNewSrvCustEmail('');
+      setNewSrvCustAddress('');
+      setNewSrvEstCompletion('');
+      setNewSrvDevice('');
+      setNewSrvBrand('');
+      setNewSrvSerial('');
+      setNewSrvWarranty(Math.round((tenantObj?.settings?.warrantyDays ?? 90) / 30) || 3);
+      setNewSrvDownPayment('0');
       setNewSrvIsCheckOnly(false);
-      setNewSrvPhysicalCondition("Mulus / Normal Wear");
-      setNewSrvScreenLock("");
-      setNewSrvComplaint("");
-      setNewSrvCategory("Smartphone");
+      setNewSrvPhysicalCondition('Mulus / Normal Wear');
+      setNewSrvScreenLock('');
+      setNewSrvComplaint('');
+      setNewSrvCategory('Smartphone');
       setNewSrvDynamicSpecs({});
       setNewSrvAccessories([]);
-      setNewSrvCustomAccessories("");
-      setNewSrvStorageLocId("");
+      setNewSrvCustomAccessories('');
+      setNewSrvStorageLocId('');
       setNewSrvCapturedConditions([]);
       setNewSrvIsOutsourced(false);
-      setNewSrvOutsourcedVendor("");
-      setNewSrvOutsourcingCost("");
-      setNewSrvTechId("");
+      setNewSrvOutsourcedVendor('');
+      setNewSrvOutsourcingCost('');
+      setNewSrvTechId('');
       setAutoAssignReason(null);
       try {
         localStorage.removeItem(SRV_DRAFT);
       } catch {}
-      showToast("Penerimaan Unit Servis berhasil didaftarkan!", "success");
-      setActiveSubTab("list");
+      showToast('Penerimaan Unit Servis berhasil didaftarkan!', 'success');
+      setActiveSubTab('list');
     } catch (error: any) {
-      const message = error?.message || "Gagal menyimpan penerimaan unit ke server.";
+      const message = error?.message || 'Gagal menyimpan penerimaan unit ke server.';
       setReceptionErrors([message]);
-      showToast(message, "error");
+      showToast(message, 'error');
     } finally {
       setIsSubmittingReception(false);
     }
