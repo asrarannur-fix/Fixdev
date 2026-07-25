@@ -281,8 +281,8 @@ export async function moduleRecordsPostHandler(req: Request, res: Response) {
       }
       return (
         await client.query(
-          `insert into module_records (tenant_id, module, record_id, payload, updated_at, created_at) values ($1,$2,$3,$4,$5,$5)
-         on conflict (tenant_id, module, record_id) do update set payload = $4, updated_at = $5, deleted_at = null returning id`,
+          `insert into module_records (id, tenant_id, module, record_id, payload, updated_at, created_at) values (gen_random_uuid(),$1,$2,$3,$4::jsonb,$5,$5)
+         on conflict (tenant_id, module, record_id) do update set payload = $4::jsonb, updated_at = $5, deleted_at = null returning id`,
           [tenantId, module, recordId, JSON.stringify(payload), now]
         )
       ).rows;
