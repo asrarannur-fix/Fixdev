@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useSaaS } from "../context/SaaSContext";
-import { useToast } from "./ui/Toast";
-import { useConfirm } from "./ui/ConfirmDialog";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSaaS } from '../context/SaaSContext';
+import { useToast } from './ui/Toast';
+import { useConfirm } from './ui/ConfirmDialog';
 import {
   MessageSquare,
   Send,
@@ -36,8 +36,8 @@ import {
   PlusCircle,
   BookOpen,
   Terminal,
-} from "lucide-react";
-import { useDebounce } from "../hooks/useDebounce";
+} from 'lucide-react';
+import { useDebounce } from '../hooks/useDebounce';
 
 export interface WhatsAppLog {
   id: string;
@@ -45,14 +45,14 @@ export interface WhatsAppLog {
   recipientName: string;
   recipientPhone: string;
   type:
-    | "SERVICE_UPDATE"
-    | "INVOICE_REMINDER"
-    | "PROMOTION"
-    | "MANUAL_CHAT"
-    | "BROADCAST"
-    | "APPOINTMENT_CONFIRM";
+    | 'SERVICE_UPDATE'
+    | 'INVOICE_REMINDER'
+    | 'PROMOTION'
+    | 'MANUAL_CHAT'
+    | 'BROADCAST'
+    | 'APPOINTMENT_CONFIRM';
   message: string;
-  status: "SENT" | "DELIVERED" | "READ" | "FAILED";
+  status: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
   senderName: string;
   channel: string;
 }
@@ -60,7 +60,7 @@ export interface WhatsAppLog {
 export interface WhatsAppTemplate {
   id: string;
   name: string;
-  category: "SERVICE_UPDATE" | "INVOICE_REMINDER" | "PROMOTION" | "CUSTOM";
+  category: 'SERVICE_UPDATE' | 'INVOICE_REMINDER' | 'PROMOTION' | 'CUSTOM';
   content: string;
 }
 
@@ -68,150 +68,150 @@ export interface WhatsAppQueueItem {
   id: string;
   recipientName: string;
   recipientPhone: string;
-  type: "SERVICE_UPDATE" | "INVOICE_REMINDER" | "PROMOTION" | "CUSTOM" | "APPOINTMENT_CONFIRM";
+  type: 'SERVICE_UPDATE' | 'INVOICE_REMINDER' | 'PROMOTION' | 'CUSTOM' | 'APPOINTMENT_CONFIRM';
   message: string;
   scheduledTime: string;
-  status: "PENDING" | "PAUSED";
+  status: 'PENDING' | 'PAUSED';
 }
 
 const sanitizeWhatsAppPhone = (phone: string): string => {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("62")) return digits;
-  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
-  if (digits.startsWith("8")) return `62${digits}`;
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('62')) return digits;
+  if (digits.startsWith('0')) return `62${digits.slice(1)}`;
+  if (digits.startsWith('8')) return `62${digits}`;
   return digits;
 };
 
 const DEFAULT_TEMPLATES: WhatsAppTemplate[] = [
   {
-    id: "tpl-1",
-    name: "Pemberitahuan Servis Selesai",
-    category: "SERVICE_UPDATE",
+    id: 'tpl-1',
+    name: 'Pemberitahuan Servis Selesai',
+    category: 'SERVICE_UPDATE',
     content:
-      "Halo *{customer_name}*, unit servis Anda *{device_name}* dengan Tiket *{ticket_no}* saat ini berstatus: *{ticket_status}*.\n\nCatatan: {status_note}\n\nTerima kasih telah memercayai {business_name}.",
+      'Halo *{customer_name}*, unit servis Anda *{device_name}* dengan Tiket *{ticket_no}* saat ini berstatus: *{ticket_status}*.\n\nCatatan: {status_note}\n\nTerima kasih telah memercayai {business_name}.',
   },
   {
-    id: "tpl-2",
-    name: "Pengingat Tagihan Invoice",
-    category: "INVOICE_REMINDER",
+    id: 'tpl-2',
+    name: 'Pengingat Tagihan Invoice',
+    category: 'INVOICE_REMINDER',
     content:
-      "Yth. *{customer_name}*, kami menginfokan tagihan Invoice *{invoice_no}* sebesar *Rp {invoice_amount}* saat ini belum terbayar (BELUM LUNAS).\n\nAnda dapat melakukan pembayaran online atau konfirmasi di: {payment_link}\n\nHormat kami, Tim Keuangan.",
+      'Yth. *{customer_name}*, kami menginfokan tagihan Invoice *{invoice_no}* sebesar *Rp {invoice_amount}* saat ini belum terbayar (BELUM LUNAS).\n\nAnda dapat melakukan pembayaran online atau konfirmasi di: {payment_link}\n\nHormat kami, Tim Keuangan.',
   },
   {
-    id: "tpl-3",
-    name: "Promo Servis Akhir Bulan",
-    category: "PROMOTION",
+    id: 'tpl-3',
+    name: 'Promo Servis Akhir Bulan',
+    category: 'PROMOTION',
     content:
-      "Kabar gembira *{customer_name}*! Dapatkan Diskon *20%* untuk pembersihan thermal paste & debu iMac/MacBook Anda khusus minggu ini.\n\nTunjukkan pesan WA ini ke kasir kami untuk klaim. Promo valid s/d akhir bulan!",
+      'Kabar gembira *{customer_name}*! Dapatkan Diskon *20%* untuk pembersihan thermal paste & debu iMac/MacBook Anda khusus minggu ini.\n\nTunjukkan pesan WA ini ke kasir kami untuk klaim. Promo valid s/d akhir bulan!',
   },
   {
-    id: "tpl-4",
-    name: "Konfirmasi Kunjungan Lapangan",
-    category: "CUSTOM",
+    id: 'tpl-4',
+    name: 'Konfirmasi Kunjungan Lapangan',
+    category: 'CUSTOM',
     content:
-      "Halo *{customer_name}*, kami mengonfirmasi jadwal kunjungan Teknisi Lapangan kami pada tanggal *{visit_date}* pukul *{visit_time}*.\n\nTeknisi: {technician_name}\nLayanan: {visit_issue}\n\nMohon pastikan Anda berada di lokasi. Terima kasih.",
+      'Halo *{customer_name}*, kami mengonfirmasi jadwal kunjungan Teknisi Lapangan kami pada tanggal *{visit_date}* pukul *{visit_time}*.\n\nTeknisi: {technician_name}\nLayanan: {visit_issue}\n\nMohon pastikan Anda berada di lokasi. Terima kasih.',
   },
 ];
 
 const DEFAULT_TRIGGERS = {
-  serviceUpdate: { enabled: true, templateId: "tpl-1" },
-  invoiceReminder: { enabled: true, templateId: "tpl-2" },
-  appointmentConfirm: { enabled: true, templateId: "tpl-4" },
+  serviceUpdate: { enabled: true, templateId: 'tpl-1' },
+  invoiceReminder: { enabled: true, templateId: 'tpl-2' },
+  appointmentConfirm: { enabled: true, templateId: 'tpl-4' },
 };
 
 const getSeedQueue = () => [
   {
-    id: "q-1",
-    recipientName: "Siti Rahma B2B",
-    recipientPhone: "+62 852-1122-3344",
-    type: "INVOICE_REMINDER" as const,
+    id: 'q-1',
+    recipientName: 'Siti Rahma B2B',
+    recipientPhone: '+62 852-1122-3344',
+    type: 'INVOICE_REMINDER' as const,
     message:
-      "Yth. *Siti Rahma B2B*, kami menginfokan tagihan Invoice *INV-10928* sebesar *Rp 6,500,000* saat ini belum terbayar (BELUM LUNAS).\n\nSilakan selesaikan pembayaran sebelum tanggal jatuh tempo.",
+      'Yth. *Siti Rahma B2B*, kami menginfokan tagihan Invoice *INV-10928* sebesar *Rp 6,500,000* saat ini belum terbayar (BELUM LUNAS).\n\nSilakan selesaikan pembayaran sebelum tanggal jatuh tempo.',
     scheduledTime: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    status: "PENDING" as const,
+    status: 'PENDING' as const,
   },
   {
-    id: "q-2",
-    recipientName: "Hendra Wijaya",
-    recipientPhone: "+62 811-9080-7060",
-    type: "SERVICE_UPDATE" as const,
+    id: 'q-2',
+    recipientName: 'Hendra Wijaya',
+    recipientPhone: '+62 811-9080-7060',
+    type: 'SERVICE_UPDATE' as const,
     message:
-      "Halo *Hendra Wijaya*, unit servis Anda *iMac 27-inch* dengan Tiket *TKT-002* saat ini berstatus: *DIAGNOSA SELESAI*.\n\nCatatan: Butuh penggantian SSD dan instal ulang OS. Estimasi biaya Rp 1.200.000.",
+      'Halo *Hendra Wijaya*, unit servis Anda *iMac 27-inch* dengan Tiket *TKT-002* saat ini berstatus: *DIAGNOSA SELESAI*.\n\nCatatan: Butuh penggantian SSD dan instal ulang OS. Estimasi biaya Rp 1.200.000.',
     scheduledTime: new Date(Date.now() + 12 * 3600 * 1000).toISOString(),
-    status: "PENDING" as const,
+    status: 'PENDING' as const,
   },
   {
-    id: "q-3",
-    recipientName: "Rudi Hartono",
-    recipientPhone: "+62 821-4455-6677",
-    type: "PROMOTION" as const,
+    id: 'q-3',
+    recipientName: 'Rudi Hartono',
+    recipientPhone: '+62 821-4455-6677',
+    type: 'PROMOTION' as const,
     message:
-      "Kabar gembira *Rudi Hartono*! Dapatkan Diskon *20%* untuk pembersihan thermal paste & debu iMac/MacBook Anda khusus minggu ini.",
+      'Kabar gembira *Rudi Hartono*! Dapatkan Diskon *20%* untuk pembersihan thermal paste & debu iMac/MacBook Anda khusus minggu ini.',
     scheduledTime: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString(),
-    status: "PAUSED" as const,
+    status: 'PAUSED' as const,
   },
 ];
 
 const getSeedLogs = () => [
   {
-    id: "wa-1",
+    id: 'wa-1',
     timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-    recipientName: "Budi Santoso",
-    recipientPhone: "+62 812-3456-7890",
-    type: "SERVICE_UPDATE" as const,
+    recipientName: 'Budi Santoso',
+    recipientPhone: '+62 812-3456-7890',
+    type: 'SERVICE_UPDATE' as const,
     message:
-      "Halo *Budi Santoso*, unit servis Anda *MacBook Pro 13 2017* dengan Tiket *TKT-001* saat ini berstatus: *SELESAI QC*.\n\nCatatan: Lolos uji rendering GPU selama 2 jam. Suhu stabil 65°C.\n\nTerima kasih telah memercayai {business_name}.",
-    status: "READ" as const,
-    senderName: "Sistem Otomatis",
-    channel: "Meta Cloud API",
+      'Halo *Budi Santoso*, unit servis Anda *MacBook Pro 13 2017* dengan Tiket *TKT-001* saat ini berstatus: *SELESAI QC*.\n\nCatatan: Lolos uji rendering GPU selama 2 jam. Suhu stabil 65°C.\n\nTerima kasih telah memercayai {business_name}.',
+    status: 'READ' as const,
+    senderName: 'Sistem Otomatis',
+    channel: 'Meta Cloud API',
   },
   {
-    id: "wa-2",
+    id: 'wa-2',
     timestamp: new Date(Date.now() - 32 * 60000).toISOString(),
-    recipientName: "Siti Rahma B2B",
-    recipientPhone: "+62 852-1122-3344",
-    type: "INVOICE_REMINDER" as const,
+    recipientName: 'Siti Rahma B2B',
+    recipientPhone: '+62 852-1122-3344',
+    type: 'INVOICE_REMINDER' as const,
     message:
-      "Yth. *Siti Rahma B2B*, kami menginfokan tagihan Invoice *INV-10928* sebesar *Rp 6,500,000* saat ini belum terbayar (BELUM LUNAS).\n\nAnda dapat melakukan pembayaran online atau konfirmasi di: https://rpr.mks/pay-10928\n\nHormat kami, Tim Keuangan.",
-    status: "DELIVERED" as const,
-    senderName: "Sistem Otomatis",
-    channel: "Meta Cloud API",
+      'Yth. *Siti Rahma B2B*, kami menginfokan tagihan Invoice *INV-10928* sebesar *Rp 6,500,000* saat ini belum terbayar (BELUM LUNAS).\n\nAnda dapat melakukan pembayaran online atau konfirmasi di: https://rpr.mks/pay-10928\n\nHormat kami, Tim Keuangan.',
+    status: 'DELIVERED' as const,
+    senderName: 'Sistem Otomatis',
+    channel: 'Meta Cloud API',
   },
   {
-    id: "wa-3",
+    id: 'wa-3',
     timestamp: new Date(Date.now() - 120 * 60000).toISOString(),
-    recipientName: "Hendra Wijaya",
-    recipientPhone: "+62 811-9080-7060",
-    type: "MANUAL_CHAT" as const,
+    recipientName: 'Hendra Wijaya',
+    recipientPhone: '+62 811-9080-7060',
+    type: 'MANUAL_CHAT' as const,
     message:
-      "Selamat siang Pak Hendra, pengerjaan upgrade SSD iMac 27-inch Bapak sudah dimulai ya. Estimasi selesai jam 4 sore ini. Kami fotokan perkembangannya nanti.",
-    status: "READ" as const,
-    senderName: "Yusuf (Customer Service)",
-    channel: "Local Session Node",
+      'Selamat siang Pak Hendra, pengerjaan upgrade SSD iMac 27-inch Bapak sudah dimulai ya. Estimasi selesai jam 4 sore ini. Kami fotokan perkembangannya nanti.',
+    status: 'READ' as const,
+    senderName: 'Yusuf (Customer Service)',
+    channel: 'Local Session Node',
   },
   {
-    id: "wa-4",
+    id: 'wa-4',
     timestamp: new Date(Date.now() - 240 * 60000).toISOString(),
-    recipientName: "Amanda Putri",
-    recipientPhone: "+62 813-5566-7788",
-    type: "APPOINTMENT_CONFIRM" as const,
+    recipientName: 'Amanda Putri',
+    recipientPhone: '+62 813-5566-7788',
+    type: 'APPOINTMENT_CONFIRM' as const,
     message:
-      "Halo *Amanda Putri*, kami mengonfirmasi jadwal kunjungan Teknisi Lapangan kami pada tanggal *2026-07-01* pukul *10:00 AM*.\n\nTeknisi: Fajar Rahmad\nLayanan: Perbaikan Jaringan Wi-Fi Kantor\n\nMohon pastikan Anda berada di lokasi. Terima kasih.",
-    status: "SENT" as const,
-    senderName: "Sistem Otomatis",
-    channel: "Meta Cloud API",
+      'Halo *Amanda Putri*, kami mengonfirmasi jadwal kunjungan Teknisi Lapangan kami pada tanggal *2026-07-01* pukul *10:00 AM*.\n\nTeknisi: Fajar Rahmad\nLayanan: Perbaikan Jaringan Wi-Fi Kantor\n\nMohon pastikan Anda berada di lokasi. Terima kasih.',
+    status: 'SENT' as const,
+    senderName: 'Sistem Otomatis',
+    channel: 'Meta Cloud API',
   },
   {
-    id: "wa-5",
+    id: 'wa-5',
     timestamp: new Date(Date.now() - 480 * 60000).toISOString(),
-    recipientName: "Rudi Hartono",
-    recipientPhone: "+62 821-4455-6677",
-    type: "SERVICE_UPDATE" as const,
+    recipientName: 'Rudi Hartono',
+    recipientPhone: '+62 821-4455-6677',
+    type: 'SERVICE_UPDATE' as const,
     message:
-      "Halo *Rudi Hartono*, unit servis Anda *Asus ROG GL503* dengan Tiket *TKT-003* saat ini berstatus: *DIAGNOSA SELESAI*.\n\nCatatan: Kerusakan pada IC Power regulator, estimasi biaya Rp 850.000.\n\nTerima kasih.",
-    status: "FAILED" as const,
-    senderName: "Sistem Otomatis",
-    channel: "Meta Cloud API",
+      'Halo *Rudi Hartono*, unit servis Anda *Asus ROG GL503* dengan Tiket *TKT-003* saat ini berstatus: *DIAGNOSA SELESAI*.\n\nCatatan: Kerusakan pada IC Power regulator, estimasi biaya Rp 850.000.\n\nTerima kasih.',
+    status: 'FAILED' as const,
+    senderName: 'Sistem Otomatis',
+    channel: 'Meta Cloud API',
   },
 ];
 
@@ -234,45 +234,41 @@ export const WhatsAppConnector: React.FC = () => {
 
   const activeTenant = useMemo(
     () => tenants.find((t) => t.id === currentTenantId),
-    [tenants, currentTenantId],
+    [tenants, currentTenantId]
   );
   const waCfg = activeTenant?.settings?.waConfig;
 
   // Filter lists based on current Tenant
   const tenantCustomers = useMemo(
     () => customers.filter((c) => c.tenantId === currentTenantId),
-    [customers, currentTenantId],
+    [customers, currentTenantId]
   );
   const tenantServices = useMemo(
     () => services.filter((s) => s.tenantId === currentTenantId),
-    [services, currentTenantId],
+    [services, currentTenantId]
   );
   const tenantTransactions = useMemo(
     () => transactions.filter((t) => t.tenantId === currentTenantId),
-    [transactions, currentTenantId],
+    [transactions, currentTenantId]
   );
   const tenantVisits = useMemo(
     () => fieldVisits.filter((v) => v.tenantId === currentTenantId),
-    [fieldVisits, currentTenantId],
+    [fieldVisits, currentTenantId]
   );
 
   // Active module tab
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "templates" | "queue" | "contactHistory" | "settings"
-  >("dashboard");
+    'dashboard' | 'templates' | 'queue' | 'contactHistory' | 'settings'
+  >('dashboard');
 
   // State for API configuration
-  const [gateway, setGateway] = useState<"fonnte" | "meta" | "wablas" | "local">(
-    () => (waCfg?.gateway as any) || "fonnte",
+  const [gateway, setGateway] = useState<'fonnte' | 'meta' | 'wablas' | 'local'>(
+    () => (waCfg?.gateway as any) || 'fonnte'
   );
-  const [isConnected, setIsConnected] = useState<boolean>(
-    () => waCfg?.isConnected ?? false,
-  );
-  const [apiToken, setApiToken] = useState<string>(
-    () => waCfg?.apiToken || "",
-  );
+  const [isConnected, setIsConnected] = useState<boolean>(() => waCfg?.isConnected ?? false);
+  const [apiToken, setApiToken] = useState<string>(() => waCfg?.apiToken || '');
   const [phoneNumber, setPhoneNumber] = useState<string>(
-    () => waCfg?.phoneNumber || "+62 811-445-9921",
+    () => waCfg?.phoneNumber || '+62 811-445-9921'
   );
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanStep, setScanStep] = useState<number>(0);
@@ -314,7 +310,11 @@ export const WhatsAppConnector: React.FC = () => {
     // Load templates
     const savedTpl = localStorage.getItem(`saas_wa_templates_${currentTenantId}`);
     if (savedTpl) {
-      try { setTemplates(JSON.parse(savedTpl)); } catch (e) { console.error(e); }
+      try {
+        setTemplates(JSON.parse(savedTpl));
+      } catch (e) {
+        console.error(e);
+      }
     } else if (waCfg?.templates) {
       setTemplates(waCfg.templates as WhatsAppTemplate[]);
     } else {
@@ -324,7 +324,11 @@ export const WhatsAppConnector: React.FC = () => {
     // Load triggers
     const savedTrig = localStorage.getItem(`wa_triggers_${currentTenantId}`);
     if (savedTrig) {
-      try { setTriggers(JSON.parse(savedTrig)); } catch (e) { console.error(e); }
+      try {
+        setTriggers(JSON.parse(savedTrig));
+      } catch (e) {
+        console.error(e);
+      }
     } else if (waCfg?.triggers) {
       setTriggers(waCfg.triggers);
     } else {
@@ -334,7 +338,11 @@ export const WhatsAppConnector: React.FC = () => {
     // Load queue
     const savedQueue = localStorage.getItem(`saas_wa_queue_${currentTenantId}`);
     if (savedQueue) {
-      try { setQueue(JSON.parse(savedQueue)); } catch (e) { console.error(e); }
+      try {
+        setQueue(JSON.parse(savedQueue));
+      } catch (e) {
+        console.error(e);
+      }
     } else {
       setQueue(getSeedQueue());
     }
@@ -342,64 +350,62 @@ export const WhatsAppConnector: React.FC = () => {
     // Load logs
     const savedLogs = localStorage.getItem(`saas_wa_logs_${currentTenantId}`);
     if (savedLogs) {
-      try { setLogs(JSON.parse(savedLogs)); } catch (e) { console.error(e); }
+      try {
+        setLogs(JSON.parse(savedLogs));
+      } catch (e) {
+        console.error(e);
+      }
     } else {
       setLogs(getSeedLogs());
     }
   }, [currentTenantId, waCfg]);
 
   // Manual Composer states
-  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
-  const [selectedTemplateId, setSelectedTemplateId] =
-    useState<string>("custom");
-  const [manualMessage, setManualMessage] = useState<string>("");
-  const [manualSearchQuery, setManualSearchQuery] = useState<string>("");
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('custom');
+  const [manualMessage, setManualMessage] = useState<string>('');
+  const [manualSearchQuery, setManualSearchQuery] = useState<string>('');
 
   // WhatsApp Meta Cloud API & Gateway Configuration states
-  const [waSendingMethod, setWaSendingMethod] = useState<"API" | "MANUAL">(
-    () => (waCfg?.sendingMethod as "API" | "MANUAL") || "MANUAL",
+  const [waSendingMethod, setWaSendingMethod] = useState<'API' | 'MANUAL'>(
+    () => (waCfg?.sendingMethod as 'API' | 'MANUAL') || 'MANUAL'
   );
-  const [waSyncEstimate, setWaSyncEstimate] = useState<boolean>(
-    () => waCfg?.syncEstimate ?? true,
-  );
-  const [waPhoneId, setWaPhoneId] = useState(
-    () => waCfg?.phoneId || "105938472910398",
-  );
-  const [waWabaId, setWaWabaId] = useState(
-    () => waCfg?.wabaId || "394029481029302",
-  );
+  const [waSyncEstimate, setWaSyncEstimate] = useState<boolean>(() => waCfg?.syncEstimate ?? true);
+  const [waPhoneId, setWaPhoneId] = useState(() => waCfg?.phoneId || '105938472910398');
+  const [waWabaId, setWaWabaId] = useState(() => waCfg?.wabaId || '394029481029302');
   const [waWebhookSecret, setWaWebhookSecret] = useState(
-    () => waCfg?.webhookSecret || "saas_verify_token_tamalanrea_2026",
+    () => waCfg?.webhookSecret || 'saas_verify_token_tamalanrea_2026'
   );
-  const waCallbackUrl = (waCfg as any)?.callbackUrl
-    || (import.meta as any).env?.VITE_WA_CALLBACK_URL
-    || `${window.location.origin}/api/v1/webhooks/whatsapp`;
+  const waCallbackUrl =
+    (waCfg as any)?.callbackUrl ||
+    (import.meta as any).env?.VITE_WA_CALLBACK_URL ||
+    `${window.location.origin}/api/v1/webhooks/whatsapp`;
   const [whatsappKey, setWhatsappKey] = useState(
-    () => waCfg?.whatsappKey || "waba_mock_api_key_placeholder",
+    () => waCfg?.whatsappKey || 'waba_mock_api_key_placeholder'
   );
 
-  const debouncedWaConfig = useDebounce({
-    gateway,
-    isConnected,
-    apiToken: apiToken.trim(),
-    phoneNumber: phoneNumber.trim(),
-    triggers,
-    templates,
-    sendingMethod: waSendingMethod,
-    syncEstimate: waSyncEstimate,
-    phoneId: waPhoneId.trim(),
-    wabaId: waWabaId.trim(),
-    webhookSecret: waWebhookSecret.trim(),
-    whatsappKey: whatsappKey.trim(),
-  }, 1000);
+  const debouncedWaConfig = useDebounce(
+    {
+      gateway,
+      isConnected,
+      apiToken: apiToken.trim(),
+      phoneNumber: phoneNumber.trim(),
+      triggers,
+      templates,
+      sendingMethod: waSendingMethod,
+      syncEstimate: waSyncEstimate,
+      phoneId: waPhoneId.trim(),
+      wabaId: waWabaId.trim(),
+      webhookSecret: waWebhookSecret.trim(),
+      whatsappKey: whatsappKey.trim(),
+    },
+    1000
+  );
 
   // Simulators states
-  const [simWaIncomingText, setSimWaIncomingText] = useState(
-    "status TKT/2606/0001",
-  );
+  const [simWaIncomingText, setSimWaIncomingText] = useState('status TKT/2606/0001');
   const [simWaWebhookLogs, setSimWaWebhookLogs] = useState<string[]>([]);
-  const [isSimulatingWaWebhook, setIsSimulatingWaWebhook] =
-    useState<boolean>(false);
+  const [isSimulatingWaWebhook, setIsSimulatingWaWebhook] = useState<boolean>(false);
 
   const handleSimulateWaWebhook = () => {
     if (!simWaIncomingText.trim()) return;
@@ -419,34 +425,32 @@ export const WhatsAppConnector: React.FC = () => {
       ]);
 
       setTimeout(() => {
-        let responseText = "";
+        let responseText = '';
         const matchTicket = tenantServices.find(
           (s) =>
             s.id.toLowerCase().includes(q) ||
             s.ticketNo.toLowerCase().includes(q) ||
-            (q.includes("status") && q.includes(s.id.toLowerCase())) ||
-            (q.includes("status") && q.includes(s.ticketNo.toLowerCase())),
+            (q.includes('status') && q.includes(s.id.toLowerCase())) ||
+            (q.includes('status') && q.includes(s.ticketNo.toLowerCase()))
         );
 
         if (matchTicket) {
-          const cust = tenantCustomers.find(
-            (c) => c.id === matchTicket.customerId,
-          );
-          responseText = `Halo Kak *${cust?.name || "Pelanggan"}*,\n\nBerikut adalah status perangkat *${matchTicket.deviceName}* Anda:\n\n• *Nomor Tiket*: ${matchTicket.ticketNo}\n• *Suhu/Keluhan*: ${matchTicket.customerComplaints}\n• *Status*: ${matchTicket.status}\n• *Biaya Estimasi*: Rp ${(matchTicket.estimatedCost || 0).toLocaleString()}\n\nUnit Anda sedang diproses oleh teknisi kami. Terima kasih!`;
+          const cust = tenantCustomers.find((c) => c.id === matchTicket.customerId);
+          responseText = `Halo Kak *${cust?.name || 'Pelanggan'}*,\n\nBerikut adalah status perangkat *${matchTicket.deviceName}* Anda:\n\n• *Nomor Tiket*: ${matchTicket.ticketNo}\n• *Suhu/Keluhan*: ${matchTicket.customerComplaints}\n• *Status*: ${matchTicket.status}\n• *Biaya Estimasi*: Rp ${(matchTicket.estimatedCost || 0).toLocaleString()}\n\nUnit Anda sedang diproses oleh teknisi kami. Terima kasih!`;
           setSimWaWebhookLogs((prev) => [
             ...prev,
             `✓ [Database] Menemukan data Servis: ${matchTicket.ticketNo} (${matchTicket.deviceName})`,
-            `👤 [SaaS CRM] Relasi pelanggan ditemukan: ${cust?.name || "Unregistered"}`,
+            `👤 [SaaS CRM] Relasi pelanggan ditemukan: ${cust?.name || 'Unregistered'}`,
           ]);
-        } else if (q.includes("halo") || q.includes("hi") || q.includes("p")) {
-          responseText = `Halo! Selamat datang di bot layanan otomatis *${activeTenant?.name || "toko kami"}*. Kirimkan nomor tiket servis Anda (contoh: *TKT/2606/0001*) untuk cek status otomatis.`;
+        } else if (q.includes('halo') || q.includes('hi') || q.includes('p')) {
+          responseText = `Halo! Selamat datang di bot layanan otomatis *${activeTenant?.name || 'toko kami'}*. Kirimkan nomor tiket servis Anda (contoh: *TKT/2606/0001*) untuk cek status otomatis.`;
           setSimWaWebhookLogs((prev) => [
             ...prev,
             `ℹ️ [CRM Parser] Trigger pencarian tidak spesifik. Mengembalikan template Welcome Greeting.`,
           ]);
         } else {
           responseText =
-            "Mohon maaf, nomor tiket tidak ditemukan di database kami. Silakan ketik nomor tiket dengan format *TKT/2606/XXXX* secara lengkap.";
+            'Mohon maaf, nomor tiket tidak ditemukan di database kami. Silakan ketik nomor tiket dengan format *TKT/2606/XXXX* secara lengkap.';
           setSimWaWebhookLogs((prev) => [
             ...prev,
             `⚠️ [CRM Parser] No matching ticket found for "${trimmedInput}"`,
@@ -459,14 +463,14 @@ export const WhatsAppConnector: React.FC = () => {
             `📤 [Meta API] Mengirim response JSON payload via API (Phone ID: ${waPhoneId})`,
             `📝 [JSON Outbound]:\n${JSON.stringify(
               {
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to: "+628123456789",
-                type: "text",
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                to: '+628123456789',
+                type: 'text',
                 text: { body: responseText },
               },
               null,
-              2,
+              2
             )}`,
             `ℹ️ [Simulasi lokal] Tidak ada request provider, tidak ada status pengiriman yang diklaim.`,
           ]);
@@ -477,40 +481,44 @@ export const WhatsAppConnector: React.FC = () => {
   };
 
   // Search log state
-  const [logSearchQuery, setLogSearchQuery] = useState<string>("");
-  const [logFilterType, setLogFilterType] = useState<string>("ALL");
+  const [logSearchQuery, setLogSearchQuery] = useState<string>('');
+  const [logFilterType, setLogFilterType] = useState<string>('ALL');
 
   // Template editor states
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
-    null,
-  );
-  const [tplName, setTplName] = useState("");
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [tplName, setTplName] = useState('');
   const [tplCategory, setTplCategory] = useState<
-    "SERVICE_UPDATE" | "INVOICE_REMINDER" | "PROMOTION" | "CUSTOM"
-  >("CUSTOM");
-  const [tplContent, setTplContent] = useState("");
+    'SERVICE_UPDATE' | 'INVOICE_REMINDER' | 'PROMOTION' | 'CUSTOM'
+  >('CUSTOM');
+  const [tplContent, setTplContent] = useState('');
 
   // Contact history drilldown states
-  const [drilldownCustomerId, setDrilldownCustomerId] = useState<string>("");
-  const [drilldownSearchQuery, setDrilldownSearchQuery] = useState<string>("");
+  const [drilldownCustomerId, setDrilldownCustomerId] = useState<string>('');
+  const [drilldownSearchQuery, setDrilldownSearchQuery] = useState<string>('');
 
   // Save WA config to DB via updateTenant; errors stay visible, never fake success.
+  // Skip saat mount / tidak ada perubahan (bandingkan dengan config saat ini).
+  const prevWaConfig = React.useRef<string>('');
   useEffect(() => {
     if (!currentTenantId || !activeTenant) return;
     const current = activeTenant.settings?.waConfig || {};
+    const next = { ...current, ...debouncedWaConfig };
+    const serialized = JSON.stringify(next);
+    if (prevWaConfig.current === serialized) return; // belum berubah -> jangan save
+    prevWaConfig.current = serialized;
     void updateTenant(currentTenantId, {
       settings: {
-        waConfig: { ...current, ...debouncedWaConfig },
+        waConfig: next,
       },
     }).catch((error: any) => {
-      showToast(error?.message || "Konfigurasi WhatsApp gagal disimpan.", "error");
+      showToast(error?.message || 'Konfigurasi WhatsApp gagal disimpan.', 'error');
     });
   }, [debouncedWaConfig, currentTenantId, activeTenant, updateTenant, showToast]);
 
   useEffect(() => {
     if (!currentTenantId) return;
     localStorage.setItem(`saas_wa_logs_${currentTenantId}`, JSON.stringify(logs));
-    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event('storage'));
   }, [logs, currentTenantId]);
 
   useEffect(() => {
@@ -520,58 +528,61 @@ export const WhatsAppConnector: React.FC = () => {
 
   // Handler to simulate QR Code scan
   const startQRScan = () => {
-    if (waSendingMethod === "MANUAL") {
-      showToast("Mode Manual Link aktif; QR scan tidak diperlukan.", "info");
+    if (waSendingMethod === 'MANUAL') {
+      showToast('Mode Manual Link aktif; QR scan tidak diperlukan.', 'info');
       return;
     }
     if (isConnected) {
       setIsConnected(false);
       addLog(
-        "WhatsApp Disconnected",
+        'WhatsApp Disconnected',
         `Memutuskan koneksi WhatsApp dari nomor ${phoneNumber}`,
-        "SECURITY",
-        "MEDIUM",
+        'SECURITY',
+        'MEDIUM'
       );
       return;
     }
 
-    showToast("Pairing WhatsApp hanya tersedia melalui gateway resmi. QR simulasi dinonaktifkan.", "error");
+    showToast(
+      'Pairing WhatsApp hanya tersedia melalui gateway resmi. QR simulasi dinonaktifkan.',
+      'error'
+    );
   };
 
   // Helper to test connection
   const testConnection = async () => {
     try {
-      const response = await apiFetch("/api/tenant/whatsapp/test", {
-        method: "POST",
+      const response = await apiFetch('/api/tenant/whatsapp/test', {
+        method: 'POST',
         body: JSON.stringify({}),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "WhatsApp gagal diuji.");
-      showToast(payload.message || `WhatsApp ${payload.mode || "API"} terverifikasi.`, "success");
+      if (!response.ok) throw new Error(payload.error || 'WhatsApp gagal diuji.');
+      showToast(payload.message || `WhatsApp ${payload.mode || 'API'} terverifikasi.`, 'success');
     } catch (error: any) {
-      showToast(error.message || "WhatsApp gagal diuji.", "error");
+      showToast(error.message || 'WhatsApp gagal diuji.', 'error');
     }
   };
 
   // Toggle dynamic triggers
   const handleToggleTrigger = (
-    triggerKey: "serviceUpdate" | "invoiceReminder" | "appointmentConfirm",
+    triggerKey: 'serviceUpdate' | 'invoiceReminder' | 'appointmentConfirm'
   ) => {
     setTriggers((prev) => {
       const next = { ...prev };
       next[triggerKey].enabled = !next[triggerKey].enabled;
       addLog(
-        "WhatsApp Trigger Config",
-        `Mengubah trigger ${triggerKey} menjadi ${next[triggerKey].enabled ? "AKTIF" : "NONAKTIF"}`,
-        "SYSTEM",
+        'WhatsApp Trigger Config',
+        `Mengubah trigger ${triggerKey} menjadi ${next[triggerKey].enabled ? 'AKTIF' : 'NONAKTIF'}`,
+        'SYSTEM'
       );
       return next;
     });
   };
 
   const handleUpdateTriggerTemplate = (
-    triggerKey: "serviceUpdate" | "invoiceReminder" | "appointmentConfirm",
-    tplId: string,
+    triggerKey: 'serviceUpdate' | 'invoiceReminder' | 'appointmentConfirm',
+    tplId: string
   ) => {
     setTriggers((prev) => {
       const next = { ...prev };
@@ -583,17 +594,15 @@ export const WhatsAppConnector: React.FC = () => {
   // Populate composer when template or customer is selected
   useEffect(() => {
     if (!selectedCustomer) {
-      setManualMessage("");
+      setManualMessage('');
       return;
     }
 
     const custObj = tenantCustomers.find((c) => c.id === selectedCustomer);
     if (!custObj) return;
 
-    if (selectedTemplateId === "custom") {
-      setManualMessage(
-        `Halo Kak ${custObj.name}, ada yang bisa kami bantu hari ini?`,
-      );
+    if (selectedTemplateId === 'custom') {
+      setManualMessage(`Halo Kak ${custObj.name}, ada yang bisa kami bantu hari ini?`);
       return;
     }
 
@@ -604,47 +613,38 @@ export const WhatsAppConnector: React.FC = () => {
     let msg = tpl.content;
     msg = msg.replace(/{customer_name}/g, custObj.name);
 
-    if (tpl.category === "SERVICE_UPDATE") {
-      const ticket = tenantServices.find(
-        (s) => s.customerId === selectedCustomer,
-      ) || {
-        ticketNo: "TKT-20811",
-        deviceName: "MacBook Pro 15 2018",
-        status: "DIAGNOSA_SELESAI",
+    if (tpl.category === 'SERVICE_UPDATE') {
+      const ticket = tenantServices.find((s) => s.customerId === selectedCustomer) || {
+        ticketNo: 'TKT-20811',
+        deviceName: 'MacBook Pro 15 2018',
+        status: 'DIAGNOSA_SELESAI',
         estimatedCost: 850000,
       };
       msg = msg
         .replace(/{device_name}/g, ticket.deviceName)
         .replace(/{ticket_no}/g, ticket.ticketNo)
-        .replace(/{ticket_status}/g, ticket.status.replace("_", " "))
+        .replace(/{ticket_status}/g, ticket.status.replace('_', ' '))
         .replace(
           /{status_note}/g,
-          "Estimasi biaya perbaikan Rp " +
+          'Estimasi biaya perbaikan Rp ' +
             (ticket.estimatedCost ?? 0).toLocaleString() +
-            ". Menunggu persetujuan Anda.",
+            '. Menunggu persetujuan Anda.'
         );
-    } else if (tpl.category === "INVOICE_REMINDER") {
-      const tx = tenantTransactions.find(
-        (t) => t.customerId === selectedCustomer,
-      ) || {
-        invoiceNo: "INV-10992",
+    } else if (tpl.category === 'INVOICE_REMINDER') {
+      const tx = tenantTransactions.find((t) => t.customerId === selectedCustomer) || {
+        invoiceNo: 'INV-10992',
         grandTotal: 1500000,
       };
       msg = msg
         .replace(/{invoice_no}/g, tx.invoiceNo)
         .replace(/{invoice_amount}/g, (tx.grandTotal ?? 0).toLocaleString())
-        .replace(
-          /{payment_link}/g,
-          `https://rpr.mks/pay-${tx.invoiceNo.toLowerCase()}`,
-        );
-    } else if (tpl.category === "CUSTOM") {
-      const visit = tenantVisits.find(
-        (v) => v.customerId === selectedCustomer,
-      ) || {
-        scheduledDate: "2026-07-02",
-        scheduledTime: "10:00 WITA",
-        technicianName: "Fajar Rahmad",
-        issue: "Perbaikan Wi-Fi Kantor Sederhana",
+        .replace(/{payment_link}/g, `https://rpr.mks/pay-${tx.invoiceNo.toLowerCase()}`);
+    } else if (tpl.category === 'CUSTOM') {
+      const visit = tenantVisits.find((v) => v.customerId === selectedCustomer) || {
+        scheduledDate: '2026-07-02',
+        scheduledTime: '10:00 WITA',
+        technicianName: 'Fajar Rahmad',
+        issue: 'Perbaikan Wi-Fi Kantor Sederhana',
       };
       msg = msg
         .replace(/{visit_date}/g, visit.scheduledDate)
@@ -668,59 +668,62 @@ export const WhatsAppConnector: React.FC = () => {
   const handleSendManual = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer) {
-      showToast("Pilih pelanggan penerima terlebih dahulu!", "error");
+      showToast('Pilih pelanggan penerima terlebih dahulu!', 'error');
       return;
     }
     if (!manualMessage.trim()) {
-      showToast("Pesan tidak boleh kosong!", "error");
+      showToast('Pesan tidak boleh kosong!', 'error');
       return;
     }
 
     const custObj = tenantCustomers.find((c) => c.id === selectedCustomer);
     if (!custObj || !custObj.phone) return;
 
-    if (waSendingMethod === "API" && !isConnected) {
-      showToast(
-        "WhatsApp Gateway belum terkoneksi! Silakan pairing terlebih dahulu.",
-        "error",
-      );
+    if (waSendingMethod === 'API' && !isConnected) {
+      showToast('WhatsApp Gateway belum terkoneksi! Silakan pairing terlebih dahulu.', 'error');
       return;
     }
 
     const waPhone = sanitizeWhatsAppPhone(custObj.phone);
 
-    if (waSendingMethod === "MANUAL") {
-      window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(manualMessage)}`, "_blank");
+    if (waSendingMethod === 'MANUAL') {
+      window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(manualMessage)}`, '_blank');
       addLog(
-        "WhatsApp Direct Sent (Manual)",
+        'WhatsApp Direct Sent (Manual)',
         `Membuka WhatsApp Web untuk ${custObj.name} dengan pesan manual.`,
-        "SERVICE",
+        'SERVICE'
       );
-      showToast("Link WhatsApp Web dibuka di tab baru.", "success");
+      showToast('Link WhatsApp Web dibuka di tab baru.', 'success');
     } else {
-      showToast("Pengiriman WhatsApp API belum terhubung ke gateway resmi; pesan tidak diklaim terkirim.", "error");
+      showToast(
+        'Pengiriman WhatsApp API belum terhubung ke gateway resmi; pesan tidak diklaim terkirim.',
+        'error'
+      );
       return;
       // No send endpoint exists here. Never claim API delivery without provider response.
     }
 
-    setManualMessage("");
-    setSelectedTemplateId("custom");
+    setManualMessage('');
+    setSelectedTemplateId('custom');
   };
 
   // Re-send log item
   const handleResendLog = (logItem: WhatsAppLog) => {
-    if (!isConnected && waSendingMethod === "API") {
-      showToast("WhatsApp API belum terkoneksi!", "error");
+    if (!isConnected && waSendingMethod === 'API') {
+      showToast('WhatsApp API belum terkoneksi!', 'error');
       return;
     }
 
-    if (waSendingMethod === "MANUAL") {
+    if (waSendingMethod === 'MANUAL') {
       const phone = sanitizeWhatsAppPhone(logItem.recipientPhone);
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(logItem.message)}`, "_blank");
-      showToast("Link WhatsApp Web dibuka di tab baru.", "success");
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(logItem.message)}`, '_blank');
+      showToast('Link WhatsApp Web dibuka di tab baru.', 'success');
       return;
     }
-    showToast("Resend API belum terhubung ke gateway resmi; pesan tidak diklaim terkirim.", "error");
+    showToast(
+      'Resend API belum terhubung ke gateway resmi; pesan tidak diklaim terkirim.',
+      'error'
+    );
     return;
   };
 
@@ -728,7 +731,7 @@ export const WhatsAppConnector: React.FC = () => {
   const handleSaveTemplate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tplName.trim() || !tplContent.trim()) {
-      showToast("Nama dan konten template wajib diisi!", "error");
+      showToast('Nama dan konten template wajib diisi!', 'error');
       return;
     }
 
@@ -743,27 +746,27 @@ export const WhatsAppConnector: React.FC = () => {
                 category: tplCategory,
                 content: tplContent,
               }
-            : t,
-        ),
+            : t
+        )
       );
-      showToast("Template berhasil diperbarui!", "success");
+      showToast('Template berhasil diperbarui!', 'success');
     } else {
       // Add
       const newTpl: WhatsAppTemplate = {
-        id: "tpl-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+        id: 'tpl-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         name: tplName,
         category: tplCategory,
         content: tplContent,
       };
       setTemplates((prev) => [...prev, newTpl]);
-      showToast("Template baru berhasil ditambahkan!", "success");
+      showToast('Template baru berhasil ditambahkan!', 'success');
     }
 
     // Reset editor
     setEditingTemplateId(null);
-    setTplName("");
-    setTplCategory("CUSTOM");
-    setTplContent("");
+    setTplName('');
+    setTplCategory('CUSTOM');
+    setTplContent('');
   };
 
   const handleEditTemplateClick = (tpl: WhatsAppTemplate) => {
@@ -776,11 +779,11 @@ export const WhatsAppConnector: React.FC = () => {
   const handleDeleteTemplate = async (id: string) => {
     if (
       await showConfirm({
-        title: "Hapus Template WhatsApp",
+        title: 'Hapus Template WhatsApp',
         message:
-          "Apakah Anda yakin ingin menghapus template ini? Alur kerja otomatisasi yang menggunakan template ini mungkin akan gagal.",
-        confirmLabel: "Ya, Hapus",
-        type: "danger",
+          'Apakah Anda yakin ingin menghapus template ini? Alur kerja otomatisasi yang menggunakan template ini mungkin akan gagal.',
+        confirmLabel: 'Ya, Hapus',
+        type: 'danger',
       })
     ) {
       setTemplates((prev) => prev.filter((t) => t.id !== id));
@@ -789,58 +792,58 @@ export const WhatsAppConnector: React.FC = () => {
 
   // Queue actions
   const handleTriggerQueueItem = (item: WhatsAppQueueItem) => {
-    if (waSendingMethod === "API") {
-      showToast("Pengiriman API dikerjakan worker WhatsApp; gunakan antrean server, bukan simulasi browser.", "info");
+    if (waSendingMethod === 'API') {
+      showToast(
+        'Pengiriman API dikerjakan worker WhatsApp; gunakan antrean server, bukan simulasi browser.',
+        'info'
+      );
       return;
     }
 
     const phone = sanitizeWhatsAppPhone(item.recipientPhone);
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(item.message)}`, "_blank");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(item.message)}`, '_blank');
     const newLog: WhatsAppLog = {
-      id: "wa-" + Date.now(),
+      id: 'wa-' + Date.now(),
       timestamp: new Date().toISOString(),
       recipientName: item.recipientName,
       recipientPhone: item.recipientPhone,
       type: item.type as any,
       message: item.message,
-      status: "SENT",
-      senderName: "Manual Link (browser)",
-      channel: "Manual Link",
+      status: 'SENT',
+      senderName: 'Manual Link (browser)',
+      channel: 'Manual Link',
     };
 
     setLogs((prev) => [newLog, ...prev]);
     setQueue((prev) => prev.filter((q) => q.id !== item.id));
     addLog(
-      "WhatsApp Queue Dispatched",
+      'WhatsApp Queue Dispatched',
       `Membuat log Manual Link untuk ${item.recipientName}. Status: SENT`,
-      "SERVICE",
+      'SERVICE'
     );
-    showToast(
-      `Pesan untuk ${item.recipientName} dikirim dari antrean!`,
-      "success",
-    );
+    showToast(`Pesan untuk ${item.recipientName} dikirim dari antrean!`, 'success');
   };
 
   const handleToggleQueuePause = (itemId: string) => {
     setQueue((prev) =>
       prev.map((q) => {
         if (q.id === itemId) {
-          const nextStatus = q.status === "PENDING" ? "PAUSED" : "PENDING";
+          const nextStatus = q.status === 'PENDING' ? 'PAUSED' : 'PENDING';
           return { ...q, status: nextStatus };
         }
         return q;
-      }),
+      })
     );
   };
 
   const handleDeleteQueueItem = async (itemId: string) => {
     if (
       await showConfirm({
-        title: "Hapus Antrean Pesan",
+        title: 'Hapus Antrean Pesan',
         message:
-          "Hapus pesan ini dari antrean automated trigger? Pesan tidak akan dikirim ke pelanggan.",
-        confirmLabel: "Hapus Pesan",
-        type: "warning",
+          'Hapus pesan ini dari antrean automated trigger? Pesan tidak akan dikirim ke pelanggan.',
+        confirmLabel: 'Hapus Pesan',
+        type: 'warning',
       })
     ) {
       setQueue((prev) => prev.filter((q) => q.id !== itemId));
@@ -851,14 +854,11 @@ export const WhatsAppConnector: React.FC = () => {
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
       const matchesSearch =
-        log.recipientName
-          .toLowerCase()
-          .includes(logSearchQuery.toLowerCase()) ||
+        log.recipientName.toLowerCase().includes(logSearchQuery.toLowerCase()) ||
         log.recipientPhone.includes(logSearchQuery) ||
         log.message.toLowerCase().includes(logSearchQuery.toLowerCase());
 
-      const matchesFilter =
-        logFilterType === "ALL" || log.type === logFilterType;
+      const matchesFilter = logFilterType === 'ALL' || log.type === logFilterType;
       return matchesSearch && matchesFilter;
     });
   }, [logs, logSearchQuery, logFilterType]);
@@ -871,9 +871,8 @@ export const WhatsAppConnector: React.FC = () => {
 
     return logs.filter(
       (log) =>
-        log.recipientPhone.replace(/[\s-]/g, "") ===
-          cust.phone.replace(/[\s-]/g, "") ||
-        log.recipientName.toLowerCase() === cust.name.toLowerCase(),
+        log.recipientPhone.replace(/[\s-]/g, '') === cust.phone.replace(/[\s-]/g, '') ||
+        log.recipientName.toLowerCase() === cust.name.toLowerCase()
     );
   }, [logs, drilldownCustomerId, tenantCustomers]);
 
@@ -891,8 +890,8 @@ export const WhatsAppConnector: React.FC = () => {
                 WhatsApp CRM & Gateway Center
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                Manajemen automasi follow-up tagihan, status servis real-time,
-                template broadcast, & histori komunikasi CRM.
+                Manajemen automasi follow-up tagihan, status servis real-time, template broadcast, &
+                histori komunikasi CRM.
               </p>
             </div>
           </div>
@@ -904,36 +903,36 @@ export const WhatsAppConnector: React.FC = () => {
           id="whatsapp-subtabs-container"
         >
           <button
-            onClick={() => setActiveTab("dashboard")}
+            onClick={() => setActiveTab('dashboard')}
             id="whatsapp-tab-dashboard"
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-              activeTab === "dashboard"
-                ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              activeTab === 'dashboard'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Dashboard & Logs</span>
           </button>
           <button
-            onClick={() => setActiveTab("templates")}
+            onClick={() => setActiveTab('templates')}
             id="whatsapp-tab-templates"
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-              activeTab === "templates"
-                ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              activeTab === 'templates'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>Template Editor</span>
           </button>
           <button
-            onClick={() => setActiveTab("queue")}
+            onClick={() => setActiveTab('queue')}
             id="whatsapp-tab-queue"
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 relative cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-              activeTab === "queue"
-                ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              activeTab === 'queue'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -945,24 +944,24 @@ export const WhatsAppConnector: React.FC = () => {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("contactHistory")}
+            onClick={() => setActiveTab('contactHistory')}
             id="whatsapp-tab-contactHistory"
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-              activeTab === "contactHistory"
-                ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              activeTab === 'contactHistory'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <User className="w-3.5 h-3.5" />
             <span>CRM Contact History</span>
           </button>
           <button
-            onClick={() => setActiveTab("settings")}
+            onClick={() => setActiveTab('settings')}
             id="whatsapp-tab-settings"
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-              activeTab === "settings"
-                ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              activeTab === 'settings'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-800/80 font-extrabold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Settings2 className="w-3.5 h-3.5" />
@@ -972,13 +971,13 @@ export const WhatsAppConnector: React.FC = () => {
       </div>
 
       {/* RENDER TAB 1: DASHBOARD & LOGS */}
-      {activeTab === "dashboard" && (
+      {activeTab === 'dashboard' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Gateway Settings Column */}
             <div className="lg:col-span-7 space-y-6">
               {/* API connection controls are irrelevant in Manual Link mode. */}
-              {waSendingMethod === "API" ? (
+              {waSendingMethod === 'API' ? (
                 <>
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -988,10 +987,10 @@ export const WhatsAppConnector: React.FC = () => {
                       </h3>
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+                          className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}
                         />
                         <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-slate-500">
-                          {isConnected ? "CONNECTED" : "DISCONNECTED"}
+                          {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
                         </span>
                       </div>
                     </div>
@@ -1000,24 +999,24 @@ export const WhatsAppConnector: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {[
                         {
-                          id: "fonnte",
-                          title: "Fonnte API",
-                          note: "Token per penyewa",
+                          id: 'fonnte',
+                          title: 'Fonnte API',
+                          note: 'Token per penyewa',
                         },
                         {
-                          id: "meta",
-                          title: "Meta Cloud API",
-                          note: "Official Integration",
+                          id: 'meta',
+                          title: 'Meta Cloud API',
+                          note: 'Official Integration',
                         },
                         {
-                          id: "wablas",
-                          title: "Wablas API",
-                          note: "Third-party Service",
+                          id: 'wablas',
+                          title: 'Wablas API',
+                          note: 'Third-party Service',
                         },
                         {
-                          id: "local",
-                          title: "Local Session",
-                          note: "Scan Web QR Node",
+                          id: 'local',
+                          title: 'Local Session',
+                          note: 'Scan Web QR Node',
                         },
                       ].map((gw) => (
                         <button
@@ -1025,8 +1024,8 @@ export const WhatsAppConnector: React.FC = () => {
                           onClick={() => setGateway(gw.id as any)}
                           className={`p-3 rounded-xl border text-xs font-bold text-center cursor-pointer transition-all ${
                             gateway === gw.id
-                              ? "bg-slate-900 text-white border-slate-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800"
-                              : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100/50"
+                              ? 'bg-slate-900 text-white border-slate-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800'
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100/50'
                           }`}
                         >
                           <p className="font-sans text-[11px]">{gw.title}</p>
@@ -1040,22 +1039,22 @@ export const WhatsAppConnector: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs pt-1">
                       <div>
                         <label className="block text-[9px] font-mono uppercase text-slate-400 mb-1.5 font-bold tracking-wider">
-                          {gateway === "fonnte"
-                            ? "FONNTE ENDPOINT"
-                            : gateway === "meta"
-                              ? "META BUSINESS PHONE ID"
-                              : "GATEWAY URL ENDPOINT"}
+                          {gateway === 'fonnte'
+                            ? 'FONNTE ENDPOINT'
+                            : gateway === 'meta'
+                              ? 'META BUSINESS PHONE ID'
+                              : 'GATEWAY URL ENDPOINT'}
                         </label>
                         <input
                           type="text"
                           value={
-                            gateway === "fonnte"
-                              ? "https://api.fonnte.com/send"
-                              : gateway === "meta"
-                                ? "109827391920839"
-                                : gateway === "wablas"
-                                  ? "https://api.wablas.com/api/v2/send-message"
-                                  : "http://localhost:3000/api/wa/session"
+                            gateway === 'fonnte'
+                              ? 'https://api.fonnte.com/send'
+                              : gateway === 'meta'
+                                ? '109827391920839'
+                                : gateway === 'wablas'
+                                  ? 'https://api.wablas.com/api/v2/send-message'
+                                  : 'http://localhost:3000/api/wa/session'
                           }
                           readOnly
                           className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-300 outline-none font-mono text-[11px]"
@@ -1063,7 +1062,9 @@ export const WhatsAppConnector: React.FC = () => {
                       </div>
                       <div>
                         <label className="block text-[9px] font-mono uppercase text-slate-400 mb-1.5 font-bold tracking-wider">
-                          {gateway === "fonnte" ? "FONNTE TOKEN PENYEWA" : "API BEARER ACCESS TOKEN"}
+                          {gateway === 'fonnte'
+                            ? 'FONNTE TOKEN PENYEWA'
+                            : 'API BEARER ACCESS TOKEN'}
                         </label>
                         <div className="relative">
                           <input
@@ -1077,10 +1078,7 @@ export const WhatsAppConnector: React.FC = () => {
                               className="w-3.5 h-3.5"
                               onClick={() => {
                                 navigator.clipboard.writeText(apiToken);
-                                showToast(
-                                  "API Token tersalin ke clipboard!",
-                                  "success",
-                                );
+                                showToast('API Token tersalin ke clipboard!', 'success');
                               }}
                             />
                           </div>
@@ -1089,7 +1087,7 @@ export const WhatsAppConnector: React.FC = () => {
                     </div>
 
                     {/* Simulated Connection QR Scan */}
-                    {waSendingMethod === "API" && (
+                    {waSendingMethod === 'API' && (
                       <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 animate-fadeIn">
                         <div className="flex items-center gap-3.5">
                           <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-inner shrink-0">
@@ -1103,16 +1101,14 @@ export const WhatsAppConnector: React.FC = () => {
                           </div>
                           <div className="text-left">
                             <p className="font-bold text-xs text-slate-800 dark:text-slate-100">
-                              {isConnected
-                                ? `Sesi Aktif: ${phoneNumber}`
-                                : "WhatsApp Terputus"}
+                              {isConnected ? `Sesi Aktif: ${phoneNumber}` : 'WhatsApp Terputus'}
                             </p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 leading-normal">
                               {isConnected
-                                ? "Koneksi stabil. Token gateway penyewa aktif untuk antrean otomatis."
+                                ? 'Koneksi stabil. Token gateway penyewa aktif untuk antrean otomatis.'
                                 : isScanning
                                   ? `Menginisialisasi QR handshake (${scanStep}/3)...`
-                                  : "Pilih Fonnte lalu masukkan Token API milik penyewa ini."}
+                                  : 'Pilih Fonnte lalu masukkan Token API milik penyewa ini.'}
                             </p>
                           </div>
                         </div>
@@ -1131,17 +1127,17 @@ export const WhatsAppConnector: React.FC = () => {
                             disabled={isScanning}
                             className={`flex-1 md:flex-initial font-bold text-xs px-4 py-2 rounded-xl text-white shadow-sm transition duration-200 cursor-pointer ${
                               isConnected
-                                ? "bg-red-600 hover:bg-red-700"
+                                ? 'bg-red-600 hover:bg-red-700'
                                 : isScanning
-                                  ? "bg-blue-400 cursor-not-allowed"
-                                  : "bg-emerald-600 hover:bg-emerald-700"
+                                  ? 'bg-blue-400 cursor-not-allowed'
+                                  : 'bg-emerald-600 hover:bg-emerald-700'
                             }`}
                           >
                             {isConnected
-                              ? "Putuskan"
+                              ? 'Putuskan'
                               : isScanning
                                 ? `Pairing (${scanStep}/3)`
-                                : "Koneksikan WA"}
+                                : 'Koneksikan WA'}
                           </button>
                         </div>
                       </div>
@@ -1155,7 +1151,8 @@ export const WhatsAppConnector: React.FC = () => {
                     Mode Manual Link Aktif
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Pesan dibuka melalui WhatsApp Web/wa.me untuk ditinjau dan dikirim operator. Token API, webhook, pairing, dan status koneksi tidak diperlukan.
+                    Pesan dibuka melalui WhatsApp Web/wa.me untuk ditinjau dan dikirim operator.
+                    Token API, webhook, pairing, dan status koneksi tidak diperlukan.
                   </p>
                 </div>
               )}
@@ -1166,9 +1163,7 @@ export const WhatsAppConnector: React.FC = () => {
                     <Sliders className="w-4 h-4 text-purple-500" />
                     Pemicu Notifikasi Otomatis (Trigger Workflows)
                   </h3>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    ERP Webhook Hooks
-                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">ERP Webhook Hooks</span>
                 </div>
 
                 <div className="space-y-3">
@@ -1182,23 +1177,19 @@ export const WhatsAppConnector: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 leading-normal pl-4">
-                        Dikirim otomatis saat status pengerjaan unit berubah di
-                        Dashboard Servis.
+                        Dikirim otomatis saat status pengerjaan unit berubah di Dashboard Servis.
                       </p>
                       <div className="pl-4 pt-1.5 flex items-center gap-2 text-[11px]">
                         <span className="text-slate-400">Template aktif:</span>
                         <select
                           value={triggers.serviceUpdate.templateId}
                           onChange={(e) =>
-                            handleUpdateTriggerTemplate(
-                              "serviceUpdate",
-                              e.target.value,
-                            )
+                            handleUpdateTriggerTemplate('serviceUpdate', e.target.value)
                           }
                           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-[10.5px] cursor-pointer"
                         >
                           {templates
-                            .filter((t) => t.category === "SERVICE_UPDATE")
+                            .filter((t) => t.category === 'SERVICE_UPDATE')
                             .map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
@@ -1208,7 +1199,7 @@ export const WhatsAppConnector: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleToggleTrigger("serviceUpdate")}
+                      onClick={() => handleToggleTrigger('serviceUpdate')}
                       className="cursor-pointer"
                     >
                       {triggers.serviceUpdate.enabled ? (
@@ -1235,23 +1226,19 @@ export const WhatsAppConnector: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 leading-normal pl-4">
-                        Mengirimkan rincian tagihan & tautan bayar online untuk
-                        faktur belum lunas.
+                        Mengirimkan rincian tagihan & tautan bayar online untuk faktur belum lunas.
                       </p>
                       <div className="pl-4 pt-1.5 flex items-center gap-2 text-[11px]">
                         <span className="text-slate-400">Template aktif:</span>
                         <select
                           value={triggers.invoiceReminder.templateId}
                           onChange={(e) =>
-                            handleUpdateTriggerTemplate(
-                              "invoiceReminder",
-                              e.target.value,
-                            )
+                            handleUpdateTriggerTemplate('invoiceReminder', e.target.value)
                           }
                           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-[10.5px] cursor-pointer"
                         >
                           {templates
-                            .filter((t) => t.category === "INVOICE_REMINDER")
+                            .filter((t) => t.category === 'INVOICE_REMINDER')
                             .map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
@@ -1261,7 +1248,7 @@ export const WhatsAppConnector: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleToggleTrigger("invoiceReminder")}
+                      onClick={() => handleToggleTrigger('invoiceReminder')}
                       className="cursor-pointer"
                     >
                       {triggers.invoiceReminder.enabled ? (
@@ -1288,23 +1275,19 @@ export const WhatsAppConnector: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 leading-normal pl-4">
-                        Konfirmasi jadwal kunjungan teknisi lapangan otomatis ke
-                        WhatsApp customer.
+                        Konfirmasi jadwal kunjungan teknisi lapangan otomatis ke WhatsApp customer.
                       </p>
                       <div className="pl-4 pt-1.5 flex items-center gap-2 text-[11px]">
                         <span className="text-slate-400">Template aktif:</span>
                         <select
                           value={triggers.appointmentConfirm.templateId}
                           onChange={(e) =>
-                            handleUpdateTriggerTemplate(
-                              "appointmentConfirm",
-                              e.target.value,
-                            )
+                            handleUpdateTriggerTemplate('appointmentConfirm', e.target.value)
                           }
                           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-[10.5px] cursor-pointer"
                         >
                           {templates
-                            .filter((t) => t.category === "CUSTOM")
+                            .filter((t) => t.category === 'CUSTOM')
                             .map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
@@ -1314,7 +1297,7 @@ export const WhatsAppConnector: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleToggleTrigger("appointmentConfirm")}
+                      onClick={() => handleToggleTrigger('appointmentConfirm')}
                       className="cursor-pointer"
                     >
                       {triggers.appointmentConfirm.enabled ? (
@@ -1363,14 +1346,10 @@ export const WhatsAppConnector: React.FC = () => {
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl outline-none cursor-pointer text-xs"
                       required
                     >
-                      <option value="">
-                        -- Pilih Nomor Handphone Pelanggan --
-                      </option>
+                      <option value="">-- Pilih Nomor Handphone Pelanggan --</option>
                       {tenantCustomers
                         .filter((c) =>
-                          c.name
-                            .toLowerCase()
-                            .includes(manualSearchQuery.toLowerCase()),
+                          c.name.toLowerCase().includes(manualSearchQuery.toLowerCase())
                         )
                         .map((c) => (
                           <option key={c.id} value={c.id}>
@@ -1421,15 +1400,13 @@ export const WhatsAppConnector: React.FC = () => {
                               .find((c) => c.id === selectedCustomer)
                               ?.name.slice(0, 2)
                               .toUpperCase()
-                          : "CS"}
+                          : 'CS'}
                       </div>
                       <div>
                         <p className="font-bold text-[9px] text-slate-800 dark:text-slate-200 leading-none">
                           {selectedCustomer
-                            ? tenantCustomers.find(
-                                (c) => c.id === selectedCustomer,
-                              )?.name
-                            : "Simulasi Penerima"}
+                            ? tenantCustomers.find((c) => c.id === selectedCustomer)?.name
+                            : 'Simulasi Penerima'}
                         </p>
                       </div>
                     </div>
@@ -1437,22 +1414,21 @@ export const WhatsAppConnector: React.FC = () => {
                     {manualMessage ? (
                       <div className="max-w-[90%] bg-[#dcf8c6] dark:bg-[#005c4b] text-slate-800 dark:text-slate-100 rounded-xl rounded-tr-none px-2.5 py-1.5 text-[10px] shadow-sm ml-auto font-sans">
                         <p className="whitespace-pre-wrap font-sans text-left">
-                          {manualMessage.split("\n").map((line, lIdx) => {
+                          {manualMessage.split('\n').map((line, lIdx) => {
                             const escaped = line
-                              .replace(/&/g, "&amp;")
-                              .replace(/</g, "&lt;")
-                              .replace(/>/g, "&gt;")
-                              .replace(/"/g, "&quot;")
-                              .replace(/'/g, "&#039;");
+                              .replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&#039;');
                             const parts = escaped.split(/(\*[^*]+\*|_[^_]+_)/g);
                             return (
-                              <span
-                                key={lIdx}
-                                className="block min-h-[12px]"
-                              >
+                              <span key={lIdx} className="block min-h-[12px]">
                                 {parts.map((part, pIdx) => {
-                                  if (/^\*[^*]+\*$/.test(part)) return <strong key={pIdx}>{part.slice(1, -1)}</strong>;
-                                  if (/^_[^_]+_$/.test(part)) return <em key={pIdx}>{part.slice(1, -1)}</em>;
+                                  if (/^\*[^*]+\*$/.test(part))
+                                    return <strong key={pIdx}>{part.slice(1, -1)}</strong>;
+                                  if (/^_[^_]+_$/.test(part))
+                                    return <em key={pIdx}>{part.slice(1, -1)}</em>;
                                   return <React.Fragment key={pIdx}>{part}</React.Fragment>;
                                 })}
                               </span>
@@ -1466,8 +1442,7 @@ export const WhatsAppConnector: React.FC = () => {
                       </div>
                     ) : (
                       <p className="text-center text-[9.5px] italic text-slate-400 py-6">
-                        Ketik pesan di atas untuk simulasi visualisasi gelembung
-                        chat WhatsApp...
+                        Ketik pesan di atas untuk simulasi visualisasi gelembung chat WhatsApp...
                       </p>
                     )}
                   </div>
@@ -1492,8 +1467,8 @@ export const WhatsAppConnector: React.FC = () => {
                   Antrean WhatsApp & Log Histori Pengiriman
                 </h3>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Seluruh notifikasi otomatis & manual dicatat real-time beserta
-                  indikator efficacy delivery.
+                  Seluruh notifikasi otomatis & manual dicatat real-time beserta indikator efficacy
+                  delivery.
                 </p>
               </div>
 
@@ -1539,10 +1514,7 @@ export const WhatsAppConnector: React.FC = () => {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-[11px]">
                   {filteredLogs.length > 0 ? (
                     filteredLogs.map((log) => (
-                      <tr
-                        key={log.id}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"
-                      >
+                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20">
                         <td className="px-5 py-3">
                           <p className="font-bold text-slate-800 dark:text-slate-200">
                             {log.recipientName}
@@ -1554,16 +1526,16 @@ export const WhatsAppConnector: React.FC = () => {
                         <td className="px-5 py-3">
                           <span
                             className={`px-2 py-0.5 rounded text-[8px] font-bold font-mono uppercase ${
-                              log.type === "SERVICE_UPDATE"
-                                ? "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 border border-blue-100/30"
-                                : log.type === "INVOICE_REMINDER"
-                                  ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-300 border border-amber-100/30"
-                                  : log.type === "PROMOTION"
-                                    ? "bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-300 border border-purple-100/30"
-                                    : "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                              log.type === 'SERVICE_UPDATE'
+                                ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 border border-blue-100/30'
+                                : log.type === 'INVOICE_REMINDER'
+                                  ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-300 border border-amber-100/30'
+                                  : log.type === 'PROMOTION'
+                                    ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-300 border border-purple-100/30'
+                                    : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                             }`}
                           >
-                            {log.type.replace("_", " ")}
+                            {log.type.replace('_', ' ')}
                           </span>
                         </td>
                         <td className="px-5 py-3 max-w-xs md:max-w-sm">
@@ -1578,33 +1550,33 @@ export const WhatsAppConnector: React.FC = () => {
                           {log.channel}
                         </td>
                         <td className="px-5 py-3 text-slate-500 font-mono text-[10px]">
-                          {new Date(log.timestamp).toLocaleString("id-ID", {
-                            month: "short",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
+                          {new Date(log.timestamp).toLocaleString('id-ID', {
+                            month: 'short',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
                           })}
                         </td>
                         <td className="px-5 py-3">
-                          {log.status === "READ" && (
+                          {log.status === 'READ' && (
                             <span className="text-blue-600 font-bold flex items-center gap-1 text-[10px] tracking-wide">
                               <CheckCheck className="w-3.5 h-3.5" />
                               <span>READ</span>
                             </span>
                           )}
-                          {log.status === "DELIVERED" && (
+                          {log.status === 'DELIVERED' && (
                             <span className="text-emerald-600 font-bold flex items-center gap-1 text-[10px] tracking-wide">
                               <CheckCheck className="w-3.5 h-3.5 text-slate-400" />
                               <span>DELIVERED</span>
                             </span>
                           )}
-                          {log.status === "SENT" && (
+                          {log.status === 'SENT' && (
                             <span className="text-slate-500 font-bold flex items-center gap-1 text-[10px] tracking-wide">
                               <Check className="w-3.5 h-3.5" />
                               <span>SENT</span>
                             </span>
                           )}
-                          {log.status === "FAILED" && (
+                          {log.status === 'FAILED' && (
                             <span className="text-red-500 font-bold flex items-center gap-1 text-[10px] tracking-wide">
                               <AlertCircle className="w-3.5 h-3.5" />
                               <span>FAILED</span>
@@ -1624,10 +1596,7 @@ export const WhatsAppConnector: React.FC = () => {
                     ))
                   ) : (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="px-5 py-10 text-center text-slate-400 italic"
-                      >
+                      <td colSpan={7} className="px-5 py-10 text-center text-slate-400 italic">
                         Tidak ditemukan catatan log pengiriman WhatsApp.
                       </td>
                     </tr>
@@ -1638,8 +1607,7 @@ export const WhatsAppConnector: React.FC = () => {
 
             <div className="bg-slate-50 dark:bg-slate-950/30 px-5 py-3 text-[10px] border-t border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 flex justify-between items-center font-mono">
               <span>
-                💡 Multi-tenant isolate: `{currentTenantId}` database security
-                rules fully active.
+                💡 Multi-tenant isolate: `{currentTenantId}` database security rules fully active.
               </span>
               <span>Total API Calls: {logs.length}</span>
             </div>
@@ -1648,15 +1616,13 @@ export const WhatsAppConnector: React.FC = () => {
       )}
 
       {/* RENDER TAB 2: TEMPLATE EDITOR */}
-      {activeTab === "templates" && (
+      {activeTab === 'templates' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Template Creator Form */}
           <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
             <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
               <PlusCircle className="w-4 h-4 text-emerald-500" />
-              {editingTemplateId
-                ? "Edit Template WhatsApp"
-                : "Buat Template WhatsApp Reusable"}
+              {editingTemplateId ? 'Edit Template WhatsApp' : 'Buat Template WhatsApp Reusable'}
             </h3>
 
             <form onSubmit={handleSaveTemplate} className="space-y-4 text-xs">
@@ -1683,15 +1649,9 @@ export const WhatsAppConnector: React.FC = () => {
                   onChange={(e) => setTplCategory(e.target.value as any)}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-xl outline-none cursor-pointer"
                 >
-                  <option value="SERVICE_UPDATE">
-                    Update Status Servis (Automated)
-                  </option>
-                  <option value="INVOICE_REMINDER">
-                    Pengingat Tagihan Invoice (Automated)
-                  </option>
-                  <option value="PROMOTION">
-                    Promosi / Penawaran (Marketing Campaign)
-                  </option>
+                  <option value="SERVICE_UPDATE">Update Status Servis (Automated)</option>
+                  <option value="INVOICE_REMINDER">Pengingat Tagihan Invoice (Automated)</option>
+                  <option value="PROMOTION">Promosi / Penawaran (Marketing Campaign)</option>
                   <option value="CUSTOM">Custom / Umum (Support & Chat)</option>
                 </select>
               </div>
@@ -1717,21 +1677,19 @@ export const WhatsAppConnector: React.FC = () => {
                 {/* Variable Tags Helpers */}
                 <div className="flex flex-wrap gap-1 mt-2.5">
                   {[
-                    { tag: "{customer_name}", desc: "Nama Pelanggan" },
-                    { tag: "{ticket_no}", desc: "No Tiket" },
-                    { tag: "{device_name}", desc: "Nama Unit" },
-                    { tag: "{ticket_status}", desc: "Status Servis" },
-                    { tag: "{invoice_no}", desc: "No Invoice" },
-                    { tag: "{invoice_amount}", desc: "Total Invoice" },
-                    { tag: "{visit_date}", desc: "Tgl Kunjungan" },
-                    { tag: "{visit_time}", desc: "Jam Kunjungan" },
+                    { tag: '{customer_name}', desc: 'Nama Pelanggan' },
+                    { tag: '{ticket_no}', desc: 'No Tiket' },
+                    { tag: '{device_name}', desc: 'Nama Unit' },
+                    { tag: '{ticket_status}', desc: 'Status Servis' },
+                    { tag: '{invoice_no}', desc: 'No Invoice' },
+                    { tag: '{invoice_amount}', desc: 'Total Invoice' },
+                    { tag: '{visit_date}', desc: 'Tgl Kunjungan' },
+                    { tag: '{visit_time}', desc: 'Jam Kunjungan' },
                   ].map((v) => (
                     <button
                       key={v.tag}
                       type="button"
-                      onClick={() =>
-                        setTplContent((prev) => prev + " " + v.tag)
-                      }
+                      onClick={() => setTplContent((prev) => prev + ' ' + v.tag)}
                       className="bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-[8.5px] font-mono px-2 py-1 rounded-md transition border border-slate-200/50 dark:border-slate-700 cursor-pointer"
                       title={v.desc}
                     >
@@ -1746,18 +1704,16 @@ export const WhatsAppConnector: React.FC = () => {
                   type="submit"
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl shadow-sm transition"
                 >
-                  {editingTemplateId
-                    ? "Simpan Perubahan"
-                    : "Simpan Template Baru"}
+                  {editingTemplateId ? 'Simpan Perubahan' : 'Simpan Template Baru'}
                 </button>
                 {editingTemplateId && (
                   <button
                     type="button"
                     onClick={() => {
                       setEditingTemplateId(null);
-                      setTplName("");
-                      setTplCategory("CUSTOM");
-                      setTplContent("");
+                      setTplName('');
+                      setTplCategory('CUSTOM');
+                      setTplContent('');
                     }}
                     className="px-3 py-2 border border-slate-200 dark:border-slate-800 text-slate-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
@@ -1777,8 +1733,8 @@ export const WhatsAppConnector: React.FC = () => {
                     Katalog Template Terdaftar
                   </h3>
                   <p className="text-[10px] text-slate-400">
-                    Gunakan template yang telah dibuat untuk mempercepat
-                    komunikasi logistik & invoicing.
+                    Gunakan template yang telah dibuat untuk mempercepat komunikasi logistik &
+                    invoicing.
                   </p>
                 </div>
                 <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold font-mono">
@@ -1799,16 +1755,16 @@ export const WhatsAppConnector: React.FC = () => {
                         </p>
                         <span
                           className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[7.5px] font-bold font-mono uppercase ${
-                            tpl.category === "SERVICE_UPDATE"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
-                              : tpl.category === "INVOICE_REMINDER"
-                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
-                                : tpl.category === "PROMOTION"
-                                  ? "bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300"
-                                  : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                            tpl.category === 'SERVICE_UPDATE'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
+                              : tpl.category === 'INVOICE_REMINDER'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                                : tpl.category === 'PROMOTION'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300'
+                                  : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
                           }`}
                         >
-                          {tpl.category.replace("_", " ")}
+                          {tpl.category.replace('_', ' ')}
                         </span>
                       </div>
 
@@ -1843,7 +1799,7 @@ export const WhatsAppConnector: React.FC = () => {
       )}
 
       {/* RENDER TAB 3: PENDING AUTOMATED QUEUE */}
-      {activeTab === "queue" && (
+      {activeTab === 'queue' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
             <div>
@@ -1852,8 +1808,7 @@ export const WhatsAppConnector: React.FC = () => {
                 Antrean Pesan Otomatis Tertunda (Pending Automated Queue)
               </h3>
               <p className="text-[10px] text-slate-400 mt-0.5">
-                Automasi asinkron yang dijadwalkan sistem ERP untuk dikirimkan
-                secara sekuensial.
+                Automasi asinkron yang dijadwalkan sistem ERP untuk dikirimkan secara sekuensial.
               </p>
             </div>
             <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold font-mono">
@@ -1876,10 +1831,7 @@ export const WhatsAppConnector: React.FC = () => {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-[11px]">
                 {queue.length > 0 ? (
                   queue.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"
-                    >
+                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20">
                       <td className="px-4 py-3.5">
                         <p className="font-bold text-slate-800 dark:text-slate-200">
                           {item.recipientName}
@@ -1891,14 +1843,14 @@ export const WhatsAppConnector: React.FC = () => {
                       <td className="px-4 py-3.5">
                         <span
                           className={`px-2 py-0.5 rounded text-[8px] font-bold font-mono uppercase ${
-                            item.type === "SERVICE_UPDATE"
-                              ? "bg-blue-100 text-blue-800"
-                              : item.type === "INVOICE_REMINDER"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-purple-100 text-purple-800"
+                            item.type === 'SERVICE_UPDATE'
+                              ? 'bg-blue-100 text-blue-800'
+                              : item.type === 'INVOICE_REMINDER'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-purple-100 text-purple-800'
                           }`}
                         >
-                          {item.type.replace("_", " ")}
+                          {item.type.replace('_', ' ')}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 max-w-xs">
@@ -1910,15 +1862,15 @@ export const WhatsAppConnector: React.FC = () => {
                         </p>
                       </td>
                       <td className="px-4 py-3.5 text-slate-500 font-mono text-[10px]">
-                        {new Date(item.scheduledTime).toLocaleString("id-ID", {
-                          month: "short",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
+                        {new Date(item.scheduledTime).toLocaleString('id-ID', {
+                          month: 'short',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
                       </td>
                       <td className="px-4 py-3.5">
-                        {item.status === "PENDING" ? (
+                        {item.status === 'PENDING' ? (
                           <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 w-fit">
                             <Clock className="w-3 h-3 text-blue-500" />
                             <span>WAITING</span>
@@ -1943,7 +1895,7 @@ export const WhatsAppConnector: React.FC = () => {
                           onClick={() => handleToggleQueuePause(item.id)}
                           className="text-[10.5px] text-blue-600 font-bold hover:underline cursor-pointer inline-flex items-center gap-0.5"
                         >
-                          {item.status === "PENDING" ? "Pause" : "Resume"}
+                          {item.status === 'PENDING' ? 'Pause' : 'Resume'}
                         </button>
                         <button
                           onClick={() => handleDeleteQueueItem(item.id)}
@@ -1957,10 +1909,7 @@ export const WhatsAppConnector: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="px-4 py-10 text-center text-slate-400 italic"
-                    >
+                    <td colSpan={6} className="px-4 py-10 text-center text-slate-400 italic">
                       Tidak ada antrean pesan terjadwal yang aktif.
                     </td>
                   </tr>
@@ -1972,15 +1921,14 @@ export const WhatsAppConnector: React.FC = () => {
       )}
 
       {/* RENDER TAB 4: CRM CONTACT HISTORY DRILLDOWN */}
-      {activeTab === "contactHistory" && (
+      {activeTab === 'contactHistory' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
             <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Riwayat Komunikasi Spesifik Customer (Drilldown)
             </h3>
             <p className="text-[10px] text-slate-400 mt-0.5">
-              Inspeksi korespondensi terarah WhatsApp dari satu basis profil
-              customer CRM.
+              Inspeksi korespondensi terarah WhatsApp dari satu basis profil customer CRM.
             </p>
           </div>
 
@@ -2000,25 +1948,19 @@ export const WhatsAppConnector: React.FC = () => {
 
               <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
                 {tenantCustomers
-                  .filter((c) =>
-                    c.name
-                      .toLowerCase()
-                      .includes(drilldownSearchQuery.toLowerCase()),
-                  )
+                  .filter((c) => c.name.toLowerCase().includes(drilldownSearchQuery.toLowerCase()))
                   .map((c) => (
                     <button
                       key={c.id}
                       onClick={() => setDrilldownCustomerId(c.id)}
                       className={`w-full text-left p-2.5 rounded-xl border text-xs transition duration-200 cursor-pointer block ${
                         drilldownCustomerId === c.id
-                          ? "bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-300 font-bold"
-                          : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-300 font-bold'
+                          : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
                       }`}
                     >
                       <p className="truncate font-sans">{c.name}</p>
-                      <p className="text-[9.5px] text-slate-400 mt-0.5 font-mono">
-                        {c.phone}
-                      </p>
+                      <p className="text-[9.5px] text-slate-400 mt-0.5 font-mono">{c.phone}</p>
                     </button>
                   ))}
               </div>
@@ -2031,24 +1973,11 @@ export const WhatsAppConnector: React.FC = () => {
                   <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
                     <div>
                       <p className="font-extrabold text-slate-800 dark:text-slate-200">
-                        {
-                          tenantCustomers.find(
-                            (c) => c.id === drilldownCustomerId,
-                          )?.name
-                        }
+                        {tenantCustomers.find((c) => c.id === drilldownCustomerId)?.name}
                       </p>
                       <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                        {
-                          tenantCustomers.find(
-                            (c) => c.id === drilldownCustomerId,
-                          )?.phone
-                        }{" "}
-                        ·{" "}
-                        {
-                          tenantCustomers.find(
-                            (c) => c.id === drilldownCustomerId,
-                          )?.email
-                        }
+                        {tenantCustomers.find((c) => c.id === drilldownCustomerId)?.phone} ·{' '}
+                        {tenantCustomers.find((c) => c.id === drilldownCustomerId)?.email}
                       </p>
                     </div>
                     <div className="text-right">
@@ -2068,34 +1997,34 @@ export const WhatsAppConnector: React.FC = () => {
                         >
                           <div className="flex justify-between items-start text-[10px]">
                             <span className="text-slate-400 font-mono">
-                              {new Date(log.timestamp).toLocaleString("id-ID", {
-                                year: "numeric",
-                                month: "short",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
+                              {new Date(log.timestamp).toLocaleString('id-ID', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
                               })}
                             </span>
 
-                            {log.status === "READ" && (
+                            {log.status === 'READ' && (
                               <span className="text-blue-600 font-bold flex items-center gap-0.5">
                                 <CheckCheck className="w-3 h-3" />
                                 <span>READ</span>
                               </span>
                             )}
-                            {log.status === "DELIVERED" && (
+                            {log.status === 'DELIVERED' && (
                               <span className="text-emerald-600 font-bold flex items-center gap-0.5">
                                 <CheckCheck className="w-3 h-3 text-slate-400" />
                                 <span>DELIVERED</span>
                               </span>
                             )}
-                            {log.status === "SENT" && (
+                            {log.status === 'SENT' && (
                               <span className="text-slate-500 font-bold flex items-center gap-0.5">
                                 <Check className="w-3 h-3" />
                                 <span>SENT</span>
                               </span>
                             )}
-                            {log.status === "FAILED" && (
+                            {log.status === 'FAILED' && (
                               <span className="text-red-500 font-bold flex items-center gap-0.5">
                                 <AlertCircle className="w-3 h-3" />
                                 <span>FAILED</span>
@@ -2124,8 +2053,8 @@ export const WhatsAppConnector: React.FC = () => {
                 <div className="h-64 flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/20">
                   <User className="w-8 h-8 text-slate-300 mb-1" />
                   <p className="text-xs">
-                    Pilih salah satu customer di kolom kiri untuk melihat
-                    riwayat korespondensi WhatsApp.
+                    Pilih salah satu customer di kolom kiri untuk melihat riwayat korespondensi
+                    WhatsApp.
                   </p>
                 </div>
               )}
@@ -2135,7 +2064,7 @@ export const WhatsAppConnector: React.FC = () => {
       )}
 
       {/* RENDER TAB 5: GATEWAY CONFIGURATION & SANDBOX TESTER */}
-      {activeTab === "settings" && (
+      {activeTab === 'settings' && (
         <div className="space-y-6">
           {/* Main settings section */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm w-full animate-fadeIn">
@@ -2149,47 +2078,44 @@ export const WhatsAppConnector: React.FC = () => {
                     <span>Metode Pengiriman Notifikasi WhatsApp</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Pilih bagaimana sistem mengirimkan notifikasi status servis
-                    (Tanda Terima, Diagnosa, Estimasi Biaya, Perbaikan Selesai,
-                    dan Klaim Garansi) ke nomor WhatsApp pelanggan.
+                    Pilih bagaimana sistem mengirimkan notifikasi status servis (Tanda Terima,
+                    Diagnosa, Estimasi Biaya, Perbaikan Selesai, dan Klaim Garansi) ke nomor
+                    WhatsApp pelanggan.
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <button
                       type="button"
                       onClick={() => {
-                        setWaSendingMethod("API");
+                        setWaSendingMethod('API');
                         addLog(
-                          "WhatsApp Settings Update",
-                          "Mengubah metode pengiriman menjadi Otomatis via API",
-                          "SYSTEM",
+                          'WhatsApp Settings Update',
+                          'Mengubah metode pengiriman menjadi Otomatis via API',
+                          'SYSTEM'
                         );
                       }}
                       className={`p-3.5 rounded-xl border text-left flex gap-3 transition-all cursor-pointer ${
-                        waSendingMethod === "API"
-                          ? "bg-white dark:bg-slate-950 border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
-                          : "bg-white/50 border-slate-200 hover:border-slate-300 hover:bg-white"
+                        waSendingMethod === 'API'
+                          ? 'bg-white dark:bg-slate-950 border-emerald-500 shadow-md ring-2 ring-emerald-500/20'
+                          : 'bg-white/50 border-slate-200 hover:border-slate-300 hover:bg-white'
                       }`}
                     >
                       <div
                         className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
-                          waSendingMethod === "API"
-                            ? "border-emerald-600 bg-emerald-600 text-white"
-                            : "border-slate-300"
+                          waSendingMethod === 'API'
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-slate-300'
                         }`}
                       >
-                        {waSendingMethod === "API" && (
-                          <span className="text-[10px]">✓</span>
-                        )}
+                        {waSendingMethod === 'API' && <span className="text-[10px]">✓</span>}
                       </div>
                       <div>
                         <p className="font-bold text-xs text-slate-800 dark:text-slate-200">
                           Otomatis via Meta Cloud API
                         </p>
                         <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
-                          Sistem langsung mengirimkan pesan ke nomor pelanggan
-                          secara background, dan mencatat log Meta Cloud API
-                          secara otomatis.
+                          Sistem langsung mengirimkan pesan ke nomor pelanggan secara background,
+                          dan mencatat log Meta Cloud API secara otomatis.
                         </p>
                       </div>
                     </button>
@@ -2197,38 +2123,35 @@ export const WhatsAppConnector: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setWaSendingMethod("MANUAL");
+                        setWaSendingMethod('MANUAL');
                         addLog(
-                          "WhatsApp Settings Update",
-                          "Mengubah metode pengiriman menjadi Manual via wa.me",
-                          "SYSTEM",
+                          'WhatsApp Settings Update',
+                          'Mengubah metode pengiriman menjadi Manual via wa.me',
+                          'SYSTEM'
                         );
                       }}
                       className={`p-3.5 rounded-xl border text-left flex gap-3 transition-all cursor-pointer ${
-                        waSendingMethod === "MANUAL"
-                          ? "bg-white dark:bg-slate-950 border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
-                          : "bg-white/50 border-slate-200 hover:border-slate-300 hover:bg-white"
+                        waSendingMethod === 'MANUAL'
+                          ? 'bg-white dark:bg-slate-950 border-emerald-500 shadow-md ring-2 ring-emerald-500/20'
+                          : 'bg-white/50 border-slate-200 hover:border-slate-300 hover:bg-white'
                       }`}
                     >
                       <div
                         className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
-                          waSendingMethod === "MANUAL"
-                            ? "border-emerald-600 bg-emerald-600 text-white"
-                            : "border-slate-300"
+                          waSendingMethod === 'MANUAL'
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-slate-300'
                         }`}
                       >
-                        {waSendingMethod === "MANUAL" && (
-                          <span className="text-[10px]">✓</span>
-                        )}
+                        {waSendingMethod === 'MANUAL' && <span className="text-[10px]">✓</span>}
                       </div>
                       <div>
                         <p className="font-bold text-xs text-slate-800 dark:text-slate-200">
                           Manual (WhatsApp Web / Link wa.me)
                         </p>
                         <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
-                          Saat status berubah, pop-up draf notifikasi akan
-                          muncul. Operator dapat meninjau, mengedit, lalu
-                          mengirim manual via WhatsApp Web.
+                          Saat status berubah, pop-up draf notifikasi akan muncul. Operator dapat
+                          meninjau, mengedit, lalu mengirim manual via WhatsApp Web.
                         </p>
                       </div>
                     </button>
@@ -2241,9 +2164,8 @@ export const WhatsAppConnector: React.FC = () => {
                         Sinkronkan Rincian Estimasi Biaya
                       </p>
                       <p className="text-[10px] text-slate-400">
-                        Sertakan rincian estimasi biaya perbaikan dan daftar
-                        suku cadang yang digunakan ke dalam draf pesan WhatsApp
-                        secara otomatis.
+                        Sertakan rincian estimasi biaya perbaikan dan daftar suku cadang yang
+                        digunakan ke dalam draf pesan WhatsApp secara otomatis.
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer select-none">
@@ -2261,97 +2183,96 @@ export const WhatsAppConnector: React.FC = () => {
                 </div>
 
                 {/* Credentials block */}
-                  {waSendingMethod === "API" && (
-                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 space-y-3.5 animate-fadeIn">
-                      <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-300 font-bold">
-                        <Settings2 className="w-4 h-4 text-accent" />
-                        <span>Kredensial Meta WhatsApp Business Cloud API</span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
-                        Gunakan panel developer Meta di{" "}
-                        <a
-                          href="https://developers.facebook.com"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-accent underline font-mono"
-                        >
-                          developers.facebook.com
-                        </a>{" "}
-                        untuk mendaftarkan nomor resmi dan mendapatkan Token Akses
-                        Permanen Sistem.
-                      </p>
+                {waSendingMethod === 'API' && (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 space-y-3.5 animate-fadeIn">
+                    <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-300 font-bold">
+                      <Settings2 className="w-4 h-4 text-accent" />
+                      <span>Kredensial Meta WhatsApp Business Cloud API</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Gunakan panel developer Meta di{' '}
+                      <a
+                        href="https://developers.facebook.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent underline font-mono"
+                      >
+                        developers.facebook.com
+                      </a>{' '}
+                      untuk mendaftarkan nomor resmi dan mendapatkan Token Akses Permanen Sistem.
+                    </p>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                            Phone Number ID
-                          </label>
-                          <input
-                            type="text"
-                            value={waPhoneId}
-                            onChange={(e) => {
-                              setWaPhoneId(e.target.value);
-                            }}
-                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                            WABA ID (Business Account ID)
-                          </label>
-                          <input
-                            type="text"
-                            value={waWabaId}
-                            onChange={(e) => {
-                              setWaWabaId(e.target.value);
-                            }}
-                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                            Verify Token (Webhook Secret)
-                          </label>
-                          <input
-                            type="password"
-                            value={waWebhookSecret}
-                            onChange={(e) => {
-                              setWaWebhookSecret(e.target.value);
-                            }}
-                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                            Webhook Callback URL
-                          </label>
-                          <input
-                            type="text"
-                            value={waCallbackUrl}
-                            className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-900 rounded-xl outline-none font-mono text-slate-400 cursor-not-allowed"
-                            disabled
-                          />
-                        </div>
-                      </div>
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       <div>
                         <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
-                          System Permanent User Access Token (Bearer Key)
+                          Phone Number ID
                         </label>
                         <input
-                          type="password"
-                          value={whatsappKey}
+                          type="text"
+                          value={waPhoneId}
                           onChange={(e) => {
-                            setWhatsappKey(e.target.value);
+                            setWaPhoneId(e.target.value);
+                          }}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                          WABA ID (Business Account ID)
+                        </label>
+                        <input
+                          type="text"
+                          value={waWabaId}
+                          onChange={(e) => {
+                            setWaWabaId(e.target.value);
                           }}
                           className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
                         />
                       </div>
                     </div>
-                  )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                          Verify Token (Webhook Secret)
+                        </label>
+                        <input
+                          type="password"
+                          value={waWebhookSecret}
+                          onChange={(e) => {
+                            setWaWebhookSecret(e.target.value);
+                          }}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                          Webhook Callback URL
+                        </label>
+                        <input
+                          type="text"
+                          value={waCallbackUrl}
+                          className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-900 rounded-xl outline-none font-mono text-slate-400 cursor-not-allowed"
+                          disabled
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                        System Permanent User Access Token (Bearer Key)
+                      </label>
+                      <input
+                        type="password"
+                        value={whatsappKey}
+                        onChange={(e) => {
+                          setWhatsappKey(e.target.value);
+                        }}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 focus:border-slate-300 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Right Sandbox Tester Panel */}
@@ -2370,9 +2291,8 @@ export const WhatsAppConnector: React.FC = () => {
                   </div>
 
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Ketik pesan WhatsApp seolah-olah dikirim oleh pelanggan
-                    untuk memicu validasi, parsing string tiket, querying
-                    database, dan template auto-reply di backend.
+                    Ketik pesan WhatsApp seolah-olah dikirim oleh pelanggan untuk memicu validasi,
+                    parsing string tiket, querying database, dan template auto-reply di backend.
                   </p>
 
                   <div className="flex gap-2">
@@ -2415,10 +2335,7 @@ export const WhatsAppConnector: React.FC = () => {
                         </button>
                       </div>
                       {simWaWebhookLogs.map((logLine, idx) => (
-                        <div
-                          key={idx}
-                          className="leading-relaxed whitespace-pre-wrap"
-                        >
+                        <div key={idx} className="leading-relaxed whitespace-pre-wrap">
                           {logLine}
                         </div>
                       ))}
