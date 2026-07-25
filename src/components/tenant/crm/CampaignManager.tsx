@@ -52,7 +52,7 @@ export const CampaignManager: React.FC = () => {
           return months > 6;
         }).length;
       case 'ACTIVE':
-        return tenantCustomers.filter((c) => (c.loyaltyPoints || 0) > 100).length;
+        return tenantCustomers.filter((c) => (c.visitCount || 0) > 5).length;
       default:
         return tenantCustomers.length;
     }
