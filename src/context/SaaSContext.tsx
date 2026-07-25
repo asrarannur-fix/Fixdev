@@ -3557,6 +3557,14 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id !== customerId) return c;
+        // If the quotation is being reassigned to a different customer, move it.
+        if (data.customerId && data.customerId !== customerId) {
+          return {
+            ...c,
+            quotations: (c.quotations || []).filter((q) => q.id !== quotationId),
+          };
+          // (relocation completed below by adding to the target customer)
+        }
         return {
           ...c,
           quotations: (c.quotations || []).map((q) =>
@@ -3565,6 +3573,24 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       })
     );
+    // If reassigned, append the moved quotation to the target customer.
+    if (data.customerId && data.customerId !== customerId) {
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === data.customerId
+            ? {
+                ...c,
+                quotations: [
+                  ...(c.quotations || []),
+                  ...(prev.find((x) => x.id === customerId)?.quotations || [])
+                    .filter((q) => q.id === quotationId)
+                    .map((q) => ({ ...q, ...data })),
+                ],
+              }
+            : c
+        )
+      );
+    }
   };
 
   const deleteQuotation = (customerId: string, quotationId: string) => {

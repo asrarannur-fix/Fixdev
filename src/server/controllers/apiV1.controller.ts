@@ -436,7 +436,18 @@ export const getCustomerById = async (req: any, res: any) => {
 
 export const createCustomer = async (req: any, res: any) => {
   const tenantId = req.tenantId;
-  const { name, email, phone, address, segment, companyName, notes } = req.body;
+  const {
+    name,
+    email,
+    phone,
+    address,
+    segment,
+    companyName,
+    npwp,
+    referralCode,
+    salesPipelineStage,
+    notes,
+  } = req.body;
 
   if (!name || !phone) {
     return res.status(422).json({
@@ -449,11 +460,27 @@ export const createCustomer = async (req: any, res: any) => {
   }
 
   try {
+    // Prevent duplicate email within the tenant (defense-in-depth on top of the
+    // partial unique index; returns a clean 422 instead of a 500 on conflict).
+    if (email) {
+      const dup = await dbQuery(
+        `SELECT id FROM customers WHERE tenant_id = $1 AND email = $2 LIMIT 1`,
+        [tenantId, email]
+      );
+      if (dup.rows.length > 0) {
+        return res.status(422).json({
+          message: 'Validation Error',
+          errors: { email: ['Email sudah terdaftar untuk tenant ini.'] },
+        });
+      }
+    }
+
     const result = await dbQuery(
-      `INSERT INTO customers (tenant_id, name, email, phone, address, segment, company_name, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO customers (tenant_id, name, email, phone, address, segment, company_name, npwp, referral_code, sales_pipeline_stage, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id, tenant_id as "tenantId", name, email, phone, address, segment,
-                 company_name as "companyName", notes, created_at as "createdAt"`,
+                 company_name as "companyName", npwp, referral_code as "referralCode",
+                 sales_pipeline_stage as "salesPipelineStage", notes, created_at as "createdAt"`,
       [
         tenantId,
         name,
@@ -462,11 +489,21 @@ export const createCustomer = async (req: any, res: any) => {
         address || null,
         (segment || 'PERSONAL').toUpperCase(),
         companyName || null,
+        npwp || null,
+        referralCode || null,
+        salesPipelineStage || null,
         notes || null,
       ]
     );
     res.status(201).json({ data: result.rows[0], message: 'Customer created successfully.' });
   } catch (err: any) {
+    // Surface unique-constraint violations as a clean 422 instead of a generic 500.
+    if (err?.code === '23505') {
+      return res.status(422).json({
+        message: 'Validation Error',
+        errors: { email: ['Email sudah terdaftar untuk tenant ini.'] },
+      });
+    }
     res.status(500).json({ error: 'Operasi API gagal diproses.' });
   }
 };
@@ -474,7 +511,23 @@ export const createCustomer = async (req: any, res: any) => {
 export const updateCustomer = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const { id } = req.params;
-  const { name, email, phone, address, segment, companyName, notes } = req.body;
+  const {
+    name,
+    email,
+    phone,
+    address,
+    segment,
+    companyName,
+    npwp,
+    referralCode,
+    salesPipelineStage,
+    notes,
+  } = req.body;
+
+  // Validate UUID param to avoid a Postgres uuid parse error -> 500.
+  if (!/^[0-9a-fA-F-]{36}$/.test(String(id))) {
+    return res.status(400).json({ message: 'Invalid customer id format.' });
+  }
 
   try {
     const result = await dbQuery(
@@ -485,10 +538,27 @@ export const updateCustomer = async (req: any, res: any) => {
          address = COALESCE($6, address),
          segment = COALESCE($7, segment),
          company_name = COALESCE($8, company_name),
-         notes = COALESCE($9, notes)
+         npwp = COALESCE($9, npwp),
+         referral_code = COALESCE($10, referral_code),
+         sales_pipeline_stage = COALESCE($11, sales_pipeline_stage),
+         notes = COALESCE($12, notes)
        WHERE id = $1 AND tenant_id = $2
-       RETURNING id, name, email, phone, address, segment, company_name as "companyName", notes`,
-      [id, tenantId, name, email, phone, address, segment, companyName, notes]
+       RETURNING id, name, email, phone, address, segment, company_name as "companyName",
+                 npwp, referral_code as "referralCode", sales_pipeline_stage as "salesPipelineStage", notes`,
+      [
+        id,
+        tenantId,
+        name,
+        email,
+        phone,
+        address,
+        segment,
+        companyName,
+        npwp,
+        referralCode,
+        salesPipelineStage,
+        notes,
+      ]
     );
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Customer not found.' });
@@ -502,6 +572,11 @@ export const updateCustomer = async (req: any, res: any) => {
 export const deleteCustomer = async (req: any, res: any) => {
   const tenantId = req.tenantId;
   const { id } = req.params;
+
+  if (!/^[0-9a-fA-F-]{36}$/.test(String(id))) {
+    return res.status(400).json({ message: 'Invalid customer id format.' });
+  }
+
   try {
     const result = await dbQuery(
       'DELETE FROM customers WHERE id = $1 AND tenant_id = $2 RETURNING id',

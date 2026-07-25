@@ -448,6 +448,18 @@ export async function processPOSTransaction(
 
   // Deposit usage tracking via customer_deposits audit table
   if (depositUsed > 0 && parsed.customerId) {
+    // Validate the customer exists and belongs to this tenant BEFORE mutating
+    // balances. Without this, a wrong/foreign customerId makes the UPDATE a
+    // silent no-op (0 rows), so deposit is consumed but loyalty is never added.
+    const custCheck = await client.query(
+      `SELECT id FROM customers WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
+      [parsed.customerId, tenantId]
+    );
+    if (custCheck.rows.length === 0) {
+      throw Object.assign(new Error('Pelanggan tidak ditemukan untuk tenant ini.'), {
+        status: 422,
+      });
+    }
     await client.query(
       `INSERT INTO customer_deposits
          (id, tenant_id, customer_id, branch_id, transaction_id, type, amount, balance, description)
