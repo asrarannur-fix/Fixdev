@@ -3990,10 +3990,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           history.push(record);
         }
 
-        return {
+        const updatedEmp = {
           ...emp,
           attendanceHistory: history,
         };
+        syncModuleRecord('employees', employeeId, updatedEmp, 'update');
+        return updatedEmp;
       })
     );
 
@@ -4059,10 +4061,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         history[existingIdx] = record;
 
-        return {
+        const updatedEmp = {
           ...emp,
           attendanceHistory: history,
         };
+        syncModuleRecord('employees', employeeId, updatedEmp, 'update');
+        return updatedEmp;
       })
     );
 
@@ -4099,10 +4103,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           history.push(updatedRecord);
         }
 
-        return {
+        const updatedEmp = {
           ...emp,
           attendanceHistory: history,
         };
+        syncModuleRecord('employees', employeeId, updatedEmp, 'update');
+        return updatedEmp;
       })
     );
     addLog(
@@ -4143,7 +4149,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           history.push(updatedRecord);
         }
 
-        return { ...emp, attendanceHistory: history };
+        const updatedEmp = { ...emp, attendanceHistory: history };
+        syncModuleRecord('employees', emp.id, updatedEmp, 'update');
+        return updatedEmp;
       })
     );
     addLog('Bulk Check-In', `Presensi cepat seluruh staff untuk tanggal ${todayStr}`, 'SYSTEM');
@@ -4157,10 +4165,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setEmployees((prev) =>
       prev.map((emp) => {
         if (emp.id !== employeeId) return emp;
-        return {
+        const updatedEmp: Employee = {
           ...emp,
           leaves: [...emp.leaves, { ...leave, id, status: 'PENDING' }],
         };
+        syncModuleRecord('employees', employeeId, updatedEmp, 'update');
+        return updatedEmp;
       })
     );
     addLog('Submit Leave', `Pengajuan cuti baru oleh karyawan ID: ${employeeId}`, 'SYSTEM');
@@ -4196,11 +4206,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        return {
+        const updatedEmp = {
           ...emp,
           leaves: updatedLeaves,
           attendanceHistory,
         };
+        syncModuleRecord('employees', employeeId, updatedEmp, 'update');
+        return updatedEmp;
       })
     );
     addLog('Approve Leave', `Status cuti ID: ${leaveId} diupdate menjadi ${status}`, 'SYSTEM');
