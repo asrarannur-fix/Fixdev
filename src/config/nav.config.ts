@@ -36,6 +36,7 @@ import {
   QrCode,
   Database,
   Clock,
+  MoreVertical,
 } from "lucide-react";
 
 export interface NavSubTab {
@@ -75,15 +76,10 @@ export const OPERATIONAL_MODULES: NavModule[] = [
     iconColor: "text-blue-500 dark:text-blue-400",
     activeBg: "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30",
     subtabs: [
-      { id: "new-ticket", label: "Penerimaan", icon: PlusCircle },
       { id: "list", label: "Daftar Servis", icon: Wrench },
-      { id: "qc-scoring", label: "QC", icon: CheckSquare },
-      { id: "warranty-claims", label: "Garansi", icon: ShieldCheck },
-      { id: "field-service", label: "Field Service", icon: Truck },
-      { id: "rental", label: "Penyewaan", icon: Smartphone },
-      { id: "qr-tracker", label: "QR Tracker", icon: QrCode },
-      { id: "knowledge-base", label: "Panduan", icon: BookOpen },
-      { id: "cost-calculator", label: "Penawaran", icon: Sliders },
+      { id: "new-ticket", label: "Penerimaan", icon: PlusCircle },
+      { id: "tools", label: "Tools", icon: Sliders },
+      { id: "other", label: "Lainnya", icon: MoreVertical },
     ],
   },
   {
