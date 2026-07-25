@@ -903,8 +903,8 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                   )}
                   {detailTab === 'usage' && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-                      Penggunaan storage ditampilkan sebagai estimasi sampai backend mengirim
-                      `storage_used_bytes`. Data aktivitas: {detailData.users.length} user dan{' '}
+                      Penggunaan storage ditampilkan sebagai estimasi sampai backend mengirim data
+                      storage aktual. Data aktivitas: {detailData.users.length} user dan{' '}
                       {detailData.invoices.length} invoice.
                     </div>
                   )}
@@ -942,7 +942,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                   )}
                   {detailTab === 'audit' && (
                     <div className="space-y-2">
-                      {detailData.audit.map((event: any) => (
+                      {(detailData.audit || []).map((event: any) => (
                         <div
                           key={event.id}
                           className="rounded-xl border border-slate-200 p-3 text-xs dark:border-zinc-800"
