@@ -292,7 +292,7 @@ app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
 
 app.post("/api/auth/login", loginLimiter, validateSchema(loginSchema), loginHandler);
 app.post("/api/auth/profile/password", requireJwt, validateSchema(passwordChangeSchema), authPasswordUpdateHandler);
-app.post("/api/onboarding/register", onboardingLimiter, validateSchema(registerSchema), onboardingRegisterHandler);
+app.post("/api/onboarding/register", onboardingLimiter, validateSchema(onboardingSchema), onboardingRegisterHandler);
 app.get("/api/invitations/validate", validateInvitation);
 app.post("/api/invitations/accept", acceptInvitation);
 app.post("/api/onboarding/upgrade-trial", requireJwt, requireTenantScope, requireRoles("OWNER", "ADMIN"), validateSchema(upgradeTrialSchema), upgradeTrialHandler);

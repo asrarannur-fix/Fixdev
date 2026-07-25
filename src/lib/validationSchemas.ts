@@ -19,9 +19,9 @@ export const passwordChangeSchema = z
   .object({
     currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
     newPassword: z.string().min(6, 'Password baru minimal 6 karakter'),
-    confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
+    confirmPassword: z.string().min(1).optional(),
   })
-  .refine((data) => data.newPassword === data.confirmPassword, {
+  .refine((data) => !data.confirmPassword || data.newPassword === data.confirmPassword, {
     message: 'Password baru tidak cocok',
     path: ['confirmPassword'],
   });
@@ -38,8 +38,8 @@ export const onboardingSchema = z.object({
 });
 
 export const upgradeTrialSchema = z.object({
-  tier: z.enum(['PRO', 'ENTERPRISE']),
-  billingCycle: z.enum(['monthly', 'annually']).optional(),
+  tier: z.enum(['BASIC', 'PRO', 'ENTERPRISE']),
+  billingCycle: z.enum(['monthly', 'yearly', 'annually']).optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

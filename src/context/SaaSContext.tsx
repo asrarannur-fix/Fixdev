@@ -4941,21 +4941,35 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'WHATSAPP':
         try {
           const waPayload = {
-            id: `wa-wf-${Date.now().toString(36)}`,
-            timestamp: new Date().toISOString(),
-            recipientName: context.customerName || 'Pelanggan',
-            recipientPhone: context.customerPhone || '',
-            type: 'SYSTEM_AUTO' as const,
+            recipient: context.customerPhone || '',
             message: interpolate(wf.actionPayload),
-            status: 'SENT' as const,
-            senderName: 'Workflow Automation',
-            channel: 'Workflow Engine',
+            type: 'SYSTEM_AUTO',
           };
+          const token = localStorage.getItem('fixdev_token');
+          const resp = await fetch('/api/whatsapp/queue', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: 'Bearer ' + token } : {}),
+            },
+            body: JSON.stringify(waPayload),
+          });
+          const status = resp.ok ? 'SENT' : 'FAILED';
           const savedWaLogs = safeLocalStorage.getItem(
             'saas_wa_logs_' + (currentTenantId || 'default')
           );
           const waLogsArr = savedWaLogs ? JSON.parse(savedWaLogs) : [];
-          waLogsArr.unshift(waPayload);
+          waLogsArr.unshift({
+            id: `wa-wf-${Date.now().toString(36)}`,
+            timestamp: new Date().toISOString(),
+            recipientName: context.customerName || 'Pelanggan',
+            recipientPhone: context.customerPhone || '',
+            type: 'SYSTEM_AUTO',
+            message: interpolate(wf.actionPayload),
+            status,
+            senderName: 'Workflow Automation',
+            channel: 'Workflow Engine',
+          });
           safeLocalStorage.setItem(
             'saas_wa_logs_' + (currentTenantId || 'default'),
             JSON.stringify(waLogsArr)
