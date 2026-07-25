@@ -1,5 +1,33 @@
 # Log Perubahan Super Admin
 
+## 2026-07-25 - Perbaikan Mendalam Super Admin Controller (superadmin.controller.ts)
+
+### Ringkasan
+- Memperbaiki observability dan error handling di seluruh controller Super Admin.
+- Menambahkan `logger.error` ke semua 18 fungsi yang sebelumnya tidak memiliki logging error di catch block.
+- Memperbaiki tipe parameter `adminAudit` dari `any` ke `pg.PoolClient` yang type-safe.
+
+### Detail Perubahan
+
+#### Backend - superadmin.controller.ts
+- **Logger error coverage**: Menambahkan `logger.error({ err: err.message, ...context }, 'functionName failed')` ke semua catch block yang sebelumnya tidak memiliki logging:
+  - `createImpersonationSession`, `listAudit`, `createBackupJob`, `listBackupJobs`, `listNotifications`, `markNotificationRead`
+  - `listOutbox`, `retryNotification`, `listIncidents`, `createIncident`, `updateIncident`
+  - `getAlertSettings`, `updateAlertSettings`, `listRolePermissions`, `getTenantDetail`, `listInvitations`
+  - `revokeInvitation`, `checkTenantAvailability`, `listTenants`
+- **Type safety**: Mengubah parameter `client` pada fungsi `adminAudit` dari `any` ke `PoolClient` (import dari `pg`), dan menambahkan import `PoolClient` di top-level.
+- **Consistency**: Semua error response sekarang konsisten dengan logging terstruktur yang memudahkan debugging.
+
+### Validasi
+| Jenis | Status |
+|-------|--------|
+| Lint (eslint) | 0 errors |
+| TypeScript | ✅ Bersih |
+| Unit test | ✅ 23 lulus |
+| Security test | ✅ 23 lulus |
+
+---
+
 ## 2026-07-25 - Perbaikan Super Admin Controller (superadmin.controller.ts)
 
 ### Ringkasan
