@@ -73,7 +73,6 @@ import { SparepartsLedger } from './services/SparepartsLedger';
 import { HandoverPanel } from './services/HandoverPanel';
 import { ServiceCostCalculator } from './ServiceCostCalculator';
 import { ServiceList } from './ServiceList';
-import { ServiceDashboard } from './services/ServiceDashboard';
 import { ServiceReceptionWizard } from './ServiceReceptionWizard';
 import { StorageLocation } from '../../types';
 import { renderTenantWaTemplate } from '../../utils/waTemplate';
@@ -609,7 +608,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         {/* Subtab: LIST OF SERVICES */}
         {localSubTab === 'list' && (
           <>
-            <ServiceDashboard tickets={tenantServices} />
             <ServiceList
               {...{
                 activeTenantId,
