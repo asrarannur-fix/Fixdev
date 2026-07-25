@@ -26,8 +26,6 @@ interface TenantsManagerProps {
   transactions: any[];
   users: any[];
   branches: any[];
-  addTenant: (t: any) => any;
-  addUser: (u: any) => void;
   updateTenantStatus: (id: string, status: TenantStatus) => void;
   impersonateTenant: (id: string) => void;
   setSelectedTenantForConfig: (id: string) => void;

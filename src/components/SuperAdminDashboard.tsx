@@ -27,8 +27,6 @@ export const SuperAdminDashboard: React.FC<{
 }> = ({ activeTab, activeSubTab, onSetTab }) => {
   const {
     tenants,
-    addTenant,
-    addUser,
     updateTenantStatus,
     impersonateTenant,
     auditLogs,
@@ -40,11 +38,7 @@ export const SuperAdminDashboard: React.FC<{
     users = [],
     products = [],
     services = [],
-    shifts = [],
     transactions = [],
-    accounts = [],
-    journals = [],
-    workflows = [],
     offlineQueue = [],
     apiFetch,
   } = useSaaS();
@@ -380,8 +374,6 @@ export const SuperAdminDashboard: React.FC<{
           transactions={transactions}
           users={users}
           branches={branches}
-          addTenant={addTenant}
-          addUser={addUser}
           updateTenantStatus={updateTenantStatus}
           impersonateTenant={impersonateTenant}
           setSelectedTenantForConfig={setSelectedTenantForConfig}

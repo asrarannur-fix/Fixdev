@@ -192,10 +192,11 @@ export const GatewayConfig: React.FC = () => {
 
       <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
         <button
-          onClick={() => setError('Test koneksi Midtrans — fitur lengkap di backend')}
-          className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+          disabled
+          className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-400 dark:text-slate-500 cursor-not-allowed"
+          title="Fitur uji koneksi akan tersedia di versi mendatang"
         >
-          🔧 Uji Koneksi Gateway
+          🔧 Uji Koneksi Gateway (Coming Soon)
         </button>
       </div>
     </div>
