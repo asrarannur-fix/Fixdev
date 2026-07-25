@@ -258,6 +258,10 @@ export async function processPOSTransaction(
   // Apply global discount from POS UI
   const globalDisc = Number(parsed.discountAmount) || 0;
   const totalDisc = globalDisc + voucherDiscount;
+  // Reject discounts that exceed the subtotal (prevents free/negative sales).
+  if (totalDisc > subtotal) {
+    throw Object.assign(new Error('Total diskon tidak boleh melebihi subtotal.'), { status: 422 });
+  }
   const base = Math.max(0, subtotal - totalDisc);
 
   // Read tax rate
@@ -346,7 +350,12 @@ export async function processPOSTransaction(
         [item.quantity, item.productId, warehouseId]
       );
       if (stockUpdate.rowCount !== 1) {
-        throw new Error('Stok tidak mencukupi atau produk tidak ditemukan di gudang.');
+        throw Object.assign(
+          new Error('Stok tidak mencukupi atau produk tidak ditemukan di gudang.'),
+          {
+            status: 422,
+          }
+        );
       }
       await client.query(
         `INSERT INTO stock_movements (id, tenant_id, warehouse_id, product_id, type, quantity, quantity_change, reference_no, note)
@@ -617,6 +626,9 @@ export async function processPartialRefund(
     const unitPrice = Number(origItem.unitPrice) || 0;
     const itemRefund = unitPrice * partial.quantity;
     refundAmount += itemRefund;
+    // Persist cumulative refunded quantity on the stored item so subsequent
+    // refunds cannot exceed the originally sold quantity.
+    origItem.refundedQty = alreadyRefunded + partial.quantity;
     refundItems.push({
       ...origItem,
       itemIndex: idx,
@@ -642,9 +654,17 @@ export async function processPartialRefund(
        is_refunded = TRUE, status = $1, voided_at = NOW(),
        void_reason = 'Partial refund: ' || $2,
        grand_total = grand_total - $3,
-       tax_amount = tax_amount - $4
+       tax_amount = tax_amount - $4,
+       items = $6::jsonb
      WHERE id = $5`,
-    [newStatus, input.items.map((p) => p.reason).join(', '), netRefund, refundTax, txId]
+    [
+      newStatus,
+      input.items.map((p) => p.reason).join(', '),
+      netRefund,
+      refundTax,
+      txId,
+      JSON.stringify(allItems),
+    ]
   );
 
   // Stock restoration

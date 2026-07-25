@@ -123,7 +123,7 @@ export const TenantDashboard = ({
   >(null);
 
   const handlePOSCheckout = React.useCallback(
-    async (details: string = '') => {
+    async (details: string = '', paidAmount?: number) => {
       if (posCart.length === 0) {
         showToast('Keranjang kosong!', 'error');
         return;
@@ -132,6 +132,8 @@ export const TenantDashboard = ({
         showToast('Pilih customer!', 'error');
         return;
       }
+      // Guard against double-submit (rapid double-click on "Bayar Lunas").
+      if (isProcessingPOS) return;
       setIsProcessingPOS(true);
       setOptimisticCart(posCart);
       try {
@@ -139,7 +141,7 @@ export const TenantDashboard = ({
           selectedPosCust,
           posCart,
           posPaymentMethod,
-          Number(posAmountPaid) || 0,
+          paidAmount ?? (Number(posAmountPaid) || 0),
           depositUsed,
           details
         );

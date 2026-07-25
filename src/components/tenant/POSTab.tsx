@@ -29,7 +29,7 @@ interface POSTabProps {
   posAmountPaid?: string;
   setPosAmountPaid?: (v: string) => void;
   depositUsed?: number;
-  handlePOSCheckout?: (paymentDetails?: string) => void;
+  handlePOSCheckout?: (paymentDetails?: string, paidAmount?: number) => void;
   customers?: Customer[];
   selectedPosCust?: string;
   setSelectedPosCust?: (id: string) => void;
@@ -136,6 +136,9 @@ export const POSTab: React.FC<POSTabProps> = ({
       return;
     }
     let details = '';
+    // Total amount actually paid = primary method + optional split portion,
+    // so the backend's underpayment guard sees the full payment.
+    const totalPaid = (Number(posAmountPaid) || 0) + (splitEnabled ? Number(splitAmount) || 0 : 0);
     if (voucherCode.trim()) {
       details = `VOUCHER:${voucherCode.trim()}`;
     }
@@ -145,11 +148,18 @@ export const POSTab: React.FC<POSTabProps> = ({
         splitNominal: Number(splitAmount) || 0,
       });
     }
-    handlePOSCheckout(details);
+    handlePOSCheckout(details, totalPaid);
     setSplitEnabled(false);
     setSplitAmount('');
     setVoucherCode('');
-  }, [handlePOSCheckout, splitEnabled, splitPaymentMethod, splitAmount, voucherCode]);
+  }, [
+    handlePOSCheckout,
+    splitEnabled,
+    splitPaymentMethod,
+    splitAmount,
+    voucherCode,
+    posAmountPaid,
+  ]);
 
   const effectiveGetBranchStock = getBranchStock ?? (() => 10);
 

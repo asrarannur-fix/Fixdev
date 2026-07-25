@@ -374,7 +374,12 @@ export async function dataSyncHandler(req: Request, res: Response) {
 
     if (action === 'insert') {
       const cols = Object.keys(payload);
-      const vals = cols.map((_, i) => `$${i + 1}`);
+      // Cast jsonb-typed values (plain objects/arrays) explicitly so node-postgres
+      // does not infer a conflicting `json` type that fails to bind to `jsonb` columns.
+      const vals = cols.map((c, i) => {
+        const v = payload[c];
+        return v !== null && typeof v === 'object' ? `$${i + 1}::jsonb` : `$${i + 1}`;
+      });
       const query = `INSERT INTO ${table} (${cols.join(',')}) VALUES (${vals.join(',')}) ON CONFLICT (id) DO NOTHING RETURNING id`;
       const result = await withDb(async (c) => c.query(query, Object.values(payload)));
       const insertedId = (result as any).rows[0]?.id;
@@ -406,7 +411,13 @@ export async function dataSyncHandler(req: Request, res: Response) {
       const cols = Object.keys(payload);
       if (cols.length === 0)
         return res.status(422).json({ error: 'No updatable fields in payload' });
-      const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(',');
+      const setClause = cols
+        .map((c, i) => {
+          const v = payload[c];
+          const cast = v !== null && typeof v === 'object' ? '::jsonb' : '';
+          return `${c} = $${i + 1}${cast}`;
+        })
+        .join(',');
       const params =
         table === 'tenants'
           ? [...Object.values(payload), idVal]

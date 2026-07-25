@@ -36,6 +36,7 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
     currentUser,
     shifts,
     transactions,
+    warehouses,
     setShifts,
     setTransactions,
     setProducts,
@@ -151,17 +152,30 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
     const newTx = res.data.data;
 
     // Refresh products to sync deducted stock locally immediately
+    // Determine the warehouse for the active branch so per-branch stock
+    // (warehouseStock) is reduced — not just the aggregate stockQty.
+    const branchWarehouseId = warehouses.find((w) => w.branchId === currentBranchId)?.id || null;
     setProducts((prev) =>
       prev.map((p) => {
         const cartItem = cart.find((c) => c.product.id === p.id);
         if (cartItem && p.category !== 'JASA') {
           const newStock = { ...p };
           if (newStock.warehouseStock) {
-            Object.keys(newStock.warehouseStock).forEach((wId) => {
-              newStock.warehouseStock[wId] = Math.max(0, Number(newStock.warehouseStock[wId] || 0));
-            });
+            const wKey = branchWarehouseId || Object.keys(newStock.warehouseStock)[0];
+            if (wKey && newStock.warehouseStock[wKey] !== undefined) {
+              newStock.warehouseStock = {
+                ...newStock.warehouseStock,
+                [wKey]: Math.max(0, Number(newStock.warehouseStock[wKey] || 0) - cartItem.qty),
+              };
+            }
           }
-          newStock.stockQty = Math.max(0, p.stockQty - cartItem.qty);
+          const whTotal = newStock.warehouseStock
+            ? Object.values(newStock.warehouseStock).reduce(
+                (s: number, q: any) => s + Number(q || 0),
+                0
+              )
+            : Math.max(0, p.stockQty - cartItem.qty);
+          newStock.stockQty = whTotal;
           return newStock;
         }
         return p;
