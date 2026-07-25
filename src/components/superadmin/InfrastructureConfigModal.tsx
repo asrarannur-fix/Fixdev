@@ -1,7 +1,7 @@
-import React from "react";
-import { createPortal } from "react-dom";
-import { Server, X, Globe } from "lucide-react";
-import { Tenant, SubscriptionTier, TenantStatus } from "../../types";
+import React from 'react';
+import { createPortal } from 'react-dom';
+import { Server, X, Globe } from 'lucide-react';
+import { Tenant, SubscriptionTier, TenantStatus } from '../../types';
 
 interface InfrastructureConfigModalProps {
   tenant: Tenant;
@@ -29,13 +29,11 @@ interface InfrastructureConfigModalProps {
   configStatus: TenantStatus;
   setConfigStatus: (v: TenantStatus) => void;
   updateTenant: (id: string, updates: any) => void;
-  showToast: (msg: string, type: "success" | "error") => void;
+  showToast: (msg: string, type: 'success' | 'error') => void;
   readOnlyMode?: boolean;
 }
 
-export const InfrastructureConfigModal: React.FC<
-  InfrastructureConfigModalProps
-> = ({
+export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps> = ({
   tenant,
   selectedTenantForConfig,
   setSelectedTenantForConfig,
@@ -73,15 +71,11 @@ export const InfrastructureConfigModal: React.FC<
         <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/50">
           <div>
             <h3 className="font-extrabold text-sm text-slate-800 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-2">
-              <Server className="w-4 h-4 text-blue-600" /> Konfigurasi
-              Infrastruktur Tenant
+              <Server className="w-4 h-4 text-blue-600" /> Konfigurasi Infrastruktur Tenant
             </h3>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              Mengonfigurasi identitas tenant, custom domain, dan storage cloud
-              untuk{" "}
-              <strong className="text-slate-800 dark:text-slate-200">
-                {tenant.name}
-              </strong>
+              Mengonfigurasi identitas tenant, custom domain, dan storage cloud untuk{' '}
+              <strong className="text-slate-800 dark:text-slate-200">{tenant.name}</strong>
             </p>
           </div>
           <button
@@ -148,9 +142,7 @@ export const InfrastructureConfigModal: React.FC<
                 >
                   <option value={SubscriptionTier.BASIC}>BASIC</option>
                   <option value={SubscriptionTier.PRO}>PRO</option>
-                  <option value={SubscriptionTier.ENTERPRISE}>
-                    ENTERPRISE
-                  </option>
+                  <option value={SubscriptionTier.ENTERPRISE}>ENTERPRISE</option>
                 </select>
               </div>
               <div>
@@ -159,9 +151,7 @@ export const InfrastructureConfigModal: React.FC<
                 </label>
                 <select
                   value={configStatus}
-                  onChange={(e) =>
-                    setConfigStatus(e.target.value as TenantStatus)
-                  }
+                  onChange={(e) => setConfigStatus(e.target.value as TenantStatus)}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-slate-800 dark:text-white outline-none text-xs cursor-pointer font-bold"
                 >
                   <option value={TenantStatus.TRIAL}>TRIAL</option>
@@ -179,7 +169,6 @@ export const InfrastructureConfigModal: React.FC<
             <h4 className="font-bold text-[11px] uppercase text-blue-700 dark:text-blue-400 tracking-wider font-mono">
               1. Domain & Jaringan
             </h4>
-
 
             <div>
               <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
@@ -216,20 +205,26 @@ export const InfrastructureConfigModal: React.FC<
                 onChange={(e) => setConfigStorageMode(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none text-xs bg-slate-50/50 dark:bg-zinc-950 text-slate-700 dark:text-slate-400 cursor-pointer font-medium"
               >
-                <option value="SYSTEM">
-                  System Managed Storage (Bawaan Platform SaaS)
+                <option value="SYSTEM">System Managed Storage (Bawaan Platform SaaS)</option>
+                <option value="S3" disabled>
+                  Amazon S3 — belum tersedia
                 </option>
-                <option value="S3" disabled>Amazon S3 — belum tersedia</option>
-                <option value="R2" disabled>Cloudflare R2 — belum tersedia</option>
-                <option value="GCS" disabled>Google Cloud Storage — belum tersedia</option>
+                <option value="R2" disabled>
+                  Cloudflare R2 — belum tersedia
+                </option>
+                <option value="GCS" disabled>
+                  Google Cloud Storage — belum tersedia
+                </option>
               </select>
             </div>
 
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-[10px] leading-relaxed text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300">
-              Credential cloud kustom belum didukung dan sengaja tidak dapat diedit agar tidak memberi kesan konfigurasi tersimpan. Bukti pembayaran menggunakan bucket privat yang dikelola platform; credential service tidak pernah dikirim ke browser.
+              Credential cloud kustom belum didukung dan sengaja tidak dapat diedit agar tidak
+              memberi kesan konfigurasi tersimpan. Bukti pembayaran menggunakan bucket privat yang
+              dikelola platform; credential service tidak pernah dikirim ke browser.
             </div>
 
-            {configStorageMode !== "SYSTEM" && (
+            {configStorageMode !== 'SYSTEM' && (
               <div className="space-y-2.5 p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-xl">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
@@ -279,9 +274,7 @@ export const InfrastructureConfigModal: React.FC<
                 <input
                   type="number"
                   value={configStorageLimitMb}
-                  onChange={(e) =>
-                    setConfigStorageLimitMb(parseInt(e.target.value) || 0)
-                  }
+                  onChange={(e) => setConfigStorageLimitMb(parseInt(e.target.value) || 0)}
                   className="flex-1 px-3 py-2 border border-r-0 border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-l-xl outline-none text-xs focus:border-accent font-mono"
                 />
                 <span className="px-3 py-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-slate-400 rounded-r-xl font-mono text-xs">
@@ -291,7 +284,7 @@ export const InfrastructureConfigModal: React.FC<
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                 {configStorageLimitMb >= 1024
                   ? `Setara dengan ${(configStorageLimitMb / 1024).toFixed(1)} GB`
-                  : `${configStorageLimitMb} Megabytes`}{" "}
+                  : `${configStorageLimitMb} Megabytes`}{' '}
                 alokasi kuota penyimpanan tenant.
               </p>
             </div>
@@ -304,9 +297,7 @@ export const InfrastructureConfigModal: React.FC<
                 <input
                   type="number"
                   value={configUserLimit}
-                  onChange={(e) =>
-                    setConfigUserLimit(parseInt(e.target.value) || 1)
-                  }
+                  onChange={(e) => setConfigUserLimit(parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-accent font-mono"
                   min="1"
                 />
@@ -321,15 +312,11 @@ export const InfrastructureConfigModal: React.FC<
                 <input
                   type="number"
                   value={configBranchLimit}
-                  onChange={(e) =>
-                    setConfigBranchLimit(parseInt(e.target.value) || 1)
-                  }
+                  onChange={(e) => setConfigBranchLimit(parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-accent font-mono"
                   min="1"
                 />
-                <p className="text-[9px] text-slate-400 mt-0.5">
-                  Jumlah outlet fisik terisolasi.
-                </p>
+                <p className="text-[9px] text-slate-400 mt-0.5">Jumlah outlet fisik terisolasi.</p>
               </div>
             </div>
           </div>
@@ -343,61 +330,60 @@ export const InfrastructureConfigModal: React.FC<
             </h4>
             <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-xl p-3.5 space-y-3">
               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal font-medium">
-                Pilih fitur/modul yang boleh diakses oleh tenant ini. Modul yang
-                tidak dicentang akan otomatis terkunci dengan dialog upgrade di
-                panel tenant.
+                Pilih fitur/modul yang boleh diakses oleh tenant ini. Modul yang tidak dicentang
+                akan otomatis terkunci dengan dialog upgrade di panel tenant.
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   {
-                    id: "SERVICE",
-                    label: "Servis",
-                    desc: "Penerimaan unit, skema, penawaran, dll",
+                    id: 'SERVICE',
+                    label: 'Servis',
+                    desc: 'Penerimaan unit, skema, penawaran, dll',
                   },
                   {
-                    id: "POS",
-                    label: "POS",
-                    desc: "Terminal kasir, kartu stok, kanibal",
+                    id: 'POS',
+                    label: 'POS',
+                    desc: 'Terminal kasir, kartu stok, kanibal',
                   },
                   {
-                    id: "ACCOUNTING",
-                    label: "Keuangan",
-                    desc: "Daftar COA, jurnal umum, laba rugi",
+                    id: 'ACCOUNTING',
+                    label: 'Keuangan',
+                    desc: 'Daftar COA, jurnal umum, laba rugi',
                   },
                   {
-                    id: "HRM",
-                    label: "HR",
-                    desc: "Presensi, payroll, komisi teknisi, kasbon",
+                    id: 'HRM',
+                    label: 'HR',
+                    desc: 'Presensi, payroll, komisi teknisi, kasbon',
                   },
                   {
-                    id: "CRM",
-                    label: "CRM",
-                    desc: "Pipeline B2B, database pelanggan",
+                    id: 'CRM',
+                    label: 'CRM',
+                    desc: 'Pipeline B2B, database pelanggan',
                   },
                   {
-                    id: "SECURITY",
-                    label: "Keamanan",
-                    desc: "Audit log aktivitas, proteksi AI fraud",
+                    id: 'SECURITY',
+                    label: 'Keamanan',
+                    desc: 'Audit log aktivitas, proteksi AI fraud',
                   },
                   {
-                    id: "RENTAL",
-                    label: "Penyewaan Perangkat",
-                    desc: "Sewa unit HP/tablet pengganti ke user",
+                    id: 'RENTAL',
+                    label: 'Penyewaan Perangkat',
+                    desc: 'Sewa unit HP/tablet pengganti ke user',
                   },
                   {
-                    id: "MARKETPLACE",
-                    label: "Integrasi Marketplace",
-                    desc: "Stok otomatis Tokopedia & Shopee",
+                    id: 'MARKETPLACE',
+                    label: 'Integrasi Marketplace',
+                    desc: 'Stok otomatis Tokopedia & Shopee',
                   },
                   {
-                    id: "WHATSAPP",
-                    label: "Konektor WhatsApp",
-                    desc: "Kirim update status otomatis & broadcast",
+                    id: 'WHATSAPP',
+                    label: 'Konektor WhatsApp',
+                    desc: 'Kirim update status otomatis & broadcast',
                   },
                   {
-                    id: "TELEGRAM",
-                    label: "Integrasi Telegram",
-                    desc: "Kirim alert/notifikasi ke grup Telegram",
+                    id: 'TELEGRAM',
+                    label: 'Integrasi Telegram',
+                    desc: 'Kirim alert/notifikasi ke grup Telegram',
                   },
                 ].map((feature) => {
                   const isChecked = configFeatures.includes(feature.id);
@@ -406,8 +392,8 @@ export const InfrastructureConfigModal: React.FC<
                       key={feature.id}
                       className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
                         isChecked
-                          ? "bg-blue-50/40 border-blue-200 dark:bg-blue-950/10 dark:border-blue-900/40"
-                          : "bg-white border-slate-200 dark:bg-zinc-900 dark:border-zinc-800/60 hover:bg-slate-50 dark:hover:bg-zinc-900"
+                          ? 'bg-blue-50/40 border-blue-200 dark:bg-blue-950/10 dark:border-blue-900/40'
+                          : 'bg-white border-slate-200 dark:bg-zinc-900 dark:border-zinc-800/60 hover:bg-slate-50 dark:hover:bg-zinc-900'
                       }`}
                     >
                       <input
@@ -417,9 +403,7 @@ export const InfrastructureConfigModal: React.FC<
                           if (e.target.checked) {
                             setConfigFeatures([...configFeatures, feature.id]);
                           } else {
-                            setConfigFeatures(
-                              configFeatures.filter((f) => f !== feature.id),
-                            );
+                            setConfigFeatures(configFeatures.filter((f) => f !== feature.id));
                           }
                         }}
                         className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-zinc-700"
@@ -454,7 +438,7 @@ export const InfrastructureConfigModal: React.FC<
               const cleanCustomDomain = configCustomDomain.trim().toLowerCase();
 
               if (!cleanName) {
-                showToast("Nama tenant tidak boleh kosong.", "error");
+                showToast('Nama tenant tidak boleh kosong.', 'error');
                 return;
               }
 
@@ -462,47 +446,48 @@ export const InfrastructureConfigModal: React.FC<
               const safeUsers = Math.max(1, Math.floor(configUserLimit) || 1);
               const safeBranches = Math.max(1, Math.floor(configBranchLimit) || 1);
 
-              await updateTenant(selectedTenantForConfig, {
-                name: cleanName,
-                tier: configTier,
-                status: configStatus,
-                limits: {
-                  ...tenant.limits,
-                  storageMb: safeStorage,
-                  users: safeUsers,
-                  branches: safeBranches,
-                  features: configFeatures,
-                },
-                branding: {
-                  ...tenant.branding,
-                  customDomain: cleanCustomDomain || undefined,
-                },
-                settings: {
-                  ...tenant.settings,
-                  storageSettings: {
-                    mode: configStorageMode,
-                    bucketName: configBucketName.trim(),
+              try {
+                await updateTenant(selectedTenantForConfig, {
+                  name: cleanName,
+                  tier: configTier,
+                  status: configStatus,
+                  limits: {
+                    ...tenant.limits,
+                    storageMb: safeStorage,
+                    users: safeUsers,
+                    branches: safeBranches,
+                    features: configFeatures,
                   },
-                } as any,
-              });
-              showToast(
-                "Konfigurasi infrastruktur tenant berhasil disimpan!",
-                "success",
-              );
-              setSelectedTenantForConfig(null);
+                  branding: {
+                    ...tenant.branding,
+                    customDomain: cleanCustomDomain || undefined,
+                  },
+                  settings: {
+                    ...tenant.settings,
+                    storageSettings: {
+                      mode: configStorageMode,
+                      bucketName: configBucketName.trim(),
+                    },
+                  } as any,
+                });
+                showToast('Konfigurasi infrastruktur tenant berhasil disimpan!', 'success');
+                setSelectedTenantForConfig(null);
+              } catch (error) {
+                showToast('Gagal menyimpan konfigurasi infrastruktur', 'error');
+              }
             }}
             disabled={readOnlyMode}
             className={`px-4 py-2 rounded-xl font-bold shadow-md transition-all cursor-pointer ${
               readOnlyMode
-                ? "bg-slate-300 dark:bg-zinc-700 text-slate-500 dark:text-zinc-500 cursor-not-allowed shadow-none"
-                : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/10"
+                ? 'bg-slate-300 dark:bg-zinc-700 text-slate-500 dark:text-zinc-500 cursor-not-allowed shadow-none'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/10'
             }`}
           >
             Simpan Perubahan
           </button>
         </div>
-        </div>
-      </div>,
-      document.body
-    );
-  };
+      </div>
+    </div>,
+    document.body
+  );
+};

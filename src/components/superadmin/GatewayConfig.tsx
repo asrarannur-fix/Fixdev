@@ -1,5 +1,7 @@
 // GatewayConfig — Superadmin Midtrans gateway configuration UI
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import { useSaaS } from '../../context/SaaSContext';
+import { useToast } from '../ui/Toast';
 
 interface GatewayConfigData {
   merchantId: string;
@@ -9,23 +11,16 @@ interface GatewayConfigData {
   isEnabled: boolean;
 }
 
-async function apiFetch(url: string, init?: RequestInit) {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
 export const GatewayConfig: React.FC = () => {
+  const { apiFetch } = useSaaS();
+  const { showToast } = useToast();
   const [config, setConfig] = useState<GatewayConfigData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    merchantId: "",
-    serverKey: "",
-    clientKey: "",
+    merchantId: '',
+    serverKey: '',
+    clientKey: '',
     isProduction: false,
     isEnabled: false,
   });
@@ -36,17 +31,18 @@ export const GatewayConfig: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiFetch("/api/billing/gateway-config");
+      const res = await apiFetch('/api/billing/gateway-config');
+      const data = await res.json();
       setConfig(data);
       setForm({
-        merchantId: data?.merchantId || "",
-        serverKey: "",
-        clientKey: data?.clientKey || "",
+        merchantId: data?.merchantId || '',
+        serverKey: '',
+        clientKey: data?.clientKey || '',
         isProduction: data?.isProduction || false,
         isEnabled: data?.isEnabled || false,
       });
     } catch {
-      setError("Gagal memuat konfigurasi gateway");
+      setError('Gagal memuat konfigurasi gateway');
     } finally {
       setLoading(false);
     }
@@ -59,13 +55,15 @@ export const GatewayConfig: React.FC = () => {
   const saveConfig = async () => {
     setSaving(true);
     try {
-      await apiFetch("/api/billing/gateway-config", {
-        method: "POST",
+      const res = await apiFetch('/api/billing/gateway-config', {
+        method: 'POST',
         body: JSON.stringify(form),
       });
+      if (!res.ok) throw new Error('Gagal menyimpan konfigurasi gateway');
       await loadConfig();
+      showToast('Konfigurasi gateway berhasil disimpan', 'success');
     } catch {
-      setError("Gagal menyimpan konfigurasi gateway");
+      setError('Gagal menyimpan konfigurasi gateway');
     } finally {
       setSaving(false);
     }
@@ -83,26 +81,39 @@ export const GatewayConfig: React.FC = () => {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Konfigurasi Gateway</h3>
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+          Konfigurasi Gateway
+        </h3>
         <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
           Midtrans
         </span>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <div
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
-      <div className={`rounded-lg p-4 border ${config?.isEnabled ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800" : "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800"}`}>
+      <div
+        className={`rounded-lg p-4 border ${config?.isEnabled ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800' : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'}`}
+      >
         <div className="flex items-center gap-2">
-          <span className="text-lg">{config?.isEnabled ? "🟢" : "🔴"}</span>
-          <span className="font-medium text-sm">{config?.isEnabled ? "Gateway Aktif" : "Gateway Tidak Aktif"}</span>
-          <span className="text-xs text-slate-500 ml-2">{config?.isProduction ? "Produksi" : "Sandbox"}</span>
+          <span className="text-lg">{config?.isEnabled ? '🟢' : '🔴'}</span>
+          <span className="font-medium text-sm">
+            {config?.isEnabled ? 'Gateway Aktif' : 'Gateway Tidak Aktif'}
+          </span>
+          <span className="text-xs text-slate-500 ml-2">
+            {config?.isProduction ? 'Produksi' : 'Sandbox'}
+          </span>
         </div>
         {config?.serverKeyMasked && (
-          <div className="mt-2 text-xs font-mono text-slate-500">Server Key: {config.serverKeyMasked}</div>
+          <div className="mt-2 text-xs font-mono text-slate-500">
+            Server Key: {config.serverKeyMasked}
+          </div>
         )}
       </div>
 
@@ -121,7 +132,7 @@ export const GatewayConfig: React.FC = () => {
           <label className="block text-xs font-medium text-slate-500 mb-1">Server Key</label>
           <div className="flex gap-2">
             <input
-              type={showServerKey ? "text" : "password"}
+              type={showServerKey ? 'text' : 'password'}
               value={form.serverKey}
               onChange={(e) => setForm((f) => ({ ...f, serverKey: e.target.value }))}
               placeholder="Isi untuk mengubah, biarkan kosong jika tidak diubah"
@@ -132,11 +143,13 @@ export const GatewayConfig: React.FC = () => {
               onClick={() => setShowServerKey(!showServerKey)}
               className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50"
             >
-              {showServerKey ? "🙈" : "👁️"}
+              {showServerKey ? '🙈' : '👁️'}
             </button>
           </div>
           {config?.serverKeyMasked && (
-            <div className="text-xs text-slate-400 mt-1 font-mono">Server key: {config.serverKeyMasked}</div>
+            <div className="text-xs text-slate-400 mt-1 font-mono">
+              Server key: {config.serverKeyMasked}
+            </div>
           )}
         </div>
         <div>
@@ -173,13 +186,13 @@ export const GatewayConfig: React.FC = () => {
           disabled={saving}
           className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-wait"
         >
-          {saving ? "⏳ Menyimpan…" : "💾 Simpan Konfigurasi"}
+          {saving ? '⏳ Menyimpan…' : '💾 Simpan Konfigurasi'}
         </button>
       </div>
 
       <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
         <button
-          onClick={() => setError("Test koneksi Midtrans — fitur lengkap di backend")}
+          onClick={() => setError('Test koneksi Midtrans — fitur lengkap di backend')}
           className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50"
         >
           🔧 Uji Koneksi Gateway
