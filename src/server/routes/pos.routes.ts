@@ -48,14 +48,7 @@ router.post(
   partialRefund
 );
 router.post('/sales/:id/hold', ...authenticated, validateBody(holdCartSchema), holdCart);
-router.post(
-  '/sales/:id/recall',
-  requireJwt,
-  requireTenantScope,
-  posManager,
-  validateBody(holdCartSchema),
-  recallHold
-);
+router.post('/sales/:id/recall', requireJwt, requireTenantScope, posManager, recallHold);
 router.delete('/sales/:id/hold', requireJwt, requireTenantScope, posManager, deleteHold);
 router.post(
   '/sales/:id/apply-voucher',
