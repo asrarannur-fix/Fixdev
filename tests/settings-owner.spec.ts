@@ -43,8 +43,8 @@ test.describe("Penyewa -> Pengaturan (alur nyata)", () => {
     await page.getByRole("menuitem", { name: /Branding/i }).first().click();
     await page.waitForTimeout(800);
 
-    // Ubah primary color via input
-    const colorInput = page.locator("input[type='color']").first();
+    // Ubah primary color via input hex (UI branding sekarang hex text input)
+    const colorInput = page.locator("input[value^='#']").first();
     await expect(colorInput).toBeVisible({ timeout: 10000 });
     await colorInput.fill("#0a7d3c");
     await page.waitForTimeout(300);
