@@ -115,7 +115,6 @@ export const ModuleParameterConfig: React.FC = () => {
   const [autoCloseDays, setAutoCloseDays] = useState(s('autoCloseDays', 7));
 
   // POS & Discount
-  const [maxDiscountPercent, setMaxDiscountPercent] = useState(s('maxDiscountPercent', 50));
   const [defaultPaymentMethod, setDefaultPaymentMethod] = useState(
     s('defaultPaymentMethod', 'TUNAI')
   );
@@ -176,7 +175,6 @@ export const ModuleParameterConfig: React.FC = () => {
     setAutoCloseResolvedTickets(gp('autoCloseResolvedTickets', false));
     setAutoCloseDays(gp('autoCloseDays', 7));
 
-    setMaxDiscountPercent(gp('maxDiscountPercent', 50));
     setDefaultPaymentMethod(gp('defaultPaymentMethod', 'TUNAI'));
 
     setStockLowThreshold(gp('stockLowThreshold', 5));
@@ -258,7 +256,6 @@ export const ModuleParameterConfig: React.FC = () => {
             requireServiceApproval,
             requireDownPayment,
             defaultDownPaymentPercent: clamp(defaultDownPaymentPercent, 0, 100),
-            maxDiscountPercent: clamp(maxDiscountPercent, 0, 100),
             enableTechnicianRating,
             enableCustomerFeedback,
             autoCloseResolvedTickets,
@@ -610,28 +607,6 @@ export const ModuleParameterConfig: React.FC = () => {
             </h4>
           </div>
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">
-                  Maks. Diskon (%)
-                </label>
-                <span className="text-[10px] font-bold text-accent bg-accent-lighter px-2 py-0.5 rounded">
-                  {maxDiscountPercent}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={maxDiscountPercent}
-                onChange={(e) => setMaxDiscountPercent(Number(e.target.value))}
-                className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-accent"
-              />
-              <p className="text-[9px] text-slate-400">
-                Batas maksimal diskon yang dapat diberikan kasir.
-              </p>
-            </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">
                 Metode Pembayaran Default

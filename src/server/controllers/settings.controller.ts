@@ -241,7 +241,6 @@ const schemas = {
       requireServiceApproval: bool.optional(),
       requireDownPayment: bool.optional(),
       defaultDownPaymentPercent: z.number().int().min(0).max(100).optional(),
-      maxDiscountPercent: z.number().int().min(0).max(100).optional(),
       enableTechnicianRating: bool.optional(),
       enableCustomerFeedback: bool.optional(),
       autoCloseResolvedTickets: bool.optional(),
