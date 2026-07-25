@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
 import { useToast } from '../ui/Toast';
+import { readJsonResponse } from '../../utils/apiResponse';
 
 interface InvoiceTemplate {
   header?: string;
@@ -43,7 +44,7 @@ export const InvoiceTemplateEditor: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await apiFetch('/api/billing/invoice-template');
-      const data = await res.json();
+      const data = await readJsonResponse<any>(res, 'Template invoice');
       setTemplate(data);
       setForm({
         header: data?.header || '',

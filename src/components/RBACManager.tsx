@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import { useSaaS, DEFAULT_ROLE_PERMISSIONS } from '../context/SaaSContext';
 import { useToast } from './ui/Toast';
 import { useConfirm } from './ui/ConfirmDialog';
+import { readJsonResponse } from '../utils/apiResponse';
 import {
   UserPlus,
   ShieldCheck,
@@ -97,7 +98,7 @@ export const RBACManager: React.FC = () => {
       setLoadingBranches(true);
       try {
         const res = await apiFetch(`/api/platform/superadmin/tenants/${newTenantId}/branches`);
-        const data = await res.json();
+        const data = await readJsonResponse<any>(res, 'Cabang tenant');
         if (!cancelled) setTenantBranches(data.branches || []);
       } catch {
         if (!cancelled) setTenantBranches([]);

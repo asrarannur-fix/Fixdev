@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
 import { useToast } from '../ui/Toast';
+import { readJsonResponse } from '../../utils/apiResponse';
 
 interface CronLog {
   id?: string;
@@ -71,7 +72,7 @@ export const CronSettings: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await apiFetch(`/api/billing/${jobId}`, { method: 'POST' });
-      const result = await res.json();
+      const result = await readJsonResponse<any>(res, 'Cron job');
       setLogs((prev) => [
         {
           jobName: jobId,

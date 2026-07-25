@@ -42,6 +42,7 @@ import {
   extendSubscription,
   startConsoleSession,
   endConsoleSession,
+  getAggregatedOperationalSummary,
 } from '../controllers/superadmin.controller.js';
 
 const router = express.Router();
@@ -55,11 +56,15 @@ router.get(
   requireSuperAdminPermission('tenants:manage_registration'),
   checkTenantAvailability
 );
-router.get('/tenants/:id', requireSuperAdminPermission('tenants:view_detail'), getTenantDetail);
 router.get(
   '/tenants/:id/operational-summary',
   requireSuperAdminPermission('tenants:view_detail'),
   getTenantOperationalSummary
+);
+router.get(
+  '/operational-summary',
+  requireSuperAdminPermission('tenants:view_all'),
+  getAggregatedOperationalSummary
 );
 router.get(
   '/tenants/:id/branches',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Shield, Lock, Clock, Eye, Save, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 
@@ -37,6 +37,22 @@ export const SecuritySettingsPanel: React.FC<SecuritySettingsPanelProps> = ({
   const [enableMFA, setEnableMFA] = useState(FACTORY_DEFAULTS.enableMFA);
   const [allowPasswordReuse, setAllowPasswordReuse] = useState(FACTORY_DEFAULTS.allowPasswordReuse);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Load existing security settings from the tenant (do NOT default to factory
+  // values, otherwise saving would silently wipe MFA/lockout the tenant enabled).
+  useEffect(() => {
+    const sec = tenantObj?.settings?.securitySettings;
+    if (!sec) return;
+    if (typeof sec.sessionTimeout === 'number') setSessionTimeout(sec.sessionTimeout);
+    if (typeof sec.minPasswordLength === 'number') setMinPasswordLength(sec.minPasswordLength);
+    if (typeof sec.requireUppercase === 'boolean') setRequireUppercase(sec.requireUppercase);
+    if (typeof sec.requireNumber === 'boolean') setRequireNumber(sec.requireNumber);
+    if (typeof sec.requireSpecial === 'boolean') setRequireSpecial(sec.requireSpecial);
+    if (typeof sec.maxLoginAttempts === 'number') setMaxLoginAttempts(sec.maxLoginAttempts);
+    if (typeof sec.lockoutDuration === 'number') setLockoutDuration(sec.lockoutDuration);
+    if (typeof sec.enableMFA === 'boolean') setEnableMFA(sec.enableMFA);
+    if (typeof sec.allowPasswordReuse === 'boolean') setAllowPasswordReuse(sec.allowPasswordReuse);
+  }, [tenantObj]);
 
   const clampNumber = (value: number, min: number, max: number) =>
     Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));

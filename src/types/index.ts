@@ -1370,6 +1370,22 @@ export interface TenantOperationalSummary {
   alerts: TenantOperationalAlert[];
 }
 
+export interface AggregatedOperationalSummary {
+  generatedAt: string;
+  tenantCount: number;
+  summaries: Array<{
+    tenantId: string;
+    modules: Record<string, TenantOperationalModuleHealth>;
+    alerts: TenantOperationalAlert[];
+    health: TenantOperationalHealth;
+  }>;
+  aggregate: {
+    totalAlerts: number;
+    totalModules: number;
+    status: 'ok' | 'warning';
+  };
+}
+
 export interface ImpersonationSession {
   id: string;
   tenantId: string;

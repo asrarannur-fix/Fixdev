@@ -1318,7 +1318,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ currentPassword: _currentPassword, newPassword }),
       });
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
+        const errData = await readJsonResponse<any>(res, 'Error').catch(() => ({}));
         throw new Error(errData.error || 'Gagal memperbarui password.');
       }
       addLog(

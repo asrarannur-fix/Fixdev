@@ -384,6 +384,26 @@ export async function updateRbacMatrix(req: Request, res: Response) {
 export async function updateUserRbac(req: Request, res: Response) {
   const body = userRbacSchema.safeParse(req.body);
   if (!body.success) return res.status(422).json({ error: 'Role atau permissions tidak valid.' });
+  // Anti-escalation: a user may never be promoted to OWNER via this endpoint,
+  // and may never be granted a role higher than the caller's own role.
+  const ROLE_RANK: Record<string, number> = {
+    TEKNISI: 1,
+    KASIR: 2,
+    SALES: 2,
+    HR: 3,
+    MANAGER: 4,
+    ADMIN: 5,
+    OWNER: 6,
+  };
+  if (body.data.role === 'OWNER') {
+    return res.status(422).json({ error: 'Role OWNER tidak dapat diberikan lewat endpoint ini.' });
+  }
+  const actorRole = (req.authActor?.role || 'TEKNISI') as string;
+  if ((ROLE_RANK[body.data.role] ?? 0) > (ROLE_RANK[actorRole] ?? 0)) {
+    return res
+      .status(422)
+      .json({ error: 'Tidak dapat memberikan role lebih tinggi dari role Anda.' });
+  }
   if (req.params.userId === req.authActor?.userId && body.data.role !== req.authActor.role)
     return res.status(422).json({ error: 'Role akun sendiri tidak dapat diubah.' });
   try {

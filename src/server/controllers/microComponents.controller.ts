@@ -87,9 +87,17 @@ export async function createMicroComponent(req: Request, res: Response) {
       );
       if (!warehouse.rows[0]) throw httpError('Gudang tidak ditemukan pada tenant aktif.', 404);
       const product = await client.query(
-        `INSERT INTO products(tenant_id,name,sku,barcode,category,purchase_cost,sell_price,unit,min_stock,reorder_level,grade,is_consignment,item_type,is_active)
-         VALUES($1,$2,$3,$3,'SPAREPART',$4,$5,'pcs',$6,$6,'NEW',FALSE,'MICRO_COMPONENT',TRUE) RETURNING id`,
-        [req.tenantId, d.name, d.sku.toUpperCase(), d.purchaseCost, d.sellPrice, d.minStock]
+        `INSERT INTO products(id,tenant_id,name,sku,category,purchase_cost,sell_price,unit,min_stock,reorder_level,is_active)
+         VALUES(gen_random_uuid(),$1,$2,$3,$6,$4,$5,'pcs',$7,$7,TRUE) RETURNING id`,
+        [
+          req.tenantId,
+          d.name,
+          d.sku.toUpperCase(),
+          d.purchaseCost,
+          d.sellPrice,
+          d.category,
+          d.minStock,
+        ]
       );
       const productId = product.rows[0].id;
       const component = await client.query(
@@ -297,13 +305,11 @@ export async function adjustMicroComponentStock(req: Request, res: Response) {
     });
   } catch (error: any) {
     const isAppError = !!error.status;
-    res
-      .status(error.status || 500)
-      .json({
-        error: isAppError
-          ? error.message || 'Operasi stok gagal diproses.'
-          : 'Operasi stok gagal diproses.',
-      });
+    res.status(error.status || 500).json({
+      error: isAppError
+        ? error.message || 'Operasi stok gagal diproses.'
+        : 'Operasi stok gagal diproses.',
+    });
   }
 }
 
@@ -445,12 +451,10 @@ export async function consumeMicroComponent(req: Request, res: Response) {
     });
   } catch (error: any) {
     const isAppError = !!error.status;
-    res
-      .status(error.status || 500)
-      .json({
-        error: isAppError
-          ? error.message || 'Operasi pemakaian komponen gagal diproses.'
-          : 'Operasi pemakaian komponen gagal diproses.',
-      });
+    res.status(error.status || 500).json({
+      error: isAppError
+        ? error.message || 'Operasi pemakaian komponen gagal diproses.'
+        : 'Operasi pemakaian komponen gagal diproses.',
+    });
   }
 }

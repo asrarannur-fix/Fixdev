@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
 import { useToast } from '../ui/Toast';
+import { readJsonResponse } from '../../utils/apiResponse';
 
 interface Plan {
   tier: 'BASIC' | 'PRO' | 'ENTERPRISE';
@@ -43,7 +44,7 @@ export const BillingPlansManager: React.FC<BillingPlansManagerProps> = ({
       setLoading(true);
       setError(null);
       const res = await apiFetch('/api/billing/plans');
-      const data = await res.json();
+      const data = await readJsonResponse<any>(res, 'Paket billing');
       setPlans(Array.isArray(data?.plans) ? data.plans : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat paket billing');

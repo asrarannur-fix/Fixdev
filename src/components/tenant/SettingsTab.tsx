@@ -521,8 +521,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               )}
 
               {effectiveActiveSubTab === 'operational-config' && (
-                <div className="animate-fadeIn">
+                <div className="animate-fadeIn" key={`oper-${currentTenantId}`}>
                   <OperationalSettingsPanel
+                    key={currentTenantId}
                     currentTenantId={currentTenantId}
                     tenantObj={tenantObj}
                     updateTenant={updateTenant}
@@ -531,8 +532,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               )}
 
               {effectiveActiveSubTab === 'app-config' && (
-                <div className="animate-fadeIn">
+                <div className="animate-fadeIn" key={`app-${currentTenantId}`}>
                   <AppSettingsPanel
+                    key={currentTenantId}
                     currentTenantId={currentTenantId}
                     tenantObj={tenantObj}
                     updateTenant={updateTenant}

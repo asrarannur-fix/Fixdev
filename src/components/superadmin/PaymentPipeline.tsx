@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
 import { useToast } from '../ui/Toast';
+import { readJsonResponse } from '../../utils/apiResponse';
 
 interface ManualPayment {
   id: string;
@@ -39,7 +40,7 @@ export const PaymentPipeline: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await apiFetch('/api/billing/manual-payments');
-      const data = await res.json();
+      const data = await readJsonResponse<any>(res, 'Pembayaran manual');
       const list = Array.isArray(data?.payments) ? data.payments : Array.isArray(data) ? data : [];
       setPayments(list);
     } catch {
@@ -64,6 +65,7 @@ export const PaymentPipeline: React.FC = () => {
         method: 'POST',
       });
       if (!res.ok) throw new Error('Gagal menyetujui pembayaran');
+      await readJsonResponse<any>(res, 'Persetujuan pembayaran');
       showToast('Pembayaran berhasil disetujui', 'success');
       loadPayments();
     } catch {
@@ -77,10 +79,12 @@ export const PaymentPipeline: React.FC = () => {
       return;
     }
     try {
-      await apiFetch(`/api/billing/manual-payments/${paymentId}/reject`, {
+      const res = await apiFetch(`/api/billing/manual-payments/${paymentId}/reject`, {
         method: 'POST',
         body: JSON.stringify({ reason: rejectionReason }),
       });
+      if (!res.ok) throw new Error('Gagal menolak pembayaran');
+      await readJsonResponse<any>(res, 'Penolakan pembayaran');
       setRejectionModal(null);
       setRejectionReason('');
       loadPayments();

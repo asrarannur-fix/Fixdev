@@ -489,7 +489,7 @@ export default function SaaSSubscription({
         try {
           const res = await apiFetch('/api/billing/gateway-config');
           if (res.ok) {
-            const data = await res.json();
+            const data = await readJsonResponse<any>(res, 'Konfigurasi gateway');
             setGatewayConfig({
               merchantId: data.merchantId || '',
               serverKeyMasked: data.serverKeyMasked || '',
@@ -602,7 +602,7 @@ export default function SaaSSubscription({
         }),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await readJsonResponse<any>(res, 'Konfigurasi gateway');
         setGatewayConfig((prev) => ({
           ...prev,
           serverKeyMasked: data.config.serverKeyMasked || prev.serverKeyMasked,

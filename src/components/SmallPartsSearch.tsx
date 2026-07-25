@@ -1,15 +1,15 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { createPortal } from "react-dom";
-import { useSaaS } from "../context/SaaSContext";
-import { useToast } from "./ui/Toast";
-import { usePrintConfig } from "../hooks/usePrintConfig";
-import { printFrame } from "../utils/printJob";
+import React, { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { useSaaS } from '../context/SaaSContext';
+import { useToast } from './ui/Toast';
+import { usePrintConfig } from '../hooks/usePrintConfig';
+import { printFrame } from '../utils/printJob';
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
   getPrintFooterHtml,
   getPrintTermsHtml,
-} from "../utils/print";
+} from '../utils/print';
 import {
   Search,
   Map,
@@ -31,14 +31,13 @@ import {
   Clock,
   UserCheck,
   Info,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface MicroComponent {
   id: string;
   name: string;
   sku: string;
-  category:
-    "IC" | "KAPASITOR" | "RESISTOR" | "SEKRING" | "FLEXIBLE" | "KONEKTOR";
+  category: 'IC' | 'KAPASITOR' | 'RESISTOR' | 'SEKRING' | 'FLEXIBLE' | 'KONEKTOR';
   rackId: string; // e.g. Rak Utama
   drawerId: string; // e.g. Laci A-12
   stockQty: number;
@@ -52,111 +51,129 @@ interface MicroComponent {
 }
 
 export const SmallPartsSearch: React.FC = () => {
-  const { addLog, microComponents, microComponentsLoading, microComponentsError, loadMicroComponents, createMicroComponent, consumeMicroComponentForService, scopedServices, scopedWarehouses, currentBranchId, currentTenantId, tenants } = useSaaS();
+  const {
+    addLog,
+    microComponents,
+    microComponentsLoading,
+    microComponentsError,
+    loadMicroComponents,
+    createMicroComponent,
+    consumeMicroComponentForService,
+    scopedServices,
+    scopedWarehouses,
+    currentBranchId,
+    currentTenantId,
+    tenants,
+  } = useSaaS();
   const { showToast } = useToast();
   const printConfig = usePrintConfig();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
-  const businessName = activeTenant?.name || "Sistem Inventaris";
+  const businessName = activeTenant?.name || 'Sistem Inventaris';
   const logoUrl = activeTenant?.branding?.logoUrl;
 
   // Backend is the source of truth; map shared pricing fields to this screen's view model.
-  const components = useMemo<MicroComponent[]>(() => microComponents.map((item) => ({
-    id: item.id, name: item.name, sku: item.sku, category: item.category as MicroComponent["category"],
-    rackId: item.rackId, drawerId: item.drawerId, stockQty: item.stockQty,
-    minStock: item.minStock, compatModels: item.compatModels, price: item.sellPrice,
-    avgWeeklyConsumption: item.avgWeeklyConsumption, leadTimeDays: item.leadTimeDays,
-    supplierName: item.supplierName,
-  })), [microComponents]);
+  const components = useMemo<MicroComponent[]>(
+    () =>
+      microComponents.map((item) => ({
+        id: item.id,
+        name: item.name,
+        sku: item.sku,
+        category: item.category as MicroComponent['category'],
+        rackId: item.rackId,
+        drawerId: item.drawerId,
+        stockQty: item.stockQty,
+        minStock: item.minStock,
+        compatModels: item.compatModels,
+        price: item.sellPrice,
+        avgWeeklyConsumption: item.avgWeeklyConsumption,
+        leadTimeDays: item.leadTimeDays,
+        supplierName: item.supplierName,
+      })),
+    [microComponents]
+  );
 
-  useEffect(() => { loadMicroComponents().catch(() => {}); }, []);
+  useEffect(() => {
+    loadMicroComponents().catch(() => {});
+  }, []);
 
   // Tab state: "search" | "predictive"
-  const [activeSubTab, setActiveSubTab] = useState<"search" | "predictive">(
-    "search",
-  );
+  const [activeSubTab, setActiveSubTab] = useState<'search' | 'predictive'>('search');
 
   // Form states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   // Selected component for details and locator highlights
-  const [selectedCompId, setSelectedCompId] = useState<string>("mc-01");
+  const [selectedCompId, setSelectedCompId] = useState<string>('');
 
   // New component states
-  const [newName, setNewName] = useState("");
-  const [newSku, setNewSku] = useState("");
-  const [newCat, setNewCat] = useState<MicroComponent["category"]>("IC");
-  const [newRack, setNewRack] = useState("RACK-BLUE-1");
-  const [newDrawer, setNewDrawer] = useState("Laci A-01");
-  const [newStock, setNewStock] = useState("10");
-  const [newMinStock, setNewMinStock] = useState("5");
-  const [newCompat, setNewCompat] = useState("");
-  const [newPrice, setNewPrice] = useState("15000");
-  const [newAvgConsumption, setNewAvgConsumption] = useState("2.5");
-  const [newLeadTime, setNewLeadTime] = useState("4");
-  const [newSupplier, setNewSupplier] = useState("Sinar Jaya Spareparts");
+  const [newName, setNewName] = useState('');
+  const [newSku, setNewSku] = useState('');
+  const [newCat, setNewCat] = useState<MicroComponent['category']>('IC');
+  const [newRack, setNewRack] = useState('RACK-BLUE-1');
+  const [newDrawer, setNewDrawer] = useState('Laci A-01');
+  const [newStock, setNewStock] = useState('10');
+  const [newMinStock, setNewMinStock] = useState('5');
+  const [newCompat, setNewCompat] = useState('');
+  const [newPrice, setNewPrice] = useState('15000');
+  const [newAvgConsumption, setNewAvgConsumption] = useState('2.5');
+  const [newLeadTime, setNewLeadTime] = useState('4');
+  const [newSupplier, setNewSupplier] = useState('Sinar Jaya Spareparts');
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [targetTicket, setTargetTicket] = useState("");
+  const [targetTicket, setTargetTicket] = useState('');
+  const [consumeQty, setConsumeQty] = useState(1);
+  const [consumeChargeable, setConsumeChargeable] = useState(true);
 
   // Reorder PO modal state
-  const [selectedPoComp, setSelectedPoComp] = useState<MicroComponent | null>(
-    null,
-  );
+  const [selectedPoComp, setSelectedPoComp] = useState<MicroComponent | null>(null);
   const [poQuantity, setPoQuantity] = useState(50);
   const [poSuccess, setPoSuccess] = useState(false);
-  const [poPrinterFormat, setPoPrinterFormat] = useState<"58" | "80">("80");
+  const [poPrinterFormat, setPoPrinterFormat] = useState<'58' | '80'>('80');
 
   const stablePoNo = useMemo(() => {
-    if (!selectedPoComp) return "";
-    const nameSeed = (selectedPoComp.name || "").length + (selectedPoComp.sku || "").length;
-    return `PO-COMP-${(1000 + (nameSeed % 9000))}`;
+    if (!selectedPoComp) return '';
+    const nameSeed = (selectedPoComp.name || '').length + (selectedPoComp.sku || '').length;
+    return `PO-COMP-${1000 + (nameSeed % 9000)}`;
   }, [selectedPoComp]);
 
   const handlePrintPurchaseOrder = () => {
     if (!selectedPoComp) return;
 
-    let printIframe = document.getElementById(
-      "hidden-print-iframe",
-    ) as HTMLIFrameElement;
+    let printIframe = document.getElementById('hidden-print-iframe') as HTMLIFrameElement;
     if (!printIframe) {
-      printIframe = document.createElement("iframe");
-      printIframe.id = "hidden-print-iframe";
-      printIframe.style.position = "fixed";
-      printIframe.style.width = "0";
-      printIframe.style.height = "0";
-      printIframe.style.border = "none";
-      printIframe.style.opacity = "0";
+      printIframe = document.createElement('iframe');
+      printIframe.id = 'hidden-print-iframe';
+      printIframe.style.position = 'fixed';
+      printIframe.style.width = '0';
+      printIframe.style.height = '0';
+      printIframe.style.border = 'none';
+      printIframe.style.opacity = '0';
       document.body.appendChild(printIframe);
     }
-    const printDoc =
-      printIframe.contentWindow?.document || printIframe.contentDocument;
+    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
     if (!printDoc) {
-      showToast("Gagal menginisialisasi modul pencetakan.", "error");
+      showToast('Gagal menginisialisasi modul pencetakan.', 'error');
       return;
     }
 
     const poNo = stablePoNo;
-    const supplier = selectedPoComp.supplierName || "Supplier Mitra Resmi";
-    const today = new Date().toISOString().split("T")[0];
+    const supplier = selectedPoComp.supplierName || 'Supplier Mitra Resmi';
+    const today = new Date().toISOString().split('T')[0];
     const unitPrice = selectedPoComp.price * 0.75;
     const estTotal = unitPrice * poQuantity;
     const paperSize =
-      printConfig?.paperSize ||
-      (poPrinterFormat === "80" ? "thermal_80" : "thermal_58");
-    const is80 = paperSize !== "thermal_58";
-    const widthStyle = is80 ? "76mm" : "54mm";
+      printConfig?.paperSize || (poPrinterFormat === '80' ? 'thermal_80' : 'thermal_58');
+    const is80 = paperSize !== 'thermal_58';
+    const widthStyle = is80 ? '76mm' : '54mm';
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
       businessName,
-      subtitle: "SISTEM PREDIKTIF REORDER PO",
+      subtitle: 'SISTEM PREDIKTIF REORDER PO',
       logoUrl,
     });
-    const footerHtml = getPrintFooterHtml(
-      printConfig,
-      "Dibuat otomatis oleh sistem prediksi stok",
-    );
-    const termsHtml = getPrintTermsHtml(printConfig, "general");
+    const footerHtml = getPrintFooterHtml(printConfig, 'Dibuat otomatis oleh sistem prediksi stok');
+    const termsHtml = getPrintTermsHtml(printConfig, 'general');
 
     printDoc.open();
     printDoc.write(`
@@ -293,36 +310,32 @@ export const SmallPartsSearch: React.FC = () => {
     printDoc.close();
 
     setTimeout(() => {
-      const pIframe = document.getElementById(
-        "hidden-print-iframe",
-      ) as HTMLIFrameElement;
+      const pIframe = document.getElementById('hidden-print-iframe') as HTMLIFrameElement;
       if (pIframe && pIframe.contentWindow) {
-        printFrame(pIframe, printConfig, "Purchase Order");
+        printFrame(pIframe, printConfig, 'Purchase Order');
         addLog(
-          "Print Purchase Order",
+          'Print Purchase Order',
           `Mencetak dokumen Purchase Order \${poNo} ke printer thermal \${poPrinterFormat}mm.`,
-          "INVENTORY",
-          "LOW",
+          'INVENTORY',
+          'LOW'
         );
       }
     }, 500);
   };
 
-  const selectedComponent =
-    components.find((c) => c.id === selectedCompId) || components[0];
+  const selectedComponent = components.find((c) => c.id === selectedCompId) || components[0];
 
   // Filters
   const filteredComponents = useMemo(() => {
     return components.filter((c) => {
       const matchQuery =
-        searchQuery.trim() === "" ||
+        searchQuery.trim() === '' ||
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.compatModels.some((model) =>
-          model.toLowerCase().includes(searchQuery.toLowerCase()),
+        (c.compatModels ?? []).some((model) =>
+          model.toLowerCase().includes(searchQuery.toLowerCase())
         );
-      const matchCat =
-        selectedCategory === "ALL" || c.category === selectedCategory;
+      const matchCat = selectedCategory === 'ALL' || c.category === selectedCategory;
       return matchQuery && matchCat;
     });
   }, [components, searchQuery, selectedCategory]);
@@ -332,20 +345,38 @@ export const SmallPartsSearch: React.FC = () => {
     const comp = components.find((c) => c.id === id);
     const ticket = scopedServices.find((item) => item.id === targetTicket);
     if (!comp || !ticket) {
-      showToast("Pilih tiket servis aktif terlebih dahulu.", "error");
+      showToast('Pilih tiket servis aktif terlebih dahulu.', 'error');
       return;
     }
-    if (comp.stockQty <= 0) {
-      showToast("Stok komponen kosong. Gunakan alur Menunggu Spare Part pada tiket servis.", "error");
+    if (comp.stockQty < consumeQty) {
+      showToast(`Stok tidak cukup (tersisa ${comp.stockQty}).`, 'error');
       return;
     }
     try {
-      const result = await consumeMicroComponentForService(id, { ticketId: ticket.id, quantity: 1, chargeable: true, unitPrice: comp.price, idempotencyKey: `micro-${ticket.id}-${id}-${Date.now()}` });
-      addLog("Consume Micro Component", `Menggunakan 1 unit ${comp.name} untuk tiket ${ticket.ticketNo}`, "INVENTORY", "LOW");
-      showToast(`1 unit ${comp.name} tercatat pada ${ticket.ticketNo}. Stok tersisa ${result.component.stockQty}.`, "success");
-      setTargetTicket("");
+      const result = await consumeMicroComponentForService(id, {
+        ticketId: ticket.id,
+        quantity: consumeQty,
+        chargeable: consumeChargeable,
+        unitPrice: comp.price,
+        // Deterministic key per (ticket, component) so a retry/double-click
+        // reuses the same idempotency key instead of double-consuming stock.
+        idempotencyKey: `micro-${ticket.id}-${id}`,
+      });
+      addLog(
+        'Consume Micro Component',
+        `Menggunakan ${consumeQty} unit ${comp.name} untuk tiket ${ticket.ticketNo}`,
+        'INVENTORY',
+        'LOW'
+      );
+      showToast(
+        `${consumeQty} unit ${comp.name} tercatat pada ${ticket.ticketNo}. Stok tersisa ${result.component?.stockQty ?? '-'}`,
+        'success'
+      );
+      setTargetTicket('');
+      setConsumeQty(1);
+      setConsumeChargeable(true);
     } catch (error: any) {
-      showToast(error?.message || "Gagal mencatat pemakaian komponen.", "error");
+      showToast(error?.message || 'Gagal mencatat pemakaian komponen.', 'error');
     }
   };
 
@@ -356,7 +387,7 @@ export const SmallPartsSearch: React.FC = () => {
     const cleanRack = newRack.trim().toUpperCase();
     const cleanDrawer = newDrawer.trim();
     if (!cleanName || !cleanSku || !cleanDrawer) {
-      showToast("Mohon isi nama, SKU, dan alamat laci penyimpanan!", "error");
+      showToast('Mohon isi nama, SKU, dan alamat laci penyimpanan!', 'error');
       return;
     }
     const safeStock = Math.max(0, Number(newStock) || 0);
@@ -365,41 +396,57 @@ export const SmallPartsSearch: React.FC = () => {
     const safeAvgConsumption = Math.max(0, Number(newAvgConsumption) || 0);
     const safeLeadTime = Math.max(0, Math.floor(Number(newLeadTime) || 0));
 
-    const warehouseId = scopedWarehouses.find((warehouse) => warehouse.branchId === currentBranchId)?.id || scopedWarehouses[0]?.id;
+    const warehouseId =
+      scopedWarehouses.find((warehouse) => warehouse.branchId === currentBranchId)?.id ||
+      scopedWarehouses[0]?.id;
     if (!warehouseId) {
-      showToast("Buat atau pilih gudang terlebih dahulu sebelum mendaftarkan komponen.", "error");
+      showToast('Buat atau pilih gudang terlebih dahulu sebelum mendaftarkan komponen.', 'error');
       return;
     }
     try {
       await createMicroComponent({
-        warehouseId, name: cleanName, sku: cleanSku, category: newCat,
-        rackId: cleanRack, drawerId: cleanDrawer, stockQty: safeStock, minStock: safeMinStock,
-        compatModels: newCompat ? newCompat.split(",").map((s) => s.trim()).filter(Boolean) : ["Universal"],
-        purchaseCost: safePrice * 0.75, sellPrice: safePrice, avgWeeklyConsumption: safeAvgConsumption,
-        leadTimeDays: safeLeadTime, supplierName: newSupplier.trim() || "Sinar Jaya Spareparts",
+        warehouseId,
+        name: cleanName,
+        sku: cleanSku,
+        category: newCat,
+        rackId: cleanRack,
+        drawerId: cleanDrawer,
+        stockQty: safeStock,
+        minStock: safeMinStock,
+        compatModels: newCompat
+          ? newCompat
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : ['Universal'],
+        purchaseCost: safePrice * 0.75,
+        sellPrice: safePrice,
+        avgWeeklyConsumption: safeAvgConsumption,
+        leadTimeDays: safeLeadTime,
+        supplierName: newSupplier.trim() || 'Sinar Jaya Spareparts',
       });
     } catch (error: any) {
-      showToast(error?.message || "Gagal menambahkan komponen.", "error");
+      showToast(error?.message || 'Gagal menambahkan komponen.', 'error');
       return;
     }
     addLog(
-      "Add Micro Component",
+      'Add Micro Component',
       `Menambahkan komponen mikro baru ${cleanName} ke ${cleanDrawer} (${cleanRack})`,
-      "INVENTORY",
-      "LOW",
+      'INVENTORY',
+      'LOW'
     );
 
     showToast(
       `Sukses! Komponen baru "${cleanName}" didaftarkan di laci ${cleanDrawer}.`,
-      "success",
+      'success'
     );
 
     // Reset Form
-    setNewName("");
-    setNewSku("");
-    setNewDrawer("Laci A-01");
-    setNewStock("10");
-    setNewCompat("");
+    setNewName('');
+    setNewSku('');
+    setNewDrawer('Laci A-01');
+    setNewStock('10');
+    setNewCompat('');
     setShowAddForm(false);
   };
 
@@ -419,10 +466,10 @@ export const SmallPartsSearch: React.FC = () => {
     setPoSuccess(true);
 
     addLog(
-      "Generate Purchase Order",
+      'Generate Purchase Order',
       `[Predictive stock] Membuat draf PO Suku Cadang ke ${selectedPoComp.supplierName} untuk ${poQuantity} pcs ${selectedPoComp.name}. Estimasi biaya: Rp ${(selectedPoComp.price * 0.75 * poQuantity).toLocaleString()}`,
-      "INVENTORY",
-      "MEDIUM",
+      'INVENTORY',
+      'MEDIUM'
     );
 
     // PO ini masih berupa draf; stok hanya berubah setelah penerimaan barang dicatat.
@@ -438,12 +485,12 @@ export const SmallPartsSearch: React.FC = () => {
       <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="font-extrabold text-sm text-amber-950 dark:text-amber-200 uppercase tracking-wider flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-amber-500" /> Suku Cadang Mikro &amp;
-            Pengelolaan Inventaris
+            <Cpu className="w-5 h-5 text-amber-500" /> Suku Cadang Mikro &amp; Pengelolaan
+            Inventaris
           </h3>
           <p className="text-[11px] text-slate-500 font-medium">
-            Sistem laci drawer presisi untuk komponen IC, Kapasitor SMD,
-            konektor, serta analitik prediksi pengisian stok.
+            Sistem laci drawer presisi untuk komponen IC, Kapasitor SMD, konektor, serta analitik
+            prediksi pengisian stok.
           </p>
         </div>
 
@@ -452,27 +499,26 @@ export const SmallPartsSearch: React.FC = () => {
           <div className="flex bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-xl text-[11px] font-black border border-slate-200/50 dark:border-zinc-700/50">
             <button
               onClick={() => {
-                setActiveSubTab("search");
-                setSelectedCompId(components[0]?.id || "");
+                setActiveSubTab('search');
+                setSelectedCompId(components[0]?.id || '');
               }}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                activeSubTab === "search"
-                  ? "bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-xs"
-                  : "text-slate-500 hover:text-slate-700"
+                activeSubTab === 'search'
+                  ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Cari &amp; Lokasi Laci
             </button>
             <button
-              onClick={() => setActiveSubTab("predictive")}
+              onClick={() => setActiveSubTab('predictive')}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-                activeSubTab === "predictive"
-                  ? "bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-xs"
-                  : "text-slate-500 hover:text-slate-700"
+                activeSubTab === 'predictive'
+                  ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> Prediksi
-              Reorder Stok
+              <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> Prediksi Reorder Stok
             </button>
           </div>
 
@@ -480,8 +526,7 @@ export const SmallPartsSearch: React.FC = () => {
             onClick={() => setShowAddForm(!showAddForm)}
             className="bg-amber-600 hover:bg-amber-700 text-white font-black text-xs px-4 py-2 rounded-xl transition shadow-sm cursor-pointer flex items-center gap-1.5 self-start md:self-auto"
           >
-            <PlusCircle className="w-4 h-4" />{" "}
-            {showAddForm ? "Tutup Form" : "Daftarkan Komponen"}
+            <PlusCircle className="w-4 h-4" /> {showAddForm ? 'Tutup Form' : 'Daftarkan Komponen'}
           </button>
         </div>
       </div>
@@ -548,11 +593,141 @@ export const SmallPartsSearch: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <div className="space-y-3">
+            <p className="font-bold text-amber-900 dark:text-amber-400 border-b border-amber-200/60 dark:border-amber-900/30 pb-1 uppercase tracking-wider">
+              Lokasi & Stok
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                  Rak
+                </label>
+                <input
+                  type="text"
+                  value={newRack}
+                  onChange={(e) => setNewRack(e.target.value)}
+                  placeholder="RACK-BLUE-1"
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                  Laci
+                </label>
+                <input
+                  type="text"
+                  value={newDrawer}
+                  onChange={(e) => setNewDrawer(e.target.value)}
+                  placeholder="Laci A-01"
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                  Stok Awal
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newStock}
+                  onChange={(e) => setNewStock(e.target.value)}
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                  Stok Minimum
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newMinStock}
+                  onChange={(e) => setNewMinStock(e.target.value)}
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-bold text-amber-900 dark:text-amber-400 border-b border-amber-200/60 dark:border-amber-900/30 pb-1 uppercase tracking-wider">
+              Harga & Kompabilitas
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                  Harga Jual
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                  Lead Time (hari)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newLeadTime}
+                  onChange={(e) => setNewLeadTime(e.target.value)}
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                Konsumsi Rata-rata / Minggu
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.1"
+                value={newAvgConsumption}
+                onChange={(e) => setNewAvgConsumption(e.target.value)}
+                className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                Model Kompatibel (pisahkan dengan koma)
+              </label>
+              <input
+                type="text"
+                value={newCompat}
+                onChange={(e) => setNewCompat(e.target.value)}
+                placeholder="iPhone 12, Xperia 5, Mi 11"
+                className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg dark:text-white outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="md:col-span-3 flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowAddForm(false)}
+              className="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-200"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleAddComponent}
+              className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-amber-600 hover:bg-amber-700"
+            >
+              Simpan Komponen
+            </button>
+          </div>
         </div>
       )}
 
       {/* SUB-TAB 1: Cari & Lokasi Laci */}
-      {activeSubTab === "search" && (
+      {activeSubTab === 'search' && (
         <div className="grid grid-cols-1 xl:grid-cols-12 divide-y xl:divide-y-0 xl:divide-x divide-slate-100 dark:divide-zinc-800">
           {/* Left Search & List Area (7 Cols) */}
           <div className="xl:col-span-7 p-5 space-y-4">
@@ -570,27 +745,21 @@ export const SmallPartsSearch: React.FC = () => {
 
               {/* Category selection chips */}
               <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 shrink-0">
-                {[
-                  "ALL",
-                  "IC",
-                  "KAPASITOR",
-                  "RESISTOR",
-                  "SEKRING",
-                  "FLEXIBLE",
-                  "KONEKTOR",
-                ].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-xl text-[9px] font-extrabold uppercase font-mono border tracking-wider transition cursor-pointer shrink-0 ${
-                      selectedCategory === cat
-                        ? "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-900/40 ring-1 ring-amber-100"
-                        : "bg-white dark:bg-zinc-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+                {['ALL', 'IC', 'KAPASITOR', 'RESISTOR', 'SEKRING', 'FLEXIBLE', 'KONEKTOR'].map(
+                  (cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-3 py-1.5 rounded-xl text-[9px] font-extrabold uppercase font-mono border tracking-wider transition cursor-pointer shrink-0 ${
+                        selectedCategory === cat
+                          ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-900/40 ring-1 ring-amber-100'
+                          : 'bg-white dark:bg-zinc-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
@@ -609,19 +778,47 @@ export const SmallPartsSearch: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 font-medium">
                     {microComponentsLoading && components.length === 0 ? (
-                      <tr><td colSpan={5} className="text-center py-12 text-slate-500"><RefreshCw className="w-5 h-5 animate-spin text-amber-500 mx-auto mb-2" />Memuat inventaris komponen...</td></tr>
+                      <tr>
+                        <td colSpan={5} className="text-center py-12 text-slate-500">
+                          <RefreshCw className="w-5 h-5 animate-spin text-amber-500 mx-auto mb-2" />
+                          Memuat inventaris komponen...
+                        </td>
+                      </tr>
                     ) : microComponentsError && components.length === 0 ? (
-                      <tr><td colSpan={5} className="text-center py-10"><AlertCircle className="w-5 h-5 text-rose-500 mx-auto mb-2" /><p className="text-rose-600 not-italic">{microComponentsError}</p><button onClick={() => loadMicroComponents().catch(() => {})} className="mt-2 px-3 py-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-bold">Coba Lagi</button></td></tr>
+                      <tr>
+                        <td colSpan={5} className="text-center py-10">
+                          <AlertCircle className="w-5 h-5 text-rose-500 mx-auto mb-2" />
+                          <p className="text-rose-600 not-italic">{microComponentsError}</p>
+                          <button
+                            onClick={() => loadMicroComponents().catch(() => {})}
+                            className="mt-2 px-3 py-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-bold"
+                          >
+                            Coba Lagi
+                          </button>
+                        </td>
+                      </tr>
                     ) : filteredComponents.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={5}
-                          className="text-center py-10 text-slate-400"
-                        >
+                        <td colSpan={5} className="text-center py-10 text-slate-400">
                           <Cpu className="w-6 h-6 mx-auto mb-2 text-slate-300" />
-                          <p className="font-bold text-slate-600">{components.length === 0 ? "Belum ada komponen mikro" : "Komponen tidak ditemukan"}</p>
-                          <p className="text-[10px] mt-1">{components.length === 0 ? "Klik Daftarkan Komponen untuk mengisi stok pertama." : "Ubah kata pencarian atau kategori."}</p>
-                          {components.length === 0 && <button onClick={() => setShowAddForm(true)} className="mt-3 px-3 py-2 bg-amber-600 text-white rounded-lg text-[10px] font-bold"><PlusCircle className="w-3.5 h-3.5 inline mr-1" /> Daftarkan Komponen</button>}
+                          <p className="font-bold text-slate-600">
+                            {components.length === 0
+                              ? 'Belum ada komponen mikro'
+                              : 'Komponen tidak ditemukan'}
+                          </p>
+                          <p className="text-[10px] mt-1">
+                            {components.length === 0
+                              ? 'Klik Daftarkan Komponen untuk mengisi stok pertama.'
+                              : 'Ubah kata pencarian atau kategori.'}
+                          </p>
+                          {components.length === 0 && (
+                            <button
+                              onClick={() => setShowAddForm(true)}
+                              className="mt-3 px-3 py-2 bg-amber-600 text-white rounded-lg text-[10px] font-bold"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5 inline mr-1" /> Daftarkan Komponen
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ) : (
@@ -630,9 +827,7 @@ export const SmallPartsSearch: React.FC = () => {
                           key={c.id}
                           onClick={() => setSelectedCompId(c.id)}
                           className={`hover:bg-slate-50/50 dark:hover:bg-zinc-800/40 cursor-pointer transition ${
-                            selectedCompId === c.id
-                              ? "bg-amber-50/30 dark:bg-amber-950/20"
-                              : ""
+                            selectedCompId === c.id ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''
                           }`}
                         >
                           <td className="px-3 py-3">
@@ -652,8 +847,7 @@ export const SmallPartsSearch: React.FC = () => {
                           </td>
                           <td className="px-3 py-3 font-mono text-[10px]">
                             <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-400 font-bold">
-                              <Map className="w-3.5 h-3.5 text-amber-500" />{" "}
-                              {c.drawerId}
+                              <Map className="w-3.5 h-3.5 text-amber-500" /> {c.drawerId}
                             </div>
                             <p className="text-[9px] text-slate-400 dark:text-zinc-500 leading-none mt-0.5">
                               {c.rackId}
@@ -663,8 +857,8 @@ export const SmallPartsSearch: React.FC = () => {
                             <span
                               className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold ${
                                 c.stockQty <= c.minStock
-                                  ? "bg-rose-100 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 font-extrabold"
-                                  : "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"
+                                  ? 'bg-rose-100 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 font-extrabold'
+                                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300'
                               }`}
                             >
                               {c.stockQty} Pcs
@@ -702,12 +896,10 @@ export const SmallPartsSearch: React.FC = () => {
           <div className="xl:col-span-5 p-5 space-y-4 bg-slate-50/30 dark:bg-zinc-950/20">
             <div className="border-b border-slate-100 dark:border-zinc-800 pb-2">
               <h4 className="font-bold text-xs uppercase text-slate-700 dark:text-zinc-200 tracking-wider flex items-center gap-1.5">
-                <Map className="w-4 h-4 text-amber-500" /> Visualisasi Laci
-                &amp; Detail Locator
+                <Map className="w-4 h-4 text-amber-500" /> Visualisasi Laci &amp; Detail Locator
               </h4>
               <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">
-                Sistem visual penunjuk posisi laci organizer yang menyala
-                berdasarkan part terpilih.
+                Sistem visual penunjuk posisi laci organizer yang menyala berdasarkan part terpilih.
               </p>
             </div>
 
@@ -753,7 +945,7 @@ export const SmallPartsSearch: React.FC = () => {
                       Kompatibilitas Laptop/Model
                     </span>
                     <div className="flex flex-wrap gap-1">
-                      {selectedComponent.compatModels.map((m, i) => (
+                      {(selectedComponent.compatModels ?? []).map((m, i) => (
                         <span
                           key={i}
                           className="px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 rounded text-[9.5px] font-semibold"
@@ -775,9 +967,38 @@ export const SmallPartsSearch: React.FC = () => {
                         className="w-full px-2.5 py-1 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-900 focus:border-amber-500 text-slate-800 dark:text-zinc-100 rounded text-[10.5px] outline-none"
                       >
                         <option value="">-- Pilih tiket --</option>
-                        {scopedServices.filter((ticket) => ["DIAGNOSA", "SEDANG_DIKERJAKAN", "REWORK"].includes(ticket.status)).map((ticket) => <option key={ticket.id} value={ticket.id}>{ticket.ticketNo} · {ticket.deviceName}</option>)}
+                        {scopedServices
+                          .filter((ticket) =>
+                            ['DIAGNOSA', 'SEDANG_DIKERJAKAN', 'REWORK'].includes(ticket.status)
+                          )
+                          .map((ticket) => (
+                            <option key={ticket.id} value={ticket.id}>
+                              {ticket.ticketNo} · {ticket.deviceName}
+                            </option>
+                          ))}
                       </select>
                     </div>
+                    <div className="w-20">
+                      <label className="block text-[9px] font-mono text-slate-400 dark:text-zinc-500 uppercase mb-0.5">
+                        Jumlah
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={consumeQty}
+                        onChange={(e) => setConsumeQty(Math.max(1, Number(e.target.value) || 1))}
+                        className="w-full px-2 py-1 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-900 focus:border-amber-500 text-slate-800 dark:text-zinc-100 rounded text-[10.5px] outline-none"
+                      />
+                    </div>
+                    <label className="flex items-center gap-1 text-[9px] font-mono text-slate-400 dark:text-zinc-500 self-end h-9 px-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={consumeChargeable}
+                        onChange={(e) => setConsumeChargeable(e.target.checked)}
+                        className="accent-amber-600"
+                      />
+                      Tagih
+                    </label>
                     <button
                       onClick={() => handleConsume(selectedComponent.id)}
                       className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-4 py-1.5 rounded-lg h-9 self-end cursor-pointer transition shadow-xs"
@@ -791,44 +1012,41 @@ export const SmallPartsSearch: React.FC = () => {
                 <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm space-y-3 text-xs">
                   <div>
                     <p className="font-extrabold text-slate-700 dark:text-zinc-200 flex items-center gap-1 text-[11px]">
-                      <Layers className="w-3.5 h-3.5 text-slate-400" /> Cabinet
-                      Organizer Map: {selectedComponent.rackId}
+                      <Layers className="w-3.5 h-3.5 text-slate-400" /> Cabinet Organizer Map:{' '}
+                      {selectedComponent.rackId}
                     </p>
                     <p className="text-[9px] text-slate-400 dark:text-zinc-500">
-                      Kotak oranye menyala menunjukkan posisi drawer laci
-                      penyimpanan dari komponen mikro yang Anda pilih.
+                      Kotak oranye menyala menunjukkan posisi drawer laci penyimpanan dari komponen
+                      mikro yang Anda pilih.
                     </p>
                   </div>
 
                   {/* Cabinet grid visualization */}
                   <div className="grid grid-cols-4 gap-2 p-2 bg-slate-900 rounded-2xl border border-slate-800">
                     {Array.from({ length: 16 }).map((_, idx) => {
-                      const rowLetter = ["A", "B", "C", "D", "E"][
-                        Math.floor(idx / 4)
-                      ];
+                      const rowLetter = ['A', 'B', 'C', 'D', 'E'][Math.floor(idx / 4)];
                       const colNum = (idx % 4) + 1;
                       const drawerName = `Laci ${rowLetter}-0${colNum}`;
-                      const isSelected =
-                        selectedComponent.drawerId.includes(drawerName);
+                      const isSelected = selectedComponent.drawerId.includes(drawerName);
 
                       return (
                         <div
                           key={idx}
                           className={`h-11 rounded-lg border flex flex-col items-center justify-center transition-all ${
                             isSelected
-                              ? "bg-amber-500 border-amber-300 text-white shadow-[0_0_12px_rgba(245,158,11,0.6)] scale-[1.04]"
-                              : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500"
+                              ? 'bg-amber-500 border-amber-300 text-white shadow-[0_0_12px_rgba(245,158,11,0.6)] scale-[1.04]'
+                              : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
                           }`}
                         >
                           <span
-                            className={`text-[8px] font-mono font-bold block ${isSelected ? "text-amber-100" : "text-slate-500"}`}
+                            className={`text-[8px] font-mono font-bold block ${isSelected ? 'text-amber-100' : 'text-slate-500'}`}
                           >
                             {rowLetter}-{colNum}
                           </span>
                           <span
-                            className={`text-[9px] font-extrabold font-mono mt-0.5 ${isSelected ? "text-white" : "text-slate-300"}`}
+                            className={`text-[9px] font-extrabold font-mono mt-0.5 ${isSelected ? 'text-white' : 'text-slate-300'}`}
                           >
-                            {isSelected ? "AKTIF" : "EMPTY"}
+                            {isSelected ? 'AKTIF' : 'EMPTY'}
                           </span>
                         </div>
                       );
@@ -837,8 +1055,7 @@ export const SmallPartsSearch: React.FC = () => {
 
                   <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
                     <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded bg-amber-500 inline-block" />{" "}
-                      Posisi Terpilih
+                      <span className="w-2 h-2 rounded bg-amber-500 inline-block" /> Posisi Terpilih
                     </span>
                     <span>Rack ID: {selectedComponent.rackId}</span>
                   </div>
@@ -846,8 +1063,8 @@ export const SmallPartsSearch: React.FC = () => {
               </div>
             ) : (
               <p className="text-center py-10 italic text-slate-400">
-                Pilih komponen di tabel sebelah kiri untuk mendeteksi koordinat
-                laci drawer penyimpanannya.
+                Pilih komponen di tabel sebelah kiri untuk mendeteksi koordinat laci drawer
+                penyimpanannya.
               </p>
             )}
           </div>
@@ -855,39 +1072,31 @@ export const SmallPartsSearch: React.FC = () => {
       )}
 
       {/* SUB-TAB 2: Predictive Reorder Dashboard */}
-      {activeSubTab === "predictive" && (
+      {activeSubTab === 'predictive' && (
         <div className="p-5 space-y-5 animate-fadeIn">
           <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/10 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
             <div className="space-y-1">
               <h4 className="font-extrabold text-amber-900 dark:text-amber-400 flex items-center gap-1.5 uppercase font-mono text-[11px] tracking-wide">
-                <TrendingUp className="w-4 h-4 text-amber-500" />{" "}
-                Algoritma Prediksi Pengisian Ulang Stok Otomatis
+                <TrendingUp className="w-4 h-4 text-amber-500" /> Algoritma Prediksi Pengisian Ulang
+                Stok Otomatis
               </h4>
               <p className="text-amber-800 dark:text-amber-500 leading-relaxed text-[11px]">
-                Sistem menghitung <strong>RTO (Reorder Point)</strong> &amp;{" "}
-                <strong>Days Out of Stock</strong> secara dinamis berdasarkan{" "}
-                <code>Stok Saat Ini / Konsumsi Mingguan x 7 Hari</code>.
-                Pembelian disarankan otomatis sebelum kritis.
+                Sistem menghitung <strong>RTO (Reorder Point)</strong> &amp;{' '}
+                <strong>Days Out of Stock</strong> secara dinamis berdasarkan{' '}
+                <code>Stok Saat Ini / Konsumsi Mingguan x 7 Hari</code>. Pembelian disarankan
+                otomatis sebelum kritis.
               </p>
             </div>
 
             <div className="flex gap-2 shrink-0 bg-white/70 dark:bg-zinc-900 p-2.5 rounded-xl border border-amber-100 dark:border-zinc-800">
               <div className="text-center px-2 border-r border-slate-200 dark:border-zinc-900">
-                <p className="text-[9px] text-slate-400 uppercase font-mono">
-                  Critical Items
-                </p>
+                <p className="text-[9px] text-slate-400 uppercase font-mono">Critical Items</p>
                 <strong className="text-rose-600 dark:text-rose-400 text-sm font-black">
-                  {
-                    components.filter((c) => c.stockQty <= (c.minStock || 5))
-                      .length
-                  }{" "}
-                  Parts
+                  {components.filter((c) => c.stockQty <= (c.minStock || 5)).length} Parts
                 </strong>
               </div>
               <div className="text-center px-2">
-                <p className="text-[9px] text-slate-400 uppercase font-mono">
-                  Safety stock limit
-                </p>
+                <p className="text-[9px] text-slate-400 uppercase font-mono">Safety stock limit</p>
                 <strong className="text-slate-700 dark:text-zinc-200 text-sm font-black">
                   7 Days
                 </strong>
@@ -903,15 +1112,9 @@ export const SmallPartsSearch: React.FC = () => {
                     <th className="px-4 py-3">Suku Cadang Mikro</th>
                     <th className="px-4 py-3">Supplier Terdaftar</th>
                     <th className="px-4 py-3 text-center">Stok Saat Ini</th>
-                    <th className="px-4 py-3 text-center">
-                      Avg Konsumsi/Minggu
-                    </th>
-                    <th className="px-4 py-3 text-center">
-                      Estimasi Sisa Hari
-                    </th>
-                    <th className="px-4 py-3 text-center">
-                      Reorder Point (RTO)
-                    </th>
+                    <th className="px-4 py-3 text-center">Avg Konsumsi/Minggu</th>
+                    <th className="px-4 py-3 text-center">Estimasi Sisa Hari</th>
+                    <th className="px-4 py-3 text-center">Reorder Point (RTO)</th>
                     <th className="px-4 py-3 text-center">Status Cerdas</th>
                     <th className="px-4 py-3 text-center">Tindakan PO</th>
                   </tr>
@@ -921,10 +1124,9 @@ export const SmallPartsSearch: React.FC = () => {
                     const avgWeekly = c.avgWeeklyConsumption || 2.5;
                     const daysRemaining = Math.max(
                       0,
-                      parseFloat(((c.stockQty / avgWeekly) * 7).toFixed(1)),
+                      parseFloat(((c.stockQty / avgWeekly) * 7).toFixed(1))
                     );
-                    const isCritical =
-                      daysRemaining <= 7 || c.stockQty <= c.minStock;
+                    const isCritical = daysRemaining <= 7 || c.stockQty <= c.minStock;
                     const isWarning = daysRemaining > 7 && daysRemaining <= 15;
 
                     return (
@@ -941,14 +1143,14 @@ export const SmallPartsSearch: React.FC = () => {
                           </p>
                         </td>
                         <td className="px-4 py-3.5 text-slate-500 dark:text-zinc-400 font-bold">
-                          {c.supplierName || "Sinar Jaya Spareparts"}
+                          {c.supplierName || 'Sinar Jaya Spareparts'}
                         </td>
                         <td className="px-4 py-3.5 text-center font-mono font-bold">
                           <span
                             className={`px-2 py-0.5 rounded ${
                               c.stockQty <= c.minStock
-                                ? "bg-rose-100 text-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
-                                : "bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/30 dark:text-rose-400'
+                                : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
                             }`}
                           >
                             {c.stockQty} Pcs
@@ -961,10 +1163,10 @@ export const SmallPartsSearch: React.FC = () => {
                           <strong
                             className={
                               isCritical
-                                ? "text-rose-600"
+                                ? 'text-rose-600'
                                 : isWarning
-                                  ? "text-amber-600"
-                                  : "text-emerald-600"
+                                  ? 'text-amber-600'
+                                  : 'text-emerald-600'
                             }
                           >
                             {daysRemaining} Hari Lagi
@@ -1007,226 +1209,195 @@ export const SmallPartsSearch: React.FC = () => {
       )}
 
       {/* AUTO PURCHASE ORDER (PO) GENERATOR MODAL */}
-      {selectedPoComp && createPortal(
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-900 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
-            <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-b border-slate-100 dark:border-zinc-900 flex items-center justify-between">
-              <div>
-                <h4 className="font-extrabold text-sm text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 uppercase font-mono tracking-wide">
-                  <ShoppingCart className="w-4 h-4 text-amber-500" /> Draf
-                  Purchase Order Suku Cadang
-                </h4>
-                <p className="text-[10px] text-slate-400">
-                  Reorder otomatis berbasis rata-rata konsumsi.
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedPoComp(null)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-300 dark:hover:bg-zinc-700 text-base"
-              >
-                &times;
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {poSuccess ? (
-                <div className="text-center py-6 space-y-3 animate-scaleUp">
-                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
-                    <Check className="w-6 h-6" />
-                  </div>
-                  <h5 className="font-black text-slate-800 dark:text-slate-100 text-sm">
-                    PO Berhasil Dikirim ke Supplier!
-                  </h5>
-                  <p className="text-[11px] text-slate-400 leading-relaxed px-4">
-                    Pesanan Suku Cadang telah dikonfirmasi dan draf email PO
-                    otomatis dikirim ke{" "}
-                    <strong>{selectedPoComp.supplierName}</strong>. Stok akan
-                    masuk secara otomatis setelah diverifikasi.
+      {selectedPoComp &&
+        createPortal(
+          <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-900 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
+              <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-b border-slate-100 dark:border-zinc-900 flex items-center justify-between">
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 uppercase font-mono tracking-wide">
+                    <ShoppingCart className="w-4 h-4 text-amber-500" /> Draf Purchase Order Suku
+                    Cadang
+                  </h4>
+                  <p className="text-[10px] text-slate-400">
+                    Reorder otomatis berbasis rata-rata konsumsi.
                   </p>
+                </div>
+                <button
+                  onClick={() => setSelectedPoComp(null)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-300 dark:hover:bg-zinc-700 text-base"
+                >
+                  &times;
+                </button>
+              </div>
 
-                  {/* Thermal order ticket display */}
-                  <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200/60 dark:border-zinc-800/60 p-4.5 rounded-xl font-mono text-[9.5px] text-slate-700 dark:text-slate-300 max-w-xs mx-auto text-left space-y-2 leading-tight">
-                    <div className="text-center border-b border-dashed border-slate-300 dark:border-zinc-800 pb-2">
-                      <p className="font-extrabold uppercase">
-                        {businessName} - PO SYSTEM
-                      </p>
-                      <p className="text-[8px] text-slate-400">
-                        Pemesanan Suku Cadang Mikro
-                      </p>
+              <div className="p-5 space-y-4">
+                {poSuccess ? (
+                  <div className="text-center py-6 space-y-3 animate-scaleUp">
+                    <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+                      <Check className="w-6 h-6" />
                     </div>
+                    <h5 className="font-black text-slate-800 dark:text-slate-100 text-sm">
+                      PO Berhasil Dikirim ke Supplier!
+                    </h5>
+                    <p className="text-[11px] text-slate-400 leading-relaxed px-4">
+                      Pesanan Suku Cadang telah dikonfirmasi dan draf email PO otomatis dikirim ke{' '}
+                      <strong>{selectedPoComp.supplierName}</strong>. Stok akan masuk secara
+                      otomatis setelah diverifikasi.
+                    </p>
 
-                    <div>
-                      <p>
-                        <strong>PO No:</strong> {stablePoNo}
-                      </p>
-                      <p>
-                        <strong>Supplier:</strong> {selectedPoComp.supplierName}
-                      </p>
-                      <p>
-                        <strong>Tanggal:</strong> 2026-07-02
-                      </p>
-                    </div>
-
-                    <div className="border-t border-b border-dashed border-slate-300 dark:border-zinc-800 py-2 my-2 space-y-1">
-                      <div className="flex justify-between font-bold">
-                        <span>{selectedPoComp.name}</span>
-                        <span>x{poQuantity} Pcs</span>
+                    {/* Thermal order ticket display */}
+                    <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200/60 dark:border-zinc-800/60 p-4.5 rounded-xl font-mono text-[9.5px] text-slate-700 dark:text-slate-300 max-w-xs mx-auto text-left space-y-2 leading-tight">
+                      <div className="text-center border-b border-dashed border-slate-300 dark:border-zinc-800 pb-2">
+                        <p className="font-extrabold uppercase">{businessName} - PO SYSTEM</p>
+                        <p className="text-[8px] text-slate-400">Pemesanan Suku Cadang Mikro</p>
                       </div>
-                      <div className="flex justify-between text-slate-400 text-[8.5px]">
-                        <span>Price/Pcs:</span>
+
+                      <div>
+                        <p>
+                          <strong>PO No:</strong> {stablePoNo}
+                        </p>
+                        <p>
+                          <strong>Supplier:</strong> {selectedPoComp.supplierName}
+                        </p>
+                        <p>
+                          <strong>Tanggal:</strong> 2026-07-02
+                        </p>
+                      </div>
+
+                      <div className="border-t border-b border-dashed border-slate-300 dark:border-zinc-800 py-2 my-2 space-y-1">
+                        <div className="flex justify-between font-bold">
+                          <span>{selectedPoComp.name}</span>
+                          <span>x{poQuantity} Pcs</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400 text-[8.5px]">
+                          <span>Price/Pcs:</span>
+                          <span>Rp {(selectedPoComp.price * 0.75).toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between font-extrabold text-xs">
+                        <span>EST. TOTAL:</span>
                         <span>
-                          Rp {(selectedPoComp.price * 0.75).toLocaleString()}
+                          Rp {(selectedPoComp.price * 0.75 * poQuantity).toLocaleString()}
                         </span>
                       </div>
-                    </div>
 
-                    <div className="flex justify-between font-extrabold text-xs">
-                      <span>EST. TOTAL:</span>
-                      <span>
-                        Rp{" "}
-                        {(
-                          selectedPoComp.price *
-                          0.75 *
-                          poQuantity
-                        ).toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="text-center text-[7.5px] text-slate-400 pt-2 border-t border-dashed border-slate-300 dark:border-zinc-800 leading-none">
-                      * Dibuat otomatis oleh sistem prediksi stok
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      onClick={handlePrintPurchaseOrder}
-                      className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-extrabold rounded-lg flex items-center justify-center gap-1.5 text-xs"
-                    >
-                      <Printer className="w-4 h-4" /> Cetak PO (
-                      {poPrinterFormat}mm)
-                    </button>
-                    <select
-                      value={poPrinterFormat}
-                      onChange={(e) =>
-                        setPoPrinterFormat(e.target.value as any)
-                      }
-                      className="bg-slate-100 border text-xs px-2.5 font-bold rounded-lg border-slate-200"
-                    >
-                      <option value="80">80mm</option>
-                      <option value="58">58mm</option>
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4 text-xs animate-fadeIn">
-                  <div className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-xl border border-slate-100 dark:border-zinc-900/60 flex gap-2.5">
-                    <Info className="w-4.5 h-4.5 text-indigo-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-extrabold text-slate-800 dark:text-zinc-200">
-                        {selectedPoComp.name}
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        Current Stock: {selectedPoComp.stockQty} Pcs | RTO:{" "}
-                        {selectedPoComp.minStock} Pcs
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
-                        Pilih Supplier Pembelian
-                      </label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={
-                          selectedPoComp.supplierName || "Sinar Jaya Spareparts"
-                        }
-                        className="w-full px-2.5 py-2 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-lg outline-none font-bold text-slate-700 dark:text-zinc-300"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
-                          Jumlah Pemesanan (Pcs)
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          value={poQuantity}
-                          onChange={(e) =>
-                            setPoQuantity(
-                              Math.max(1, parseInt(e.target.value) || 0),
-                            )
-                          }
-                          className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-amber-500 rounded-lg outline-none font-bold font-mono text-amber-600"
-                        />
+                      <div className="text-center text-[7.5px] text-slate-400 pt-2 border-t border-dashed border-slate-300 dark:border-zinc-800 leading-none">
+                        * Dibuat otomatis oleh sistem prediksi stok
                       </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handlePrintPurchaseOrder}
+                        className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-extrabold rounded-lg flex items-center justify-center gap-1.5 text-xs"
+                      >
+                        <Printer className="w-4 h-4" /> Cetak PO ({poPrinterFormat}mm)
+                      </button>
+                      <select
+                        value={poPrinterFormat}
+                        onChange={(e) => setPoPrinterFormat(e.target.value as any)}
+                        className="bg-slate-100 border text-xs px-2.5 font-bold rounded-lg border-slate-200"
+                      >
+                        <option value="80">80mm</option>
+                        <option value="58">58mm</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 text-xs animate-fadeIn">
+                    <div className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-xl border border-slate-100 dark:border-zinc-900/60 flex gap-2.5">
+                      <Info className="w-4.5 h-4.5 text-indigo-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-extrabold text-slate-800 dark:text-zinc-200">
+                          {selectedPoComp.name}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          Current Stock: {selectedPoComp.stockQty} Pcs | RTO:{' '}
+                          {selectedPoComp.minStock} Pcs
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
                       <div>
                         <label className="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
-                          Estimasi Harga Diskon (Rp)
+                          Pilih Supplier Pembelian
                         </label>
                         <input
                           type="text"
                           readOnly
-                          value={`Rp ${(selectedPoComp.price * 0.75).toLocaleString()}`}
-                          className="w-full px-2.5 py-1.5 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-lg outline-none font-mono"
+                          value={selectedPoComp.supplierName || 'Sinar Jaya Spareparts'}
+                          className="w-full px-2.5 py-2 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-lg outline-none font-bold text-slate-700 dark:text-zinc-300"
                         />
                       </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
+                            Jumlah Pemesanan (Pcs)
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            value={poQuantity}
+                            onChange={(e) =>
+                              setPoQuantity(Math.max(1, parseInt(e.target.value) || 0))
+                            }
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-amber-500 rounded-lg outline-none font-bold font-mono text-amber-600"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
+                            Estimasi Harga Diskon (Rp)
+                          </label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={`Rp ${(selectedPoComp.price * 0.75).toLocaleString()}`}
+                            className="w-full px-2.5 py-1.5 bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-lg outline-none font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-indigo-500/10 rounded-xl space-y-1 border border-accent/20 text-[10.5px]">
+                        <div className="flex justify-between text-slate-400">
+                          <span>Original Price:</span>
+                          <span>Rp {(selectedPoComp.price * poQuantity).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Volume Discount (25%):</span>
+                          <span className="text-emerald-500">
+                            - Rp {(selectedPoComp.price * 0.25 * poQuantity).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-extrabold text-slate-800 dark:text-zinc-200 border-t border-slate-200/50 dark:border-zinc-800 pt-1 mt-1">
+                          <span>Total Nilai PO:</span>
+                          <span>
+                            Rp {(selectedPoComp.price * 0.75 * poQuantity).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="p-3 bg-indigo-500/10 rounded-xl space-y-1 border border-accent/20 text-[10.5px]">
-                      <div className="flex justify-between text-slate-400">
-                        <span>Original Price:</span>
-                        <span>
-                          Rp{" "}
-                          {(selectedPoComp.price * poQuantity).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Volume Discount (25%):</span>
-                        <span className="text-emerald-500">
-                          - Rp{" "}
-                          {(
-                            selectedPoComp.price *
-                            0.25 *
-                            poQuantity
-                          ).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between font-extrabold text-slate-800 dark:text-zinc-200 border-t border-slate-200/50 dark:border-zinc-800 pt-1 mt-1">
-                        <span>Total Nilai PO:</span>
-                        <span>
-                          Rp{" "}
-                          {(
-                            selectedPoComp.price *
-                            0.75 *
-                            poQuantity
-                          ).toLocaleString()}
-                        </span>
-                      </div>
+                    <div className="flex gap-2.5 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPoComp(null)}
+                        className="w-1/3 py-2 border border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900 text-xs font-bold rounded-xl transition"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleGeneratePo}
+                        className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow-md transition"
+                      >
+                        Kirim &amp; Cetak PO
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex gap-2.5 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPoComp(null)}
-                      className="w-1/3 py-2 border border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900 text-xs font-bold rounded-xl transition"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleGeneratePo}
-                      className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow-md transition"
-                    >
-                      Kirim &amp; Cetak PO
-                    </button>
-                  </div>
-                </div>
                 )}
               </div>
             </div>

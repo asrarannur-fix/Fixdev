@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
 import { useToast } from '../ui/Toast';
+import { readJsonResponse } from '../../utils/apiResponse';
 
 interface GatewayConfigData {
   merchantId: string;
@@ -32,7 +33,7 @@ export const GatewayConfig: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await apiFetch('/api/billing/gateway-config');
-      const data = await res.json();
+      const data = await readJsonResponse<any>(res, 'Konfigurasi gateway');
       setConfig(data);
       setForm({
         merchantId: data?.merchantId || '',

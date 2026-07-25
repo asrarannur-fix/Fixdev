@@ -3,6 +3,7 @@ import type {
   SuperAdminOverview,
   SuperAdminTenantSummary,
   TenantOperationalSummary,
+  AggregatedOperationalSummary,
 } from '../types';
 import { readJsonResponse } from '../utils/apiResponse';
 
@@ -74,4 +75,14 @@ export async function fetchTenantOperationalSummary(
     headers: { 'X-SuperAdmin-Mode': readOnly ? 'read-only' : 'edit' },
   });
   return readJsonResponse<TenantOperationalSummary>(response, 'Ringkasan operasional tenant');
+}
+
+export async function fetchAggregatedOperationalSummary(
+  apiFetch: SuperAdminFetch,
+  readOnly: boolean
+) {
+  const response = await apiFetch('/api/superadmin/operational-summary', {
+    headers: { 'X-SuperAdmin-Mode': readOnly ? 'read-only' : 'edit' },
+  });
+  return readJsonResponse<AggregatedOperationalSummary>(response, 'Ringkasan operasional agregat');
 }

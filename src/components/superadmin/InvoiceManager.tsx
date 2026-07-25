@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
 import { useToast } from '../ui/Toast';
+import { readJsonResponse } from '../../utils/apiResponse';
 
 interface Invoice {
   id: string;
@@ -42,32 +43,32 @@ export const InvoiceManager: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiFetch('/api/billing/subscription?tenantId=all');
-      const data = await res.json();
-      setInvoices(Array.isArray(data?.invoices) ? data.invoices : []);
-    } catch {
-      try {
-        const tenantsRes = await apiFetch('/api/superadmin/tenants?pageSize=100');
-        const tenantsData = await tenantsRes.json();
-        const tenants = Array.isArray(tenantsData?.items) ? tenantsData.items : [];
-        const allInvoices: Invoice[] = [];
-        for (const t of tenants.slice(0, 50)) {
-          try {
-            const subRes = await apiFetch(`/api/billing/subscription?tenantId=${t.id}`);
-            const sub = await subRes.json();
-            if (sub?.invoices) {
-              for (const inv of sub.invoices) {
-                allInvoices.push({ ...inv, tenantName: t.name || t.subdomain || t.id });
-              }
-            }
-          } catch {
-            // skip tenant
+      const tenantsRes = await apiFetch('/api/superadmin/tenants?pageSize=100');
+      const tenantsData = await readJsonResponse<{ items: any[]; total: number }>(
+        tenantsRes,
+        'Daftar tenant'
+      );
+      const tenants = tenantsData?.items || [];
+      const allInvoices: Invoice[] = [];
+      for (const t of tenants.slice(0, 50)) {
+        try {
+          const subRes = await apiFetch(`/api/superadmin/tenants/${t.id}/operational-summary`);
+          const sub = await readJsonResponse<any>(subRes, 'Ringkasan operasional tenant');
+          const tenantInvoices = sub?.tenant?.billingHistory || [];
+          for (const inv of tenantInvoices) {
+            allInvoices.push({
+              ...inv,
+              tenantName: t.name || t.subdomain || t.id,
+              tenantId: t.id,
+            });
           }
+        } catch {
+          // skip tenant
         }
-        setInvoices(allInvoices);
-      } catch {
-        setError('Gagal memuat daftar invoice');
       }
+      setInvoices(allInvoices);
+    } catch {
+      setError('Gagal memuat daftar invoice');
     } finally {
       setLoading(false);
     }

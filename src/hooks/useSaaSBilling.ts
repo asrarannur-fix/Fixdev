@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { SubscriptionTier } from "../types";
-import { useToast } from "../components/ui/Toast";
+import { useState, useEffect, useRef } from 'react';
+import { SubscriptionTier } from '../types';
+import { useToast } from '../components/ui/Toast';
+import { readJsonResponse } from '../utils/apiResponse';
 
 export interface Plan {
   tier: SubscriptionTier;
@@ -21,27 +22,81 @@ export interface Plan {
 export const DEFAULT_PLANS: Plan[] = [
   {
     tier: SubscriptionTier.BASIC,
-    name: "Basic Growth Plan",
+    name: 'Basic Growth Plan',
     priceMonthly: 99000,
     priceYearly: 990000,
-    features: ["POS Kasir Utama", "Daftar Servis Dasar", "1 Gudang / Cabang", "Maks 3 Staff User", "Penyimpanan 500MB"],
-    limits: { users: 3, branches: 1, storageMb: 500, maxServiceTickets: 50, maxPosTransactions: 200, features: ["POS", "SERVICE"] },
+    features: [
+      'POS Kasir Utama',
+      'Daftar Servis Dasar',
+      '1 Gudang / Cabang',
+      'Maks 3 Staff User',
+      'Penyimpanan 500MB',
+    ],
+    limits: {
+      users: 3,
+      branches: 1,
+      storageMb: 500,
+      maxServiceTickets: 50,
+      maxPosTransactions: 200,
+      features: ['POS', 'SERVICE'],
+    },
   },
   {
     tier: SubscriptionTier.PRO,
-    name: "SaaS Professional ERP",
+    name: 'SaaS Professional ERP',
     priceMonthly: 250000,
     priceYearly: 2400000,
-    features: ["Semua Fitur Basic", "Double-Entry Accounting & Ledger", "WhatsApp Broadcast", "Multi-Branch & Cabang (Maks 5)", "Maks 15 Staff User", "Penyimpanan 2GB"],
-    limits: { users: 15, branches: 5, storageMb: 2048, maxServiceTickets: 500, maxPosTransactions: 2000, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM"] },
+    features: [
+      'Semua Fitur Basic',
+      'Double-Entry Accounting & Ledger',
+      'WhatsApp Broadcast',
+      'Multi-Branch & Cabang (Maks 5)',
+      'Maks 15 Staff User',
+      'Penyimpanan 2GB',
+    ],
+    limits: {
+      users: 15,
+      branches: 5,
+      storageMb: 2048,
+      maxServiceTickets: 500,
+      maxPosTransactions: 2000,
+      features: ['POS', 'SERVICE', 'ACCOUNTING', 'HRM', 'CRM', 'WHATSAPP', 'TELEGRAM'],
+    },
   },
   {
     tier: SubscriptionTier.ENTERPRISE,
-    name: "Enterprise Multi-Tenant ERP",
+    name: 'Enterprise Multi-Tenant ERP',
     priceMonthly: 1500000,
     priceYearly: 15000000,
-    features: ["Semua Fitur Pro", "Integrasi Marketplace Sync", "Workflow Builder (Automasi)", "Proteksi Keamanan & Fraud Detector", "Hingga 20 Cabang", "Hingga 100 Staff User", "Penyimpanan 10GB", "Custom Domain & White-Label"],
-    limits: { users: 100, branches: 20, storageMb: 10240, maxServiceTickets: 1000000, maxPosTransactions: 1000000, features: ["POS", "SERVICE", "ACCOUNTING", "HRM", "CRM", "WHATSAPP", "TELEGRAM", "MARKETPLACE", "RENTAL", "SECURITY"] },
+    features: [
+      'Semua Fitur Pro',
+      'Integrasi Marketplace Sync',
+      'Workflow Builder (Automasi)',
+      'Proteksi Keamanan & Fraud Detector',
+      'Hingga 20 Cabang',
+      'Hingga 100 Staff User',
+      'Penyimpanan 10GB',
+      'Custom Domain & White-Label',
+    ],
+    limits: {
+      users: 100,
+      branches: 20,
+      storageMb: 10240,
+      maxServiceTickets: 1000000,
+      maxPosTransactions: 1000000,
+      features: [
+        'POS',
+        'SERVICE',
+        'ACCOUNTING',
+        'HRM',
+        'CRM',
+        'WHATSAPP',
+        'TELEGRAM',
+        'MARKETPLACE',
+        'RENTAL',
+        'SECURITY',
+      ],
+    },
   },
 ];
 
@@ -50,16 +105,14 @@ export function useSaaSBilling(
   activeTenant: any,
   updateTenant: (id: string, data: any) => void,
   apiFetch: (url: string, init?: RequestInit) => Promise<Response>,
-  readOnlyMode = false,
+  readOnlyMode = false
 ) {
   const { showToast } = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [usingFallbackPlans, setUsingFallbackPlans] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
-    "monthly",
-  );
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [invoice, setInvoice] = useState<any>(null);
   const [paymentLoading, setPaymentLoading] = useState<boolean>(false);
@@ -68,9 +121,7 @@ export function useSaaSBilling(
   const [cronLoading, setCronLoading] = useState<boolean>(false);
   const [paymentTimer, setPaymentTimer] = useState<number>(180);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
-  const [detailModalInvoice, setDetailModalInvoice] = useState<any | null>(
-    null,
-  );
+  const [detailModalInvoice, setDetailModalInvoice] = useState<any | null>(null);
   const latestRequestId = useRef<number>(0);
   const activeTenantRef = useRef(activeTenant);
   activeTenantRef.current = activeTenant;
@@ -86,11 +137,11 @@ export function useSaaSBilling(
       setLoading(true);
       setBillingError(null);
       setUsingFallbackPlans(false);
-      const plansRes = await apiFetch("/api/billing/plans", { signal: controller.signal });
+      const plansRes = await apiFetch('/api/billing/plans', { signal: controller.signal });
       if (requestId !== latestRequestId.current) return;
 
       if (plansRes.ok) {
-        const plansData = await plansRes.json();
+        const plansData = await readJsonResponse<any>(plansRes, 'Paket billing');
         if (requestId !== latestRequestId.current) return;
         setPlans(Array.isArray(plansData) && plansData.length > 0 ? plansData : DEFAULT_PLANS);
       } else {
@@ -98,45 +149,46 @@ export function useSaaSBilling(
         if (requestId !== latestRequestId.current) return;
         setPlans(DEFAULT_PLANS);
         setUsingFallbackPlans(true);
-        setBillingError(`Paket billing gagal dimuat (HTTP ${plansRes.status}). ${detail.slice(0, 180)}`);
+        setBillingError(
+          `Paket billing gagal dimuat (HTTP ${plansRes.status}). ${detail.slice(0, 180)}`
+        );
       }
 
-      const subRes = await apiFetch(
-        `/api/billing/subscription?tenantId=${selectedTenantId}`,
-        { signal: controller.signal, headers: { "X-Tenant-ID": selectedTenantId } },
-      );
+      const subRes = await apiFetch(`/api/billing/subscription?tenantId=${selectedTenantId}`, {
+        signal: controller.signal,
+        headers: { 'X-Tenant-ID': selectedTenantId },
+      });
       if (requestId !== latestRequestId.current) return;
 
       if (subRes.ok) {
-        const subData = await subRes.json();
+        const subData = await readJsonResponse<any>(subRes, 'Langganan tenant');
         if (requestId !== latestRequestId.current) return;
         const nextInvoices = Array.isArray(subData.invoices) ? subData.invoices : [];
         setInvoices(nextInvoices);
 
         const tenant = activeTenantRef.current;
-        if (
-          tenant &&
-          (!tenant.billingHistory ||
-            tenant.billingHistory.length === 0)
-        ) {
+        if (tenant && (!tenant.billingHistory || tenant.billingHistory.length === 0)) {
           updateTenant(selectedTenantId, { billingHistory: nextInvoices });
         }
       } else {
         const detail = await subRes.text();
         if (requestId !== latestRequestId.current) return;
         const migrationHint = /relation|saas_invoices|app_settings/i.test(detail)
-          ? " Schema billing belum diterapkan. Jalankan migration 005 dan 006 dari menu Database."
-          : "";
-        setBillingError(`Riwayat billing gagal dimuat (HTTP ${subRes.status}).${migrationHint} ${detail.slice(0, 180)}`);
+          ? ' Schema billing belum diterapkan. Jalankan migration 005 dan 006 dari menu Database.'
+          : '';
+        setBillingError(
+          `Riwayat billing gagal dimuat (HTTP ${subRes.status}).${migrationHint} ${detail.slice(0, 180)}`
+        );
         setInvoices([]);
       }
     } catch (err: any) {
       if (requestId !== latestRequestId.current) return;
-      const message = err?.name === "AbortError"
-        ? "Billing timeout setelah 8 detik. Periksa sesi login dan koneksi API."
-        : err?.message || "Gagal memuat billing.";
+      const message =
+        err?.name === 'AbortError'
+          ? 'Billing timeout setelah 8 detik. Periksa sesi login dan koneksi API.'
+          : err?.message || 'Gagal memuat billing.';
       setBillingError(message);
-      showToast(message, "error");
+      showToast(message, 'error');
     } finally {
       if (requestId === latestRequestId.current) {
         window.clearTimeout(timeoutId);
@@ -168,32 +220,31 @@ export function useSaaSBilling(
     } else if (paymentTimer === 0) {
       setShowQrModal(false);
       setInvoice(null);
-      showToast(
-        "Waktu pembayaran QRIS habis. Silakan buat tagihan kembali.",
-        "error",
-      );
+      showToast('Waktu pembayaran QRIS habis. Silakan buat tagihan kembali.', 'error');
     }
     return () => clearInterval(interval);
   }, [showQrModal, paymentTimer]);
 
   // Handle plan selection & invoice creation
-  const handleSelectPlan = async (plan: Plan, paymentChannel: "MIDTRANS" | "MANUAL" = "MANUAL") => {
+  const handleSelectPlan = async (plan: Plan, paymentChannel: 'MIDTRANS' | 'MANUAL' = 'MANUAL') => {
     if (readOnlyMode) {
-      showToast("Aktifkan Edit Mode untuk membuat invoice.", "error");
+      showToast('Aktifkan Edit Mode untuk membuat invoice.', 'error');
       return;
     }
     if (!selectedTenantId || !activeTenant) {
-      showToast("Pilih tenant aktif sebelum membuat invoice.", "error");
+      showToast('Pilih tenant aktif sebelum membuat invoice.', 'error');
       return;
     }
     try {
       setPaymentLoading(true);
-      const merchantName = activeTenant
-        ? activeTenant.name
-        : "SaaS ERP Merchant";
-      const response = await apiFetch("/api/billing/create-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId, "Idempotency-Key": crypto.randomUUID() },
+      const merchantName = activeTenant ? activeTenant.name : 'SaaS ERP Merchant';
+      const response = await apiFetch('/api/billing/create-invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': selectedTenantId,
+          'Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify({
           tenantId: selectedTenantId,
           tier: plan.tier,
@@ -205,34 +256,34 @@ export function useSaaSBilling(
       if (response.ok) {
         const data = await response.json();
         setInvoice(data.invoice);
-        if (paymentChannel === "MIDTRANS" && data.invoice.qrisData) {
+        if (paymentChannel === 'MIDTRANS' && data.invoice.qrisData) {
           setPaymentTimer(180);
           setShowQrModal(true);
         } else {
           setShowQrModal(false);
-          showToast("Invoice manual dibuat. Lengkapi formulir dan unggah bukti pembayaran.", "success");
+          showToast(
+            'Invoice manual dibuat. Lengkapi formulir dan unggah bukti pembayaran.',
+            'success'
+          );
           await loadPlansAndHistory();
         }
       } else {
-        showToast("Gagal membuat invoice tagihan.", "error");
+        showToast('Gagal membuat invoice tagihan.', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast("Terjadi kesalahan jaringan.", "error");
+      showToast('Terjadi kesalahan jaringan.', 'error');
     } finally {
       setPaymentLoading(false);
     }
   };
 
   // Toggle Auto-Renew state
-  const handleToggleAutoRenew = async (
-    invoiceId: string,
-    currentVal: boolean,
-  ) => {
+  const handleToggleAutoRenew = async (invoiceId: string, currentVal: boolean) => {
     try {
-      const response = await apiFetch("/api/billing/toggle-renew", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Tenant-ID": selectedTenantId },
+      const response = await apiFetch('/api/billing/toggle-renew', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': selectedTenantId },
         body: JSON.stringify({
           invoiceId,
           autoRenew: !currentVal,
@@ -250,18 +301,18 @@ export function useSaaSBilling(
   // Run Cron simulation
   const handleRunCronSimulation = async () => {
     if (readOnlyMode) {
-      showToast("Aktifkan Edit Mode untuk menjalankan cron billing.", "error");
+      showToast('Aktifkan Edit Mode untuk menjalankan cron billing.', 'error');
       return;
     }
     try {
       setCronLoading(true);
       setCronLogs([
-        "[START] Memulai pemindaian terjadwal recurring billing...",
+        '[START] Memulai pemindaian terjadwal recurring billing...',
         `[TIME] ${new Date().toLocaleTimeString()}`,
       ]);
 
-      const response = await apiFetch("/api/billing/simulate-recurring-cron", {
-        method: "POST",
+      const response = await apiFetch('/api/billing/simulate-recurring-cron', {
+        method: 'POST',
       });
 
       if (response.ok) {
@@ -270,7 +321,7 @@ export function useSaaSBilling(
         setTimeout(() => {
           setCronLogs((prev) => [
             ...prev,
-            "[INFO] Memeriksa semua tenant dengan subscription status = ACTIVE...",
+            '[INFO] Memeriksa semua tenant dengan subscription status = ACTIVE...',
             `[DB] Ditemukan ${invoices.length} rekaman invoice pembayaran.`,
             ...logs.map((log: string) => `[RECURRING] ${log}`),
             `[SUCCESS] Sinkronisasi cron berhasil diselesaikan secara aman pada ${new Date().toLocaleTimeString()}`,
@@ -280,10 +331,7 @@ export function useSaaSBilling(
       }
     } catch (err) {
       console.error(err);
-      setCronLogs((prev) => [
-        ...prev,
-        "[ERROR] Terjadi kesalahan fatal koneksi cron.",
-      ]);
+      setCronLogs((prev) => [...prev, '[ERROR] Terjadi kesalahan fatal koneksi cron.']);
     } finally {
       setTimeout(() => setCronLoading(false), 1000);
     }

@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
-import { useToast } from "./ui/Toast";
-import { useConfirm } from "./ui/ConfirmDialog";
-import { useSaaS } from "../context/SaaSContext";
+import React, { useState, useEffect } from 'react';
+import { useToast } from './ui/Toast';
+import { useConfirm } from './ui/ConfirmDialog';
+import { useSaaS } from '../context/SaaSContext';
+import { readJsonResponse } from '../utils/apiResponse';
 import {
   Code,
   Terminal,
@@ -29,7 +30,7 @@ import {
   Sliders,
   Database,
   ArrowRightLeft,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface Token {
   id: string;
@@ -46,45 +47,41 @@ export function DeveloperApiManager() {
   const { showToast } = useToast();
   const { confirm: showConfirm } = useConfirm();
   const { apiFetch } = useSaaS();
-  const [activeTab, setActiveTab] = useState<"tokens" | "docs" | "playground">(
-    "tokens",
-  );
+  const [activeTab, setActiveTab] = useState<'tokens' | 'docs' | 'playground'>('tokens');
 
   // Tokens state
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loadingTokens, setLoadingTokens] = useState(false);
 
   // New token form state
-  const [tokenName, setTokenName] = useState("");
-  const [selectedAbilities, setSelectedAbilities] = useState<string[]>(["*"]);
+  const [tokenName, setTokenName] = useState('');
+  const [selectedAbilities, setSelectedAbilities] = useState<string[]>(['*']);
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
-  const [generatedTokenName, setGeneratedTokenName] = useState("");
+  const [generatedTokenName, setGeneratedTokenName] = useState('');
   const [showTokenValue, setShowTokenValue] = useState(true);
   const [copiedToken, setCopiedToken] = useState(false);
 
   // Playground state
-  const [selectedToken, setSelectedToken] = useState<string>("");
-  const [playgroundEndpoint, setPlaygroundEndpoint] =
-    useState<string>("customers");
-  const [playgroundMethod, setPlaygroundMethod] = useState<
-    "GET" | "POST" | "PUT" | "DELETE"
-  >("GET");
-  const [playgroundPathParams, setPlaygroundPathParams] = useState<string>("");
-  const [playgroundQueryParams, setPlaygroundQueryParams] =
-    useState<string>("");
+  const [selectedToken, setSelectedToken] = useState<string>('');
+  const [playgroundEndpoint, setPlaygroundEndpoint] = useState<string>('customers');
+  const [playgroundMethod, setPlaygroundMethod] = useState<'GET' | 'POST' | 'PUT' | 'DELETE'>(
+    'GET'
+  );
+  const [playgroundPathParams, setPlaygroundPathParams] = useState<string>('');
+  const [playgroundQueryParams, setPlaygroundQueryParams] = useState<string>('');
   const [playgroundBody, setPlaygroundBody] = useState<string>(
     JSON.stringify(
       {
-        name: "Budi Santoso",
-        email: "budi.santoso@gmail.com",
-        phone: "081234567890",
-        address: "Jl. Sudirman No. 45, Makassar",
-        segment: "PERSONAL",
-        notes: "Minta diperiksa berkala",
+        name: 'Budi Santoso',
+        email: 'budi.santoso@gmail.com',
+        phone: '081234567890',
+        address: 'Jl. Sudirman No. 45, Makassar',
+        segment: 'PERSONAL',
+        notes: 'Minta diperiksa berkala',
       },
       null,
-      2,
-    ),
+      2
+    )
   );
   const [executingCall, setExecutingCall] = useState(false);
   const [apiResponse, setApiResponse] = useState<{
@@ -95,21 +92,21 @@ export function DeveloperApiManager() {
   } | null>(null);
 
   // Documentation Selected Endpoint
-  const [selectedDocId, setSelectedDocId] = useState<string>("get_customers");
+  const [selectedDocId, setSelectedDocId] = useState<string>('get_customers');
 
   // Load active tokens
   const fetchTokens = async () => {
     setLoadingTokens(true);
     try {
-      const res = await apiFetch("/api/v1/auth/tokens");
+      const res = await apiFetch('/api/v1/auth/tokens');
       if (res.ok) {
-        const data = await res.json();
+        const data = await readJsonResponse<any>(res, 'Token API');
         setTokens(data);
       } else {
-        console.error("Gagal mengambil data tokens");
+        console.error('Gagal mengambil data tokens');
       }
     } catch (err) {
-      console.error("Error fetching tokens:", err);
+      console.error('Error fetching tokens:', err);
     } finally {
       setLoadingTokens(false);
     }
@@ -123,41 +120,38 @@ export function DeveloperApiManager() {
   const handleCreateToken = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tokenName.trim()) {
-      showToast("Nama token wajib diisi!", "error");
+      showToast('Nama token wajib diisi!', 'error');
       return;
     }
 
     try {
       // Send creation request
-      const res = await fetch("/api/v1/auth/token", {
-        method: "POST",
+      const res = await fetch('/api/v1/auth/token', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: "owner@example.com", // Seed tenant owner credential
+          email: 'owner@example.com', // Seed tenant owner credential
           tokenName: tokenName.trim(),
           abilities: selectedAbilities,
         }),
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const data = await readJsonResponse<any>(res, 'Token API');
         setGeneratedToken(data.token);
         setGeneratedTokenName(data.name);
-        setTokenName("");
-        setSelectedAbilities(["*"]);
+        setTokenName('');
+        setSelectedAbilities(['*']);
         fetchTokens(); // Refresh list
       } else {
-        const errorData = await res.json();
-        showToast(
-          `Gagal membuat token: ${errorData.error || errorData.message}`,
-          "error",
-        );
+        const errorData = await readJsonResponse<any>(res, 'Error');
+        showToast(`Gagal membuat token: ${errorData.error || errorData.message}`, 'error');
       }
     } catch (err) {
-      console.error("Error creating token:", err);
-      showToast("Terjadi kesalahan jaringan.", "error");
+      console.error('Error creating token:', err);
+      showToast('Terjadi kesalahan jaringan.', 'error');
     }
   };
 
@@ -165,10 +159,10 @@ export function DeveloperApiManager() {
   const handleRevokeToken = async (tokenId: string, tokenName: string) => {
     if (
       !(await showConfirm({
-        title: "Cabut Akses Token",
+        title: 'Cabut Akses Token',
         message: `Apakah Anda yakin ingin mencabut (delete) token '${tokenName}'? Aplikasi eksternal yang memakai token ini tidak akan bisa mengakses API lagi.`,
-        confirmLabel: "Cabut Token",
-        type: "danger",
+        confirmLabel: 'Cabut Token',
+        type: 'danger',
       }))
     ) {
       return;
@@ -176,16 +170,16 @@ export function DeveloperApiManager() {
 
     try {
       const res = await apiFetch(`/api/v1/auth/tokens/${tokenId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (res.ok) {
         fetchTokens(); // Refresh list
       } else {
-        showToast("Gagal mencabut token.", "error");
+        showToast('Gagal mencabut token.', 'error');
       }
     } catch (err) {
-      console.error("Error revoking token:", err);
+      console.error('Error revoking token:', err);
     }
   };
 
@@ -201,15 +195,15 @@ export function DeveloperApiManager() {
     setExecutingCall(true);
     setApiResponse(null);
 
-    const safeEndpoint = playgroundEndpoint.replace(/^\/+|\.\./g, "");
+    const safeEndpoint = playgroundEndpoint.replace(/^\/+|\.\./g, '');
     let url = `/api/v1/${safeEndpoint}`;
     if (playgroundPathParams.trim()) {
       const safePath = playgroundPathParams
         .trim()
-        .split("/")
+        .split('/')
         .filter(Boolean)
         .map(encodeURIComponent)
-        .join("/");
+        .join('/');
       url += `/${safePath}`;
     }
     if (playgroundQueryParams.trim()) {
@@ -224,20 +218,17 @@ export function DeveloperApiManager() {
       },
     };
 
-    if (["POST", "PUT"].includes(playgroundMethod)) {
+    if (['POST', 'PUT'].includes(playgroundMethod)) {
       options.headers = {
         ...options.headers,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       };
       try {
         // Validate JSON before sending
         JSON.parse(playgroundBody);
         options.body = playgroundBody;
       } catch (err) {
-        showToast(
-          "Kesalahan: Isian request body harus berupa format JSON yang valid!",
-          "error",
-        );
+        showToast('Kesalahan: Isian request body harus berupa format JSON yang valid!', 'error');
         setExecutingCall(false);
         return;
       }
@@ -250,8 +241,8 @@ export function DeveloperApiManager() {
       const latency = Math.round(endTime - startTime);
 
       let bodyData;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
         bodyData = await response.json();
       } else {
         bodyData = await response.text();
@@ -259,9 +250,9 @@ export function DeveloperApiManager() {
 
       // Convert headers to record
       const headersRecord: Record<string, string> = {
-        "content-type": response.headers.get("content-type") || "",
-        "latency-ms": `${latency}ms`,
-        server: "Express + Node Container",
+        'content-type': response.headers.get('content-type') || '',
+        'latency-ms': `${latency}ms`,
+        server: 'Express + Node Container',
       };
 
       setApiResponse({
@@ -273,11 +264,11 @@ export function DeveloperApiManager() {
     } catch (err: any) {
       setApiResponse({
         status: 500,
-        statusText: "Internal Connection Error",
-        headers: { error: "Fetch failure" },
+        statusText: 'Internal Connection Error',
+        headers: { error: 'Fetch failure' },
         body: {
           error: err.message,
-          message: "Gagal melakukan request HTTP ke server.",
+          message: 'Gagal melakukan request HTTP ke server.',
         },
       });
     } finally {
@@ -288,153 +279,153 @@ export function DeveloperApiManager() {
   // API Endpoints list for documentation
   const endpoints = [
     {
-      id: "create_token",
-      section: "Authentication",
-      method: "POST",
-      path: "/auth/token",
-      desc: "Buat personal access token baru menggunakan email pemilik / staff bisnis yang terdaftar.",
-      scopes: ["None (Public Exchange)"],
+      id: 'create_token',
+      section: 'Authentication',
+      method: 'POST',
+      path: '/auth/token',
+      desc: 'Buat personal access token baru menggunakan email pemilik / staff bisnis yang terdaftar.',
+      scopes: ['None (Public Exchange)'],
       sampleBody: {
-        email: "owner@example.com",
-        tokenName: "Aplikasi Mobile POS",
-        abilities: ["*"],
+        email: 'owner@example.com',
+        tokenName: 'Aplikasi Mobile POS',
+        abilities: ['*'],
       },
     },
     {
-      id: "get_customers",
-      section: "Customers",
-      method: "GET",
-      path: "/customers",
-      desc: "Ambil daftar seluruh data pelanggan bisnis yang tersimpan pada tenant aktif.",
-      scopes: ["customers:read", "*"],
-      queryParams: "search=budi&segment=PERSONAL",
+      id: 'get_customers',
+      section: 'Customers',
+      method: 'GET',
+      path: '/customers',
+      desc: 'Ambil daftar seluruh data pelanggan bisnis yang tersimpan pada tenant aktif.',
+      scopes: ['customers:read', '*'],
+      queryParams: 'search=budi&segment=PERSONAL',
     },
     {
-      id: "get_customer_by_id",
-      section: "Customers",
-      method: "GET",
-      path: "/customers/{id}",
-      desc: "Ambil detail data pelanggan tertentu secara spesifik berdasarkan ID unik.",
-      scopes: ["customers:read", "*"],
-      pathParams: "cust-xxxx",
+      id: 'get_customer_by_id',
+      section: 'Customers',
+      method: 'GET',
+      path: '/customers/{id}',
+      desc: 'Ambil detail data pelanggan tertentu secara spesifik berdasarkan ID unik.',
+      scopes: ['customers:read', '*'],
+      pathParams: 'cust-xxxx',
     },
     {
-      id: "create_customer",
-      section: "Customers",
-      method: "POST",
-      path: "/customers",
-      desc: "Tambahkan data pelanggan baru ke sistem CRM.",
-      scopes: ["customers:write", "*"],
+      id: 'create_customer',
+      section: 'Customers',
+      method: 'POST',
+      path: '/customers',
+      desc: 'Tambahkan data pelanggan baru ke sistem CRM.',
+      scopes: ['customers:write', '*'],
       sampleBody: {
-        name: "Melati Indah",
-        email: "melati@gmail.com",
-        phone: "08987654321",
-        address: "Perum Graha Indah Blok C/10",
-        segment: "PERSONAL",
+        name: 'Melati Indah',
+        email: 'melati@gmail.com',
+        phone: '08987654321',
+        address: 'Perum Graha Indah Blok C/10',
+        segment: 'PERSONAL',
         companyName: null,
-        notes: "Pelanggan VIP reparasi laptop",
+        notes: 'Pelanggan VIP reparasi laptop',
       },
     },
     {
-      id: "update_customer",
-      section: "Customers",
-      method: "PUT",
-      path: "/customers/{id}",
-      desc: "Perbarui detail isian data pelanggan berdasarkan ID unik.",
-      scopes: ["customers:write", "*"],
-      pathParams: "cust-xxxx",
+      id: 'update_customer',
+      section: 'Customers',
+      method: 'PUT',
+      path: '/customers/{id}',
+      desc: 'Perbarui detail isian data pelanggan berdasarkan ID unik.',
+      scopes: ['customers:write', '*'],
+      pathParams: 'cust-xxxx',
       sampleBody: {
-        email: "melati.baru@gmail.com",
-        notes: "Minta dihubungi via WA saja",
+        email: 'melati.baru@gmail.com',
+        notes: 'Minta dihubungi via WA saja',
       },
     },
     {
-      id: "delete_customer",
-      section: "Customers",
-      method: "DELETE",
-      path: "/customers/{id}",
-      desc: "Hapus data pelanggan dari database CRM.",
-      scopes: ["customers:write", "*"],
-      pathParams: "cust-xxxx",
+      id: 'delete_customer',
+      section: 'Customers',
+      method: 'DELETE',
+      path: '/customers/{id}',
+      desc: 'Hapus data pelanggan dari database CRM.',
+      scopes: ['customers:write', '*'],
+      pathParams: 'cust-xxxx',
     },
     {
-      id: "get_tickets",
-      section: "Service Tickets",
-      method: "GET",
-      path: "/tickets",
-      desc: "Ambil daftar tiket reparasi servis pada cabang aktif tenant.",
-      scopes: ["tickets:read", "*"],
-      queryParams: "status=DITERIMA&search=Sony",
+      id: 'get_tickets',
+      section: 'Service Tickets',
+      method: 'GET',
+      path: '/tickets',
+      desc: 'Ambil daftar tiket reparasi servis pada cabang aktif tenant.',
+      scopes: ['tickets:read', '*'],
+      queryParams: 'status=DITERIMA&search=Sony',
     },
     {
-      id: "create_ticket",
-      section: "Service Tickets",
-      method: "POST",
-      path: "/tickets",
-      desc: "Buat pendaftaran tiket reparasi baru ke sistem bengkel/service center.",
-      scopes: ["tickets:write", "*"],
+      id: 'create_ticket',
+      section: 'Service Tickets',
+      method: 'POST',
+      path: '/tickets',
+      desc: 'Buat pendaftaran tiket reparasi baru ke sistem bengkel/service center.',
+      scopes: ['tickets:write', '*'],
       sampleBody: {
-        customerId: "cust-1",
-        deviceName: "MacBook Pro M2 Max",
-        deviceBrandModel: "Apple - A2780",
-        customerComplaints: "Mati total setelah terkena tumpahan air kopi",
+        customerId: 'cust-1',
+        deviceName: 'MacBook Pro M2 Max',
+        deviceBrandModel: 'Apple - A2780',
+        customerComplaints: 'Mati total setelah terkena tumpahan air kopi',
         estimatedCost: 1500000,
-        deviceCategory: "Laptop",
-        accessoriesLeft: ["Charger Type-C", "Tas Laptop"],
+        deviceCategory: 'Laptop',
+        accessoriesLeft: ['Charger Type-C', 'Tas Laptop'],
       },
     },
     {
-      id: "get_inventory",
-      section: "Inventory Control",
-      method: "GET",
-      path: "/inventory",
-      desc: "Ambil daftar seluruh stok barang, komponen suku cadang, dan jasa servis.",
-      scopes: ["inventory:read", "*"],
-      queryParams: "category=SPAREPART&search=LCD",
+      id: 'get_inventory',
+      section: 'Inventory Control',
+      method: 'GET',
+      path: '/inventory',
+      desc: 'Ambil daftar seluruh stok barang, komponen suku cadang, dan jasa servis.',
+      scopes: ['inventory:read', '*'],
+      queryParams: 'category=SPAREPART&search=LCD',
     },
     {
-      id: "create_inventory",
-      section: "Inventory Control",
-      method: "POST",
-      path: "/inventory",
-      desc: "Tambahkan item barang, produk retail, atau jasa servis baru ke katalog inventaris.",
-      scopes: ["inventory:write", "*"],
+      id: 'create_inventory',
+      section: 'Inventory Control',
+      method: 'POST',
+      path: '/inventory',
+      desc: 'Tambahkan item barang, produk retail, atau jasa servis baru ke katalog inventaris.',
+      scopes: ['inventory:write', '*'],
       sampleBody: {
-        name: "LCD Screen Assembly iPhone 13 Pro",
-        sku: "SP-LCD-IP13P-ORG",
-        barcode: "899123456011",
-        category: "SPAREPART",
+        name: 'LCD Screen Assembly iPhone 13 Pro',
+        sku: 'SP-LCD-IP13P-ORG',
+        barcode: '899123456011',
+        category: 'SPAREPART',
         purchaseCost: 950000,
         sellPrice: 1450000,
-        unit: "Pcs",
+        unit: 'Pcs',
         stockQty: 8,
       },
     },
     {
-      id: "get_sales",
-      section: "Sales (POS Transactions)",
-      method: "GET",
-      path: "/sales",
-      desc: "Ambil daftar seluruh riwayat nota faktur transaksi penjualan POS kasir retail.",
-      scopes: ["sales:read", "*"],
-      queryParams: "paymentMethod=QRIS",
+      id: 'get_sales',
+      section: 'Sales (POS Transactions)',
+      method: 'GET',
+      path: '/sales',
+      desc: 'Ambil daftar seluruh riwayat nota faktur transaksi penjualan POS kasir retail.',
+      scopes: ['sales:read', '*'],
+      queryParams: 'paymentMethod=QRIS',
     },
     {
-      id: "create_sale",
-      section: "Sales (POS Transactions)",
-      method: "POST",
-      path: "/sales",
-      desc: "Catat transaksi penjualan POS baru dan potong stok inventaris otomatis.",
-      scopes: ["sales:write", "*"],
+      id: 'create_sale',
+      section: 'Sales (POS Transactions)',
+      method: 'POST',
+      path: '/sales',
+      desc: 'Catat transaksi penjualan POS baru dan potong stok inventaris otomatis.',
+      scopes: ['sales:write', '*'],
       sampleBody: {
-        customerId: "cust-1",
+        customerId: 'cust-1',
         items: [
           {
-            productId: "prod-2",
+            productId: 'prod-2',
             quantity: 2,
           },
         ],
-        paymentMethod: "TUNAI",
+        paymentMethod: 'TUNAI',
         discountAmount: 15000,
       },
     },
@@ -442,43 +433,42 @@ export function DeveloperApiManager() {
 
   // Apply endpoint configurations to playground
   const loadIntoPlayground = (ep: (typeof endpoints)[0]) => {
-    setPlaygroundEndpoint(ep.path.replace(/^\/|\/\{id\}/g, ""));
+    setPlaygroundEndpoint(ep.path.replace(/^\/|\/\{id\}/g, ''));
     setPlaygroundMethod(ep.method as any);
-    setPlaygroundQueryParams(ep.queryParams || "");
-    setPlaygroundPathParams(ep.pathParams || "");
+    setPlaygroundQueryParams(ep.queryParams || '');
+    setPlaygroundPathParams(ep.pathParams || '');
     if (ep.sampleBody) {
       setPlaygroundBody(JSON.stringify(ep.sampleBody, null, 2));
     } else {
-      setPlaygroundBody("");
+      setPlaygroundBody('');
     }
-    setActiveTab("playground");
+    setActiveTab('playground');
   };
 
-  const selectedDoc =
-    endpoints.find((e) => e.id === selectedDocId) || endpoints[1];
+  const selectedDoc = endpoints.find((e) => e.id === selectedDocId) || endpoints[1];
 
   const availableAbilities = [
-    { id: "*", name: "Wildcard / Full Access (*)" },
-    { id: "customers:read", name: "Baca Data Pelanggan (customers:read)" },
-    { id: "customers:write", name: "Tulis Data Pelanggan (customers:write)" },
-    { id: "tickets:read", name: "Baca Tiket Servis (tickets:read)" },
-    { id: "tickets:write", name: "Tulis Tiket Servis (tickets:write)" },
-    { id: "inventory:read", name: "Baca Katalog & Stok (inventory:read)" },
-    { id: "inventory:write", name: "Tulis Katalog & Stok (inventory:write)" },
-    { id: "sales:read", name: "Baca Riwayat Transaksi POS (sales:read)" },
-    { id: "sales:write", name: "Catat Transaksi Penjualan (sales:write)" },
+    { id: '*', name: 'Wildcard / Full Access (*)' },
+    { id: 'customers:read', name: 'Baca Data Pelanggan (customers:read)' },
+    { id: 'customers:write', name: 'Tulis Data Pelanggan (customers:write)' },
+    { id: 'tickets:read', name: 'Baca Tiket Servis (tickets:read)' },
+    { id: 'tickets:write', name: 'Tulis Tiket Servis (tickets:write)' },
+    { id: 'inventory:read', name: 'Baca Katalog & Stok (inventory:read)' },
+    { id: 'inventory:write', name: 'Tulis Katalog & Stok (inventory:write)' },
+    { id: 'sales:read', name: 'Baca Riwayat Transaksi POS (sales:read)' },
+    { id: 'sales:write', name: 'Catat Transaksi Penjualan (sales:write)' },
   ];
 
   const toggleAbility = (abilityId: string) => {
-    if (abilityId === "*") {
-      setSelectedAbilities(["*"]);
+    if (abilityId === '*') {
+      setSelectedAbilities(['*']);
       return;
     }
 
-    let updated = [...selectedAbilities].filter((a) => a !== "*");
+    let updated = [...selectedAbilities].filter((a) => a !== '*');
     if (updated.includes(abilityId)) {
       updated = updated.filter((a) => a !== abilityId);
-      if (updated.length === 0) updated = ["*"];
+      if (updated.length === 0) updated = ['*'];
     } else {
       updated.push(abilityId);
     }
@@ -490,31 +480,31 @@ export function DeveloperApiManager() {
       {/* Subtab Switches */}
       <div className="flex border-b border-slate-200 p-1 bg-slate-100 rounded-xl max-w-md">
         <button
-          onClick={() => setActiveTab("tokens")}
+          onClick={() => setActiveTab('tokens')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "tokens"
-              ? "bg-white text-accent shadow-xs"
-              : "text-slate-500 hover:text-slate-800"
+            activeTab === 'tokens'
+              ? 'bg-white text-accent shadow-xs'
+              : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <Key className="w-4 h-4" /> Sanctum Tokens
         </button>
         <button
-          onClick={() => setActiveTab("docs")}
+          onClick={() => setActiveTab('docs')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "docs"
-              ? "bg-white text-accent shadow-xs"
-              : "text-slate-500 hover:text-slate-800"
+            activeTab === 'docs'
+              ? 'bg-white text-accent shadow-xs'
+              : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <BookOpen className="w-4 h-4" /> API Docs
         </button>
         <button
-          onClick={() => setActiveTab("playground")}
+          onClick={() => setActiveTab('playground')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "playground"
-              ? "bg-white text-accent shadow-xs"
-              : "text-slate-500 hover:text-slate-800"
+            activeTab === 'playground'
+              ? 'bg-white text-accent shadow-xs'
+              : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <Terminal className="w-4 h-4" /> API Playground
@@ -522,7 +512,7 @@ export function DeveloperApiManager() {
       </div>
 
       {/* ==================== TAB 1: TOKENS MANAGER ==================== */}
-      {activeTab === "tokens" && (
+      {activeTab === 'tokens' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* New Token Panel */}
           <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
@@ -567,8 +557,8 @@ export function DeveloperApiManager() {
                         onClick={() => toggleAbility(ab.id)}
                         className={`flex items-center gap-2.5 p-2 rounded-xl border text-[11px] font-medium cursor-pointer transition-all ${
                           isChecked
-                            ? "bg-accent-lighter/50 border-indigo-200 text-indigo-900 font-semibold"
-                            : "bg-white border-slate-100 hover:bg-slate-50 text-slate-600"
+                            ? 'bg-accent-lighter/50 border-indigo-200 text-indigo-900 font-semibold'
+                            : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-600'
                         }`}
                       >
                         <input
@@ -604,9 +594,9 @@ export function DeveloperApiManager() {
                       Token Berhasil Terbuat!
                     </h5>
                     <p className="text-[10px] text-emerald-700 mt-0.5 leading-relaxed">
-                      Harap salin token ini sekarang. Demi keamanan data Anda,
-                      token ini <strong>hanya ditampilkan sekali saja</strong>{" "}
-                      dan tidak dapat diakses kembali.
+                      Harap salin token ini sekarang. Demi keamanan data Anda, token ini{' '}
+                      <strong>hanya ditampilkan sekali saja</strong> dan tidak dapat diakses
+                      kembali.
                     </p>
                   </div>
                 </div>
@@ -615,7 +605,7 @@ export function DeveloperApiManager() {
                   <div className="font-mono text-xs text-slate-100 truncate flex-1 font-bold pl-1 select-all">
                     {showTokenValue
                       ? generatedToken
-                      : "••••••••••••••••••••••••••••••••••••••••••••"}
+                      : '••••••••••••••••••••••••••••••••••••••••••••'}
                   </div>
                   <div className="flex items-center gap-1">
                     <button
@@ -674,9 +664,7 @@ export function DeveloperApiManager() {
                 className="p-1.5 text-slate-400 hover:text-accent transition-all rounded-lg cursor-pointer"
                 title="Refresh Daftar Token"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${loadingTokens ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-4 h-4 ${loadingTokens ? 'animate-spin' : ''}`} />
               </button>
             </div>
 
@@ -693,12 +681,9 @@ export function DeveloperApiManager() {
                   <Lock className="w-7 h-7" />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-slate-700">
-                    Belum Ada API Token
-                  </p>
+                  <p className="text-xs font-bold text-slate-700">Belum Ada API Token</p>
                   <p className="text-[10px] text-slate-400 max-w-sm">
-                    Gunakan form di sebelah kiri untuk menghasilkan Sanctum
-                    Token pertama Anda.
+                    Gunakan form di sebelah kiri untuk menghasilkan Sanctum Token pertama Anda.
                   </p>
                 </div>
               </div>
@@ -718,9 +703,9 @@ export function DeveloperApiManager() {
                           {t.name}
                         </h5>
                         <p className="font-mono text-[9px] text-slate-400 font-bold mt-0.5 tracking-wider uppercase flex items-center gap-1">
-                          TOKEN:{" "}
+                          TOKEN:{' '}
                           <span className="text-accent select-all font-semibold">
-                            km_sanctum_token_{t.id.replace("tok-", "act_")}
+                            km_sanctum_token_{t.id.replace('tok-', 'act_')}
                             ••••••
                           </span>
                         </p>
@@ -731,9 +716,9 @@ export function DeveloperApiManager() {
                           <span
                             key={ab}
                             className={`px-2 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider ${
-                              ab === "*"
-                                ? "bg-amber-50 text-amber-800 border border-amber-200"
-                                : "bg-accent-lighter text-accent border border-indigo-100"
+                              ab === '*'
+                                ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                : 'bg-accent-lighter text-accent border border-indigo-100'
                             }`}
                           >
                             {ab}
@@ -743,20 +728,18 @@ export function DeveloperApiManager() {
 
                       <div className="flex items-center gap-3 text-[9px] text-slate-400 font-mono">
                         <span>
-                          Dibuat:{" "}
-                          <strong>
-                            {new Date(t.createdAt).toLocaleDateString("id-ID")}
-                          </strong>
+                          Dibuat:{' '}
+                          <strong>{new Date(t.createdAt).toLocaleDateString('id-ID')}</strong>
                         </span>
                         <span>
-                          Terakhir Dipakai:{" "}
+                          Terakhir Dipakai:{' '}
                           <strong>
                             {t.lastUsedAt
-                              ? new Date(t.lastUsedAt).toLocaleTimeString(
-                                  "id-ID",
-                                  { hour: "2-digit", minute: "2-digit" },
-                                )
-                              : "Belum Pernah"}
+                              ? new Date(t.lastUsedAt).toLocaleTimeString('id-ID', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : 'Belum Pernah'}
                           </strong>
                         </span>
                       </div>
@@ -767,19 +750,17 @@ export function DeveloperApiManager() {
                         onClick={() => setSelectedToken(t.token)}
                         className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                           selectedToken === t.token
-                            ? "bg-emerald-600 text-white shadow-xs"
-                            : "bg-white border border-slate-200 hover:border-slate-300 text-slate-600"
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white border border-slate-200 hover:border-slate-300 text-slate-600'
                         }`}
                         title="Pilih Token Untuk Playground"
                       >
                         <Terminal className="w-3.5 h-3.5" />
-                        {selectedToken === t.token
-                          ? "Terpilih Playground"
-                          : "Pilih Tes"}
+                        {selectedToken === t.token ? 'Terpilih Playground' : 'Pilih Tes'}
                       </button>
 
                       {/* Don't allow revoking default administrative token for safety in UI */}
-                      {t.id !== "tok-owner-1" ? (
+                      {t.id !== 'tok-owner-1' ? (
                         <button
                           onClick={() => handleRevokeToken(t.id, t.name)}
                           className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-100 transition-all cursor-pointer"
@@ -805,7 +786,7 @@ export function DeveloperApiManager() {
       )}
 
       {/* ==================== TAB 2: SWAGGER / OPENAPI DOCS ==================== */}
-      {activeTab === "docs" && (
+      {activeTab === 'docs' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Side Menu Endpoints */}
           <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-4 max-h-[500px] overflow-y-auto">
@@ -842,13 +823,13 @@ export function DeveloperApiManager() {
                         {list.map((ep) => {
                           const isSelected = selectedDocId === ep.id;
                           const methodColors =
-                            ep.method === "GET"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                              : ep.method === "POST"
-                                ? "bg-accent-lighter text-accent border-indigo-100"
-                                : ep.method === "PUT"
-                                  ? "bg-amber-50 text-amber-700 border-amber-100"
-                                  : "bg-rose-50 text-rose-700 border-rose-100";
+                            ep.method === 'GET'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : ep.method === 'POST'
+                                ? 'bg-accent-lighter text-accent border-indigo-100'
+                                : ep.method === 'PUT'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                  : 'bg-rose-50 text-rose-700 border-rose-100';
 
                           return (
                             <div
@@ -856,14 +837,14 @@ export function DeveloperApiManager() {
                               onClick={() => setSelectedDocId(ep.id)}
                               className={`flex items-center gap-2 p-2 rounded-xl border text-left cursor-pointer transition-all ${
                                 isSelected
-                                  ? "bg-slate-900 text-white border-slate-900 shadow-xs font-semibold"
-                                  : "bg-white hover:bg-slate-50 border-transparent text-slate-600"
+                                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs font-semibold'
+                                  : 'bg-white hover:bg-slate-50 border-transparent text-slate-600'
                               }`}
                             >
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[8px] font-mono font-black border uppercase tracking-wider ${
                                   isSelected
-                                    ? "bg-slate-800 text-slate-100 border-slate-700"
+                                    ? 'bg-slate-800 text-slate-100 border-slate-700'
                                     : methodColors
                                 }`}
                               >
@@ -889,13 +870,13 @@ export function DeveloperApiManager() {
               <div className="flex items-center gap-2">
                 <span
                   className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black border uppercase tracking-wider ${
-                    selectedDoc.method === "GET"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : selectedDoc.method === "POST"
-                        ? "bg-accent-lighter text-accent border-indigo-200"
-                        : selectedDoc.method === "PUT"
-                          ? "bg-amber-50 text-amber-700 border-amber-200"
-                          : "bg-rose-50 text-rose-700 border-rose-200"
+                    selectedDoc.method === 'GET'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : selectedDoc.method === 'POST'
+                        ? 'bg-accent-lighter text-accent border-indigo-200'
+                        : selectedDoc.method === 'PUT'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
                   }`}
                 >
                   {selectedDoc.method}
@@ -945,8 +926,8 @@ export function DeveloperApiManager() {
                     Header Required
                   </span>
                   <div className="mt-1 font-mono text-[10px] text-slate-500 font-bold bg-slate-50 rounded-lg p-2 border border-slate-100">
-                    <span className="text-slate-400">Authorization:</span>{" "}
-                    Bearer &lt;sanctum_token&gt;
+                    <span className="text-slate-400">Authorization:</span> Bearer
+                    &lt;sanctum_token&gt;
                   </div>
                 </div>
               </div>
@@ -961,8 +942,7 @@ export function DeveloperApiManager() {
                     {selectedDoc.pathParams && (
                       <div className="flex justify-between border-b border-slate-100 pb-1">
                         <span className="text-accent font-bold">
-                          {"{id}"}{" "}
-                          <span className="text-slate-400">(path)</span>
+                          {'{id}'} <span className="text-slate-400">(path)</span>
                         </span>
                         <span className="text-slate-700 font-semibold">
                           {selectedDoc.pathParams}
@@ -971,9 +951,7 @@ export function DeveloperApiManager() {
                     )}
                     {selectedDoc.queryParams && (
                       <div className="flex justify-between">
-                        <span className="text-amber-600 font-bold">
-                          Query Params
-                        </span>
+                        <span className="text-amber-600 font-bold">Query Params</span>
                         <span className="text-slate-700 font-semibold">
                           ?{selectedDoc.queryParams}
                         </span>
@@ -992,9 +970,7 @@ export function DeveloperApiManager() {
                     </span>
                     <button
                       onClick={() =>
-                        handleCopyToken(
-                          JSON.stringify(selectedDoc.sampleBody, null, 2),
-                        )
+                        handleCopyToken(JSON.stringify(selectedDoc.sampleBody, null, 2))
                       }
                       className="text-slate-400 hover:text-slate-600 flex items-center gap-1 text-[9px] font-bold font-mono"
                     >
@@ -1012,7 +988,7 @@ export function DeveloperApiManager() {
       )}
 
       {/* ==================== TAB 3: LIVE PLAYGROUND ==================== */}
-      {activeTab === "playground" && (
+      {activeTab === 'playground' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Inputs Column */}
           <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
@@ -1039,9 +1015,7 @@ export function DeveloperApiManager() {
                 {tokens.length === 0 ? (
                   <div className="p-2 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-semibold rounded-xl flex items-center gap-1.5">
                     <AlertCircle className="w-4 h-4 text-amber-600" />
-                    <span>
-                      Belum ada token. Menggunakan default system token.
-                    </span>
+                    <span>Belum ada token. Menggunakan default system token.</span>
                   </div>
                 ) : (
                   <select
@@ -1051,7 +1025,7 @@ export function DeveloperApiManager() {
                   >
                     {tokens.map((t) => (
                       <option key={t.id} value={t.token}>
-                        {t.name} (abilities: {t.abilities.join(",")})
+                        {t.name} (abilities: {t.abilities.join(',')})
                       </option>
                     ))}
                     <option value="km_sanctum_invalid_key_test">
@@ -1089,25 +1063,17 @@ export function DeveloperApiManager() {
                       setPlaygroundEndpoint(e.target.value);
                       // Pre-populate sample body if POST
                       const matched = endpoints.find(
-                        (ep) =>
-                          ep.method === playgroundMethod &&
-                          ep.path.includes(e.target.value),
+                        (ep) => ep.method === playgroundMethod && ep.path.includes(e.target.value)
                       );
                       if (matched && matched.sampleBody) {
-                        setPlaygroundBody(
-                          JSON.stringify(matched.sampleBody, null, 2),
-                        );
+                        setPlaygroundBody(JSON.stringify(matched.sampleBody, null, 2));
                       }
                     }}
                     className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-xl text-xs outline-none font-semibold focus:border-accent text-slate-700 cursor-pointer"
                   >
                     <option value="customers">👥 Customers (/customers)</option>
-                    <option value="tickets">
-                      🛠️ Service Tickets (/tickets)
-                    </option>
-                    <option value="inventory">
-                      📦 Warehouse Inventory (/inventory)
-                    </option>
+                    <option value="tickets">🛠️ Service Tickets (/tickets)</option>
+                    <option value="inventory">📦 Warehouse Inventory (/inventory)</option>
                     <option value="sales">🛒 Sales & POS POS (/sales)</option>
                   </select>
                 </div>
@@ -1117,7 +1083,7 @@ export function DeveloperApiManager() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1 font-bold">
-                    Path ID {"{id}"}
+                    Path ID {'{id}'}
                   </label>
                   <input
                     type="text"
@@ -1142,7 +1108,7 @@ export function DeveloperApiManager() {
               </div>
 
               {/* Request Body (for POST / PUT) */}
-              {["POST", "PUT"].includes(playgroundMethod) && (
+              {['POST', 'PUT'].includes(playgroundMethod) && (
                 <div className="space-y-1">
                   <span className="block text-[10px] font-mono text-slate-400 uppercase font-bold">
                     Request Body JSON
@@ -1164,13 +1130,11 @@ export function DeveloperApiManager() {
               >
                 {executingCall ? (
                   <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />{" "}
-                    Menghubungkan Gateway...
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Menghubungkan Gateway...
                   </>
                 ) : (
                   <>
-                    <Play className="w-3.5 h-3.5 fill-white text-white" /> Kirim
-                    HTTP Request
+                    <Play className="w-3.5 h-3.5 fill-white text-white" /> Kirim HTTP Request
                   </>
                 )}
               </button>
@@ -1190,9 +1154,7 @@ export function DeveloperApiManager() {
 
                 {apiResponse && (
                   <button
-                    onClick={() =>
-                      handleCopyToken(JSON.stringify(apiResponse.body, null, 2))
-                    }
+                    onClick={() => handleCopyToken(JSON.stringify(apiResponse.body, null, 2))}
                     className="text-slate-400 hover:text-slate-200 font-mono text-[9px] font-bold flex items-center gap-1"
                   >
                     <Copy className="w-3.5 h-3.5" /> COPY RAW JSON
@@ -1204,13 +1166,10 @@ export function DeveloperApiManager() {
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
                   <Terminal className="w-10 h-10 text-slate-600" />
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-400">
-                      Siap Melakukan Tes
-                    </p>
+                    <p className="text-xs font-bold text-slate-400">Siap Melakukan Tes</p>
                     <p className="text-[10px] text-slate-500 max-w-xs">
-                      Pilih modul, konfigurasikan token, lalu klik tombol Kirim
-                      HTTP Request untuk menguji otorisasi Sanctum dan respon
-                      REST API.
+                      Pilih modul, konfigurasikan token, lalu klik tombol Kirim HTTP Request untuk
+                      menguji otorisasi Sanctum dan respon REST API.
                     </p>
                   </div>
                 </div>
@@ -1218,22 +1177,20 @@ export function DeveloperApiManager() {
                 <div className="space-y-3 animate-fadeIn">
                   {/* Status & Timing */}
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[10px] font-mono text-slate-500 font-bold">
-                      STATUS:
-                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-bold">STATUS:</span>
                     <span
                       className={`px-2.5 py-0.5 rounded font-mono text-[11px] font-black uppercase tracking-wider ${
                         apiResponse.status >= 200 && apiResponse.status < 300
-                          ? "bg-emerald-950/80 text-emerald-400 border border-emerald-500/30"
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30'
                           : apiResponse.status >= 400
-                            ? "bg-rose-950/80 text-rose-400 border border-rose-500/30"
-                            : "bg-amber-950/80 text-amber-400 border border-amber-500/30"
+                            ? 'bg-rose-950/80 text-rose-400 border border-rose-500/30'
+                            : 'bg-amber-950/80 text-amber-400 border border-amber-500/30'
                       }`}
                     >
                       {apiResponse.status} {apiResponse.statusText}
                     </span>
                     <span className="text-[10px] font-mono text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded font-bold">
-                      ⏱️ {apiResponse.headers["latency-ms"]}
+                      ⏱️ {apiResponse.headers['latency-ms']}
                     </span>
                   </div>
 
@@ -1246,9 +1203,7 @@ export function DeveloperApiManager() {
                       {Object.entries(apiResponse.headers).map(([k, v]) => (
                         <div key={k} className="flex justify-between">
                           <span className="text-indigo-400">{k}:</span>
-                          <span className="text-slate-300 font-semibold">
-                            {v}
-                          </span>
+                          <span className="text-slate-300 font-semibold">{v}</span>
                         </div>
                       ))}
                     </pre>
