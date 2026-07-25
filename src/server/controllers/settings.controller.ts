@@ -270,8 +270,30 @@ const schemas = {
 } satisfies Record<string, z.ZodType>;
 
 export type SettingsDomain = keyof typeof schemas;
+const DOMAIN_ALIASES: Record<string, SettingsDomain> = {
+  general: 'generalSettings',
+  security: 'securitySettings',
+  service: 'serviceSettings',
+  pos: 'posSettings',
+  inventory: 'inventorySettings',
+  accounting: 'accountingSettings',
+  hr: 'hrmSettings',
+  notification: 'notificationSettings',
+  theme: 'themeSettings',
+  portal: 'portalSettings',
+  email: 'emailSettings',
+  upload: 'uploadSettings',
+  tax: 'taxSettings',
+  print: 'printConfig',
+  workflows: 'notificationSettings',
+};
+function resolveDomain(domain: string): SettingsDomain | undefined {
+  if (schemas[domain as SettingsDomain]) return domain as SettingsDomain;
+  return DOMAIN_ALIASES[domain];
+}
 export function validateSettingsDomain(domain: string, value: unknown) {
-  const schema = schemas[domain as SettingsDomain];
+  const resolved = resolveDomain(domain);
+  const schema = resolved ? schemas[resolved] : undefined;
   return schema ? schema.safeParse(value) : { success: false as const };
 }
 const roleSchema = z.enum(['OWNER', 'ADMIN', 'MANAGER', 'KASIR', 'TEKNISI', 'SALES', 'HR']);
@@ -326,12 +348,32 @@ export function mergeSettingsSecrets(
   return merged;
 }
 
+export async function getSettingsDomain(req: Request, res: Response) {
+  const domain = req.params.domain;
+  const resolved = resolveDomain(domain);
+  if (!resolved) return res.status(404).json({ error: 'Domain pengaturan tidak dikenal.' });
+  try {
+    const result = await dbQuery(
+      `SELECT settings, branding, version FROM tenants WHERE id=$1 LIMIT 1`,
+      [req.tenantId]
+    );
+    const tenant = result.rows[0];
+    if (!tenant) return res.status(404).json({ error: 'Tenant tidak ditemukan.' });
+    const value =
+      resolved === 'branding' ? tenant.branding || {} : tenant.settings?.[resolved] || {};
+    res.json({ domain: resolved, value, version: tenant.version });
+  } catch (err: any) {
+    logger.error({ err: err.message, tenantId: req.tenantId, domain }, 'Settings get failed');
+    res.status(500).json({ error: 'Pengaturan gagal dimuat.' });
+  }
+}
+
 export async function updateSettingsDomain(req: Request, res: Response) {
   const expectedVersion = z.number().int().positive().safeParse(req.body?.expectedVersion);
   const parsed = validateSettingsDomain(req.params.domain, req.body?.value);
   if (!expectedVersion.success || !parsed.success)
     return res.status(422).json({ error: 'Domain atau payload pengaturan tidak valid.' });
-  const domain = req.params.domain as SettingsDomain;
+  const domain = resolveDomain(req.params.domain) as SettingsDomain;
   try {
     const result = await dbTransaction(async (client) => {
       const current = await client.query(

@@ -863,7 +863,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
           />
         )}
         {/* QC sekarang tersedia langsung di modal detail tiket. */}
-        {/* Subtab: KNOWLEDGE BASE */}
+        {/* Subtab: TOOLS & HELP */}
         {localSubTab === 'knowledge-base' && (
           <div className="h-[calc(100vh-140px)]">
             <KnowledgeBase />
