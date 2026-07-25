@@ -15,6 +15,33 @@ import { HRReports } from './hr/HRReports';
 import { PayrollBreakdown } from './hr/PayrollBreakdown';
 import { ShiftManagement } from './hr/ShiftManagement';
 
+// Grup HR: 13 panel lama dikonsolidasi jadi 5 grup.
+// Tiap grup punya sub-nav internal yang mengirim id panel asli ke tiap komponen
+// (komponen nge-gate lewat prop activeSubTab, jadi id asli harus dipertahankan).
+const HR_GROUPS: Record<string, { id: string; label: string }[]> = {
+  attendance: [
+    { id: 'attendance', label: 'Presensi' },
+    { id: 'shifts', label: 'Shift' },
+    { id: 'overtime', label: 'Lembur' },
+    { id: 'export-attendance', label: 'Export Absen' },
+  ],
+  payroll: [
+    { id: 'payroll', label: 'Payroll' },
+    { id: 'commission', label: 'Komisi' },
+    { id: 'kasbon', label: 'Kasbon' },
+  ],
+  contracts: [
+    { id: 'contracts', label: 'Kontrak' },
+    { id: 'documents', label: 'Dokumen' },
+    { id: 'resignation', label: 'Resign' },
+  ],
+  performance: [
+    { id: 'performance', label: 'Kinerja' },
+    { id: 'disciplinary', label: 'SP & Disiplin' },
+  ],
+  reports: [{ id: 'reports', label: 'Laporan HR' }],
+};
+
 export function HRTab({ activeSubTab }: { activeSubTab: string }) {
   const {
     currentTenantId,
@@ -36,71 +63,93 @@ export function HRTab({ activeSubTab }: { activeSubTab: string }) {
 
   const currentUserPermissions = currentUser?.permissions || [];
 
+  // activeSubTab dari nav utama = id grup. Default ke panel pertama grup itu.
+  const group = HR_GROUPS[activeSubTab] ? activeSubTab : 'attendance';
+  const tabs = HR_GROUPS[group];
+  const [active, setActive] = React.useState(tabs[0].id);
+
+  // Saat grup berganti (nav utama), reset ke panel pertama grup baru.
+  React.useEffect(() => {
+    setActive(HR_GROUPS[group][0].id);
+  }, [group]);
+
+  const view = active;
+
   return (
-    <>
-      <div
-        className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_tr:hover]:bg-zinc-900"
-        id="hr-pane"
-      >
-        {activeSubTab === 'payroll' && (
-          <div className="space-y-6">
-            <HRPayrollPanel generatePayroll={generatePayroll} />
-            <PayrollBreakdown activeSubTab={activeSubTab} />
-          </div>
-        )}
+    <div
+      className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_tr:hover]:bg-zinc-900"
+      id="hr-pane"
+    >
+      {/* Sub-nav internal grup (sembunyikan bila grup cuma punya 1 panel) */}
+      {tabs.length > 1 && (
+        <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setActive(t.id)}
+              className={
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ' +
+                (view === t.id
+                  ? 'bg-sky-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
+              }
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-        {activeSubTab === 'kasbon' && (
-          <HRKasbonPanel
-            activeSubTab={activeSubTab}
-            employees={employees}
-            currentTenantId={currentTenantId}
-            currentBranchId={currentBranchId}
-            currentUser={currentUser}
-            accounts={accounts}
-            updateEmployee={updateEmployee}
-            approveCashAdvance={approveCashAdvance}
-          />
-        )}
+      {view === 'payroll' && (
+        <div className="space-y-6">
+          <HRPayrollPanel generatePayroll={generatePayroll} />
+          <PayrollBreakdown activeSubTab="payroll" />
+        </div>
+      )}
 
-        {activeSubTab === 'attendance' && (
-          <HRAttendancePanel
-            activeSubTab={activeSubTab}
-            addEmployee={addEmployee}
-            approveLeave={approveLeave}
-            branches={branches}
-            bulkCheckIn={bulkCheckIn}
-            currentBranchId={currentBranchId}
-            currentTenantId={currentTenantId}
-            currentUser={currentUser}
-            currentUserPermissions={currentUserPermissions}
-            employees={employees}
-            recordAttendance={recordAttendance}
-            services={services}
-            submitLeave={submitLeave}
-            updateEmployee={updateEmployee}
-          />
-        )}
+      {view === 'kasbon' && (
+        <HRKasbonPanel
+          activeSubTab="kasbon"
+          employees={employees}
+          currentTenantId={currentTenantId}
+          currentBranchId={currentBranchId}
+          currentUser={currentUser}
+          accounts={accounts}
+          updateEmployee={updateEmployee}
+          approveCashAdvance={approveCashAdvance}
+        />
+      )}
 
-        {activeSubTab === 'commission' && <CommissionPanel activeSubTab={activeSubTab} />}
+      {view === 'attendance' && (
+        <HRAttendancePanel
+          activeSubTab="attendance"
+          addEmployee={addEmployee}
+          approveLeave={approveLeave}
+          branches={branches}
+          bulkCheckIn={bulkCheckIn}
+          currentBranchId={currentBranchId}
+          currentTenantId={currentTenantId}
+          currentUser={currentUser}
+          currentUserPermissions={currentUserPermissions}
+          employees={employees}
+          recordAttendance={recordAttendance}
+          services={services}
+          submitLeave={submitLeave}
+          updateEmployee={updateEmployee}
+        />
+      )}
 
-        {activeSubTab === 'shifts' && <ShiftManagement activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'overtime' && <OvertimePanel activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'contracts' && <ContractTracker activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'documents' && <EmployeeDocuments activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'performance' && <PerformanceAppraisal activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'disciplinary' && <DisciplinaryPanel activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'resignation' && <ResignationPanel activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'export-attendance' && <AttendanceExport activeSubTab={activeSubTab} />}
-
-        {activeSubTab === 'reports' && <HRReports activeSubTab={activeSubTab} />}
-      </div>
-    </>
+      {view === 'commission' && <CommissionPanel activeSubTab="commission" />}
+      {view === 'shifts' && <ShiftManagement activeSubTab="shifts" />}
+      {view === 'overtime' && <OvertimePanel activeSubTab="overtime" />}
+      {view === 'contracts' && <ContractTracker activeSubTab="contracts" />}
+      {view === 'documents' && <EmployeeDocuments activeSubTab="documents" />}
+      {view === 'performance' && <PerformanceAppraisal activeSubTab="performance" />}
+      {view === 'disciplinary' && <DisciplinaryPanel activeSubTab="disciplinary" />}
+      {view === 'resignation' && <ResignationPanel activeSubTab="resignation" />}
+      {view === 'export-attendance' && <AttendanceExport activeSubTab="export-attendance" />}
+      {view === 'reports' && <HRReports activeSubTab="reports" />}
+    </div>
   );
 }
