@@ -130,7 +130,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   const [impersonationTenant, setImpersonationTenant] = useState<Tenant | null>(null);
   const [impersonationReason, setImpersonationReason] = useState('');
   const [impersonationTicket, setImpersonationTicket] = useState('');
-  const [impersonationMode, setImpersonationMode] = useState<'READ_ONLY' | 'FULL'>('READ_ONLY');
+  const [impersonationMode, setImpersonationMode] = useState<'READ_ONLY' | 'FULL'>('FULL');
   const [detailTenant, setDetailTenant] = useState<Tenant | null>(null);
   const [detailTab, setDetailTab] = useState('summary');
   const [detailData, setDetailData] = useState<any>(null);
@@ -586,7 +586,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                               setImpersonationTenant(t);
                               setImpersonationReason('');
                               setImpersonationTicket('');
-                              setImpersonationMode('READ_ONLY');
                             }}
                             className="flex items-center justify-center gap-1 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/30 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-colors w-full"
                             title="Impersonate (Safe Bypass Access)"
@@ -1221,8 +1220,8 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                   }
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 dark:border-zinc-700 dark:bg-zinc-950"
                 >
-                  <option value="READ_ONLY">Hanya-baca (disarankan)</option>
-                  <option value="FULL">Akses penuh</option>
+                  <option value="FULL">Akses penuh (default)</option>
+                  <option value="READ_ONLY">Hanya-baca</option>
                 </select>
               </label>
             </div>

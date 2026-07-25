@@ -134,6 +134,13 @@ const MainAppContent: React.FC = () => {
       return null;
     }
   }, [isImpersonating]);
+  // 🔧 Reset URL dari /login ke / setelah autentikasi berhasil
+  React.useEffect(() => {
+    if (isAuthenticated && window.location.pathname === '/login') {
+      window.history.replaceState({}, '', '/');
+    }
+  }, [isAuthenticated]);
+
   React.useEffect(() => {
     if (!isImpersonating || !impersonationSession?.expiresAt) return;
     const remaining = new Date(impersonationSession.expiresAt).getTime() - Date.now();
