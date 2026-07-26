@@ -1,6 +1,20 @@
 # Changelog
 
 ## 2026-07-25
+### Rental Module — perbaikan kritis sinkronisasi DB, API, dan frontend
+- **Fix nama kolom DB vs Controller**: Semua query SQL di `rental.controller.ts` disesuaikan dengan schema migration: `daily_rate` → `rate_per_day`, `total_rent` → `total_rent_amount`, `damage_deduction` → `damage_deduction_amount`, `received_by` → `recorded_by`, `inspected_by` → `inspector_id`.
+- **Tambah kolom `deposit_paid`**: Migration `050_rental_module.sql` ditambah kolom `deposit_paid INTEGER DEFAULT 0` pada tabel `rental_contracts` untuk melacak progress pembayaran deposit.
+- **Fix contract status awal**: Kontrak baru dibuat dengan status `ACTIVE` (sebelumnya `DRAFT` yang tidak memiliki flow aktivasi).
+- **Fix API hook field names**: Interface `CreateContractInput` diubah ke camelCase (`customerId`, `deviceId`, `endDate`) sesuai Zod schema server. `ReturnContractInput` dan `ExtendContractInput` juga disesuaikan.
+- **Fix query params API hook**: `listCatalog` kirim `activeOnly` (bukan `active`), `listDevices` kirim `catalogId` (bukan `catalog_id`), `listContracts` kirim `startDate`/`endDate` (bukan `from_date`/`to_date`).
+- **Fix frontend customer lookup**: `handleCreateRental` sekarang mencari `customerId` dari `tenantCustomers` berdasarkan nama (sebelumnya mengirim string kosong yang pasti gagal validasi UUID server).
+- **Fix frontend field name access**: Semua akses properti contract disesuaikan: `total_rent` → `total_rent_amount`, `daily_rate` → `rate_per_day`, `damage_deduction` → `damage_deduction_amount`.
+- **Fix inspection schema**: `createInspection` di frontend sekarang kirim `contractId`, `inspectionType`, `conditionBefore` (sesuai Zod schema server, bukan `condition_rating`/`checklist_items` yang tidak ada).
+- **Fix interface types**: `RentalCatalogItem`, `RentalDevice`, `RentalContract`, `RentalPayment`, `RentalInspection`, `OverdueContract` disesuaikan dengan nama kolom DB yang benar.
+- File terkait: `migrations/050_rental_module.sql`, `src/server/controllers/rental.controller.ts`, `src/hooks/useRentalApi.ts`, `src/components/DeviceRentalDashboard.tsx`.
+- Verifikasi: lint 0 error, tsc clean.
+
+## 2026-07-25
 ### POS Module — refactor, unifikasi logika, dan perbaikan kritis
 - **Hapus duplikat logika API v1 `createSale`**: API v1 (`/api/v1/sales`) sekarang delegasi ke shared `processPOSTransaction` dari `pos.controller.ts`. Sebelumnya punya logika terpisah tanpa advisory lock, jurnal akuntansi, stock movement log, atau oversell guard SQL.
 - **Unifikasi format invoice**: API v1 sekarang menghasilkan `INV/POS/YYYY/NNNNN` (sama dengan internal), bukan `INV-{year}{timestamp}{random}` yang berbeda.

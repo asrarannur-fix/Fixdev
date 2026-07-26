@@ -314,7 +314,7 @@ app.post("/api/tenant/telegram/test", requireJwt, requireTenantScope, requireSet
 app.post("/api/tenant/whatsapp/test", requireJwt, requireTenantScope, requireSettingsDomain("whatsapp"), whatsappTestHandler);
 app.use("/api/service-receptions", serviceReceptionRoutes);
 app.use("/api/services", serviceWorkflowRoutes);
-app.use("/api/rental", rentalRoutes);
+app.use("/api/rental", requireJwt, requireTenantScope, rentalRoutes);
 app.use("/api/micro-components", microComponentsRoutes);
 app.use("/api/pos", posRoutes);
 app.use("/api/accounting", requireJwt, requireTenantScope, requireFeature("ACCOUNTING"), accountingRoutes);

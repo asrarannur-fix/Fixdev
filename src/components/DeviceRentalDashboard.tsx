@@ -14,20 +14,15 @@ import {
   Calendar,
   DollarSign,
   Clock,
-  User,
   PlusCircle,
   RotateCcw,
   CheckCircle,
   TrendingUp,
-  ShieldCheck,
   AlertCircle,
   Search,
-  BookOpen,
   Loader2,
   XCircle,
   Package,
-  CreditCard,
-  RefreshCw,
 } from 'lucide-react';
 import {
   useRentalApi,
@@ -46,8 +41,7 @@ interface RentalFormData {
 }
 
 export const DeviceRentalDashboard: React.FC = () => {
-  const { currentTenantId, currentBranchId, addJournalEntry, addLog, customers, tenants } =
-    useSaaS();
+  const { currentTenantId, customers, tenants } = useSaaS();
 
   const { showToast } = useToast();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
@@ -63,7 +57,6 @@ export const DeviceRentalDashboard: React.FC = () => {
   // API hook
   const {
     loading,
-    error,
     listCatalog,
     listDevices,
     listContracts,
@@ -73,8 +66,6 @@ export const DeviceRentalDashboard: React.FC = () => {
     returnContract,
     extendContract,
     cancelContract,
-    createDevice,
-    createInspection,
   } = useRentalApi();
 
   // State
@@ -83,6 +74,7 @@ export const DeviceRentalDashboard: React.FC = () => {
   const [contracts, setContracts] = useState<RentalContract[]>([]);
   const [stats, setStats] = useState<RentalStats | null>(null);
   const [overdueContracts, setOverdueContracts] = useState<OverdueContract[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Form input state
   const [formData, setFormData] = useState<RentalFormData>({
@@ -103,20 +95,27 @@ export const DeviceRentalDashboard: React.FC = () => {
   // Load all data on mount
   const loadAllData = useCallback(async () => {
     try {
+      setInitialLoading(true);
       const [catalogRes, devicesRes, contractsRes, statsRes, overdueRes] = await Promise.all([
-        listCatalog({ active: true }),
+        listCatalog({ activeOnly: true }),
         listDevices(),
         listContracts({ limit: 50 }),
         getRentalStats(),
         getOverdueContracts(),
       ]);
-      setCatalog(catalogRes.data || []);
-      setDevices(devicesRes.data || []);
-      setContracts(contractsRes.data || []);
-      setStats(statsRes.data || null);
-      setOverdueContracts(overdueRes.data || []);
+      setCatalog(Array.isArray(catalogRes) ? catalogRes : catalogRes?.data || []);
+      setDevices(Array.isArray(devicesRes) ? devicesRes : devicesRes?.data || []);
+      setContracts(contractsRes?.data || (Array.isArray(contractsRes) ? contractsRes : []));
+      setStats(
+        statsRes && typeof statsRes === 'object' && 'active_contracts' in statsRes
+          ? (statsRes as RentalStats)
+          : statsRes?.data || null
+      );
+      setOverdueContracts(Array.isArray(overdueRes) ? overdueRes : overdueRes?.data || []);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Gagal memuat data rental', 'error');
+    } finally {
+      setInitialLoading(false);
     }
   }, [listCatalog, listDevices, listContracts, getRentalStats, getOverdueContracts, showToast]);
 
@@ -136,7 +135,7 @@ export const DeviceRentalDashboard: React.FC = () => {
   }, [devices, activeCatalogDevice]);
 
   const calculatedTotal = activeCatalogDevice
-    ? activeCatalogDevice.daily_rate * formData.rentDays
+    ? activeCatalogDevice.rate_per_day * formData.rentDays
     : 0;
   const calculatedDeposit = formData.customDeposit
     ? Number(formData.customDeposit)
@@ -149,7 +148,8 @@ export const DeviceRentalDashboard: React.FC = () => {
     stats?.active_contracts ?? contracts.filter((r) => r.status === 'ACTIVE').length;
   const overdueCount =
     stats?.overdue_contracts ?? contracts.filter((r) => r.status === 'OVERDUE').length;
-  const totalRevenue = stats?.total_revenue ?? contracts.reduce((sum, r) => sum + r.total_rent, 0);
+  const totalRevenue =
+    stats?.total_revenue ?? contracts.reduce((sum, r) => sum + r.total_rent_amount, 0);
 
   // Filtered contracts list
   const filteredContracts = useMemo(() => {
@@ -184,76 +184,37 @@ export const DeviceRentalDashboard: React.FC = () => {
     const selectedDevice = availableDevices[0]; // Auto-pick first available
     const safeRentDays = Math.max(1, Math.floor(Number(formData.rentDays) || 1));
     const safeDeposit = Math.max(0, Number(calculatedDeposit) || 0);
-    const safeTotal = Math.max(0, activeCatalogDevice.daily_rate * safeRentDays);
     const cleanCustomerName = formData.customerName.trim();
+
+    // Find customer ID by name
+    const matchedCustomer = tenantCustomers.find(
+      (c) => c.name.toLowerCase() === cleanCustomerName.toLowerCase()
+    );
+    if (!matchedCustomer) {
+      showToast('Pelanggan tidak ditemukan. Pilih dari daftar yang tersedia!', 'error');
+      return;
+    }
 
     const start = new Date();
     const end = new Date();
-    end.setDate(start.getDate() + safeRentDays);
+    end.setDate(start.getDate() + safeRentDays - 1);
 
     try {
       // Create contract via API
       const contractRes = await createContract({
-        customer_id: '', // Will be matched by name or created
-        device_id: selectedDevice.id,
-        start_date: start.toISOString().split('T')[0],
-        duration_days: safeRentDays,
-        daily_rate: activeCatalogDevice.daily_rate,
-        deposit_amount: safeDeposit,
+        customerId: matchedCustomer.id,
+        deviceId: selectedDevice.id,
+        startDate: start.toISOString().split('T')[0],
+        endDate: end.toISOString().split('T')[0],
+        depositAmount: safeDeposit,
         notes: `Pelanggan: ${cleanCustomerName}`,
       });
 
-      const newContract = contractRes.data;
-
-      // Also create pre-rental inspection
-      await createInspection({
-        contract_id: newContract.id,
-        inspection_type: 'PRE_RENTAL',
-        condition_rating: 'GOOD',
-        checklist_items: {
-          'Kondisi fisik': true,
-          'Fungsi dasar': true,
-          'Aksesoris lengkap': true,
-        },
-        notes: 'Pemeriksaan sebelum disewakan',
-      });
+      const newContract = contractRes?.data || contractRes;
 
       // Update local state
       setContracts((prev) => [newContract, ...prev]);
       await loadAllData(); // Refresh stats
-
-      // Double-entry accounting:
-      // Debit: Kas Terminal (10100) -> Rent Cost + Deposit
-      // Credit: Pendapatan Sewa (40300) -> Rent Cost
-      // Credit: Kewajiban Titipan Deposit (20200) -> Deposit
-      addJournalEntry(
-        newContract.id,
-        `Sewa Perangkat: ${activeCatalogDevice.name} oleh ${cleanCustomerName} (${safeRentDays} Hari)`,
-        [
-          {
-            accountId: `coa-${currentTenantId}-10100`,
-            debit: safeTotal + safeDeposit,
-            credit: 0,
-          },
-          {
-            accountId: `coa-${currentTenantId}-40300`,
-            debit: 0,
-            credit: safeTotal,
-          },
-          {
-            accountId: `coa-${currentTenantId}-20200`,
-            debit: 0,
-            credit: safeDeposit,
-          },
-        ]
-      );
-
-      addLog(
-        'Create Rental',
-        `Penyewaan ${activeCatalogDevice.name} kepada ${cleanCustomerName} senilai Rp ${safeTotal.toLocaleString()} + Deposit Rp ${safeDeposit.toLocaleString()}`,
-        'SALES',
-        'LOW'
-      );
 
       handlePrintRentalContract(newContract);
 
@@ -278,14 +239,10 @@ export const DeviceRentalDashboard: React.FC = () => {
       return;
     }
 
-    const netDepositRefund = returningContract.deposit_amount - damageAmt;
-
     try {
-      await returnContract({
-        contract_id: returningContract.id,
-        damage_deduction: damageAmt,
-        damage_notes: damageNotes,
-        actual_return_date: new Date().toISOString().split('T')[0],
+      await returnContract(returningContract.id, {
+        damageDeductionAmount: damageAmt,
+        damageNotes: damageNotes,
       });
 
       // Update local state
@@ -295,7 +252,7 @@ export const DeviceRentalDashboard: React.FC = () => {
             return {
               ...r,
               status: 'RETURNED',
-              damage_deduction: damageAmt,
+              damage_deduction_amount: damageAmt,
               damage_notes: damageNotes,
               actual_return_date: new Date().toISOString().split('T')[0],
             };
@@ -305,45 +262,6 @@ export const DeviceRentalDashboard: React.FC = () => {
       );
 
       await loadAllData(); // Refresh stats
-
-      // Post Double Entry Journal:
-      // Debit: Kewajiban Titipan Deposit (20200) -> Full Deposit Amount
-      // Credit: Kas Terminal (10100) -> Net Refund
-      // Credit: Pendapatan Lain-lain Kerusakan (40200) -> Damage Deduction (if any)
-      const entries = [
-        {
-          accountId: `coa-${currentTenantId}-20200`,
-          debit: returningContract.deposit_amount,
-          credit: 0,
-        },
-      ];
-      if (netDepositRefund > 0) {
-        entries.push({
-          accountId: `coa-${currentTenantId}-10100`,
-          debit: 0,
-          credit: netDepositRefund,
-        });
-      }
-      if (damageAmt > 0) {
-        entries.push({
-          accountId: `coa-${currentTenantId}-40200`,
-          debit: 0,
-          credit: damageAmt,
-        });
-      }
-
-      addJournalEntry(
-        `RET-${returningContract.id}`,
-        `Pengembalian Sewa & Pengembalian Deposit untuk ${returningContract.id} (${returningContract.customer_name}). Denda: Rp ${damageAmt.toLocaleString()}`,
-        entries
-      );
-
-      addLog(
-        'Return Rental',
-        `Pengembalian perangkat sewa ${returningContract.device_name} dari ${returningContract.customer_name}. Denda Kerusakan: Rp ${damageAmt.toLocaleString()}, Refund Deposit: Rp ${netDepositRefund.toLocaleString()}`,
-        'SALES',
-        'LOW'
-      );
 
       handlePrintReturnReceipt(returningContract, damageAmt, damageNotes);
       showToast('Pengembalian berhasil diproses!', 'success');
@@ -361,7 +279,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     if (!additionalDays || isNaN(Number(additionalDays))) return;
 
     try {
-      await extendContract({ contract_id: contract.id, additional_days: Number(additionalDays) });
+      await extendContract(contract.id, { additionalDays: Number(additionalDays) });
       await loadAllData();
       showToast('Kontrak berhasil diperpanjang!', 'success');
     } catch (err) {
@@ -435,9 +353,9 @@ export const DeviceRentalDashboard: React.FC = () => {
             <p>Berakhir: ${contract.end_date}</p>
           </div>
           <div class="hr"></div>
-          <p>Biaya Sewa: Rp ${contract.total_rent.toLocaleString()}</p>
+          <p>Biaya Sewa: Rp ${contract.total_rent_amount.toLocaleString()}</p>
           <p>Deposit: Rp ${contract.deposit_amount.toLocaleString()}</p>
-          <p class="bold">TOTAL DIBAYAR: Rp ${(contract.total_rent + contract.deposit_amount).toLocaleString()}</p>
+          <p class="bold">TOTAL DIBAYAR: Rp ${(contract.total_rent_amount + contract.deposit_amount).toLocaleString()}</p>
           <div class="hr"></div>
           <div class="text-center" style="margin-top: 20px;">
             <p>Tanda Tangan Pelanggan</p>
@@ -524,7 +442,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     }, 500);
   };
 
-  if (loading && contracts.length === 0) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -687,7 +605,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-mono text-[10.5px] text-slate-700 dark:text-zinc-300 font-bold">
-                        Rp {device.daily_rate.toLocaleString()}/hari
+                        Rp {device.rate_per_day.toLocaleString()}/hari
                       </p>
                       <p className="text-[8.5px] text-slate-400 dark:text-zinc-500 mt-0.5">
                         Jaminan: Rp {device.deposit_amount.toLocaleString()}
@@ -855,7 +773,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <DollarSign className="w-3 h-3" /> Rp{' '}
-                          {contract.total_rent.toLocaleString()}
+                          {contract.total_rent_amount.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -910,9 +828,9 @@ export const DeviceRentalDashboard: React.FC = () => {
                         {(contract.deposit_amount - contract.deposit_paid).toLocaleString()})
                       </span>
                     )}
-                    {contract.damage_deduction && contract.damage_deduction > 0 && (
+                    {contract.damage_deduction_amount && contract.damage_deduction_amount > 0 && (
                       <span className="text-rose-600 dark:text-rose-400 font-bold">
-                        Denda: Rp {contract.damage_deduction.toLocaleString()}
+                        Denda: Rp {contract.damage_deduction_amount.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -943,7 +861,7 @@ export const DeviceRentalDashboard: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-rose-600">{oc.days_overdue} hari terlambat</p>
-                      <p className="text-slate-500">Rp {oc.daily_rate.toLocaleString()}/hari</p>
+                      <p className="text-slate-500">Rp {oc.rate_per_day.toLocaleString()}/hari</p>
                     </div>
                   </div>
                 ))}

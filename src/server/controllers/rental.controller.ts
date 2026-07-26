@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { PoolClient } from 'pg';
 import { z } from 'zod';
 import { dbTransaction, dbQuery } from '../../lib/db.js';
 import { logger } from '../../lib/logger.js';
@@ -33,14 +34,25 @@ const createDeviceSchema = z.object({
 
 const updateDeviceSchema = createDeviceSchema.partial();
 
-const createContractSchema = z.object({
-  customerId: z.string().uuid(),
-  deviceId: z.string().uuid(),
-  startDate: z.string().date().optional(),
-  endDate: z.string().date(),
-  depositAmount: z.number().int().min(0).optional(),
-  notes: z.string().optional(),
-});
+const createContractSchema = z
+  .object({
+    customerId: z.string().uuid(),
+    deviceId: z.string().uuid(),
+    startDate: z.string().date().optional(),
+    endDate: z.string().date(),
+    depositAmount: z.number().int().min(0).optional(),
+    paymentMethod: z.enum(['CASH', 'TRANSFER', 'QRIS', 'CARD', 'EWALLET']).default('CASH'),
+    notes: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.startDate && value.endDate < value.startDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['endDate'],
+        message: 'endDate harus setelah atau sama dengan startDate',
+      });
+    }
+  });
 
 const returnContractSchema = z.object({
   damageDeductionAmount: z.number().int().min(0).optional(),
@@ -99,11 +111,23 @@ function getBranchId(req: Request): string | undefined {
   return req.branchId;
 }
 
+async function refreshOverdueContracts(tenantId: string): Promise<void> {
+  await dbQuery(
+    `UPDATE rental_contracts
+     SET status = 'OVERDUE', updated_at = now()
+     WHERE tenant_id = $1 AND status IN ('ACTIVE', 'EXTENDED') AND end_date < CURRENT_DATE`,
+    [tenantId]
+  );
+}
+
 // Helper: generate contract number
-async function generateContractNumber(tenantId: string): Promise<string> {
+async function generateContractNumber(client: PoolClient, tenantId: string): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `RNT-${year}-`;
-  const result = await dbQuery(
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [
+    `rental-contract:${tenantId}:${year}`,
+  ]);
+  const result = await client.query(
     `SELECT contract_number FROM rental_contracts 
      WHERE tenant_id = $1 AND contract_number LIKE $2 
      ORDER BY contract_number DESC LIMIT 1`,
@@ -469,7 +493,7 @@ export async function deleteDevice(req: Request, res: Response) {
     const { id } = req.params;
 
     const contractCheck = await dbQuery(
-      `SELECT 1 FROM rental_contracts WHERE device_id = $1 AND tenant_id = $2 AND status IN ('ACTIVE', 'OVERDUE') LIMIT 1`,
+      `SELECT 1 FROM rental_contracts WHERE device_id = $1 AND tenant_id = $2 AND status IN ('ACTIVE', 'OVERDUE', 'EXTENDED') LIMIT 1`,
       [id, tenantId]
     );
     if (contractCheck.rows.length > 0) {
@@ -493,6 +517,7 @@ export async function deleteDevice(req: Request, res: Response) {
 export async function listContracts(req: Request, res: Response) {
   try {
     const tenantId = getTenantId(req);
+    await refreshOverdueContracts(tenantId);
     const {
       status,
       customerId,
@@ -690,34 +715,33 @@ export async function createContract(req: Request, res: Response) {
     if (customerCheck.rows.length === 0)
       return res.status(404).json({ error: 'Customer not found' });
 
-    const deviceCheck = await dbQuery(
-      `SELECT d.*, cat.name as device_name, cat.rate_per_day, cat.deposit_amount
-       FROM rental_devices d
-       JOIN rental_device_catalog cat ON d.catalog_id = cat.id
-       WHERE d.id = $1 AND d.tenant_id = $2 AND d.status = 'AVAILABLE'`,
-      [data.deviceId, tenantId]
-    );
-    if (deviceCheck.rows.length === 0)
-      return res.status(400).json({ error: 'Device not available or not found' });
-
-    const device = deviceCheck.rows[0];
     const startDate = data.startDate || new Date().toISOString().split('T')[0];
-    const endDate = data.endDate;
-    const dailyRate = device.rate_per_day;
     const durationDays =
       Math.ceil(
-        (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+        (new Date(data.endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
       ) + 1;
-    const totalRent = dailyRate * durationDays;
-    const depositAmount = data.depositAmount ?? device.deposit_amount;
-    const contractNumber = await generateContractNumber(tenantId);
 
     const contract = await dbTransaction(async (client) => {
+      const deviceCheck = await client.query(
+        `SELECT d.*, cat.rate_per_day, cat.deposit_amount
+         FROM rental_devices d
+         JOIN rental_device_catalog cat ON cat.id = d.catalog_id AND cat.tenant_id = d.tenant_id
+         WHERE d.id = $1 AND d.tenant_id = $2 AND d.status = 'AVAILABLE'
+         FOR UPDATE OF d`,
+        [data.deviceId, tenantId]
+      );
+      if (deviceCheck.rows.length === 0) throw new Error('DEVICE_NOT_AVAILABLE');
+
+      const device = deviceCheck.rows[0];
+      const dailyRate = Number(device.rate_per_day);
+      const totalRent = dailyRate * durationDays;
+      const depositAmount = data.depositAmount ?? Number(device.deposit_amount);
+      const contractNumber = await generateContractNumber(client, tenantId);
       const contractResult = await client.query(
-        `INSERT INTO rental_contracts 
-         (tenant_id, contract_number, branch_id, customer_id, device_id, start_date, end_date, 
+        `INSERT INTO rental_contracts
+         (tenant_id, contract_number, branch_id, customer_id, device_id, start_date, end_date,
           duration_days, rate_per_day, total_rent_amount, deposit_amount, deposit_paid, status, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'ACTIVE', $13)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11, 'ACTIVE', $12)
          RETURNING *`,
         [
           tenantId,
@@ -726,38 +750,63 @@ export async function createContract(req: Request, res: Response) {
           data.customerId,
           data.deviceId,
           startDate,
-          endDate,
+          data.endDate,
           durationDays,
           dailyRate,
           totalRent,
           depositAmount,
-          0,
           data.notes ?? null,
         ]
       );
+      const newContract = contractResult.rows[0];
 
-      await client.query(
-        `UPDATE rental_devices SET status = 'RENTED', current_location = 'CUSTOMER' WHERE id = $1`,
-        [data.deviceId]
+      const deviceUpdate = await client.query(
+        `UPDATE rental_devices SET status = 'RENTED', current_location = 'CUSTOMER'
+         WHERE id = $1 AND tenant_id = $2 AND status = 'AVAILABLE' RETURNING id`,
+        [data.deviceId, tenantId]
       );
+      if (deviceUpdate.rowCount !== 1) throw new Error('DEVICE_NOT_AVAILABLE');
+
+      for (const [paymentType, amount] of [
+        ['RENT', totalRent],
+        ['DEPOSIT', depositAmount],
+      ] as const) {
+        if (amount > 0) {
+          await client.query(
+            `INSERT INTO rental_payments
+             (tenant_id, contract_id, payment_type, amount, payment_method, recorded_by)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [tenantId, newContract.id, paymentType, amount, data.paymentMethod, userId ?? null]
+          );
+        }
+      }
 
       await client.query(
         `INSERT INTO rental_contract_events (tenant_id, contract_id, event_type, description, metadata, user_id)
          VALUES ($1, $2, 'CREATED', $3, $4, $5)`,
         [
           tenantId,
-          contractResult.rows[0].id,
+          newContract.id,
           `Contract created: ${contractNumber}`,
           JSON.stringify({ contractNumber }),
-          userId,
+          userId ?? null,
         ]
       );
 
-      return contractResult.rows[0];
+      await client.query(
+        `INSERT INTO rental_inspections
+         (tenant_id, contract_id, inspection_type, condition_before, status, inspector_id)
+         VALUES ($1, $2, 'PRE_RENTAL', 'GOOD', 'COMPLETED', $3)`,
+        [tenantId, newContract.id, userId ?? null]
+      );
+      return newContract;
     });
 
     res.status(201).json(contract);
   } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'DEVICE_NOT_AVAILABLE') {
+      return res.status(409).json({ error: 'Device not available or not found' });
+    }
     logger.error(
       { err: err instanceof Error ? err.message : String(err) },
       'createContract failed'
@@ -787,7 +836,8 @@ export async function returnContract(req: Request, res: Response) {
         `SELECT rc.*, d.id as device_id, d.serial_number
          FROM rental_contracts rc
          JOIN rental_devices d ON rc.device_id = d.id
-         WHERE rc.id = $1 AND rc.tenant_id = $2 AND rc.status IN ('ACTIVE', 'OVERDUE')`,
+         WHERE rc.id = $1 AND rc.tenant_id = $2 AND rc.status IN ('ACTIVE', 'OVERDUE', 'EXTENDED')
+         FOR UPDATE OF rc`,
         [id, tenantId]
       );
       if (contractResult.rows.length === 0) {
@@ -797,18 +847,21 @@ export async function returnContract(req: Request, res: Response) {
 
       const actualReturnDate = new Date().toISOString().split('T')[0];
       const damageDeduction = damageDeductionAmount || 0;
+      if (damageDeduction > +c.deposit_paid) {
+        return { code: 422, error: 'Potongan kerusakan melebihi deposit dibayar.' };
+      }
       const depositRefund = Math.max(0, c.deposit_paid - damageDeduction);
 
       const updateResult = await client.query(
         `UPDATE rental_contracts 
          SET status = 'RETURNED', actual_return_date = $1, damage_deduction_amount = $2, damage_notes = $3, deposit_refunded_amount = $4, updated_at = now()
-         WHERE id = $5 RETURNING *`,
-        [actualReturnDate, damageDeduction, damageNotes || null, depositRefund, id]
+         WHERE id = $5 AND tenant_id = $6 RETURNING *`,
+        [actualReturnDate, damageDeduction, damageNotes || null, depositRefund, id, tenantId]
       );
 
       await client.query(
-        `UPDATE rental_devices SET status = 'AVAILABLE', current_location = 'WAREHOUSE' WHERE id = $1`,
-        [c.device_id]
+        `UPDATE rental_devices SET status = 'AVAILABLE', current_location = 'WAREHOUSE' WHERE id = $1 AND tenant_id = $2`,
+        [c.device_id, tenantId]
       );
 
       await client.query(
@@ -884,7 +937,7 @@ export async function extendContract(req: Request, res: Response) {
 
     const contract = await dbTransaction(async (client) => {
       const contractResult = await client.query(
-        `SELECT * FROM rental_contracts WHERE id = $1 AND tenant_id = $2 AND status IN ('ACTIVE', 'OVERDUE')`,
+        `SELECT * FROM rental_contracts WHERE id = $1 AND tenant_id = $2 AND status IN ('ACTIVE', 'OVERDUE', 'EXTENDED') FOR UPDATE`,
         [id, tenantId]
       );
       if (contractResult.rows.length === 0) {
@@ -901,8 +954,8 @@ export async function extendContract(req: Request, res: Response) {
       const updateResult = await client.query(
         `UPDATE rental_contracts 
          SET end_date = $1, duration_days = $2, total_rent_amount = $3, status = 'EXTENDED', updated_at = now()
-         WHERE id = $4 RETURNING *`,
-        [newEndDate.toISOString().split('T')[0], newDurationDays, newTotalRent, id]
+         WHERE id = $4 AND tenant_id = $5 RETURNING *`,
+        [newEndDate.toISOString().split('T')[0], newDurationDays, newTotalRent, id, tenantId]
       );
 
       await client.query(
@@ -942,7 +995,7 @@ export async function cancelContract(req: Request, res: Response) {
 
     const contract = await dbTransaction(async (client) => {
       const contractResult = await client.query(
-        `SELECT * FROM rental_contracts WHERE id = $1 AND tenant_id = $2 AND status IN ('DRAFT', 'ACTIVE', 'OVERDUE')`,
+        `SELECT * FROM rental_contracts WHERE id = $1 AND tenant_id = $2 AND status IN ('DRAFT', 'ACTIVE', 'OVERDUE', 'EXTENDED') FOR UPDATE`,
         [id, tenantId]
       );
       if (contractResult.rows.length === 0) {
@@ -951,13 +1004,13 @@ export async function cancelContract(req: Request, res: Response) {
       const c = contractResult.rows[0];
 
       await client.query(
-        `UPDATE rental_devices SET status = 'AVAILABLE', current_location = 'WAREHOUSE' WHERE id = $1`,
-        [c.device_id]
+        `UPDATE rental_devices SET status = 'AVAILABLE', current_location = 'WAREHOUSE' WHERE id = $1 AND tenant_id = $2`,
+        [c.device_id, tenantId]
       );
 
       const updateResult = await client.query(
-        `UPDATE rental_contracts SET status = 'CANCELLED', updated_at = now() WHERE id = $1 RETURNING *`,
-        [id]
+        `UPDATE rental_contracts SET status = 'CANCELLED', updated_at = now() WHERE id = $1 AND tenant_id = $2 RETURNING *`,
+        [id, tenantId]
       );
 
       await client.query(
@@ -1027,14 +1080,15 @@ export async function createPayment(req: Request, res: Response) {
       throw err;
     }
 
-    const contractCheck = await dbQuery(
-      `SELECT * FROM rental_contracts WHERE id = $1 AND tenant_id = $2`,
-      [data.contractId, tenantId]
-    );
-    if (contractCheck.rows.length === 0)
-      return res.status(404).json({ error: 'Contract not found' });
-
     const payment = await dbTransaction(async (client) => {
+      const contractCheck = await client.query(
+        `SELECT status FROM rental_contracts WHERE id = $1 AND tenant_id = $2 FOR UPDATE`,
+        [data.contractId, tenantId]
+      );
+      if (contractCheck.rows.length === 0) throw new Error('CONTRACT_NOT_FOUND');
+      if (['RETURNED', 'CANCELLED'].includes(contractCheck.rows[0].status))
+        throw new Error('CONTRACT_CLOSED');
+
       const paymentResult = await client.query(
         `INSERT INTO rental_payments 
          (tenant_id, contract_id, payment_type, amount, payment_method, reference_number, notes, recorded_by)
@@ -1054,8 +1108,8 @@ export async function createPayment(req: Request, res: Response) {
 
       if (data.paymentType === 'DEPOSIT') {
         await client.query(
-          `UPDATE rental_contracts SET deposit_paid = deposit_paid + $1 WHERE id = $2`,
-          [data.amount, data.contractId]
+          `UPDATE rental_contracts SET deposit_paid = deposit_paid + $1 WHERE id = $2 AND tenant_id = $3`,
+          [data.amount, data.contractId, tenantId]
         );
       }
 
@@ -1076,6 +1130,12 @@ export async function createPayment(req: Request, res: Response) {
 
     res.status(201).json(payment);
   } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'CONTRACT_NOT_FOUND') {
+      return res.status(404).json({ error: 'Contract not found' });
+    }
+    if (err instanceof Error && err.message === 'CONTRACT_CLOSED') {
+      return res.status(409).json({ error: 'Contract already closed' });
+    }
     logger.error({ err: err instanceof Error ? err.message : String(err) }, 'createPayment failed');
     res.status(500).json({ error: 'Gagal membuat data pembayaran.' });
   }
@@ -1222,6 +1282,7 @@ export async function updateInspection(req: Request, res: Response) {
 export async function getRentalStats(req: Request, res: Response) {
   try {
     const tenantId = getTenantId(req);
+    await refreshOverdueContracts(tenantId);
 
     const [
       activeContracts,
@@ -1235,7 +1296,7 @@ export async function getRentalStats(req: Request, res: Response) {
       avgDurationResult,
     ] = await Promise.all([
       dbQuery(
-        `SELECT COUNT(*)::int FROM rental_contracts WHERE tenant_id = $1 AND status IN ('ACTIVE', 'OVERDUE')`,
+        `SELECT COUNT(*)::int FROM rental_contracts WHERE tenant_id = $1 AND status IN ('ACTIVE', 'OVERDUE', 'EXTENDED')`,
         [tenantId]
       ),
       dbQuery(
@@ -1260,7 +1321,7 @@ export async function getRentalStats(req: Request, res: Response) {
         [tenantId]
       ),
       dbQuery(
-        `SELECT COALESCE(SUM(deposit_amount - deposit_paid), 0)::numeric as total FROM rental_contracts WHERE tenant_id = $1 AND status IN ('ACTIVE', 'OVERDUE')`,
+        `SELECT COALESCE(SUM(deposit_amount - deposit_paid), 0)::numeric as total FROM rental_contracts WHERE tenant_id = $1 AND status IN ('ACTIVE', 'OVERDUE', 'EXTENDED')`,
         [tenantId]
       ),
       dbQuery(
@@ -1292,6 +1353,7 @@ export async function getRentalStats(req: Request, res: Response) {
 export async function getOverdueContracts(req: Request, res: Response) {
   try {
     const tenantId = getTenantId(req);
+    await refreshOverdueContracts(tenantId);
 
     const result = await dbQuery(
       `SELECT rc.id, rc.contract_number, c.name as customer_name, c.phone as customer_phone,
