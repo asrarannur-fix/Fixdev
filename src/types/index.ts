@@ -999,6 +999,8 @@ export interface Employee {
   resignations?: Resignation[];
   performanceReviews?: PerformanceReview[];
   status?: 'ACTIVE' | 'RESIGNED' | 'TERMINATED' | 'ON_LEAVE';
+  nik?: string;
+  avatar?: { initials?: string; color?: string };
   resignedAt?: string;
   lastWorkingDate?: string;
   exitInterviewNotes?: string;

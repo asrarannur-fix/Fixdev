@@ -220,130 +220,127 @@ export const ContractTracker: React.FC<ContractTrackerProps> = ({ activeSubTab }
           ))}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200">
-                {[
-                  'Nama',
-                  'Jabatan',
-                  'Status Kontrak',
-                  'Tanggal Mulai',
-                  'Tanggal Berakhir',
-                  'Masa Kerja',
-                  'Sisa Hari',
-                  'Aksi',
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className={`py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider ${h === 'Aksi' ? 'text-right' : ''}`}
+        <div className="grid grid-cols-1 gap-3">
+          {filteredEmployees.length === 0 && (
+            <div className="text-center text-xs text-slate-400 py-8">
+              Tidak ada data kontrak ditemukan.
+            </div>
+          )}
+          {filteredEmployees.map((emp) => {
+            const sisa = calcSisaHari(emp.contractEndDate);
+            const isUrgent = sisa !== null && sisa <= 30 && sisa >= 0;
+            const isWarning = sisa !== null && sisa > 30 && sisa <= 90;
+            const isExpired = sisa !== null && sisa < 0;
+            const badge =
+              STATUS_BADGE[emp.contractStatus as Employee['contractStatus']] ||
+              STATUS_BADGE.CONTRACT;
+            const initials = (emp.name || '?')
+              .split(' ')
+              .map((w) => w[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase();
+            const color = emp.avatar?.color || '#6366f1';
+            const sisaText =
+              sisa === null ? (
+                <span className="text-slate-400">-</span>
+              ) : isExpired ? (
+                <span className="text-red-600">Expired ({Math.abs(sisa)}h)</span>
+              ) : isUrgent ? (
+                <span className="text-red-600">{sisa} hari</span>
+              ) : isWarning ? (
+                <span className="text-amber-600">{sisa} hari</span>
+              ) : (
+                <span className="text-emerald-600">{sisa} hari</span>
+              );
+            return (
+              <div
+                key={emp.id}
+                className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex flex-col gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${color}, #8b5cf6)` }}
                   >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredEmployees.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-8 text-center text-xs text-slate-400">
-                    Tidak ada data kontrak ditemukan.
-                  </td>
-                </tr>
-              )}
-              {filteredEmployees.map((emp) => {
-                const sisa = calcSisaHari(emp.contractEndDate);
-                const isUrgent = sisa !== null && sisa <= 30 && sisa >= 0;
-                const isWarning = sisa !== null && sisa > 30 && sisa <= 90;
-                const isExpired = sisa !== null && sisa < 0;
-                const rowBg = isUrgent
-                  ? 'bg-red-50/60 dark:bg-red-950/20'
-                  : isWarning
-                    ? 'bg-amber-50/60 dark:bg-amber-950/20'
-                    : '';
-                const badge =
-                  STATUS_BADGE[emp.contractStatus as Employee['contractStatus']] ||
-                  STATUS_BADGE.CONTRACT;
-                return (
-                  <React.Fragment key={emp.id}>
-                    <tr className={`hover:bg-slate-50 ${rowBg}`}>
-                      <td className="py-3 px-4 text-xs font-semibold text-slate-700">{emp.name}</td>
-                      <td className="py-3 px-4 text-xs text-slate-600">{emp.position}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-full ${badge.cls}`}
-                        >
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-600 font-mono">
-                        {fmtDate(emp.contractStartDate)}
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-600 font-mono">
-                        {fmtDate(emp.contractEndDate)}
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-600">
-                        {calcMasaKerja(emp.joinDate)}
-                      </td>
-                      <td className="py-3 px-4 text-xs font-mono font-bold">
-                        {sisa === null ? (
-                          <span className="text-slate-400">-</span>
-                        ) : isExpired ? (
-                          <span className="text-red-600">Expired ({Math.abs(sisa)}h lalu)</span>
-                        ) : isUrgent ? (
-                          <span className="text-red-600">{sisa} hari</span>
-                        ) : isWarning ? (
-                          <span className="text-amber-600">{sisa} hari</span>
-                        ) : (
-                          <span className="text-emerald-600">{sisa} hari</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {emp.contractStatus !== 'PERMANENT' && (
-                          <button
-                            onClick={() => {
-                              setExtendEmpId(extendEmpId === emp.id ? null : emp.id);
-                              setExtendEndDate(emp.contractEndDate || '');
-                            }}
-                            className="text-blue-600 hover:text-blue-800 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors"
-                          >
-                            {extendEmpId === emp.id ? 'Batal' : 'Perpanjang'}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                    {extendEmpId === emp.id && (
-                      <tr className="bg-blue-50/50 dark:bg-blue-950/20">
-                        <td colSpan={8} className="py-3 px-4">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-xs font-bold text-slate-600">
-                              Perpanjang Kontrak {emp.name}:
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-slate-400" />
-                              <input
-                                type="date"
-                                value={extendEndDate}
-                                onChange={(e) => setExtendEndDate(e.target.value)}
-                                className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono bg-white dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </div>
-                            <button
-                              onClick={() => handleExtend(emp.id)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg cursor-pointer transition-all flex items-center gap-1"
-                            >
-                              <Save className="w-3 h-3" />
-                              Simpan
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                    {initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-slate-800 truncate">{emp.name}</div>
+                    <div className="text-[11px] text-slate-400">
+                      {emp.position || '-'} · {emp.nik || '-'}
+                    </div>
+                  </div>
+                  <span
+                    className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-full ${badge.cls}`}
+                  >
+                    {badge.label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg px-2.5 py-1.5">
+                    <div className="text-slate-400 text-[9px] uppercase tracking-wider">Mulai</div>
+                    <div className="font-semibold text-slate-700 font-mono">
+                      {fmtDate(emp.contractStartDate) || '-'}
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg px-2.5 py-1.5">
+                    <div className="text-slate-400 text-[9px] uppercase tracking-wider">
+                      Berakhir
+                    </div>
+                    <div className="font-semibold text-slate-700 font-mono">
+                      {fmtDate(emp.contractEndDate) || '-'}
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg px-2.5 py-1.5">
+                    <div className="text-slate-400 text-[9px] uppercase tracking-wider">
+                      Sisa Hari
+                    </div>
+                    <div className="font-semibold">{sisaText}</div>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg px-2.5 py-1.5">
+                    <div className="text-slate-400 text-[9px] uppercase tracking-wider">
+                      Masa Kerja
+                    </div>
+                    <div className="font-semibold text-slate-700">
+                      {calcMasaKerja(emp.joinDate)}
+                    </div>
+                  </div>
+                </div>
+                {emp.contractStatus !== 'PERMANENT' && (
+                  <button
+                    onClick={() => {
+                      setExtendEmpId(extendEmpId === emp.id ? null : emp.id);
+                      setExtendEndDate(emp.contractEndDate || '');
+                    }}
+                    className="self-start text-blue-600 hover:text-blue-800 text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                  >
+                    {extendEmpId === emp.id ? 'Batal' : 'Perpanjang Kontrak'}
+                  </button>
+                )}
+                {extendEmpId === emp.id && (
+                  <div className="flex flex-wrap items-center gap-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg px-3 py-2">
+                    <span className="text-[11px] font-bold text-slate-600">Perpanjang:</span>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      <input
+                        type="date"
+                        value={extendEndDate}
+                        onChange={(e) => setExtendEndDate(e.target.value)}
+                        className="border border-slate-300 rounded-lg px-2 py-1 text-[11px] font-mono bg-white dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleExtend(emp.id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg cursor-pointer transition-all flex items-center gap-1"
+                    >
+                      <Save className="w-3 h-3" /> Simpan
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
