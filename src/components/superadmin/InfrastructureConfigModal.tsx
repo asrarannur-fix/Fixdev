@@ -439,13 +439,10 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
                     branches: safeBranches,
                     features: configFeatures,
                   },
-                  settings: {
-                    ...tenant.settings,
-                    storageSettings: {
-                      mode: configStorageMode,
-                      bucketName: configBucketName.trim(),
-                    },
-                  } as any,
+                  storageSettings: {
+                    mode: configStorageMode,
+                    bucketName: configBucketName.trim(),
+                  },
                 });
                 showToast('Konfigurasi infrastruktur tenant berhasil disimpan!', 'success');
                 setSelectedTenantForConfig(null);

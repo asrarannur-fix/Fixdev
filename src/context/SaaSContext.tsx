@@ -1058,7 +1058,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const dbAudits = fetchedData['audit_logs'] || [];
         const dbModuleRecords = fetchedData['module_records'] || [];
 
-        const tenantsList = dbTenants ? toCamelCase<Tenant[]>(dbTenants) : [];
+        const tenantsList = dbTenants
+          ? toCamelCase<Tenant[]>(dbTenants).map((t) => ({
+              ...t,
+              limits: (t as any).settings?.limits || t.limits,
+            }))
+          : [];
         const userBranchRows = dbUserBranches
           ? toCamelCase<Array<{ userId: string; branchId: string }>>(dbUserBranches)
           : [];
@@ -2308,7 +2313,18 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Konfigurasi tenant gagal diperbarui.');
       setTenants((prev) =>
-        prev.map((tenant) => (tenant.id === id ? { ...tenant, ...data.tenant } : tenant))
+        prev.map((tenant) =>
+          tenant.id === id
+            ? {
+                ...tenant,
+                ...data.tenant,
+                limits:
+                  (data.tenant as any)?.settings?.limits ||
+                  (data.tenant as any)?.limits ||
+                  tenant.limits,
+              }
+            : tenant
+        )
       );
       return;
     }
