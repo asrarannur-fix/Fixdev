@@ -135,14 +135,10 @@ router.post(
   notifyTrialExpiringWithEmail
 );
 // Invoice template CRUD
-router.get(
-  '/invoice-template',
-  requireSuperAdminPermission('billing:view_config'),
-  getInvoiceTemplate
-);
+router.get('/invoice-template', requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'), getInvoiceTemplate);
 router.post(
   '/invoice-template',
-  requireSuperAdminPermission('billing:manage_config'),
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
   requireSuperAdminConsoleSession,
   updateInvoiceTemplate
 );
