@@ -107,20 +107,20 @@ export async function loginHandler(req: Request, res: Response) {
     })) as any[];
 
     if (!rows.length) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Email atau kata sandi tidak valid.' });
     }
 
     const user = rows[0];
     if (!user.password_hash) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Email atau kata sandi tidak valid.' });
     }
 
     const valid = await bcrypt.compare(String(password), user.password_hash);
     if (!valid) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Email atau kata sandi tidak valid.' });
     }
     if (user.role !== 'SUPER_ADMIN' && req.hostTenant && user.tenant_id !== req.hostTenant.id) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Email atau kata sandi tidak valid.' });
     }
 
     const sessionId = randomUUID();
@@ -609,7 +609,7 @@ export async function extendTrialHandler(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         message:
-          'Trial sudah expired lebih dari 3 hari, tidak dapat diperpanjang. Silakan upgrade ke paket berbayar.',
+          'Masa percobaan sudah kedaluwarsa lebih dari 3 hari, tidak dapat diperpanjang. Silakan pilih paket berbayar untuk melanjutkan.',
       });
     }
 

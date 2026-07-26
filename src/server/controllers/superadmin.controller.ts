@@ -189,7 +189,7 @@ export async function getOverview(req: Request, res: Response) {
         id: 'trial-warning',
         severity: 'warning',
         count: Number(trial.warning),
-        label: 'Trial berakhir dalam 7 hari',
+        label: 'Masa percobaan berakhir dalam 7 hari',
         targetTab: 'saas-tenants',
         targetFilter: 'trial-warning',
       },

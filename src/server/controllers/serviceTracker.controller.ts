@@ -163,7 +163,7 @@ export const getPortalTicketDetail = async (req: any, res: any) => {
       [ticketId, token, tenantId]
     );
     if (!result.rows[0])
-      return res.status(404).json({ error: 'Ticket not found or token invalid.' });
+      return res.status(404).json({ error: 'Tiket tidak ditemukan atau token tidak valid.' });
     res.json(publicTicketRow(result.rows[0]));
   } catch (err: any) {
     logger.error({ err: err.message }, 'Portal detail fetch failed');
@@ -185,7 +185,7 @@ export const approvePortalTicket = async (req: any, res: any) => {
         [ticketId, token, tenantId]
       );
       const ticket = lock.rows[0];
-      if (!ticket) throw { status: 404, message: 'Ticket not found or token invalid.' };
+      if (!ticket) throw { status: 404, message: 'Tiket tidak ditemukan atau token tidak valid.' };
       if (ticket.status !== 'MENUGGU_APPROVAL') {
         throw { status: 409, message: 'Tiket tidak sedang menunggu persetujuan.' };
       }

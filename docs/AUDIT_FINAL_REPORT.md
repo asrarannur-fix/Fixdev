@@ -1,5 +1,5 @@
 ## Status
-DONE / RELEASE-READY
+IN PROGRESS / SERVIS P0-P1 FIX PARTIAL
 
 ## Scope audited
 - Fase 0: source inventory (38 migrations, 28 route files, 39 controllers, 19 nav modules, 100 tests)
@@ -20,6 +20,18 @@ DONE / RELEASE-READY
 | DB-MIG-001 | INFO | Database | migrations/ | 38 migration files, all sequential, no gaps | No fix needed — schema_migrations consistent | bash ops/migrate-production.sh (dry-run) | VERIFIED |
 
 ## Implemented changes
+- 26 Juli 2026 — tracker publik Servis tidak lagi mengirim estimasi biaya, DP, operator, atau catatan timeline mentah; detail finansial hanya tersedia pada portal bertoken dan endpoint token wajib tenant host (`src/server/controllers/serviceTracker.controller.ts`).
+- 26 Juli 2026 — reservasi dan konsumsi spare part kini mewajibkan gudang tenant serta cabang yang sama dengan tiket; response workflow tidak lagi mengembalikan tiket soft-delete (`src/server/controllers/serviceWorkflow.controller.ts`).
+- 26 Juli 2026 — handover kini sekali jalan, metode pembayaran dibatasi enum, dan tiket dibatalkan mengembalikan seluruh spare part `RESERVED` ke stok (`src/server/controllers/serviceWorkflow.controller.ts`).
+- 26 Juli 2026 — migration payment lifecycle kini menemukan dan menghapus unique constraint tiket secara dinamis sebelum mengizinkan DP dan pelunasan terpisah (`migrations/058_service_payment_lifecycle.sql`).
+- 26 Juli 2026 — DP penerimaan kini wajib memilih Kas, Transfer Bank, atau QRIS; sistem mencatat payment, jurnal debit kas/bank-credit deposit pelanggan `21000`, lalu melepas deposit ke pendapatan saat handover (`src/hooks/useServiceReception.ts`, `src/server/controllers/serviceReception.controller.ts`, `src/server/controllers/serviceWorkflow.controller.ts`, `migrations/058_service_payment_lifecycle.sql`).
+- 26 Juli 2026 — reservasi spare part kini mengurangi stok secara atomik dengan `UPDATE ... WHERE quantity >= ...`; handover hanya mengurangi stok untuk part berstatus `REQUESTED`, sedangkan pembatalan part `RESERVED` mengembalikan stok (`src/server/controllers/serviceWorkflow.controller.ts`).
+- 26 Juli 2026 — jalur mutasi tiket Servis melalui generic data sync dan API v1 legacy ditutup; API v1 kini read-only untuk tiket dan mengembalikan `410` pada mutasi (`src/server/controllers/data.controller.ts`, `src/server/routes/apiV1.routes.ts`).
+- 26 Juli 2026 — tiket Servis yang dihapus kini ditolak oleh detail/workflow lock dan seluruh tracker publik (`src/server/controllers/serviceWorkflow.controller.ts`, `src/server/controllers/serviceTracker.controller.ts`).
+- 26 Juli 2026 — regression guard ditambah untuk mencegah jalur bypass workflow aktif kembali (`tests/service-workflow-security.test.ts`).
+- 26 Juli 2026 — 21 warning `react-hooks/rules-of-hooks` pada lima panel HR diperbaiki dengan memindahkan early return setelah seluruh hook (`src/components/tenant/hr/DisciplinaryPanel.tsx`, `HRReports.tsx`, `OvertimePanel.tsx`, `PerformanceAppraisal.tsx`, `ResignationPanel.tsx`).
+- 26 Juli 2026 — approval portal Servis kini memvalidasi payload, hanya menerima status `MENUGGU_APPROVAL`, menolak tiket terhapus, serta menyimpan identitas penanda tangan dan event audit (`src/server/controllers/serviceTracker.controller.ts`).
+- 26 Juli 2026 — kontrak API pesanan spare part frontend diselaraskan ke route backend `/api/services`, method `PUT`, dan aksi `/receive` (`src/context/SaaSContext.tsx`).
 - certs/qz-key.pem — replaced private key with REDACTED placeholder (original backed up to qz-key.pem.bak)
 - src/server/plugins/crudPlugin.ts:68 — replaced console.error with silent 500 response (consistent error handling)
 - Added src/security-regression.test.ts — 4 regression tests covering key redaction and console.error cleanup

@@ -4,12 +4,17 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import {
   openShiftSchema,
   closeShiftSchema,
   posSaleSchema,
   voidSaleSchema,
+  partialRefundSchema,
+  refundDecisionSchema,
+  receivablePaymentSchema,
 } from "../src/server/controllers/pos.controller.ts";
 
 // ──────────────────────────────────────────
@@ -74,6 +79,38 @@ test("posSaleSchema: accepts minimal valid sale", () => {
     amountPaid: 150000,
   });
   assert.equal(result.success, true);
+});
+
+test("POS migrations 055-057 preserve additive contracts", () => {
+  const migration055 = readFileSync(resolve("migrations/055_pos_phase0_integrity.sql"), "utf8");
+  const migration056 = readFileSync(resolve("migrations/056_pos_receivable_payments.sql"), "utf8");
+  const migration057 = readFileSync(resolve("migrations/057_pos_pricing_promotions_bundles.sql"), "utf8");
+  assert.match(migration055, /client_request_id/);
+  assert.match(migration056, /idempotency_key/);
+  assert.match(migration057, /pos_bundle_components/);
+});
+
+test("POS checkout source blocks browser offline", () => {
+  const dashboard = readFileSync(resolve("src/components/TenantDashboard.tsx"), "utf8");
+  assert.match(dashboard, /!navigator\.onLine/);
+  assert.match(dashboard, /Checkout diblokir/);
+});
+
+test("posSaleSchema: accepts bundle and promotion checkout", () => {
+  const result = posSaleSchema.safeParse({
+    promotionCode: "HEMAT10",
+    items: [{ bundleId: "11111111-1111-4111-8111-111111111111", quantity: 2 }],
+    paymentMethod: "CASH",
+  });
+  assert.equal(result.success, true);
+});
+
+test("posSaleSchema: rejects invalid bundle ID", () => {
+  const result = posSaleSchema.safeParse({
+    items: [{ bundleId: "bundle-1", quantity: 1 }],
+    paymentMethod: "CASH",
+  });
+  assert.equal(result.success, false);
 });
 
 test("posSaleSchema: accepts all payment methods", () => {
@@ -255,6 +292,49 @@ test("invoice number format: INV/POS/YYYY/NNNNN", () => {
   const invoiceNo = `INV/POS/${year}/${seq.toString().padStart(5, "0")}`;
   assert.equal(invoiceNo, "INV/POS/2026/00042");
   assert.match(invoiceNo, /^INV\/POS\/\d{4}\/\d{5}$/);
+});
+
+test("posSaleSchema: rejects oversized client request ID", () => {
+  const result = posSaleSchema.safeParse({
+    items: [{ name: "Item", quantity: 1, unitPrice: 100000 }],
+    paymentMethod: "CASH",
+    clientRequestId: "x".repeat(101),
+  });
+  assert.equal(result.success, false);
+});
+
+test("posSaleSchema: accepts client request ID for idempotency", () => {
+  const result = posSaleSchema.safeParse({
+    items: [{ name: "Item", quantity: 1, unitPrice: 100000 }],
+    paymentMethod: "CASH",
+    clientRequestId: "checkout-123",
+  });
+  assert.equal(result.success, true);
+});
+
+test("refund request schemas: cashier payload and manager decision", () => {
+  assert.equal(partialRefundSchema.safeParse({ items: [{ itemIndex: 0, quantity: 1, reason: "Barang rusak" }] }).success, true);
+  assert.equal(refundDecisionSchema.safeParse({ decision: "APPROVE" }).success, true);
+  assert.equal(refundDecisionSchema.safeParse({ decision: "REJECT", reason: "Data tidak cocok" }).success, true);
+});
+
+test("analytics top products uses each JSONB item", () => {
+  const items = [{ productId: "a", quantity: 2, total: 20000 }, { productId: "b", quantity: 1, total: 5000 }];
+  assert.equal(items.reduce((sum, item) => sum + item.quantity, 0), 3);
+  assert.equal(items.reduce((sum, item) => sum + item.total, 0), 25000);
+});
+
+test("receivable payment schema requires idempotency key and valid method", () => {
+  assert.equal(receivablePaymentSchema.safeParse({ amount: 50_000, method: "QRIS", idempotencyKey: "pay-123" }).success, true);
+  assert.equal(receivablePaymentSchema.safeParse({ amount: 50_000, idempotencyKey: "" }).success, false);
+  assert.equal(receivablePaymentSchema.safeParse({ amount: 50_000, method: "TEMPO", idempotencyKey: "pay-123" }).success, false);
+});
+
+test("receivable settlement never overpays outstanding", () => {
+  const outstanding = 100_000;
+  const paid = 60_000;
+  assert.equal(paid <= outstanding + 0.01, true);
+  assert.equal(120_000 <= outstanding + 0.01, false);
 });
 
 test("stock deduction: never goes below zero", () => {

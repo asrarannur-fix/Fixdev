@@ -19,6 +19,7 @@
     "test:e2e": "playwright test",
     "test:unit": "vitest run",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed:test-superadmin": "tsx scripts/seed-test-superadmin.ts",
     "db:migrate:production": "DOTENV_CONFIG_PATH=/etc/fixdev/fixdev.production.env FIXDEV_PROFILE=production FIXDEV_DATABASE_NAME=fixdev tsx scripts/migrate.ts",
     "validate": "npm run lint && npm run build",
     "preflight:production": "npm run lint && npm test && npm run build"

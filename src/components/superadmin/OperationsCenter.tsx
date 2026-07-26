@@ -110,7 +110,7 @@ export default function OperationsCenter({ readOnlyMode = false }: { readOnlyMod
               />
             </label>
             <label className="text-xs">
-              Peringatan trial (hari sebelum berakhir)
+              Peringatan (hari sebelum masa percobaan berakhir)
               <input
                 type="number"
                 min={1}

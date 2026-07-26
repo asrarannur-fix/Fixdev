@@ -33,7 +33,7 @@ const CRON_JOBS = [
   {
     id: 'notify-trial-expiring',
     label: 'Alert Trial Berakhir (<7 hari)',
-    desc: 'Kirim notifikasi ke tenant trial yang akan berakhir',
+    desc: 'Kirim notifikasi ke tenant dengan masa percobaan yang akan berakhir',
   },
   {
     id: 'notify-payment-confirmation',

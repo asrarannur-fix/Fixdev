@@ -245,6 +245,14 @@ Perubahan dianggap selesai bila:
 
 ## 10. Catatan Perubahan
 
+### 2026-07-26 — POS Kasir Minimum Fase 1
+
+- `src/server/controllers/pos.controller.ts`, `src/server/routes/pos.routes.ts` — API lookup SKU/barcode tenant + branch scoped.
+- `migrations/055_pos_phase0_integrity.sql` — indeks additive barcode tenant.
+- `src/components/tenant/POSTab.tsx` — shortcut scanner/search, checkout, hold, Escape aman; lookup server.
+- `src/components/TenantDashboard.tsx`, `src/hooks/useSaaSPOS.ts`, `src/context/SaaSContext.tsx` — `crypto.randomUUID()` clientRequestId dipertahankan saat retry checkout.
+- Receipt tetap memakai `printJobAsync` dan `printConfig` existing untuk thermal 58/80mm, escaping, serta reprint history.
+
 ### 2026-07-23 — Hapus Read-Only Mode & Fitur Hapus Permanen Tenant
 
 **Read-Only Mode Dihapus:**
@@ -252,6 +260,24 @@ Perubahan dianggap selesai bila:
 - Frontend: `src/components/SuperAdminDashboard.tsx` — hapus toggle "Read-Only ON/OFF", banner "READ-ONLY MODE", dan logika sesi konsol.
 - `src/context/SaaSContext.tsx` — hapus injeksi header `X-SuperAdmin-Session-ID`.
 - Superadmin kini dapat menulis langsung tanpa perlu mode edit.
+
+### 2026-07-26 — POS split payment dan rekonsiliasi minimum
+
+- `migrations/055_pos_phase0_integrity.sql` — tabel additive snapshot pembayaran, payment lines, dan snapshot rekonsiliasi per shift.
+- `src/services/posService.ts` — simpan satu line untuk pembayaran tunggal atau line canonical split; validasi jumlah split.
+- `src/server/controllers/pos.controller.ts`, `src/server/routes/pos.routes.ts` — CASH shift summary memakai payment lines dengan fallback transaksi lama; endpoint rekonsiliasi GET/finalize.
+- `src/components/tenant/POSTab.tsx`, `src/components/TenantDashboard.tsx`, `src/hooks/useSaaSPOS.ts` — kirim splitPayments sebagai payload API.
+- `tests/pos.api.test.ts` — validasi split tetap dicakup.
+
+### 2026-07-26 — Perbaikan POS
+
+- `src/server/controllers/pos.controller.ts` — perbaiki close shift berbasis ID dan shift summary memakai `created_at`.
+- `src/services/posService.ts` — validasi tenant customer dan saldo deposit, status partial refund, akun jurnal refund sesuai metode pembayaran, idempotensi checkout, recall hold atomik, serta analytics JSONB per item tanpa transaksi void/refund penuh.
+- `src/server/controllers/pos.controller.ts` dan `src/server/routes/pos.routes.ts` — tambah workflow refund kasir-manager, eksekusi tepat sekali, dan penutupan piutang TEMPO saat void.
+- `migrations/055_pos_phase0_integrity.sql` — tambah kunci idempotensi checkout dan tabel permintaan refund dengan indeks status aktif.
+- `tests/pos.api.test.ts` — tambah validasi runnable untuk idempotensi, payload workflow refund, agregasi item analytics, kontrak migration 055–057, dan blok checkout saat browser offline.
+- `src/components/TenantDashboard.tsx` — checkout diblokir eksplisit saat browser offline dengan pesan pengguna; tidak ada antrean offline.
+- `src/services/posService.ts` — perbaiki pencatatan `stock_movements` partial refund bundle agar memakai produk komponen dan kuantitas stok yang benar.
 
 **Fitur Hapus Permanen Tenant:**
 - `src/server/controllers/superadmin.controller.ts` — tambah fungsi `permanentDeleteTenant`: audit trail, hapus file upload, cascade DELETE via ON DELETE CASCADE.

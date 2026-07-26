@@ -1,6 +1,7 @@
 import { type APIRequestContext, type Page } from "@playwright/test";
 
 export const BASE_URL = process.env.TEST_BASE_URL || "http://127.0.0.1:3001";
+const TEST_ORIGIN = process.env.TEST_ORIGIN || "http://localhost:3000";
 export const SUPERADMIN_EMAIL = process.env.TEST_SUPERADMIN_EMAIL || "asrar@mail.com";
 export const SUPERADMIN_PASSWORD = process.env.TEST_SUPERADMIN_PASSWORD || "778877";
 
@@ -8,6 +9,12 @@ export interface AuthSession {
   token: string;
   user: any;
 }
+
+const sessionToken = (body: any, headers: Record<string, string>) => {
+  if (body.token) return body.token;
+  const match = headers['set-cookie']?.match(/(?:^|,\s*)fixdev_session=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+};
 
 /**
  * Login via /api/auth/login and return token + raw user payload.
@@ -18,10 +25,11 @@ export async function loginAsSuperadmin(request: APIRequestContext): Promise<Aut
     data: { email: SUPERADMIN_EMAIL, password: SUPERADMIN_PASSWORD },
   });
   const body = await res.json();
-  if (!res.ok() || !body.token) {
+  const token = sessionToken(body, res.headers());
+  if (!res.ok() || !token) {
     throw new Error(`Superadmin login failed: ${body.error || res.status()}`);
   }
-  return { token: body.token, user: body.user };
+  return { token, user: body.user };
 }
 
 /**
@@ -34,7 +42,7 @@ export async function startSuperadminConsoleSession(
   token: string,
 ): Promise<string> {
   const res = await request.post(`${BASE_URL}/api/superadmin/console-session/start`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, Origin: TEST_ORIGIN },
     data: { mode: "EDIT", durationMinutes: 30 },
   });
   const body = await res.json();
@@ -69,6 +77,7 @@ export async function createTestTenant(
     headers: {
       Authorization: `Bearer ${sa.token}`,
       "x-superadmin-session-id": consoleId,
+      Origin: TEST_ORIGIN,
     },
     data: {
       name: subdomain,
@@ -86,6 +95,7 @@ export async function createTestTenant(
 
   // Accept the owner invitation to provision the tenant owner account.
   const acceptRes = await request.post(`${BASE_URL}/api/invitations/accept`, {
+    headers: { Origin: TEST_ORIGIN },
     data: { token: createBody.invitationToken, password: adminPassword },
   });
   const acceptBody = await acceptRes.json();
@@ -94,16 +104,18 @@ export async function createTestTenant(
   }
 
   const loginRes = await request.post(`${BASE_URL}/api/auth/login`, {
+    headers: { Origin: TEST_ORIGIN },
     data: { email: ownerEmail, password: adminPassword },
   });
   const loginBody = await loginRes.json();
-  if (!loginRes.ok() || !loginBody.token) {
+  const token = sessionToken(loginBody, loginRes.headers());
+  if (!loginRes.ok() || !token) {
     throw new Error(`Tenant owner login failed: ${loginBody.error || loginRes.status()}`);
   }
 
   // Resolve the tenant's default branch so specs can create branch-scoped records.
   const bootRes = await request.get(`${BASE_URL}/api/bootstrap`, {
-    headers: { Authorization: `Bearer ${loginBody.token}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
   const bootBody = await bootRes.json();
   const branchId =
@@ -113,7 +125,7 @@ export async function createTestTenant(
     null;
 
   return {
-    token: loginBody.token,
+    token,
     user: loginBody.user,
     tenantId,
     subdomain,

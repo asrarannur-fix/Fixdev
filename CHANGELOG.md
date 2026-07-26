@@ -1,6 +1,12 @@
 # Changelog
 
 ## 2026-07-26
+### Seed akun SUPER_ADMIN development
+- Menambahkan `npm run db:seed:test-superadmin` untuk membuat atau memperbarui akun lokal dari `TEST_SUPERADMIN_EMAIL` dan `TEST_SUPERADMIN_PASSWORD`, dengan hash bcrypt, role `SUPER_ADMIN`, dan `ROOT_ADMIN`.
+- Script menolak `NODE_ENV=production` dan database selain `fixdev_dev`; kredensial tidak dicetak. Konfigurasi `.env` diperbaiki agar password test tidak menyatu dengan variabel lain.
+- File terkait: `scripts/seed-test-superadmin.ts`, `package.json`, `.env`.
+
+## 2026-07-26
 ### Billing Manual — konfirmasi tenant dan approval Telegram
 - Tenant kini melihat alur pembayaran manual, nominal wajib, tombol `Saya Sudah Bayar, Kirim Konfirmasi`, status menunggu admin, alasan penolakan, serta kirim bukti baru.
 - Superadmin dapat mengonfigurasi bot Telegram pada Billing, menerima alert tenant baru dan pembayaran manual, lalu memakai perintah status, tenant, paket, invoice, dan pembayaran pending.

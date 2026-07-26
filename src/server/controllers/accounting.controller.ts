@@ -64,7 +64,7 @@ export const validateBody = (schema: z.ZodSchema) => {
           if (!errors[path]) errors[path] = [];
           errors[path].push(e.message);
         });
-        return res.status(422).json({ message: 'The given data was invalid.', errors });
+        return res.status(422).json({ message: 'Data tidak valid.', errors });
       }
       next(err);
     }

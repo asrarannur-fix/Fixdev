@@ -37,6 +37,7 @@ const validPayload = {
     estimatedCompletionDate: "2026-07-20",
     warrantyMonths: 3,
     downPayment: 100000,
+    downPaymentMethod: "CASH" as const,
     isCheckOnly: false,
   },
   outsourcing: { enabled: false, vendorId: "", cost: 0 },

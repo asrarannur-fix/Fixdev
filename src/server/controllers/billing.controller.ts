@@ -654,11 +654,9 @@ export const createInvoice = async (req: any, res: any) => {
       } else {
         logger.warn({ status: response.status }, '[billing] Midtrans charge failed');
         await failInvoiceRequest();
-        return res
-          .status(502)
-          .json({
-            error: 'Midtrans gagal membuat transaksi. Pilih pembayaran manual atau coba kembali.',
-          });
+        return res.status(502).json({
+          error: 'Midtrans gagal membuat transaksi. Pilih pembayaran manual atau coba kembali.',
+        });
       }
     } catch (err: any) {
       logger.warn({ err: err.message }, '[billing] Midtrans charge exception');
@@ -1233,7 +1231,7 @@ export const notifyTrialExpiringWithEmail = async (_req: any, res: any) => {
       success: true,
       sent,
       message: `${sent} trial expiring alerts dikirim.`,
-      logs: logs.length > 0 ? logs : ['Tidak ada trial yang akan berakhir <7 hari.'],
+      logs: logs.length > 0 ? logs : ['Tidak ada masa percobaan yang akan berakhir dalam <7 hari.'],
     });
   } catch (err: any) {
     logger.error({ err: err.message }, '[billing] notifyTrialExpiringWithEmail failed');
