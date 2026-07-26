@@ -188,15 +188,6 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
                 className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none text-xs bg-slate-50/50 dark:bg-zinc-950 text-slate-700 dark:text-slate-400 cursor-pointer font-medium"
               >
                 <option value="SYSTEM">System Managed Storage (Bawaan Platform SaaS)</option>
-                <option value="S3" disabled>
-                  Amazon S3 — belum tersedia
-                </option>
-                <option value="R2" disabled>
-                  Cloudflare R2 — belum tersedia
-                </option>
-                <option value="GCS" disabled>
-                  Google Cloud Storage — belum tersedia
-                </option>
               </select>
             </div>
 
@@ -206,47 +197,23 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
               dikelola platform; credential service tidak pernah dikirim ke browser.
             </div>
 
-            {configStorageMode !== 'SYSTEM' && (
-              <div className="space-y-2.5 p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-xl">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
-                    Bucket Name
-                  </label>
-                  <input
-                    type="text"
-                    value={configBucketName}
-                    onChange={(e) => setConfigBucketName(e.target.value)}
-                    disabled
-                    className="w-full px-3 py-1.5 border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950 text-slate-400 rounded-lg outline-none font-mono"
-                    placeholder="bucket-media-tenant"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
-                      Access Key ID
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="AKIAIOSF..."
-                      disabled
-                      className="w-full px-3 py-1.5 border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950 text-slate-400 rounded-lg outline-none font-mono text-[10px]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
-                      Secret Access Key
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="••••••••••••"
-                      disabled
-                      className="w-full px-3 py-1.5 border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950 text-slate-400 rounded-lg outline-none font-mono text-[10px]"
-                    />
-                  </div>
-                </div>
+            <div className="space-y-2.5 p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-xl">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
+                  Bucket Name
+                </label>
+                <input
+                  type="text"
+                  value={configBucketName}
+                  onChange={(e) => setConfigBucketName(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-300 rounded-lg outline-none font-mono"
+                  placeholder="tenant-xxxx"
+                />
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                  Nama bucket penyimpanan objek milik tenant (mode: System Managed Storage).
+                </p>
               </div>
-            )}
+            </div>
 
             <div>
               <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
