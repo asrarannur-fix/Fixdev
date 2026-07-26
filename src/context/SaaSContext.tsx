@@ -627,6 +627,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'permissions:manage_roles',
     'users:assign_role',
     'platform:manage_console_session',
+    // Billing config permissions
+    'billing:view_config',
+    'billing:manage_config',
+    'billing:view_manual_payments',
+    'billing:manage_manual_payments',
   ],
   OWNER: [
     'overview',
@@ -687,6 +692,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'billing:manage_plans',
     'billing:view_subscription',
     'billing:manage_invoices',
+    // Billing config permissions
+    'billing:view_config',
+    'billing:manage_config',
+    'billing:view_manual_payments',
+    'billing:manage_manual_payments',
   ],
   ADMIN: [
     'overview',
@@ -754,6 +764,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'settings-fraud',
     'billing:view_plans',
     'billing:view_subscription',
+    // Billing config permissions
+    'billing:view_config',
+    'billing:manage_config',
+    'billing:view_manual_payments',
+    'billing:manage_manual_payments',
     'action-pos-invoice-view',
     'action-pos-discount-apply',
     'action-services-qc-approve',
