@@ -8,7 +8,7 @@ const read = (file: string) => readFileSync(resolve(file), 'utf8');
 test('tenant settings redact secrets and require domain permission on reads', () => {
   const routes = read('src/server/routes/tenant.routes.ts');
   const controller = read('src/server/controllers/settings.controller.ts');
-  assert.match(routes, /settings\/:domain'.*requireSettingsDomain\(\).*getSettingsDomain/);
+  assert.match(routes, /settings\/:domain[\s\S]*?requireSettingsDomain\(\)[\s\S]*?getSettingsDomain/);
   assert.match(controller, /for \(const field of SECRET_FIELDS\[resolved\] \|\| \[\]\) delete value\[field\]/);
   assert.match(controller, /for \(const field of SECRET_FIELDS\[domain\] \|\| \[\]\) delete value\[field\]/);
 });
