@@ -595,6 +595,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'action-inventory-cannibal-scrap',
     'action-accounting-coa-create',
     'action-settings-workflows-edit',
+    'billing:view_plans',
+    'billing:manage_plans',
+    'billing:view_subscription',
+    'billing:manage_invoices',
   ],
   OWNER: [
     'overview',
@@ -650,6 +654,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'action-inventory-cannibal-scrap',
     'action-accounting-coa-create',
     'action-settings-workflows-edit',
+    'billing:view_plans',
+    'billing:view_subscription',
   ],
   ADMIN: [
     'overview',
