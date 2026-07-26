@@ -41,6 +41,10 @@ import {
   notifyOverdueWithEmail,
   notifyTrialExpiringWithEmail,
 } from '../controllers/billing.controller.js';
+import {
+  getPlatformTelegramConfig,
+  updatePlatformTelegramConfig,
+} from '../controllers/telegram.controller.js';
 
 const router = express.Router();
 
@@ -150,6 +154,17 @@ router.post(
   updateGatewayConfig
 );
 router.get(
+  '/telegram-manual-payment-config',
+  requireSuperAdminPermission('billing:view_config'),
+  getPlatformTelegramConfig
+);
+router.post(
+  '/telegram-manual-payment-config',
+  requireSuperAdminPermission('billing:manage_config'),
+  requireSuperAdminConsoleSession,
+  updatePlatformTelegramConfig
+);
+router.get(
   '/manual-payment-config',
   requireTenantOrSuperAdminPermission('billing:view_config', true),
   getManualPaymentConfig
@@ -169,7 +184,7 @@ router.put(
 );
 router.put(
   '/manual-payment-config',
-  requireSuperAdminPermission('billing:manage_config'),
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
   requireSuperAdminConsoleSession,
   updateManualPaymentConfig
 );
