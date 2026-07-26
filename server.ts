@@ -74,7 +74,7 @@ import monitoringRoutes from "./src/server/routes/monitoring.routes.js";
 import superadminRoutes from "./src/server/routes/superadmin.routes.js";
 import { platformHealthHandler } from "./src/server/controllers/monitoring.controller.js";
 import { acceptInvitation, validateInvitation } from "./src/server/controllers/invitation.controller.js";
-import { telegramTestHandler } from "./src/server/controllers/telegram.controller.js";
+import { telegramManualPaymentWebhook, telegramTestHandler } from "./src/server/controllers/telegram.controller.js";
 import { whatsappTestHandler } from "./src/server/controllers/whatsappTest.controller.js";
 import { qzPublicCertHandler, qzSignHandler } from "./src/server/controllers/qz.controller.js";
 import { qzCertDownloadHandler, qzInstallerBatHandler } from "./src/server/controllers/qzinstaller.controller.js";
@@ -297,6 +297,7 @@ app.get("/api/qz/installer.bat", qzInstallerBatHandler);
 app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
 
 app.post("/api/auth/login", loginLimiter, validateSchema(loginSchema), loginHandler);
+app.post("/api/platform/telegram/manual-payment-webhook", telegramManualPaymentWebhook);
 app.post("/api/auth/profile/password", requireJwt, validateSchema(passwordChangeSchema), authPasswordUpdateHandler);
 app.post("/api/onboarding/register", onboardingLimiter, validateSchema(onboardingSchema), onboardingRegisterHandler);
 app.get("/api/invitations/validate", validateInvitation);

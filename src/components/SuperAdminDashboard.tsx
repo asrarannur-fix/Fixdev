@@ -19,6 +19,7 @@ import { PaymentPipeline } from './superadmin/PaymentPipeline';
 import { CronSettings } from './superadmin/CronSettings';
 import { GatewayConfig } from './superadmin/GatewayConfig';
 import { InvoiceTemplateEditor } from './superadmin/InvoiceTemplateEditor';
+import { TelegramPaymentConfig } from './superadmin/TelegramPaymentConfig';
 
 export const SuperAdminDashboard: React.FC<{
   activeTab?: string;
@@ -316,6 +317,7 @@ export const SuperAdminDashboard: React.FC<{
                 { id: 'billing-payments', label: '💰 Pembayaran', icon: '💰' },
                 { id: 'billing-cron', label: '⏰ Cron', icon: '⏰' },
                 { id: 'billing-gateway', label: '🔧 Gateway', icon: '🔧' },
+                { id: 'billing-telegram', label: '✈️ Telegram', icon: '✈️' },
                 { id: 'billing-template', label: '📝 Template', icon: '📝' },
               ].map((tab) => (
                 <button
@@ -340,6 +342,7 @@ export const SuperAdminDashboard: React.FC<{
             {billingSubTab === 'billing-payments' && <PaymentPipeline />}
             {billingSubTab === 'billing-cron' && <CronSettings />}
             {billingSubTab === 'billing-gateway' && <GatewayConfig />}
+            {billingSubTab === 'billing-telegram' && <TelegramPaymentConfig />}
             {billingSubTab === 'billing-template' && <InvoiceTemplateEditor />}
           </div>
         </div>

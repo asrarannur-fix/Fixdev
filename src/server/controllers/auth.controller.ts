@@ -4,6 +4,7 @@ import { getPool } from '../../lib/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { logger } from '../../lib/logger.js';
+import { notifyPlatformTenantRegistration } from './telegram.controller.js';
 import nodemailer from 'nodemailer';
 import { passwordPolicyError } from '../lib/passwordPolicy.js';
 
@@ -268,12 +269,10 @@ export async function adminResetPasswordHandler(req: Request, res: Response) {
 export async function onboardingRegisterHandler(req: Request, res: Response) {
   const { shopName, ownerName, ownerEmail, ownerPassword, themeColor } = req.body || {};
   if (!shopName || !ownerName || !ownerEmail || !ownerPassword) {
-    return res
-      .status(422)
-      .json({
-        success: false,
-        message: 'shopName, ownerName, ownerEmail, ownerPassword are required.',
-      });
+    return res.status(422).json({
+      success: false,
+      message: 'shopName, ownerName, ownerEmail, ownerPassword are required.',
+    });
   }
   const policyError = passwordPolicyError(String(ownerPassword), { minPasswordLength: 8 });
   if (policyError) {
@@ -366,6 +365,15 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
       })()
     );
     await client.query('COMMIT');
+    notifyPlatformTenantRegistration(
+      { name: shopName, id: tenantId, subdomain: generatedSubdomain },
+      { name: ownerName, email: String(ownerEmail).toLowerCase().trim() }
+    ).catch((error) =>
+      logger.error(
+        { err: error.message, tenantId },
+        '[onboarding-register] Telegram notification failed'
+      )
+    );
     return res.status(201).json({
       success: true,
       message: `Tenant "${shopName}" registered successfully.`,

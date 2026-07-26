@@ -251,6 +251,9 @@ export default function SaaSSubscription({
   const [invoiceMinAmount, setInvoiceMinAmount] = useState('');
   const [invoiceMaxAmount, setInvoiceMaxAmount] = useState('');
 
+  const manualRequestForInvoice = (invoiceId: string) =>
+    manualRequests.find((request) => request.invoice_id === invoiceId);
+
   const filteredInvoices = invoices.filter((item) => {
     const query = invoiceSearch.trim().toLowerCase();
     if (
@@ -2182,13 +2185,37 @@ export default function SaaSSubscription({
                             onClick={() => {
                               if (readOnlyMode) return;
                               setManualInvoice(inv);
+                              setManualMethod(
+                                manualConfig.bankTransferEnabled ? 'BANK_TRANSFER' : 'MANUAL_QRIS'
+                              );
+                              setManualPayerName('');
+                              setManualReference('');
+                              setManualProof(null);
                             }}
                             disabled={readOnlyMode}
                             className="px-2.5 py-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold rounded-lg text-[10px] transition-all"
                           >
-                            Bayar Manual
+                            Saya Sudah Bayar
                           </button>
                         )}
+                        {inv.status === 'PENDING_VERIFICATION' && (
+                          <span className="rounded-lg bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                            Menunggu Admin
+                          </span>
+                        )}
+                        {inv.status !== 'PAID' &&
+                          inv.status !== 'PENDING_VERIFICATION' &&
+                          manualRequestForInvoice(inv.id)?.status === 'REJECTED' && (
+                            <span
+                              title={
+                                manualRequestForInvoice(inv.id)?.rejection_reason ||
+                                'Bukti sebelumnya ditolak.'
+                              }
+                              className="rounded-lg bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-700 dark:bg-rose-950/30 dark:text-rose-300"
+                            >
+                              Bukti Ditolak
+                            </span>
+                          )}
                         <button
                           onClick={() => setDetailModalInvoice(inv)}
                           className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-bold rounded-lg text-[10px] transition-all cursor-pointer"
@@ -2226,6 +2253,19 @@ export default function SaaSSubscription({
                     Invoice {manualInvoice.id} · {formatRupiah(manualInvoice.amount)}
                   </p>
                 </div>
+                <ol className="grid grid-cols-4 gap-1 rounded-xl bg-slate-50 p-2 text-center text-[10px] font-bold text-slate-500 dark:bg-zinc-950">
+                  <li className="text-accent">1. Pilih metode</li>
+                  <li>2. Bayar</li>
+                  <li>3. Upload bukti</li>
+                  <li>4. Admin verifikasi</li>
+                </ol>
+                {manualRequestForInvoice(manualInvoice.id)?.status === 'REJECTED' && (
+                  <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+                    Bukti sebelumnya ditolak:{' '}
+                    {manualRequestForInvoice(manualInvoice.id)?.rejection_reason ||
+                      'Silakan periksa kembali pembayaran dan unggah bukti baru.'}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => setManualInvoice(null)}
@@ -2256,6 +2296,9 @@ export default function SaaSSubscription({
               {manualConfig.bankTransferEnabled || manualConfig.manualQrisEnabled ? (
                 <>
                   <div className="rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-3 text-xs text-slate-600 dark:text-zinc-300">
+                    <p className="mb-2 font-bold text-slate-800 dark:text-white">
+                      Langkah 2: Bayar tepat {formatRupiah(manualInvoice.amount)}
+                    </p>
                     {manualMethod === 'BANK_TRANSFER' ? (
                       <div>
                         <p>
@@ -2287,6 +2330,10 @@ export default function SaaSSubscription({
                       </p>
                     )}
                   </div>
+                  <p className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200">
+                    Setelah bayar, isi data dan unggah bukti. Admin memverifikasi maksimal 1x24 jam.
+                    Jangan kirim konfirmasi bila belum membayar.
+                  </p>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300">
                     Nama pembayar
                     <input
@@ -2330,7 +2377,11 @@ export default function SaaSSubscription({
                     disabled={readOnlyMode || manualSubmitting}
                     className="w-full rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 p-3 text-sm font-black text-white"
                   >
-                    {manualSubmitting ? 'Mengunggah bukti...' : 'Kirim untuk Verifikasi'}
+                    {manualSubmitting
+                      ? 'Mengirim Konfirmasi...'
+                      : manualRequestForInvoice(manualInvoice.id)?.status === 'REJECTED'
+                        ? 'Kirim Bukti Baru untuk Verifikasi'
+                        : 'Saya Sudah Bayar, Kirim Konfirmasi'}
                   </button>
                 </>
               ) : (
