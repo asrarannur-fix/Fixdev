@@ -22,9 +22,9 @@ test("manual payment migration enforces evidence and exactly one settlement", ()
 
 test("billing routes require role and tenant guards", () => {
   const routes = readFileSync(resolve("src/server/routes/billing.routes.ts"), "utf8");
-  assert.match(routes, /router\.post\("\/plans", requireSuperAdmin/);
-  assert.match(routes, /router\.get\("\/subscription", requireTenantOrSuperAdminPermission\("billing:view_subscription"\)/);
-  assert.match(routes, /manual-payments\/:id\/approve", requireSuperAdmin/);
+  assert.match(routes, /router\.post\(\s*['"]\/plans['"][\s\S]*?requireSuperAdminPermission\(['"]billing:manage_plans['"]\)/);
+  assert.match(routes, /router\.get\(\s*['"]\/subscription['"][\s\S]*?requireTenantOrSuperAdminPermission\(['"]billing:view_subscription['"]\)/);
+  assert.match(routes, /manual-payments\/:id\/approve[\s\S]*?requireSuperAdmin/);
   assert.match(routes, /Direct payment confirmation has been removed/);
 });
 
@@ -68,5 +68,5 @@ test("generic sync excludes privileged tables and dynamic id fields", () => {
   const allowlist = controller.match(/const ALLOWED_TABLES = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";
   assert.doesNotMatch(allowlist, /"users"|"audit_logs"|"api_tokens"/);
   assert.doesNotMatch(controller, /const \{ table, action, data, idField \}/);
-  assert.match(controller, /const idCol = "id"/);
+  assert.match(controller, /const idCol = ['"]id['"]/);
 });

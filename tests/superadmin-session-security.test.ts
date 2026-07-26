@@ -9,7 +9,7 @@ const migration = fs.readFileSync(new URL("../migrations/009_superadmin_session_
 
 test("Super Admin mutations require an authoritative edit session", () => {
   assert.match(auth, /superadmin_console_sessions/);
-  assert.match(auth, /session\.mode !== "EDIT"/);
+  assert.match(auth, /session\.mode !== ['"]EDIT['"]/);
   assert.match(routes, /requireSuperAdminConsoleSession/);
 });
 
@@ -17,7 +17,7 @@ test("Super Admin tenant scope requires active matching impersonation", () => {
   assert.match(auth, /x-impersonation-session-id/);
   assert.match(auth, /ended_at IS NULL AND expires_at>now\(\)/);
   assert.match(auth, /requestedTenant !== session\.tenant_id/);
-  assert.match(auth, /session\.access_mode !== "FULL"/);
+  assert.match(auth, /session\.access_mode !== ['"]FULL['"]/);
 });
 
 test("invitation provisioning tracks completion and compensation failure", () => {
@@ -33,5 +33,5 @@ test("tenant registration and role assignment have server-side controls", () => 
   assert.match(migration, /registration_key UUID/);
   assert.match(routes, /tenants\/availability/);
   assert.match(routes, /users\/:userId\/role/);
-  assert.match(routes, /requireSuperAdminPermission\("users:assign_role"\)/);
+  assert.match(routes, /requireSuperAdminPermission\(['"]users:assign_role['"]\)/);
 });
