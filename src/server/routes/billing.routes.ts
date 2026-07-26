@@ -171,13 +171,13 @@ router.get(
 );
 router.post(
   '/manual-payment-config/qris-upload',
-  requireSuperAdminPermission('billing:manage_config'),
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
   requireSuperAdminConsoleSession,
   createManualQrisUpload
 );
 router.put(
   '/manual-payment-config/qris-upload/:fileName',
-  requireSuperAdminPermission('billing:manage_config'),
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
   requireSuperAdminConsoleSession,
   express.raw({ type: ['image/jpeg', 'image/png'], limit: '2mb' }),
   uploadManualQris
