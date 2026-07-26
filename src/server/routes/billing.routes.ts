@@ -146,21 +146,21 @@ router.post(
   requireSuperAdminConsoleSession,
   updateInvoiceTemplate
 );
-router.get('/gateway-config', requireSuperAdminPermission('billing:view_config'), getGatewayConfig);
+router.get('/gateway-config', requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'), getGatewayConfig);
 router.post(
   '/gateway-config',
-  requireSuperAdminPermission('billing:manage_config'),
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
   requireSuperAdminConsoleSession,
   updateGatewayConfig
 );
 router.get(
   '/telegram-manual-payment-config',
-  requireSuperAdminPermission('billing:view_config'),
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
   getPlatformTelegramConfig
 );
 router.post(
   '/telegram-manual-payment-config',
-  requireSuperAdminPermission('billing:manage_config'),
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
   requireSuperAdminConsoleSession,
   updatePlatformTelegramConfig
 );
