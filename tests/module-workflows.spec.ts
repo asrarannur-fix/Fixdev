@@ -41,8 +41,8 @@ async function dismissModal(page: Page) {
 // OWNER sidebar buttons have no id; click by visible label
 const MODULE_LABELS: Record<string, string> = {
   services: "Servis",
-  pos: "POS",
-  inventory: "Inventory",
+  pos: "Kasir",
+  inventory: "Persediaan",
   accounting: "Keuangan",
   hr: "HR",
   crm: "CRM",

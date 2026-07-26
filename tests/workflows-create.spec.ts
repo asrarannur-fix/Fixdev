@@ -123,7 +123,7 @@ test.describe("Real workflow creation per module", () => {
 
   test("Inventory: create a product via Tambah Barang form", async ({ page, request }) => {
     const user = await loginOwner(page, request);
-    await openModule(page, "Inventory", "Stok");
+    await openModule(page, "Persediaan", "Stok");
     await page.getByRole("button", { name: /Tambah Barang/i }).click();
     await page.waitForTimeout(600);
     await dismiss(page);
@@ -143,7 +143,7 @@ test.describe("Real workflow creation per module", () => {
     expect(pageErrors, "no runtime errors during product creation").toEqual([]);
 
     // confirm product listed in Stok
-    await openModule(page, "Inventory", "Stok");
+    await openModule(page, "Persediaan", "Stok");
     await page.getByText(`Test Barang ${uniq}`, { exact: false }).first().waitFor({ timeout: 8000 });
     expect(await page.getByText(`Test Barang ${uniq}`, { exact: false }).count()).toBeGreaterThan(0);
   });

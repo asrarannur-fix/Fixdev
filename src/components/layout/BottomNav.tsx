@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { LayoutDashboard, Wrench, ShoppingBag, Menu, Users } from 'lucide-react';
+import { LayoutDashboard, Wrench, ShoppingBag, Menu, Users, Settings } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -20,6 +20,7 @@ const ITEMS = [
   { id: 'operasional', label: 'Operasional', icon: Wrench },
   { id: 'kasir', label: 'Kasir', icon: ShoppingBag },
   { id: 'pelanggan', label: 'Pelanggan', icon: Users },
+  { id: 'settings', label: 'Setelan', icon: Settings },
 ];
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSetTab, onOpenMenu }) => {
