@@ -64,20 +64,22 @@ export function HRTab({ activeSubTab }: { activeSubTab: string }) {
 
   const currentUserPermissions = currentUser?.permissions || [];
 
-  // activeSubTab = grup utama (attendance/payroll/contracts/performance/reports)
-  // ATAU sub-tab payroll (payroll/kasbon/commission) untuk akses langsung.
-  const isMainGroup = HR_GROUPS[activeSubTab];
-  const group = isMainGroup ? activeSubTab : 'attendance';
+  // activeSubTab bisa grup utama, atau sub-tab sidebar seperti kasbon/commission.
+  const mainGroup = HR_GROUPS[activeSubTab] ? activeSubTab : undefined;
+  const subTabGroup = mainGroup
+    ? undefined
+    : Object.entries(HR_GROUPS).find(([, tabs]) =>
+        tabs.some((tab) => tab.id === activeSubTab)
+      )?.[0];
+  const group = mainGroup || subTabGroup || 'attendance';
   const tabs = HR_GROUPS[group];
-  const [active, setActive] = React.useState(() => {
-    if (!isMainGroup && activeSubTab) return activeSubTab; // sub-tab payroll langsung
-    return tabs[0].id;
-  });
+  const directSubTab = subTabGroup ? activeSubTab : undefined;
+  const [active, setActive] = React.useState(directSubTab || tabs[0].id);
 
-  // Saat grup berganti (nav utama), reset ke panel pertama grup baru.
+  // Saat navigasi sidebar berubah, buka target persisnya; jangan reset kasbon ke attendance.
   React.useEffect(() => {
-    setActive(HR_GROUPS[group][0].id);
-  }, [group]);
+    setActive(directSubTab || HR_GROUPS[group][0].id);
+  }, [group, directSubTab]);
 
   const view = active;
 

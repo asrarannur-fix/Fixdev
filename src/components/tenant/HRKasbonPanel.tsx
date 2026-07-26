@@ -26,7 +26,9 @@ export const HRKasbonPanel: React.FC<any> = (props) => {
   if (activeSubTab !== 'kasbon') return null;
 
   const tenantEmployees = employees.filter(
-    (e: any) => e.tenantId === currentTenantId && e.branchId === currentBranchId
+    (e: any) =>
+      e.tenantId === currentTenantId &&
+      (!currentBranchId || !e.branchId || e.branchId === currentBranchId)
   );
 
   const handleSubmitKasbon = () => {
@@ -103,7 +105,7 @@ export const HRKasbonPanel: React.FC<any> = (props) => {
               .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
               .map((ca: any) => (
                 <tr
-                  key={ca.id}
+                  key={`${ca.employeeId}-${ca.id}`}
                   className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
                 >
                   <td className="py-3 px-4 text-sm text-slate-700">{ca.date}</td>
