@@ -64,7 +64,7 @@ export interface NavModule {
 export const OPERATIONAL_MODULES: NavModule[] = [
   {
     id: "overview",
-    label: "Dashboard",
+    label: "Beranda",
     desc: "Live KPI & Status",
     icon: LayoutDashboard,
     iconColor: "text-blue-500",
@@ -106,8 +106,8 @@ export const OPERATIONAL_MODULES: NavModule[] = [
   },
   {
     id: "inventory",
-    label: "Inventory",
-    desc: "Stok & Gudang",
+    label: "Persediaan",
+    desc: "Produk, Stok & Gudang",
     icon: Package,
     iconColor: "text-amber-500",
     activeBg: "bg-amber-50 text-amber-700 border-amber-100",
@@ -138,8 +138,8 @@ export const OPERATIONAL_MODULES: NavModule[] = [
   },
   {
     id: "hr",
-    label: "HR",
-    desc: "Staff & Payroll",
+    label: "Tim",
+    desc: "Karyawan & Penggajian",
     icon: UserCheck,
     iconColor: "text-sky-500",
     activeBg: "bg-sky-50 text-sky-600 border-sky-100",
@@ -153,8 +153,8 @@ export const OPERATIONAL_MODULES: NavModule[] = [
   },
   {
     id: "crm",
-    label: "CRM",
-    desc: "Pelanggan & Promo",
+    label: "Pelanggan",
+    desc: "CRM, Penawaran & Promo",
     icon: Megaphone,
     iconColor: "text-purple-500",
     activeBg: "bg-purple-50 text-purple-600 border-purple-100",
@@ -190,6 +190,7 @@ export const OPERATIONAL_MODULES: NavModule[] = [
     subtabs: [
       { id: "customers", label: "Pelanggan", icon: Users },
       { id: "products", label: "Produk", icon: Package },
+      { id: "suppliers", label: "Supplier", icon: Truck },
       { id: "service_tickets", label: "Tiket Servis", icon: Wrench },
       { id: "warehouses", label: "Gudang", icon: MapPin },
       { id: "branches", label: "Cabang", icon: Globe },

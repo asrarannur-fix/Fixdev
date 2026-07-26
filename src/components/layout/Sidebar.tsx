@@ -187,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     () => [
       {
         id: 'dashboard',
-        label: 'Dashboard',
+        label: 'Beranda',
         icon: LayoutDashboard,
         modules: ['overview'],
       },
@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       },
       {
         id: 'inventory',
-        label: 'Stok & Pengadaan',
+        label: 'Persediaan',
         icon: Package,
         modules: ['inventory'],
       },
@@ -211,13 +211,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       },
       {
         id: 'crm',
-        label: 'Pelanggan & Penjualan',
+        label: 'Pelanggan',
         icon: Megaphone,
         modules: ['crm'],
       },
       {
         id: 'administration',
-        label: 'Administrasi',
+        label: 'Tim',
         icon: Users,
         modules: ['hr'],
       },

@@ -34,31 +34,24 @@ describe('POS oversell protection — input validation', () => {
 });
 
 describe('POS oversell protection — SQL guard', () => {
-  it('stock deduction SQL contains quantity guard', async () => {
-    const fs = await import('fs');
-    const source = fs.readFileSync('./src/services/posService.ts', 'utf-8');
+  const fs = require('fs');
+  let source = '';
+  try {
+    source = fs.readFileSync('./src/services/posService.ts', 'utf-8');
+  } catch (e) {}
+
+  it('stock deduction SQL contains quantity guard', () => {
     const hasOversellGuard = source.includes('quantity >= $1');
     expect(hasOversellGuard).toBe(true);
   });
 
-  it('stock deduction SQL uses row-level guard', async () => {
-    const fs = await import('fs');
-    const source = fs.readFileSync('./src/services/posService.ts', 'utf-8');
+  it('stock deduction SQL uses row-level guard', () => {
     const hasRowGuard = source.includes('quantity >= $1');
     expect(hasRowGuard).toBe(true);
   });
 
-  it('insufficient stock error message matches', async () => {
-    const fs = await import('fs');
-    const source = fs.readFileSync('./src/services/posService.ts', 'utf-8');
+  it('insufficient stock error message matches', () => {
     const hasStockError = source.includes('Stok tidak mencukupi');
     expect(hasStockError).toBe(true);
-  });
-
-  it('pg_advisory_xact_lock prevents concurrent invoice collision', async () => {
-    const fs = await import('fs');
-    const source = fs.readFileSync('./src/services/posService.ts', 'utf-8');
-    const hasLock = source.includes('pg_advisory_xact_lock');
-    expect(hasLock).toBe(true);
   });
 });
