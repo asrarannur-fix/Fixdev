@@ -279,6 +279,11 @@ app.post("/api/whatsapp/queue", requireJwt, requireTenantScope, whatsappPostQueu
 
 app.get("/api/auth/profile", requireJwt, authProfileHandler);
 
+// Module records sync (HR employees, payroll, etc.)
+app.get("/api/module-records", requireJwt, requireTenantScope, moduleRecordsGetHandler);
+app.post("/api/module-records", requireJwt, requireTenantScope, moduleRecordsPostHandler);
+app.post("/api/data/sync", requireJwt, requireTenantScope, dataSyncHandler);
+
 app.get("/api/platform/bootstrap", requireJwt, requireSuperAdmin, requireSuperAdminPermission("platform:view_bootstrap"), platformBootstrapHandler);
 app.get("/api/platform/health", requireJwt, requireSuperAdmin, platformHealthHandler);
 app.get("/api/bootstrap", requireJwt, requireTenantScope, bootstrapHandler);

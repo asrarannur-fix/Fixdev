@@ -1068,14 +1068,21 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
           : [];
         const moduleRows = dbModuleRecords
-          ? toCamelCase<Array<{ module: string; payload: any; deletedAt?: string }>>(
-              dbModuleRecords
-            ).filter((row) => !row.deletedAt)
+          ? toCamelCase<
+              Array<{ module: string; payload: any; recordId?: string; deletedAt?: string }>
+            >(dbModuleRecords).filter((row) => !row.deletedAt)
           : [];
         const modulePayloads = <T,>(module: string): T[] =>
           moduleRows
             .filter((row) => row.module === module)
-            .map((row) => toCamelCase<T>(row.payload));
+            .map(
+              (row) =>
+                ({
+                  ...toCamelCase<T>(row.payload),
+                  id: row.recordId,
+                  recordId: row.recordId,
+                }) as unknown as T
+            );
         const branchesList = dbBranches ? toCamelCase<Branch[]>(dbBranches) : [];
         const warehousesList = dbWarehouses ? toCamelCase<Warehouse[]>(dbWarehouses) : [];
 
@@ -1968,22 +1975,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Inject JWT for backend auth (requireJwt middleware)
     if (!headers.has('Authorization')) {
       try {
-        const client = getAuthClient();
-        if (client) {
-          const sessionData = await Promise.race([
-            client.auth.getSession(),
-            new Promise<never>((_, reject) =>
-              window.setTimeout(() => reject(new Error('AUTH_SESSION_TIMEOUT')), 4000)
-            ),
-          ]);
-          if (sessionData.data.session?.access_token) {
-            headers.set('Authorization', `Bearer ${sessionData.data.session.access_token}`);
-          }
+        const token = localStorage.getItem('fixdev_token');
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
         }
-      } catch (e: any) {
-        if (e?.message === 'AUTH_SESSION_TIMEOUT') {
-          throw new Error('Sesi autentikasi tidak merespons. Muat ulang atau login kembali.');
-        }
+      } catch (e) {
+        // no token available, request will be rejected by backend
       }
     }
 
