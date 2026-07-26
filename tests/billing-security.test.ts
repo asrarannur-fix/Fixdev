@@ -31,7 +31,7 @@ test("billing routes require role and tenant guards", () => {
 test("manual payment persists before best-effort notification", () => {
   const controller = readFileSync(resolve("src/server/controllers/manualPayment.controller.ts"), "utf8");
   const submit = controller.match(/export async function submitManualPayment[\s\S]*?export async function listManualPayments/)?.[0] || "";
-  assert.match(submit, /const result = await dbTransaction[\s\S]*?return \{ request: inserted\.rows\[0\] \};[\s\S]*?await dbTransaction\(\(client\) => notify/);
+  assert.match(submit, /const result = await dbTransaction[\s\S]*?return \{ request: inserted\.rows\[0\] \};[\s\S]*?await dbTransaction[\s\S]*?notify\(/);
   assert.match(submit, /Manual payment notification failed/);
 });
 
@@ -52,7 +52,7 @@ test("API tenant boundaries and public tracking do not accept arbitrary fallback
 test("manual payment uploads validate PDF signatures", () => {
   const controller = readFileSync(resolve("src/server/controllers/manualPayment.controller.ts"), "utf8");
   assert.match(controller, /matchesPdfSignature/);
-  assert.match(controller, /contentType === "application\/pdf"/);
+  assert.match(controller, /contentType === ['"]application\/pdf['"]/);
   assert.match(controller, /fileBuffer\.length !== sizeBytes/);
 });
 test("controller 5xx responses do not expose internal error messages", () => {

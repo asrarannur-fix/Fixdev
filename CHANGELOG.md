@@ -1,6 +1,43 @@
 # Changelog
 
+## 2026-07-26
+### Billing Manual — konfirmasi tenant dan approval Telegram
+- Tenant kini melihat alur pembayaran manual, nominal wajib, tombol `Saya Sudah Bayar, Kirim Konfirmasi`, status menunggu admin, alasan penolakan, serta kirim bukti baru.
+- Superadmin dapat mengonfigurasi bot Telegram pada Billing, menerima alert tenant baru dan pembayaran manual, lalu memakai perintah status, tenant, paket, invoice, dan pembayaran pending.
+- Approval dari Telegram memvalidasi webhook secret, Telegram user ID, role `SUPER_ADMIN`, dan versi pengajuan sebelum melunasi invoice.
+- File terkait: `src/components/SaaSSubscription.tsx`, `src/components/superadmin/TelegramPaymentConfig.tsx`, `src/server/controllers/telegram.controller.ts`, `src/server/controllers/manualPayment.controller.ts`, `docs/TELEGRAM_MANUAL_PAYMENT_APPROVAL.md`.
+
+## 2026-07-26
+### Data Manager – Full Production Ready Implementation
+- Added Supplier resource (CRUD, read-only toggle, batch import).
+- Enhanced CrudManager with export CSV (server-side pagination), read-only support, and action column toggle.
+- Updated Data Explorer to use CrudManager with dynamic readOnly flag.
+- Added DataImporter batch import flow for Supplier via `/crud/suppliers/batch`.
+- Added unique indexes on `products(tenant_id, sku)` and `coa_accounts(tenant_id, code)` via migration `052_data_manager_integrity.sql`.
+- Added RBAC permission guards: `data:read` / `data:write` with fallback to legacy per-module permissions.
+- Added Playwright E2E test `tests/data-manager.spec.ts` verifying login, navigation, and Supplier creation via batch API.
+- Updated CHANGELOG.md with detailed release notes.
+- All unit tests pass; lint 0 errors (only pre-existing warnings remain).
+
 ## 2026-07-25
+### Data Manager — integritas, ekspor, dan import atomik
+- Menambahkan migration idempoten untuk indeks unik tenant+SKU dan tenant+kode COA.
+- Ekspor Data Manager kini mengambil seluruh halaman hasil filter dari API.
+- Import Supplier memakai endpoint batch atomik; satu baris gagal membatalkan seluruh batch.
+- Tiket servis ditetapkan read-only di Data Manager agar perubahan lewat workflow servis.
+- Menambah test konfigurasi resource Data Manager.
+- File terkait: `migrations/052_data_manager_integrity.sql`, `src/server/plugins/crudPlugin.ts`, `src/components/CrudManager.tsx`, `src/components/DataImporter.tsx`, `src/components/tenant/DataExplorer.tsx`.
+
+### Data Manager — kelengkapan resource dan kontrol data
+- Menambahkan resource Supplier ke Data Manager dan CRUD whitelist backend.
+- Menambahkan ekspor CSV dari tabel Data Manager.
+- Menambahkan import CSV Supplier lewat `DataImporter`.
+- Menambahkan izin CRUD per aksi: `data:read`/`data:write` atau `<resource>:read`/`<resource>:write`.
+- Menambahkan validasi nama wajib, angka non-negatif, serta cek unik SKU dan kode COA pada API CRUD.
+- Memindahkan pagination, filter, dan sorting Data Manager ke API sehingga data tidak lagi dibatasi 200 baris pada browser.
+- Menjadikan jurnal dan shift POS read-only agar perubahan memakai workflow akuntansi/POS.
+- File terkait: `src/components/tenant/DataExplorer.tsx`, `src/components/CrudManager.tsx`, `src/components/ui/DataTable.tsx`, `src/components/DataImporter.tsx`, `src/server/plugins/crudPlugin.ts`, `src/config/nav.config.ts`, `tests/data-manager.test.ts`.
+
 ### Rental Module — perbaikan kritis sinkronisasi DB, API, dan frontend
 - **Fix nama kolom DB vs Controller**: Semua query SQL di `rental.controller.ts` disesuaikan dengan schema migration: `daily_rate` → `rate_per_day`, `total_rent` → `total_rent_amount`, `damage_deduction` → `damage_deduction_amount`, `received_by` → `recorded_by`, `inspected_by` → `inspector_id`.
 - **Tambah kolom `deposit_paid`**: Migration `050_rental_module.sql` ditambah kolom `deposit_paid INTEGER DEFAULT 0` pada tabel `rental_contracts` untuk melacak progress pembayaran deposit.

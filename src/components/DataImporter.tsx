@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { useSaaS } from "../context/SaaSContext";
-import { useToast } from "./ui/Toast";
+import React, { useState } from 'react';
+import { useSaaS } from '../context/SaaSContext';
+import api from '../lib/api/client';
+import { useToast } from './ui/Toast';
 import {
   FileSpreadsheet,
   Upload,
@@ -12,21 +13,22 @@ import {
   Package,
   Truck,
   DollarSign,
-} from "lucide-react";
+} from 'lucide-react';
 
-type ImportTarget = "CUSTOMERS" | "PRODUCTS" | "SUPPLIERS" | "OPENING_BALANCE";
+type ImportTarget = 'CUSTOMERS' | 'PRODUCTS' | 'SUPPLIERS' | 'OPENING_BALANCE';
 
 export const DataImporter: React.FC = () => {
   const {
-    currentTenantId = "",
+    currentTenantId = '',
+    currentBranchId = '',
     addCustomer,
     addInventoryProduct,
     addLog,
   } = useSaaS();
   const { showToast } = useToast();
 
-  const [activeTarget, setActiveTarget] = useState<ImportTarget>("PRODUCTS");
-  const [csvContent, setCsvContent] = useState("");
+  const [activeTarget, setActiveTarget] = useState<ImportTarget>('PRODUCTS');
+  const [csvContent, setCsvContent] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<{
     successCount: number;
@@ -37,28 +39,28 @@ export const DataImporter: React.FC = () => {
   // Template generators
   const getTemplateHeader = () => {
     switch (activeTarget) {
-      case "PRODUCTS":
-        return "name,sku,category,sellPrice,purchaseCost,unit,stockQty\nContoh LCD iPhone 11,SP-001,SPAREPART,450000,300000,PICS,10";
-      case "CUSTOMERS":
-        return "name,phone,email,address,type\nBudi Santoso,081234567890,budi@example.com,Jl. Merdeka No. 1,RETAIL";
-      case "SUPPLIERS":
-        return "name,phone,email,address\nPT Sparepart Jaya,0215551234,sales@sparepartjaya.com,Jakarta Central";
-      case "OPENING_BALANCE":
-        return "accountCode,accountName,debit,credit\n101.01,Kas Toko,5000000,0";
+      case 'PRODUCTS':
+        return 'name,sku,category,sellPrice,purchaseCost,unit,stockQty\nContoh LCD iPhone 11,SP-001,SPAREPART,450000,300000,PICS,10';
+      case 'CUSTOMERS':
+        return 'name,phone,email,address,type\nBudi Santoso,081234567890,budi@example.com,Jl. Merdeka No. 1,RETAIL';
+      case 'SUPPLIERS':
+        return 'name,phone,email,address\nPT Sparepart Jaya,0215551234,sales@sparepartjaya.com,Jakarta Central';
+      case 'OPENING_BALANCE':
+        return 'accountCode,accountName,debit,credit\n101.01,Kas Toko,5000000,0';
     }
   };
 
   const handleDownloadTemplate = () => {
     const header = getTemplateHeader();
-    const blob = new Blob([header], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([header], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
-    link.setAttribute("download", `template_import_${activeTarget.toLowerCase()}.csv`);
+    link.setAttribute('download', `template_import_${activeTarget.toLowerCase()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast("Template CSV berhasil diunduh!", "success");
+    showToast('Template CSV berhasil diunduh!', 'success');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,35 +70,77 @@ export const DataImporter: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (evt) => {
       const text = evt.target?.result as string;
-      setCsvContent(text || "");
+      setCsvContent(text || '');
       setImportResult(null);
-      showToast("File CSV berhasil dimuat. Siap diproses.", "info");
+      showToast('File CSV berhasil dimuat. Siap diproses.', 'info');
     };
     reader.readAsText(file);
   };
 
-  const processImport = () => {
+  const processImport = async () => {
     if (!csvContent.trim()) {
-      showToast("Format atau isi CSV kosong. Silakan upload file terlebih dahulu.", "error");
+      showToast('Format atau isi CSV kosong. Silakan upload file terlebih dahulu.', 'error');
       return;
     }
 
     setIsProcessing(true);
-    const lines = csvContent.split("\n").map((l) => l.trim()).filter(Boolean);
-    
+    const lines = csvContent
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+
     if (lines.length <= 1) {
-      showToast("File CSV tidak memiliki baris data (hanya header).", "error");
+      showToast('File CSV tidak memiliki baris data (hanya header).', 'error');
       setIsProcessing(false);
       return;
     }
 
-    const headers = lines[0].split(",").map((h) => h.trim());
+    const headers = lines[0].split(',').map((h) => h.trim());
+    if (activeTarget === 'SUPPLIERS') {
+      const supplierRows = lines
+        .slice(1)
+        .map((line) => line.split(',').map((value) => value.trim()));
+      const invalidRow = supplierRows.findIndex(([name]) => !name);
+      if (invalidRow >= 0) {
+        setImportResult({
+          successCount: 0,
+          errorCount: supplierRows.length,
+          errors: [`Baris ${invalidRow + 2}: Nama supplier wajib diisi.`],
+        });
+        setIsProcessing(false);
+        showToast('Seluruh import dibatalkan; data supplier tidak valid.', 'error');
+        return;
+      }
+      const items = supplierRows.map(([name, phone, email, address]) => ({
+        name,
+        phone,
+        email: email.toLowerCase(),
+        address,
+        isActive: true,
+      }));
+      try {
+        await api.post(
+          '/crud/suppliers/batch',
+          { items },
+          { headers: { 'X-Tenant-ID': currentTenantId, 'X-Branch-ID': currentBranchId } }
+        );
+        setImportResult({ successCount: items.length, errorCount: 0, errors: [] });
+        showToast(`Import selesai: ${items.length} data berhasil diproses!`, 'success');
+      } catch (err: any) {
+        const message = err?.response?.data?.error || err?.message || 'Import supplier gagal.';
+        setImportResult({ successCount: 0, errorCount: items.length, errors: [message] });
+        showToast('Seluruh import dibatalkan; tidak ada data supplier disimpan.', 'error');
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
     let success = 0;
     let failed = 0;
     const errors: string[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim());
+      const values = lines[i].split(',').map((v) => v.trim());
       if (values.length < headers.length) {
         failed++;
         errors.push(`Baris ${i + 1}: Kolom tidak lengkap.`);
@@ -104,7 +148,7 @@ export const DataImporter: React.FC = () => {
       }
 
       try {
-        if (activeTarget === "PRODUCTS") {
+        if (activeTarget === 'PRODUCTS') {
           const [name, sku, category, sellPrice, purchaseCost, unit, stockQty] = values;
           if (!name || !sellPrice) {
             failed++;
@@ -119,22 +163,22 @@ export const DataImporter: React.FC = () => {
             addInventoryProduct({
               tenantId: currentTenantId,
               name: name.trim(),
-              sku: (sku || "").trim() || `SKU-${Date.now()}-${i}`,
-              barcode: (sku || "").trim() || `SKU-${Date.now()}-${i}`,
-              category: (category as any) || "SPAREPART",
+              sku: (sku || '').trim() || `SKU-${Date.now()}-${i}`,
+              barcode: (sku || '').trim() || `SKU-${Date.now()}-${i}`,
+              category: (category as any) || 'SPAREPART',
               sellPrice: safeSellPrice,
               purchaseCost: safePurchaseCost,
-              unit: (unit || "PICS").trim(),
+              unit: (unit || 'PICS').trim(),
               minStock: 1,
               reorderLevel: 2,
               stockQty: safeStockQty,
               warehouseStock: {},
-              grade: "NEW" as any,
+              grade: 'NEW' as any,
               isConsignment: false,
             });
             success++;
           }
-        } else if (activeTarget === "CUSTOMERS") {
+        } else if (activeTarget === 'CUSTOMERS') {
           const [name, phone, email, address, type] = values;
           if (!name) {
             failed++;
@@ -145,10 +189,10 @@ export const DataImporter: React.FC = () => {
           if (addCustomer) {
             addCustomer({
               name: name.trim(),
-              phone: (phone || "-").trim(),
-              email: (email || "").trim().toLowerCase(),
-              address: (address || "").trim(),
-              segment: (type as any) || "RETAIL",
+              phone: (phone || '-').trim(),
+              email: (email || '').trim().toLowerCase(),
+              address: (address || '').trim(),
+              segment: (type as any) || 'RETAIL',
               tags: [],
               createdAt: new Date().toISOString(),
             });
@@ -156,11 +200,13 @@ export const DataImporter: React.FC = () => {
           }
         } else {
           failed++;
-          errors.push(`Baris ${i + 1}: Target ${activeTarget} belum memiliki persistence backend; data tidak disimpan.`);
+          errors.push(
+            `Baris ${i + 1}: Target ${activeTarget} belum memiliki persistence backend; data tidak disimpan.`
+          );
         }
       } catch (err: any) {
         failed++;
-        errors.push(`Baris ${i + 1}: Error - ${err?.message || "Format salah"}`);
+        errors.push(`Baris ${i + 1}: Error - ${err?.message || 'Format salah'}`);
       }
     }
 
@@ -169,28 +215,32 @@ export const DataImporter: React.FC = () => {
 
     if (addLog) {
       addLog(
-        "Import Data CSV",
+        'Import Data CSV',
         `Target: ${activeTarget}, Sukses: ${success}, Gagal: ${failed}`,
-        "SYSTEM",
+        'SYSTEM'
       );
     }
 
     if (success > 0) {
-      showToast(`Import selesai: ${success} data berhasil diproses!`, "success");
+      showToast(`Import selesai: ${success} data berhasil diproses!`, 'success');
     } else {
-      showToast("Gagal memproses data import.", "error");
+      showToast('Gagal memproses data import.', 'error');
     }
   };
 
   return (
-    <div className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_.hover\:bg-slate-100:hover]:bg-zinc-800" id="data-importer-pane">
+    <div
+      className="space-y-6 dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_.hover\:bg-slate-100:hover]:bg-zinc-800"
+      id="data-importer-pane"
+    >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
         <div>
           <h2 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-emerald-500" /> Pusat Import Data Massal (CSV)
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Upload file CSV untuk mengimpor data produk, pelanggan, supplier, atau saldo awal secara sekaligus.
+            Upload file CSV untuk mengimpor data produk, pelanggan, supplier, atau saldo awal secara
+            sekaligus.
           </p>
         </div>
         <button
@@ -204,41 +254,57 @@ export const DataImporter: React.FC = () => {
       {/* Target Selector Tabs */}
       <div className="flex gap-2 border-b border-slate-200 pb-2">
         <button
-          onClick={() => { setActiveTarget("PRODUCTS"); setCsvContent(""); setImportResult(null); }}
+          onClick={() => {
+            setActiveTarget('PRODUCTS');
+            setCsvContent('');
+            setImportResult(null);
+          }}
           className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg transition-all ${
-            activeTarget === "PRODUCTS"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
+            activeTarget === 'PRODUCTS'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Package className="w-4 h-4" /> Import Produk & Sparepart
         </button>
         <button
-          onClick={() => { setActiveTarget("CUSTOMERS"); setCsvContent(""); setImportResult(null); }}
+          onClick={() => {
+            setActiveTarget('CUSTOMERS');
+            setCsvContent('');
+            setImportResult(null);
+          }}
           className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg transition-all ${
-            activeTarget === "CUSTOMERS"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
+            activeTarget === 'CUSTOMERS'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Users className="w-4 h-4" /> Import Database Pelanggan
         </button>
         <button
-          onClick={() => { setActiveTarget("SUPPLIERS"); setCsvContent(""); setImportResult(null); }}
+          onClick={() => {
+            setActiveTarget('SUPPLIERS');
+            setCsvContent('');
+            setImportResult(null);
+          }}
           className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg transition-all ${
-            activeTarget === "SUPPLIERS"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
+            activeTarget === 'SUPPLIERS'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Truck className="w-4 h-4" /> Import Vendor / Supplier
         </button>
         <button
-          onClick={() => { setActiveTarget("OPENING_BALANCE"); setCsvContent(""); setImportResult(null); }}
+          onClick={() => {
+            setActiveTarget('OPENING_BALANCE');
+            setCsvContent('');
+            setImportResult(null);
+          }}
           className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg transition-all ${
-            activeTarget === "OPENING_BALANCE"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
+            activeTarget === 'OPENING_BALANCE'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <DollarSign className="w-4 h-4" /> Import Saldo Awal COA
@@ -255,7 +321,9 @@ export const DataImporter: React.FC = () => {
           <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-slate-400 transition-colors">
             <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
             <p className="text-xs font-bold text-slate-700">Pilih File CSV dari Komputer</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Format file .csv (UTF-8) dengan separator koma (,)</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Format file .csv (UTF-8) dengan separator koma (,)
+            </p>
             <input
               type="file"
               accept=".csv"
@@ -265,7 +333,9 @@ export const DataImporter: React.FC = () => {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase">Atau Tempel Teks CSV Langsung</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase">
+              Atau Tempel Teks CSV Langsung
+            </label>
             <textarea
               rows={6}
               placeholder={getTemplateHeader()}
@@ -298,19 +368,24 @@ export const DataImporter: React.FC = () => {
 
           {!importResult ? (
             <div className="py-12 text-center text-slate-400 text-xs italic">
-              Belum ada proses import yang dijalankan. Pilih target dan upload file CSV di sebelah kiri.
+              Belum ada proses import yang dijalankan. Pilih target dan upload file CSV di sebelah
+              kiri.
             </div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
-                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Berhasil</span>
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                    Berhasil
+                  </span>
                   <div className="text-xl font-black text-emerald-700 font-mono mt-1">
                     {importResult.successCount} Baris
                   </div>
                 </div>
                 <div className="p-3 bg-rose-50 border border-rose-100 rounded-lg">
-                  <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Gagal / Warning</span>
+                  <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
+                    Gagal / Warning
+                  </span>
                   <div className="text-xl font-black text-rose-700 font-mono mt-1">
                     {importResult.errorCount} Baris
                   </div>
@@ -319,7 +394,9 @@ export const DataImporter: React.FC = () => {
 
               {importResult.errors.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">Rincian Error Format</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">
+                    Rincian Error Format
+                  </p>
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg max-h-40 overflow-y-auto font-mono text-[10px] text-rose-600 space-y-1">
                     {importResult.errors.map((err, idx) => (
                       <div key={idx}>• {err}</div>

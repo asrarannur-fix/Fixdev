@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Users,
   Package,
@@ -9,140 +9,206 @@ import {
   FileSpreadsheet,
   CheckSquare,
   Database,
-} from "lucide-react";
-import { CrudManager, CrudField, Column } from "../CrudManager";
-import { getModuleById } from "../../config/nav.config";
+  Truck,
+} from 'lucide-react';
+import { CrudManager, CrudField, Column } from '../CrudManager';
+import { getModuleById } from '../../config/nav.config';
 
 interface ResourceConfig {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   columns: Column<any>[];
   fields: CrudField[];
+  readOnly?: boolean;
 }
 
 const RESOURCES: Record<string, ResourceConfig> = {
   customers: {
-    title: "Pelanggan",
+    title: 'Pelanggan',
     icon: Users,
     columns: [
-      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
-      { key: "phone", header: "Telepon", accessor: "phone", filterable: true },
-      { key: "email", header: "Email", accessor: "email", filterable: true },
-      { key: "segment", header: "Segmen", accessor: "segment", filterable: true },
+      { key: 'name', header: 'Nama', accessor: 'name', sortable: true, filterable: true },
+      { key: 'phone', header: 'Telepon', accessor: 'phone', filterable: true },
+      { key: 'email', header: 'Email', accessor: 'email', filterable: true },
+      { key: 'segment', header: 'Segmen', accessor: 'segment', filterable: true },
     ],
     fields: [
-      { name: "name", label: "Nama", required: true },
-      { name: "phone", label: "Telepon", required: true },
-      { name: "email", label: "Email" },
-      { name: "segment", label: "Segmen", type: "select", options: [{ label: "Personal", value: "PERSONAL" }, { label: "Corporate", value: "CORPORATE" }] },
-      { name: "address", label: "Alamat", type: "textarea" },
+      { name: 'name', label: 'Nama', required: true },
+      { name: 'phone', label: 'Telepon', required: true },
+      { name: 'email', label: 'Email' },
+      {
+        name: 'segment',
+        label: 'Segmen',
+        type: 'select',
+        options: [
+          { label: 'Personal', value: 'PERSONAL' },
+          { label: 'Corporate', value: 'CORPORATE' },
+        ],
+      },
+      { name: 'address', label: 'Alamat', type: 'textarea' },
     ],
   },
   products: {
-    title: "Produk",
+    title: 'Produk',
     icon: Package,
     columns: [
-      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
-      { key: "sku", header: "SKU", accessor: "sku", filterable: true },
-      { key: "category", header: "Kategori", accessor: "category", filterable: true },
-      { key: "sellPrice", header: "Harga Jual", accessor: "sellPrice", align: "right" },
-      { key: "stockQty", header: "Stok", accessor: "stockQty", align: "right" },
+      { key: 'name', header: 'Nama', accessor: 'name', sortable: true, filterable: true },
+      { key: 'sku', header: 'SKU', accessor: 'sku', filterable: true },
+      { key: 'category', header: 'Kategori', accessor: 'category', filterable: true },
+      { key: 'sellPrice', header: 'Harga Jual', accessor: 'sellPrice', align: 'right' },
+      { key: 'stockQty', header: 'Stok', accessor: 'stockQty', align: 'right' },
     ],
     fields: [
-      { name: "name", label: "Nama", required: true },
-      { name: "sku", label: "SKU", required: true },
-      { name: "barcode", label: "Barcode" },
-      { name: "category", label: "Kategori", type: "select", required: true, options: [{ label: "Sparepart", value: "SPAREPART" }, { label: "Aksesoris", value: "AKSESORIS" }, { label: "Jasa", value: "JASA" }, { label: "Lainnya", value: "LAINNYA" }] },
-      { name: "purchaseCost", label: "Harga Beli", type: "number" },
-      { name: "sellPrice", label: "Harga Jual", type: "number", required: true },
-      { name: "stockQty", label: "Stok Awal", type: "number" },
-      { name: "unit", label: "Satuan" },
+      { name: 'name', label: 'Nama', required: true },
+      { name: 'sku', label: 'SKU', required: true },
+      { name: 'barcode', label: 'Barcode' },
+      {
+        name: 'category',
+        label: 'Kategori',
+        type: 'select',
+        required: true,
+        options: [
+          { label: 'Sparepart', value: 'SPAREPART' },
+          { label: 'Aksesoris', value: 'AKSESORIS' },
+          { label: 'Jasa', value: 'JASA' },
+          { label: 'Lainnya', value: 'LAINNYA' },
+        ],
+      },
+      { name: 'purchaseCost', label: 'Harga Beli', type: 'number' },
+      { name: 'sellPrice', label: 'Harga Jual', type: 'number', required: true },
+      { name: 'stockQty', label: 'Stok Awal', type: 'number' },
+      { name: 'unit', label: 'Satuan' },
+    ],
+  },
+  suppliers: {
+    title: 'Supplier',
+    icon: Truck,
+    columns: [
+      { key: 'name', header: 'Nama', accessor: 'name', sortable: true, filterable: true },
+      { key: 'contactName', header: 'Kontak', accessor: 'contactName', filterable: true },
+      { key: 'phone', header: 'Telepon', accessor: 'phone', filterable: true },
+      { key: 'email', header: 'Email', accessor: 'email', filterable: true },
+      { key: 'isActive', header: 'Aktif', accessor: 'isActive' },
+    ],
+    fields: [
+      { name: 'name', label: 'Nama', required: true },
+      { name: 'contactName', label: 'Nama Kontak' },
+      { name: 'phone', label: 'Telepon' },
+      { name: 'email', label: 'Email' },
+      { name: 'address', label: 'Alamat', type: 'textarea' },
+      { name: 'isActive', label: 'Aktif', type: 'checkbox' },
     ],
   },
   service_tickets: {
-    title: "Tiket Servis",
+    title: 'Tiket Servis',
+    readOnly: true,
     icon: Wrench,
     columns: [
-      { key: "ticketNo", header: "No Tiket", accessor: "ticketNo", filterable: true },
-      { key: "deviceName", header: "Device", accessor: "deviceName", sortable: true, filterable: true },
-      { key: "status", header: "Status", accessor: "status", filterable: true },
-      { key: "customerApprovalStatus", header: "Approval", accessor: "customerApprovalStatus", filterable: true },
+      { key: 'ticketNo', header: 'No Tiket', accessor: 'ticketNo', filterable: true },
+      {
+        key: 'deviceName',
+        header: 'Device',
+        accessor: 'deviceName',
+        sortable: true,
+        filterable: true,
+      },
+      { key: 'status', header: 'Status', accessor: 'status', filterable: true },
+      {
+        key: 'customerApprovalStatus',
+        header: 'Approval',
+        accessor: 'customerApprovalStatus',
+        filterable: true,
+      },
     ],
     fields: [
-      { name: "customerId", label: "Customer ID", required: true },
-      { name: "deviceName", label: "Nama Device", required: true },
-      { name: "deviceBrandModel", label: "Merk/Model" },
-      { name: "deviceCategory", label: "Kategori Device" },
-      { name: "customerComplaints", label: "Keluhan", type: "textarea", required: true },
-      { name: "estimatedCost", label: "Estimasi Biaya", type: "number" },
-      { name: "status", label: "Status" },
+      { name: 'customerId', label: 'Customer ID', required: true },
+      { name: 'deviceName', label: 'Nama Device', required: true },
+      { name: 'deviceBrandModel', label: 'Merk/Model' },
+      { name: 'deviceCategory', label: 'Kategori Device' },
+      { name: 'customerComplaints', label: 'Keluhan', type: 'textarea', required: true },
+      { name: 'estimatedCost', label: 'Estimasi Biaya', type: 'number' },
+      { name: 'status', label: 'Status' },
     ],
   },
   warehouses: {
-    title: "Gudang",
+    title: 'Gudang',
     icon: MapPin,
     columns: [
-      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
-      { key: "branchId", header: "Branch ID", accessor: "branchId" },
+      { key: 'name', header: 'Nama', accessor: 'name', sortable: true, filterable: true },
+      { key: 'branchId', header: 'Branch ID', accessor: 'branchId' },
     ],
     fields: [
-      { name: "name", label: "Nama", required: true },
-      { name: "branchId", label: "Branch ID" },
+      { name: 'name', label: 'Nama', required: true },
+      { name: 'branchId', label: 'Branch ID' },
     ],
   },
   branches: {
-    title: "Cabang",
+    title: 'Cabang',
     icon: Globe,
     columns: [
-      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
-      { key: "address", header: "Alamat", accessor: "address" },
-      { key: "phone", header: "Telepon", accessor: "phone" },
+      { key: 'name', header: 'Nama', accessor: 'name', sortable: true, filterable: true },
+      { key: 'address', header: 'Alamat', accessor: 'address' },
+      { key: 'phone', header: 'Telepon', accessor: 'phone' },
     ],
     fields: [
-      { name: "name", label: "Nama", required: true },
-      { name: "address", label: "Alamat", type: "textarea" },
-      { name: "phone", label: "Telepon" },
+      { name: 'name', label: 'Nama', required: true },
+      { name: 'address', label: 'Alamat', type: 'textarea' },
+      { name: 'phone', label: 'Telepon' },
     ],
   },
   coa_accounts: {
-    title: "COA",
+    title: 'COA',
     icon: BookOpen,
     columns: [
-      { key: "code", header: "Kode", accessor: "code", filterable: true },
-      { key: "name", header: "Nama", accessor: "name", sortable: true, filterable: true },
-      { key: "type", header: "Tipe", accessor: "type", filterable: true },
+      { key: 'code', header: 'Kode', accessor: 'code', filterable: true },
+      { key: 'name', header: 'Nama', accessor: 'name', sortable: true, filterable: true },
+      { key: 'type', header: 'Tipe', accessor: 'type', filterable: true },
     ],
     fields: [
-      { name: "code", label: "Kode", required: true },
-      { name: "name", label: "Nama", required: true },
-      { name: "type", label: "Tipe", type: "select", required: true, options: [{ label: "Aset", value: "ASSET" }, { label: "Liabilitas", value: "LIABILITY" }, { label: "Ekuitas", value: "EQUITY" }, { label: "Pendapatan", value: "REVENUE" }, { label: "Beban", value: "EXPENSE" }] },
-      { name: "isGroup", label: "Kelompok", type: "checkbox" },
+      { name: 'code', label: 'Kode', required: true },
+      { name: 'name', label: 'Nama', required: true },
+      {
+        name: 'type',
+        label: 'Tipe',
+        type: 'select',
+        required: true,
+        options: [
+          { label: 'Aset', value: 'ASSET' },
+          { label: 'Liabilitas', value: 'LIABILITY' },
+          { label: 'Ekuitas', value: 'EQUITY' },
+          { label: 'Pendapatan', value: 'REVENUE' },
+          { label: 'Beban', value: 'EXPENSE' },
+        ],
+      },
+      { name: 'isGroup', label: 'Kelompok', type: 'checkbox' },
     ],
   },
   journal_entries: {
-    title: "Jurnal",
+    title: 'Jurnal',
+    readOnly: true,
     icon: FileSpreadsheet,
     columns: [
-      { key: "date", header: "Tanggal", accessor: "date" },
-      { key: "description", header: "Keterangan", accessor: "description", filterable: true },
+      { key: 'date', header: 'Tanggal', accessor: 'date' },
+      { key: 'description', header: 'Keterangan', accessor: 'description', filterable: true },
     ],
     fields: [
-      { name: "date", label: "Tanggal", type: "date" },
-      { name: "description", label: "Keterangan", type: "textarea" },
-      { name: "reference", label: "Referensi" },
+      { name: 'date', label: 'Tanggal', type: 'date' },
+      { name: 'description', label: 'Keterangan', type: 'textarea' },
+      { name: 'reference', label: 'Referensi' },
     ],
   },
   pos_shifts: {
-    title: "Shift",
+    title: 'Shift',
+    readOnly: true,
     icon: CheckSquare,
     columns: [
-      { key: "openedAt", header: "Buka", accessor: "openedAt" },
-      { key: "status", header: "Status", accessor: "status", filterable: true },
+      { key: 'openedAt', header: 'Buka', accessor: 'openedAt' },
+      { key: 'status', header: 'Status', accessor: 'status', filterable: true },
     ],
     fields: [
-      { name: "status", label: "Status" },
-      { name: "openingCash", label: "Kas Awal", type: "number" },
-      { name: "notes", label: "Catatan", type: "textarea" },
+      { name: 'status', label: 'Status' },
+      { name: 'openingCash', label: 'Kas Awal', type: 'number' },
+      { name: 'notes', label: 'Catatan', type: 'textarea' },
     ],
   },
 };
@@ -151,8 +217,8 @@ export const DataExplorer: React.FC<{
   activeSubTab?: string;
   setActiveSubTab?: (tab: string) => void;
 }> = ({ activeSubTab, setActiveSubTab }) => {
-  const module = getModuleById("data-explorer");
-  const current = RESOURCES[activeSubTab || ""] ? activeSubTab! : "customers";
+  const module = getModuleById('data-explorer');
+  const current = RESOURCES[activeSubTab || ''] ? activeSubTab! : 'customers';
   const config = RESOURCES[current];
 
   return (
@@ -171,8 +237,8 @@ export const DataExplorer: React.FC<{
               onClick={() => setActiveSubTab?.(sub.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                 isActive
-                  ? "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30"
-                  : "bg-white dark:bg-zinc-900 text-slate-500 border-slate-200 dark:border-zinc-800 hover:border-indigo-200"
+                  ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30'
+                  : 'bg-white dark:bg-zinc-900 text-slate-500 border-slate-200 dark:border-zinc-800 hover:border-indigo-200'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -187,6 +253,7 @@ export const DataExplorer: React.FC<{
         icon={config.icon}
         columns={config.columns}
         fields={config.fields}
+        readOnly={config.readOnly}
       />
     </div>
   );
