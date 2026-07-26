@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS rental_contracts (
     rate_per_day INTEGER NOT NULL, -- snapshot from catalog at creation
     total_rent_amount INTEGER NOT NULL DEFAULT 0,
     deposit_amount INTEGER NOT NULL DEFAULT 0,
+    deposit_paid INTEGER DEFAULT 0,
     deposit_refunded_amount INTEGER DEFAULT 0,
     damage_deduction_amount INTEGER DEFAULT 0,
     damage_notes TEXT,

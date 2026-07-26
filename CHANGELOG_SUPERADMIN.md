@@ -1,4 +1,33 @@
-# Log Perubahan Super Admin
+# Log Perubahan Super Admin & Modul Terkait
+
+## 2026-07-25 - Perbaikan Mendalam Rental Controller (rental.controller.ts)
+
+### Ringkasan
+- Rewrite komprehensif rental controller: error handling, validasi input, keamanan query, dan konsistensi response.
+
+### Detail Perubahan
+
+#### Backend - rental.controller.ts
+- **Error handling**: Menambahkan try/catch + `logger.error` ke semua 22 fungsi export (sebelumnya banyak yang tanpa logging).
+- **Zod validation**: Menambahkan schema `extendContractSchema` dan `updateInspectionSchema`, serta helper `handleZodError` untuk response 422 yang konsisten.
+- **Keamanan query**: `getContractWithEvents` — query events, payments, dan inspections sekarang filter by `tenant_id` (sebelumnya hanya contract yang di-filter, leak data cross-tenant).
+- **Null safety**: `getTenantId` menghapus `req.tenantId!` non-null assertion, sekarang throw error eksplisit.
+- **Response konsisten**: `throw new Error()` di `createContract`, `returnContract`, `extendContract`, `cancelContract` diganti dengan 404 `{ code, error }`.
+- **Query param safety**: `listContracts` memvalidasi dan clamp `page`/`limit`; `logContractEvent` di-wrap try/catch.
+- **Type cleanup**: `params: any[]` → `string[]` / `unknown[]`; hapus import `ensureAccount`/`paymentDebitAccountCode` yang tidak terpakai.
+
+#### Migration - 050_rental_module.sql
+- Menambahkan kolom `deposit_paid INTEGER DEFAULT 0` ke tabel `rental_contracts`.
+
+### Validasi
+| Jenis | Status |
+|-------|--------|
+| Lint (eslint) | 0 errors |
+| TypeScript | ✅ Bersih |
+| Unit test | ✅ 23 lulus |
+| Security test | ✅ 23 lulus |
+
+---
 
 ## 2026-07-25 - Perbaikan Mendalam Super Admin Controller (superadmin.controller.ts)
 
