@@ -241,6 +241,7 @@ export function getAvailableModules(
     hr: ["hr:access", "hr-attendance", "hr-payroll"],
     crm: ["crm:access", "crm-customers", "crm-pipeline"],
     fraud: ["fraud:access", "settings-audit", "settings-fraud"],
+    "data-explorer": ["data-explorer"],
   };
 
   return OPERATIONAL_MODULES.filter((mod) => {
