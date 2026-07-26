@@ -2307,7 +2307,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           tier: updates.tier,
           limits: updates.limits,
           branding: updates.branding,
-          storageSettings: (updates.settings as any)?.storageSettings,
+          storageSettings:
+            (updates as any).storageSettings || (updates.settings as any)?.storageSettings,
         }),
       });
       const data = await response.json().catch(() => ({}));
