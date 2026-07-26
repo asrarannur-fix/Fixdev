@@ -341,7 +341,9 @@ export const HRAttendancePanel: React.FC<any> = (props) => {
                     <option value="">-- Pilih Staff --</option>
                     {employees
                       .filter(
-                        (e) => e.tenantId === currentTenantId && e.branchId === currentBranchId
+                        (e) =>
+                          e.tenantId === currentTenantId &&
+                          (!currentBranchId || e.branchId === currentBranchId)
                       )
                       .map((e) => (
                         <option key={e.id} value={e.id}>
