@@ -35,6 +35,9 @@ export interface AuthActor {
   permissions: string[];
   features: string[];
   superadminRole?: string;
+  sessionId?: string;
+  tenantStatus?: string;
+  trialEndsAt?: string | null;
 }
 
 declare global {
@@ -68,11 +71,16 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 export const requireJwt = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  const cookieToken = String(req.headers.cookie || '')
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith('fixdev_session='))
+    ?.slice('fixdev_session='.length);
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : cookieToken;
+  if (!token) {
     return res.status(401).json({ error: 'Missing or malformed Authorization header.' });
   }
 
-  const token = authHeader.split(' ')[1];
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
     return res.status(503).json({ error: 'Authentication is not configured.' });
@@ -80,13 +88,19 @@ export const requireJwt = async (req: Request, res: Response, next: NextFunction
 
   try {
     const decoded = jwt.verify(token, jwtSecret) as any;
-    if (!decoded || !decoded.userId) {
+    if (!decoded || !decoded.userId || !decoded.sid) {
       return res.status(401).json({ error: 'Invalid or expired token.' });
     }
 
     // Resolve the application profile. A valid JWT without a local
     // profile is not authorized to use protected application APIs.
     try {
+      const activeSession = await dbQuery(
+        `SELECT 1 FROM auth_sessions WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL AND expires_at>now()`,
+        [decoded.sid, decoded.userId]
+      );
+      if (!activeSession.rows[0])
+        return res.status(401).json({ error: 'Sesi tidak aktif atau telah berakhir.' });
       const result = await dbQuery(
         `SELECT u.tenant_id, u.id, u.role, u.email, u.permissions, u.superadmin_role, t.tier, t.status AS tenant_status, t.trial_ends_at FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id WHERE u.id = $1 LIMIT 1`,
         [decoded.userId]
@@ -111,6 +125,9 @@ export const requireJwt = async (req: Request, res: Response, next: NextFunction
           trialEndsAt: profile.trial_ends_at,
         }),
         superadminRole: profile.superadmin_role || undefined,
+        sessionId: decoded.sid,
+        tenantStatus: profile.tenant_status || undefined,
+        trialEndsAt: profile.trial_ends_at || null,
       };
       if (
         req.hostTenant &&
@@ -180,12 +197,10 @@ export const requireTenantScope = async (req: Request, res: Response, next: Next
   if (req.authActor?.role === 'SUPER_ADMIN') {
     const sessionId = String(headerValue(req, 'x-impersonation-session-id') || '').trim();
     if (!sessionId) {
-      return res
-        .status(403)
-        .json({
-          error: 'Sesi impersonasi diperlukan untuk mengakses data tenant.',
-          code: 'IMPERSONATION_REQUIRED',
-        });
+      return res.status(403).json({
+        error: 'Sesi impersonasi diperlukan untuk mengakses data tenant.',
+        code: 'IMPERSONATION_REQUIRED',
+      });
     }
     try {
       const sessionResult = await dbQuery(
@@ -195,21 +210,17 @@ export const requireTenantScope = async (req: Request, res: Response, next: Next
       );
       const session = sessionResult.rows[0];
       if (!session)
-        return res
-          .status(401)
-          .json({
-            error: 'Sesi impersonasi tidak valid atau telah berakhir.',
-            code: 'IMPERSONATION_EXPIRED',
-          });
+        return res.status(401).json({
+          error: 'Sesi impersonasi tidak valid atau telah berakhir.',
+          code: 'IMPERSONATION_EXPIRED',
+        });
       if (requestedTenant !== session.tenant_id)
         return res.status(403).json({ error: 'Tenant tidak sesuai dengan sesi impersonasi.' });
       if (!SAFE_METHODS.has(req.method) && session.access_mode !== 'FULL') {
-        return res
-          .status(423)
-          .json({
-            error: 'Sesi impersonasi hanya-baca. Aksi perubahan diblokir.',
-            code: 'IMPERSONATION_READ_ONLY',
-          });
+        return res.status(423).json({
+          error: 'Sesi impersonasi hanya-baca. Aksi perubahan diblokir.',
+          code: 'IMPERSONATION_READ_ONLY',
+        });
       }
       req.impersonationSession = {
         id: session.id,
@@ -219,7 +230,7 @@ export const requireTenantScope = async (req: Request, res: Response, next: Next
       };
       req.tenantId = session.tenant_id;
       req.dbTenantId = session.tenant_id;
-      return next();
+      return validateTenantBranchAndLifecycle(req, res, next);
     } catch (dbErr: any) {
       logger.error({ err: dbErr.message }, 'Could not validate impersonation tenant scope');
       return res.status(503).json({ error: 'Layanan impersonasi tidak tersedia.' });
@@ -235,10 +246,52 @@ export const requireTenantScope = async (req: Request, res: Response, next: Next
   }
 
   req.tenantId = req.authActor.tenantId;
-  req.branchId =
-    (req.headers['x-branch-id'] as string) || (req.query.branchId as string) || undefined;
-  next();
+  return validateTenantBranchAndLifecycle(req, res, next);
 };
+
+async function validateTenantBranchAndLifecycle(req: Request, res: Response, next: NextFunction) {
+  const tenantId = req.tenantId!;
+  try {
+    const tenant = await dbQuery(`SELECT status,trial_ends_at FROM tenants WHERE id=$1`, [
+      tenantId,
+    ]);
+    const status = tenant.rows[0]?.status;
+    const trialEndsAt = tenant.rows[0]?.trial_ends_at
+      ? new Date(tenant.rows[0].trial_ends_at)
+      : null;
+    const lifecycleBlocked =
+      status === 'SUSPENDED' ||
+      status === 'EXPIRED' ||
+      (status === 'TRIAL' && trialEndsAt && trialEndsAt < new Date());
+    if (lifecycleBlocked && !req.baseUrl.startsWith('/api/billing')) {
+      return res
+        .status(402)
+        .json({
+          error: 'Langganan tenant tidak aktif. Silakan selesaikan pembayaran.',
+          code: 'TENANT_BILLING_REQUIRED',
+        });
+    }
+
+    const requestedBranch = String(
+      (req.headers['x-branch-id'] as string) || req.query.branchId || ''
+    ).trim();
+    const actor = req.authActor!;
+    const branches = await dbQuery(
+      `SELECT b.id FROM branches b LEFT JOIN user_branches ub ON ub.branch_id=b.id AND ub.user_id=$2 WHERE b.tenant_id=$1 AND b.is_active=TRUE AND ($3 OR ub.user_id IS NOT NULL) ORDER BY b.created_at`,
+      [tenantId, actor.userId, ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(actor.role)]
+    );
+    if (!branches.rows.length)
+      return res.status(403).json({ error: 'Tidak ada cabang aktif yang dapat diakses.' });
+    const branchId = requestedBranch || branches.rows[0].id;
+    if (!branches.rows.some((branch) => branch.id === branchId))
+      return res.status(403).json({ error: 'Akses cabang tidak diizinkan.' });
+    req.branchId = branchId;
+    next();
+  } catch (error: any) {
+    logger.error({ err: error.message, tenantId }, 'Tenant lifecycle or branch validation failed');
+    res.status(503).json({ error: 'Validasi tenant atau cabang tidak tersedia.' });
+  }
+}
 
 export const requireRoles =
   (...roles: string[]) =>
@@ -366,24 +419,20 @@ export const requireSuperAdminConsoleSession = async (
     );
     const session = result.rows[0];
     if (!session)
-      return res
-        .status(401)
-        .json({
-          error: 'Sesi konsol tidak valid atau telah berakhir.',
-          code: 'SUPERADMIN_SESSION_EXPIRED',
-        });
+      return res.status(401).json({
+        error: 'Sesi konsol tidak valid atau telah berakhir.',
+        code: 'SUPERADMIN_SESSION_EXPIRED',
+      });
     req.superAdminConsoleSession = {
       id: session.id,
       mode: session.mode,
       expiresAt: session.expires_at,
     };
     if (session.mode !== 'EDIT') {
-      return res
-        .status(423)
-        .json({
-          error: 'Sesi konsol hanya-baca. Aksi perubahan diblokir.',
-          code: 'SUPERADMIN_READ_ONLY',
-        });
+      return res.status(423).json({
+        error: 'Sesi konsol hanya-baca. Aksi perubahan diblokir.',
+        code: 'SUPERADMIN_READ_ONLY',
+      });
     }
     next();
   } catch (err: any) {
@@ -404,12 +453,10 @@ export const requireImpersonationSession = async (
   if (req.authActor?.role !== 'SUPER_ADMIN') return next();
   const sessionId = String(headerValue(req, 'x-impersonation-session-id') || '').trim();
   if (!sessionId)
-    return res
-      .status(403)
-      .json({
-        error: 'Sesi impersonasi diperlukan untuk mengakses data tenant.',
-        code: 'IMPERSONATION_REQUIRED',
-      });
+    return res.status(403).json({
+      error: 'Sesi impersonasi diperlukan untuk mengakses data tenant.',
+      code: 'IMPERSONATION_REQUIRED',
+    });
   try {
     const result = await dbQuery(
       `SELECT id,tenant_id,access_mode,expires_at FROM impersonation_sessions
@@ -418,12 +465,10 @@ export const requireImpersonationSession = async (
     );
     const session = result.rows[0];
     if (!session)
-      return res
-        .status(401)
-        .json({
-          error: 'Sesi impersonasi tidak valid atau telah berakhir.',
-          code: 'IMPERSONATION_EXPIRED',
-        });
+      return res.status(401).json({
+        error: 'Sesi impersonasi tidak valid atau telah berakhir.',
+        code: 'IMPERSONATION_EXPIRED',
+      });
     const requestedTenant = String(
       headerValue(req, 'x-tenant-id') ||
         req.query.tenantId ||
@@ -435,12 +480,10 @@ export const requireImpersonationSession = async (
     if (requestedTenant && requestedTenant !== session.tenant_id)
       return res.status(403).json({ error: 'Tenant tidak sesuai dengan sesi impersonasi.' });
     if (!SAFE_METHODS.has(req.method) && session.access_mode !== 'FULL') {
-      return res
-        .status(423)
-        .json({
-          error: 'Sesi impersonasi hanya-baca. Aksi perubahan diblokir.',
-          code: 'IMPERSONATION_READ_ONLY',
-        });
+      return res.status(423).json({
+        error: 'Sesi impersonasi hanya-baca. Aksi perubahan diblokir.',
+        code: 'IMPERSONATION_READ_ONLY',
+      });
     }
     req.impersonationSession = {
       id: session.id,

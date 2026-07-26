@@ -2,10 +2,10 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Request, Response } from "express";
-import { getPool } from "../../lib/db.js";
-import { toApiResponse } from "../utils/responseTransform.js";
-import { redactScreenLockPin } from "../lib/screenLockPin.js";
+import { Request, Response } from 'express';
+import { getPool } from '../../lib/db.js';
+import { toApiResponse } from '../utils/responseTransform.js';
+import { redactScreenLockPin } from '../lib/screenLockPin.js';
 
 export function sanitizeServiceTicketsForBootstrap(tickets: Record<string, any>[]) {
   return tickets.map(redactScreenLockPin);
@@ -24,66 +24,118 @@ export function redactTenantSettingsSecrets(tenant: Record<string, any>) {
   delete waConfig.apiToken;
   delete waConfig.webhookSecret;
   delete waConfig.whatsappKey;
-  return { ...tenant, settings: { ...settings, emailSettings: { ...emailSettings, smtpConfigured }, notificationSettings: { ...notificationSettings, telegramConfigured }, waConfig: { ...waConfig, credentialsConfigured: waConfigured } } };
+  return {
+    ...tenant,
+    settings: {
+      ...settings,
+      emailSettings: { ...emailSettings, smtpConfigured },
+      notificationSettings: { ...notificationSettings, telegramConfigured },
+      waConfig: { ...waConfig, credentialsConfigured: waConfigured },
+    },
+  };
 }
 
 export async function platformBootstrapHandler(req: Request, res: Response) {
-  if (req.authActor?.role !== "SUPER_ADMIN") {
-    return res.status(403).json({ error: "Super Admin access is required." });
+  if (req.authActor?.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin access is required.' });
   }
   try {
     const pool = getPool();
     const [tenants, users, auditLogs] = await Promise.all([
-      pool.query(`select id, name, subdomain, status, tier, trial_ends_at, created_at, version, status_reason, scheduled_reactivation_at, storage_used_bytes, storage_measured_at from tenants order by created_at desc`),
-      pool.query(`select id, tenant_id, email, name, role, mfa_enabled, created_at from users order by created_at desc`),
-      pool.query(`select * from audit_logs order by created_at desc limit 500`).catch(() => ({ rows: [] })),
+      pool.query(
+        `select id, name, subdomain, status, tier, trial_ends_at, created_at, version, status_reason, scheduled_reactivation_at, storage_used_bytes, storage_measured_at from tenants order by created_at desc`
+      ),
+      pool.query(
+        `select id, tenant_id, email, name, role, created_at from users order by created_at desc`
+      ),
+      pool
+        .query(`select * from audit_logs order by created_at desc limit 500`)
+        .catch(() => ({ rows: [] })),
     ]);
-    res.json(toApiResponse({ 
-      tenants: tenants.rows, 
-      users: users.rows, 
-      auditLogs: auditLogs.rows,
-      // Provide empty arrays for keys expected by SaaSContext to prevent UI crashes
-      userBranches: [],
-      branches: [],
-      warehouses: [],
-      customers: [],
-      products: [],
-      productStock: [],
-      serviceTickets: [],
-      posTransactions: [],
-      posShifts: [],
-      coaAccounts: [],
-      journalEntries: [],
-      moduleRecords: []
-    }));
+    res.json(
+      toApiResponse({
+        tenants: tenants.rows,
+        users: users.rows,
+        auditLogs: auditLogs.rows,
+        // Provide empty arrays for keys expected by SaaSContext to prevent UI crashes
+        userBranches: [],
+        branches: [],
+        warehouses: [],
+        customers: [],
+        products: [],
+        productStock: [],
+        serviceTickets: [],
+        posTransactions: [],
+        posShifts: [],
+        coaAccounts: [],
+        journalEntries: [],
+        moduleRecords: [],
+      })
+    );
   } catch {
-    res.status(500).json({ error: "Data platform gagal dimuat." });
+    res.status(500).json({ error: 'Data platform gagal dimuat.' });
   }
 }
 
 export async function bootstrapHandler(req: Request, res: Response) {
-  const tenantId = req.tenantId || "";
-  if (!tenantId) return res.status(401).json({ error: "Tenant auth context is required" });
+  const tenantId = req.tenantId || '';
+  if (!tenantId) return res.status(401).json({ error: 'Tenant auth context is required' });
   try {
     const pool = getPool();
     const tenant = await pool.query(`select * from tenants where id = $1`, [tenantId]);
-    if (!tenant.rowCount) return res.status(404).json({ error: "Tenant not found in database" });
+    if (!tenant.rowCount) return res.status(404).json({ error: 'Tenant not found in database' });
+    const isAdmin = ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(req.authActor?.role || '');
+    const branchFilter = !isAdmin && req.branchId ? ` AND branch_id=$2` : '';
+    const branchParams = !isAdmin && req.branchId ? [tenantId, req.branchId] : [tenantId];
     const data = await Promise.allSettled([
-      pool.query(`select id, tenant_id, email, name, role, permissions, mfa_enabled, auth_id, created_at, superadmin_role from users where tenant_id = $1`, [tenantId]),
-      pool.query(`select ub.* from user_branches ub join branches b on b.id = ub.branch_id where b.tenant_id = $1`, [tenantId]),
-      pool.query(`select * from branches where tenant_id = $1`, [tenantId]),
-      pool.query(`select * from warehouses where branch_id in (select id from branches where tenant_id = $1)`, [tenantId]),
+      isAdmin
+        ? pool.query(
+            `select id, tenant_id, email, name, role, permissions, created_at, superadmin_role from users where tenant_id = $1`,
+            [tenantId]
+          )
+        : Promise.resolve({ rows: [] }),
+      pool.query(
+        `select ub.* from user_branches ub join branches b on b.id = ub.branch_id where b.tenant_id = $1`,
+        [tenantId]
+      ),
+      pool.query(
+        `select * from branches where tenant_id = $1${!isAdmin && req.branchId ? ' AND id=$2' : ''}`,
+        branchParams
+      ),
+      pool.query(`select * from warehouses where tenant_id=$1${branchFilter}`, branchParams),
       pool.query(`select * from customers where tenant_id = $1`, [tenantId]),
       pool.query(`select * from products where tenant_id = $1`, [tenantId]),
-      pool.query(`select ps.* from product_stock ps join products p on p.id = ps.product_id where p.tenant_id = $1`, [tenantId]),
-      pool.query(`select * from service_tickets where tenant_id = $1 LIMIT 500`, [tenantId]),
-      pool.query(`select * from pos_transactions where tenant_id = $1 LIMIT 500`, [tenantId]),
-      pool.query(`select ps.* from pos_shifts ps join branches b on b.id = ps.branch_id where b.tenant_id = $1`, [tenantId]),
-      pool.query(`select * from coa_accounts where tenant_id = $1`, [tenantId]),
-      pool.query(`select * from journal_entries where tenant_id = $1 LIMIT 500`, [tenantId]),
-      pool.query(`select jl.* from journal_lines jl join journal_entries je on je.id = jl.journal_entry_id where je.tenant_id = $1`, [tenantId]),
-      pool.query(`select * from audit_logs where tenant_id = $1 LIMIT 500`, [tenantId]),
-      pool.query(`select * from module_records where tenant_id = $1 LIMIT 500`, [tenantId]),
+      pool.query(
+        `select ps.* from product_stock ps join products p on p.id=ps.product_id join warehouses w on w.id=ps.warehouse_id where p.tenant_id=$1 AND w.tenant_id=$1${!isAdmin && req.branchId ? ' AND w.branch_id=$2' : ''}`,
+        branchParams
+      ),
+      pool.query(
+        `select * from service_tickets where tenant_id = $1${branchFilter} LIMIT 500`,
+        branchParams
+      ),
+      pool.query(
+        `select * from pos_transactions where tenant_id = $1${branchFilter} LIMIT 500`,
+        branchParams
+      ),
+      pool.query(`select * from pos_shifts where tenant_id = $1${branchFilter}`, branchParams),
+      isAdmin
+        ? pool.query(`select * from coa_accounts where tenant_id = $1`, [tenantId])
+        : Promise.resolve({ rows: [] }),
+      isAdmin
+        ? pool.query(`select * from journal_entries where tenant_id = $1 LIMIT 500`, [tenantId])
+        : Promise.resolve({ rows: [] }),
+      isAdmin
+        ? pool.query(
+            `select jl.* from journal_lines jl join journal_entries je on je.id = jl.journal_entry_id where je.tenant_id = $1`,
+            [tenantId]
+          )
+        : Promise.resolve({ rows: [] }),
+      isAdmin
+        ? pool.query(`select * from audit_logs where tenant_id = $1 LIMIT 500`, [tenantId])
+        : Promise.resolve({ rows: [] }),
+      isAdmin
+        ? pool.query(`select * from module_records where tenant_id = $1 LIMIT 500`, [tenantId])
+        : Promise.resolve({ rows: [] }),
     ]).then((results) => ({
       tenants: tenant.rows.map(redactTenantSettingsSecrets),
       users: results[0].status === 'fulfilled' ? results[0].value.rows : [],
@@ -93,7 +145,10 @@ export async function bootstrapHandler(req: Request, res: Response) {
       customers: results[4].status === 'fulfilled' ? results[4].value.rows : [],
       products: results[5].status === 'fulfilled' ? results[5].value.rows : [],
       productStock: results[6].status === 'fulfilled' ? results[6].value.rows : [],
-      serviceTickets: results[7].status === 'fulfilled' ? sanitizeServiceTicketsForBootstrap(results[7].value.rows) : [],
+      serviceTickets:
+        results[7].status === 'fulfilled'
+          ? sanitizeServiceTicketsForBootstrap(results[7].value.rows)
+          : [],
       posTransactions: results[8].status === 'fulfilled' ? results[8].value.rows : [],
       posShifts: results[9].status === 'fulfilled' ? results[9].value.rows : [],
       coaAccounts: results[10].status === 'fulfilled' ? results[10].value.rows : [],
@@ -104,6 +159,6 @@ export async function bootstrapHandler(req: Request, res: Response) {
     }));
     res.json(toApiResponse(data));
   } catch (error: any) {
-    res.status(500).json({ error: "Bootstrap gagal diproses." });
+    res.status(500).json({ error: 'Bootstrap gagal diproses.' });
   }
 }

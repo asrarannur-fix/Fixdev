@@ -34,7 +34,6 @@ export interface TenantBranding {
   primaryColor: string;
   accentColor: string;
   whiteLabelEnabled: boolean;
-  customDomain?: string;
   portalHelpTitle?: string;
   portalContactText?: string;
   secondaryColor?: string;
@@ -285,8 +284,6 @@ export interface Tenant {
   id: string;
   name: string;
   subdomain: string;
-  customDomain?: string;
-  customDomainVerifiedAt?: string;
   status: TenantStatus;
   tier: SubscriptionTier;
   trialEndsAt: string;
@@ -337,8 +334,6 @@ export interface User {
   tenantId?: string; // Empty if Super Admin
   branchIds: string[]; // User can belong to multiple branches
   permissions: string[];
-  mfaEnabled: boolean;
-  mfaSecret?: string;
   loginHistory: { ip: string; device: string; timestamp: string }[];
   activeSessions: UserSession[];
 }

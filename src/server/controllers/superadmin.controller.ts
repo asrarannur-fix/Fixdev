@@ -59,10 +59,6 @@ const tenantConfigSchema = z
       .optional(),
     status: z.enum(['TRIAL', 'ACTIVE', 'SUSPENDED']).optional(),
     tier: z.enum(['BASIC', 'PRO', 'ENTERPRISE']).optional(),
-    branding: z
-      .object({ customDomain: z.string().trim().toLowerCase().max(253).optional() })
-      .strict()
-      .optional(),
     storageSettings: z
       .object({ mode: z.string().trim().min(1).max(50), bucketName: z.string().trim().max(255) })
       .strict()
@@ -296,9 +292,7 @@ export async function listTenants(req: Request, res: Response) {
   const clauses: string[] = [];
   if (req.query.search) {
     params.push(`%${String(req.query.search).trim()}%`);
-    clauses.push(
-      `(t.name ILIKE $${params.length} OR t.subdomain ILIKE $${params.length} OR COALESCE(t.branding->>'customDomain','') ILIKE $${params.length})`
-    );
+    clauses.push(`(t.name ILIKE $${params.length} OR t.subdomain ILIKE $${params.length})`);
   }
   if (req.query.status) {
     const s = String(req.query.status);
@@ -422,11 +416,8 @@ export async function updateTenantConfig(req: Request, res: Response) {
       if (parsed.data.storageSettings) nextSettings.storageSettings = parsed.data.storageSettings;
       if (parsed.data.limits)
         nextSettings.limits = { ...(nextSettings.limits || {}), ...parsed.data.limits };
-      const nextBranding = parsed.data.branding
-        ? { ...(current.branding || {}), ...parsed.data.branding }
-        : current.branding;
       const updated = await client.query(
-        `UPDATE tenants SET name=COALESCE($2,name),subdomain=COALESCE($3,subdomain),status=COALESCE($4,status),tier=COALESCE($5,tier),settings=$6::jsonb,branding=$7::jsonb,version=version+1 WHERE id=$1 AND version=$8 RETURNING id,name,subdomain,status,tier,settings,branding,version`,
+        `UPDATE tenants SET name=COALESCE($2,name),subdomain=COALESCE($3,subdomain),status=COALESCE($4,status),tier=COALESCE($5,tier),settings=$6::jsonb,version=version+1 WHERE id=$1 AND version=$7 RETURNING id,name,subdomain,status,tier,settings,branding,version`,
         [
           current.id,
           parsed.data.name ?? null,
@@ -434,7 +425,6 @@ export async function updateTenantConfig(req: Request, res: Response) {
           parsed.data.status ?? null,
           parsed.data.tier ?? null,
           JSON.stringify(nextSettings),
-          JSON.stringify(nextBranding),
           parsed.data.expectedVersion,
         ]
       );
@@ -1100,7 +1090,7 @@ export async function updateRolePermissions(req: Request, res: Response) {
 export async function listSuperAdminUsers(_req: Request, res: Response) {
   try {
     const result = await dbQuery(
-      `SELECT id,name,email,superadmin_role AS "superadminRole",mfa_enabled AS "mfaEnabled",created_at AS "createdAt" FROM users WHERE role='SUPER_ADMIN' ORDER BY name,email`
+      `SELECT id,name,email,superadmin_role AS "superadminRole",created_at AS "createdAt" FROM users WHERE role='SUPER_ADMIN' ORDER BY name,email`
     );
     res.json({ users: result.rows });
   } catch (err: any) {
@@ -1276,7 +1266,7 @@ export async function getTenantDetail(req: Request, res: Response) {
         [req.params.id]
       ),
       dbQuery(
-        `SELECT id,name,email,role,mfa_enabled AS "mfaEnabled",created_at AS "createdAt" FROM users WHERE tenant_id=$1 ORDER BY created_at DESC`,
+        `SELECT id,name,email,role,created_at AS "createdAt" FROM users WHERE tenant_id=$1 ORDER BY created_at DESC`,
         [req.params.id]
       ),
       dbQuery(

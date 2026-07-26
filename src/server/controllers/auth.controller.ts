@@ -9,6 +9,18 @@ import nodemailer from 'nodemailer';
 import { passwordPolicyError } from '../lib/passwordPolicy.js';
 
 const JWT_EXPIRES_IN = '24h';
+const SESSION_COOKIE = 'fixdev_session';
+const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    path: '/',
+    maxAge: SESSION_MAX_AGE_MS,
+  };
+}
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -88,7 +100,7 @@ export async function loginHandler(req: Request, res: Response) {
   try {
     const rows = (await withDb(async (c) => {
       const r = await c.query(
-        'SELECT id, tenant_id, email, name, role, permissions, password_hash, mfa_enabled FROM users WHERE email = $1 LIMIT 1',
+        'SELECT id, tenant_id, email, name, role, permissions, password_hash FROM users WHERE email = $1 LIMIT 1',
         [String(email).toLowerCase().trim()]
       );
       return r.rows;
@@ -107,26 +119,29 @@ export async function loginHandler(req: Request, res: Response) {
     if (!valid) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
-    if (user.mfa_enabled) {
-      return res
-        .status(403)
-        .json({ error: 'MFA verification is required. Contact administrator.' });
-    }
     if (user.role !== 'SUPER_ADMIN' && req.hostTenant && user.tenant_id !== req.hostTenant.id) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
+    const sessionId = randomUUID();
+    await withDb((client) =>
+      client.query(
+        `INSERT INTO auth_sessions(id,user_id,expires_at) VALUES ($1,$2,now() + interval '24 hours')`,
+        [sessionId, user.id]
+      )
+    );
     const payload = {
       userId: user.id,
       email: user.email,
       role: user.role,
       tenantId: user.tenant_id,
+      sid: sessionId,
     };
 
     const token = jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN });
 
+    res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
     res.json({
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -134,7 +149,6 @@ export async function loginHandler(req: Request, res: Response) {
         role: user.role,
         tenantId: user.tenant_id,
         permissions: user.permissions || [],
-        mfaEnabled: user.mfa_enabled || false,
       },
     });
   } catch (err: any) {
@@ -156,7 +170,7 @@ export async function authProfileHandler(req: Request, res: Response) {
 
     const rows = (await withDb(async (c) => {
       const r = await c.query(
-        'SELECT id, name, email, role, tenant_id, permissions, mfa_enabled FROM users WHERE id = $1 LIMIT 1',
+        'SELECT id, name, email, role, tenant_id, permissions FROM users WHERE id = $1 LIMIT 1',
         [userId]
       );
       return r.rows;
@@ -180,7 +194,6 @@ export async function authProfileHandler(req: Request, res: Response) {
       tenantId: user.tenant_id,
       branchIds,
       permissions: user.permissions || [],
-      mfaEnabled: user.mfa_enabled || false,
     });
   } catch (err: any) {
     logger.error({ err: err.message }, '[profile] Failed');
@@ -215,14 +228,41 @@ export async function authPasswordUpdateHandler(req: Request, res: Response) {
       return res.status(401).json({ error: 'Current password is incorrect.' });
     }
     const newPasswordHash = await bcrypt.hash(String(newPassword), 10);
-    await withDb((c) =>
-      c.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newPasswordHash, userId])
-    );
-    return res.json({ success: true });
+    await withDb(async (c) => {
+      await c.query('BEGIN');
+      try {
+        await c.query('UPDATE users SET password_hash = $1 WHERE id = $2', [
+          newPasswordHash,
+          userId,
+        ]);
+        await c.query(
+          'UPDATE auth_sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL',
+          [userId]
+        );
+        await c.query('COMMIT');
+      } catch (error) {
+        await c.query('ROLLBACK');
+        throw error;
+      }
+    });
+    res.clearCookie(SESSION_COOKIE, sessionCookieOptions());
+    return res.json({ success: true, reauthRequired: true });
   } catch (err: any) {
     logger.error({ err: err.message, userId }, '[profile-password] Failed');
     return res.status(500).json({ error: 'Failed to update password.' });
   }
+}
+
+export async function logoutHandler(req: Request, res: Response) {
+  const sessionId = req.authActor?.sessionId;
+  if (sessionId)
+    await withDb((client) =>
+      client.query(`UPDATE auth_sessions SET revoked_at=now() WHERE id=$1 AND revoked_at IS NULL`, [
+        sessionId,
+      ])
+    );
+  res.clearCookie(SESSION_COOKIE, sessionCookieOptions());
+  res.status(204).end();
 }
 
 // ---------------------------------------------------------------------------
@@ -341,8 +381,8 @@ export async function onboardingRegisterHandler(req: Request, res: Response) {
     }
     const userId = randomUUID();
     await client.query(
-      `INSERT INTO users (id, tenant_id, email, name, role, permissions, password_hash, mfa_enabled, created_at)
-       VALUES ($1, $2, $3, $4, 'OWNER', ARRAY[$5]::text[], $6, false, now())`,
+      `INSERT INTO users (id, tenant_id, email, name, role, permissions, password_hash, created_at)
+        VALUES ($1, $2, $3, $4, 'OWNER', ARRAY[$5]::text[], $6, now())`,
       [userId, tenantId, String(ownerEmail).toLowerCase().trim(), ownerName, '*', passwordHash]
     );
     await client.query(`INSERT INTO user_branches (user_id, branch_id) VALUES ($1, $2)`, [

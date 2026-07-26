@@ -431,7 +431,7 @@ interface SaaSContextType {
   updateUserRole: (userId: string, role: UserRole) => Promise<void>;
   updateUserPermissions: (userId: string, permissions: string[]) => Promise<void>;
   addUser: (
-    user: Omit<User, 'id' | 'permissions' | 'loginHistory' | 'activeSessions' | 'mfaEnabled'>
+    user: Omit<User, 'id' | 'permissions' | 'loginHistory' | 'activeSessions'>
   ) => Promise<void> | void;
   deleteUser: (userId: string) => Promise<void> | void;
   addCustomer: (customer: Omit<Customer, 'id' | 'tenantId'>) => Customer;
@@ -918,7 +918,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           branchIds: [],
           loginHistory: [],
           activeSessions: [],
-          mfaEnabled: false,
         } as User)
       : INITIAL_USERS[0];
   });
@@ -984,18 +983,16 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const bootstrapUrl = !isTenantWorkspace
             ? '/api/platform/bootstrap'
             : `/api/bootstrap?tenantId=${encodeURIComponent(currentTenantId)}`;
-          const requestBootstrap = (token: string) => {
-            const headers: Record<string, string> = token
-              ? { Authorization: 'Bearer ' + token }
-              : {};
+          const requestBootstrap = () => {
+            const headers: Record<string, string> = {};
             if (impersonationSession?.id) {
               headers['X-Tenant-ID'] = impersonationSession.tenantId;
               headers['X-Impersonation-Session-ID'] = impersonationSession.id;
             }
-            return fetch(bootstrapUrl, { headers });
+            return fetch(bootstrapUrl, { headers, credentials: 'include' });
           };
 
-          const bootstrapResponse = await requestBootstrap(accessToken);
+          const bootstrapResponse = await requestBootstrap();
 
           const bootstrap = await readJsonResponse<any>(bootstrapResponse, 'Backend bootstrap');
           Object.assign(fetchedData, {
@@ -1245,19 +1242,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check existing session on mount
   useEffect(() => {
-    const token = localStorage.getItem('fixdev_token');
-    if (!token) {
-      setIsAuthenticated(false);
-      localStorage.setItem('saas_is_authenticated', 'false');
-      localStorage.removeItem('saas_curr_user');
-      return;
-    }
-
     (async () => {
       try {
-        const profileRes = await fetch('/api/auth/profile', {
-          headers: { Authorization: 'Bearer ' + token },
-        });
+        const profileRes = await fetch('/api/auth/profile', { credentials: 'include' });
         const dbUser = profileRes.ok ? await profileRes.json() : null;
 
         if (dbUser) {
@@ -1276,7 +1263,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('saas_curr_tenant_id', camelUser.tenantId);
           }
         } else if ([401, 403, 404].includes(profileRes.status)) {
-          localStorage.removeItem('fixdev_token');
           setIsAuthenticated(false);
           localStorage.setItem('saas_is_authenticated', 'false');
           localStorage.removeItem('saas_curr_user');
@@ -1312,10 +1298,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = authResult.data;
 
         if (data?.user) {
-          const { data: sessionData } = await client.auth.getSession();
-          const profileRes = await fetch('/api/auth/profile', {
-            headers: { Authorization: 'Bearer ' + (sessionData.session?.access_token || '') },
-          });
+          const profileRes = await fetch('/api/auth/profile', { credentials: 'include' });
           const dbUser = profileRes.ok ? await profileRes.json() : null;
 
           if (dbUser) {
@@ -1372,13 +1355,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setApiLoading(true);
     setApiStatus('Memperbarui password...');
     try {
-      const token = localStorage.getItem('fixdev_token');
       const res = await fetch('/api/auth/profile/password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: 'Bearer ' + token } : {}),
         },
+        credentials: 'include',
         body: JSON.stringify({ currentPassword: _currentPassword, newPassword }),
       });
       if (!res.ok) {
@@ -1411,7 +1393,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
-    localStorage.removeItem('fixdev_token');
     localStorage.setItem('saas_is_authenticated', 'false');
 
     sessionStorage.clear();
@@ -1426,7 +1407,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       branchIds: [],
       loginHistory: [],
       activeSessions: [],
-      mfaEnabled: false,
     } as User);
 
     const client = getAuthClient();
@@ -2029,18 +2009,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers.set('Content-Type', 'application/json');
     }
 
-    // Inject JWT for backend auth (requireJwt middleware)
-    if (!headers.has('Authorization')) {
-      try {
-        const token = localStorage.getItem('fixdev_token');
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-      } catch (e) {
-        // no token available, request will be rejected by backend
-      }
-    }
-
     let url = endpoint;
     const separator = url.includes('?') ? '&' : '?';
 
@@ -2060,6 +2028,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const response = await fetch(url, {
       ...options,
       headers,
+      credentials: 'include',
     });
     return response;
   };
@@ -2332,7 +2301,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           status: updates.status,
           tier: updates.tier,
           limits: updates.limits,
-          branding: updates.branding ? { customDomain: updates.branding.customDomain } : undefined,
+          branding: updates.branding,
           storageSettings: (updates.settings as any)?.storageSettings,
         }),
       });
@@ -5032,13 +5001,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             message: interpolate(wf.actionPayload),
             type: 'SYSTEM_AUTO',
           };
-          const token = localStorage.getItem('fixdev_token');
           const resp = await fetch('/api/whatsapp/queue', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              ...(token ? { Authorization: 'Bearer ' + token } : {}),
             },
+            credentials: 'include',
             body: JSON.stringify(waPayload),
           });
           const status = resp.ok ? 'SENT' : 'FAILED';
@@ -5200,7 +5168,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addUser = async (
-    userData: Omit<User, 'id' | 'permissions' | 'loginHistory' | 'activeSessions' | 'mfaEnabled'>
+    userData: Omit<User, 'id' | 'permissions' | 'loginHistory' | 'activeSessions'>
   ) => {
     const tenant = tenants.find((t) => t.id === userData.tenantId);
     if (tenant) {
@@ -5217,7 +5185,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...userData,
       id,
       permissions: DEFAULT_ROLE_PERMISSIONS[userData.role] || [],
-      mfaEnabled: false,
       loginHistory: [],
       activeSessions: [],
     };

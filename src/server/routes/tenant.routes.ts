@@ -20,7 +20,13 @@ import {
 const router = express.Router();
 
 router.get('/data', requireJwt, requireTenantScope, getTenantData);
-router.get('/settings/:domain', requireJwt, requireTenantScope, getSettingsDomain);
+router.get(
+  '/settings/:domain',
+  requireJwt,
+  requireTenantScope,
+  requireSettingsDomain(),
+  getSettingsDomain
+);
 router.put('/settings/:domain', requireSettingsDomain(), updateSettingsDomain);
 router.put('/rbac/matrix', requireRoles('OWNER', 'ADMIN'), updateRbacMatrix);
 router.put('/rbac/users/:userId', requireRoles('OWNER', 'ADMIN'), updateUserRbac);

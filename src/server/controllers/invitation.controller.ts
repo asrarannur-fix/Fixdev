@@ -1,52 +1,107 @@
-import { createHash, randomUUID } from "crypto";
-import type { Request, Response } from "express";
-import { dbQuery, dbTransaction } from "../../lib/db.js";
-import bcrypt from "bcrypt";
-import { passwordPolicyError } from "../lib/passwordPolicy.js";
+import { createHash, randomUUID } from 'crypto';
+import type { Request, Response } from 'express';
+import { dbQuery, dbTransaction } from '../../lib/db.js';
+import bcrypt from 'bcrypt';
+import { passwordPolicyError } from '../lib/passwordPolicy.js';
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export async function validateInvitation(req: Request, res: Response) {
-  const token = String(req.query.token || "");
-  if (token.length < 20) return res.status(422).json({ error: "Token undangan tidak valid." });
-  const hash = createHash("sha256").update(token).digest("hex");
-  const result = await dbQuery(`SELECT i.id,i.email,i.name,i.role,i.expires_at AS "expiresAt",t.name AS "tenantName" FROM tenant_invitations i JOIN tenants t ON t.id=i.tenant_id WHERE i.token_hash=$1 AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>now() LIMIT 1`, [hash]);
-  if (!result.rows[0]) return res.status(404).json({ error: "Undangan tidak ditemukan, kedaluwarsa, atau sudah digunakan." });
+  const token = String(req.query.token || '');
+  if (token.length < 20) return res.status(422).json({ error: 'Token undangan tidak valid.' });
+  const hash = createHash('sha256').update(token).digest('hex');
+  const result = await dbQuery(
+    `SELECT i.id,i.email,i.name,i.role,i.expires_at AS "expiresAt",t.name AS "tenantName" FROM tenant_invitations i JOIN tenants t ON t.id=i.tenant_id WHERE i.token_hash=$1 AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>now() LIMIT 1`,
+    [hash]
+  );
+  if (!result.rows[0])
+    return res
+      .status(404)
+      .json({ error: 'Undangan tidak ditemukan, kedaluwarsa, atau sudah digunakan.' });
   res.json({ invitation: result.rows[0] });
 }
 
 export async function acceptInvitation(req: Request, res: Response) {
   const { token, password } = req.body || {};
-  if (typeof token !== "string" || token.length < 20 || typeof password !== "string") return res.status(422).json({ error: "Token dan password wajib diisi." });
+  if (typeof token !== 'string' || token.length < 20 || typeof password !== 'string')
+    return res.status(422).json({ error: 'Token dan password wajib diisi.' });
 
   const policyError = passwordPolicyError(password, { minPasswordLength: MIN_PASSWORD_LENGTH });
   if (policyError) return res.status(422).json({ error: policyError });
 
-  const hash = createHash("sha256").update(token).digest("hex");
+  const hash = createHash('sha256').update(token).digest('hex');
   try {
     const result = await dbTransaction(async (client) => {
-      const locked = await client.query(`SELECT * FROM tenant_invitations WHERE token_hash=$1 FOR UPDATE`, [hash]);
+      const locked = await client.query(
+        `SELECT * FROM tenant_invitations WHERE token_hash=$1 FOR UPDATE`,
+        [hash]
+      );
       const invitation = locked.rows[0];
-      if (!invitation || invitation.accepted_at || invitation.revoked_at || new Date(invitation.expires_at).getTime() <= Date.now()) return { code: 409, error: "Undangan tidak lagi aktif." };
-      if (invitation.provisioning_status === "PROVISIONING" && invitation.provisioning_started_at && Date.now() - new Date(invitation.provisioning_started_at).getTime() < 10 * 60_000) return { code: 409, error: "Aktivasi undangan sedang diproses." };
-      await client.query(`UPDATE tenant_invitations SET provisioning_status='PROVISIONING',provisioning_started_at=now(),provisioning_error=NULL WHERE id=$1`, [invitation.id]);
-      const existing = await client.query(`SELECT id FROM users WHERE lower(email)=lower($1)`, [invitation.email]);
-      if (existing.rows[0]) return { code: 409, error: "Email sudah terdaftar." };
+      if (
+        !invitation ||
+        invitation.accepted_at ||
+        invitation.revoked_at ||
+        new Date(invitation.expires_at).getTime() <= Date.now()
+      )
+        return { code: 409, error: 'Undangan tidak lagi aktif.' };
+      if (
+        invitation.provisioning_status === 'PROVISIONING' &&
+        invitation.provisioning_started_at &&
+        Date.now() - new Date(invitation.provisioning_started_at).getTime() < 10 * 60_000
+      )
+        return { code: 409, error: 'Aktivasi undangan sedang diproses.' };
+      await client.query(
+        `UPDATE tenant_invitations SET provisioning_status='PROVISIONING',provisioning_started_at=now(),provisioning_error=NULL WHERE id=$1`,
+        [invitation.id]
+      );
+      const existing = await client.query(`SELECT id FROM users WHERE lower(email)=lower($1)`, [
+        invitation.email,
+      ]);
+      if (existing.rows[0]) return { code: 409, error: 'Email sudah terdaftar.' };
       const userId = randomUUID();
       const passwordHash = await bcrypt.hash(password, 10);
-      const branch = await client.query(`SELECT id FROM branches WHERE tenant_id=$1 ORDER BY created_at LIMIT 1`, [invitation.tenant_id]);
-      await client.query(`INSERT INTO users(id,tenant_id,email,name,role,password_hash,mfa_enabled,created_at) VALUES ($1,$2,$3,$4,$5,$6,false,now())`, [userId, invitation.tenant_id, invitation.email, invitation.name, invitation.role, passwordHash]);
-      if (branch.rows[0]) await client.query(`INSERT INTO user_branches(user_id,branch_id) VALUES ($1,$2)`, [userId, branch.rows[0].id]);
-      await client.query(`UPDATE tenant_invitations SET accepted_at=now(),provisioning_status='COMPLETED',provisioning_error=NULL WHERE id=$1`, [invitation.id]);
-      return { user: { id: userId, email: invitation.email, name: invitation.name, role: invitation.role, tenantId: invitation.tenant_id } };
+      const branch = await client.query(
+        `SELECT id FROM branches WHERE tenant_id=$1 ORDER BY created_at LIMIT 1`,
+        [invitation.tenant_id]
+      );
+      await client.query(
+        `INSERT INTO users(id,tenant_id,email,name,role,password_hash,created_at) VALUES ($1,$2,$3,$4,$5,$6,now())`,
+        [
+          userId,
+          invitation.tenant_id,
+          invitation.email,
+          invitation.name,
+          invitation.role,
+          passwordHash,
+        ]
+      );
+      if (branch.rows[0])
+        await client.query(`INSERT INTO user_branches(user_id,branch_id) VALUES ($1,$2)`, [
+          userId,
+          branch.rows[0].id,
+        ]);
+      await client.query(
+        `UPDATE tenant_invitations SET accepted_at=now(),provisioning_status='COMPLETED',provisioning_error=NULL WHERE id=$1`,
+        [invitation.id]
+      );
+      return {
+        user: {
+          id: userId,
+          email: invitation.email,
+          name: invitation.name,
+          role: invitation.role,
+          tenantId: invitation.tenant_id,
+        },
+      };
     });
-    if ((result as any).error) return res.status((result as any).code).json({ error: (result as any).error });
+    if ((result as any).error)
+      return res.status((result as any).code).json({ error: (result as any).error });
     res.status(201).json({ success: true, ...result });
   } catch (err: any) {
     await dbQuery(
       `UPDATE tenant_invitations SET provisioning_status='FAILED',provisioning_error=$2 WHERE token_hash=$1 AND accepted_at IS NULL`,
-      [hash, String(err?.message || "Provisioning failed").slice(0, 500)],
+      [hash, String(err?.message || 'Provisioning failed').slice(0, 500)]
     ).catch(() => undefined);
-    res.status(500).json({ error: "Undangan gagal diterima." });
+    res.status(500).json({ error: 'Undangan gagal diterima.' });
   }
 }

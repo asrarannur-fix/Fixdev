@@ -4,8 +4,8 @@
  *
  * Local auth client for Express API endpoints.
  */
-import { safeLocalStorage } from "./safeStorage";
-import { toSnakeCase } from "./saasUtils";
+import { safeLocalStorage } from './safeStorage';
+import { toSnakeCase } from './saasUtils';
 
 const localStorage = safeLocalStorage;
 
@@ -18,7 +18,6 @@ export const cleanUserForDb = (user: any) => {
     name: snakeUser.name,
     role: snakeUser.role,
     permissions: snakeUser.permissions || [],
-    mfa_enabled: snakeUser.mfa_enabled || false,
   };
 };
 
@@ -30,10 +29,10 @@ export const isBackendConfigured = (): boolean => {
  * Local auth client that talks to our Express backend.
  */
 function getBaseUrl(): string {
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return process.env.TEST_BASE_URL || "http://localhost:3001";
+  return process.env.TEST_BASE_URL || 'http://localhost:3001';
 }
 
 export const getAuthClient = () => {
@@ -42,19 +41,23 @@ export const getAuthClient = () => {
       signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
         try {
           const res = await fetch(`${getBaseUrl()}/api/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
           });
           const data = await res.json();
-          if (!res.ok || !data.token) {
-            return { data: null, error: { message: data.error || "Login failed" } };
+          if (!res.ok || !data.user) {
+            return { data: null, error: { message: data.error || 'Login failed' } };
           }
-          const token = data.token;
-          localStorage.setItem("fixdev_token", token);
           return {
             data: {
-              session: { access_token: token, refresh_token: "", expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400, token_type: "bearer" },
+              session: {
+                access_token: '',
+                refresh_token: '',
+                expires_in: 86400,
+                expires_at: Math.floor(Date.now() / 1000) + 86400,
+                token_type: 'cookie',
+              },
               user: data.user,
             },
             error: null,
@@ -67,13 +70,21 @@ export const getAuthClient = () => {
       signUp: async ({ email, password, options }: any) => {
         try {
           const res = await fetch(`${getBaseUrl()}/api/onboarding/register`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ownerEmail: email, ownerPassword: password, ownerName: options?.data?.name || email, shopName: options?.data?.name || "My Shop" }),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ownerEmail: email,
+              ownerPassword: password,
+              ownerName: options?.data?.name || email,
+              shopName: options?.data?.name || 'My Shop',
+            }),
           });
           const data = await res.json();
-          if (!res.ok) return { data: null, error: { message: data.message || data.error || "Signup failed" } };
-          if (data.token) localStorage.setItem("fixdev_token", data.token);
+          if (!res.ok)
+            return {
+              data: null,
+              error: { message: data.message || data.error || 'Signup failed' },
+            };
           return { data: { user: data.owner }, error: null };
         } catch (err: any) {
           return { data: null, error: { message: err.message } };
@@ -81,26 +92,26 @@ export const getAuthClient = () => {
       },
 
       signOut: async () => {
-        localStorage.removeItem("fixdev_token");
+        await fetch(`${getBaseUrl()}/api/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+        }).catch(() => undefined);
         return { error: null };
       },
 
       getSession: async () => {
-        const token = localStorage.getItem("fixdev_token");
-        if (!token) return { data: { session: null }, error: null };
         try {
           const res = await fetch(`${getBaseUrl()}/api/auth/profile`, {
-            headers: { Authorization: `Bearer ${token}` },
+            credentials: 'include',
           });
           if (!res.ok) {
-            localStorage.removeItem("fixdev_token");
             return { data: { session: null }, error: null };
           }
           const profile = await res.json();
           return {
             data: {
               session: {
-                access_token: token,
+                access_token: '',
                 user: profile,
                 expires_at: Math.floor(Date.now() / 1000) + 86400,
               },
@@ -113,14 +124,9 @@ export const getAuthClient = () => {
       },
 
       getUser: async () => {
-        const token = localStorage.getItem("fixdev_token");
-        if (!token) return { data: { user: null }, error: null };
         try {
-          const res = await fetch(`${getBaseUrl()}/api/auth/profile`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const res = await fetch(`${getBaseUrl()}/api/auth/profile`, { credentials: 'include' });
           if (!res.ok) {
-            localStorage.removeItem("fixdev_token");
             return { data: { user: null }, error: null };
           }
           const profile = await res.json();

@@ -30,7 +30,6 @@ interface TenantsManagerProps {
   impersonateTenant: (id: string) => void;
   setSelectedTenantForConfig: (id: string) => void;
 
-  setConfigCustomDomain: (v: string) => void;
   setConfigStorageMode: (v: string) => void;
   setConfigBucketName: (v: string) => void;
   setConfigStorageLimitMb: (v: number) => void;
@@ -54,7 +53,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
   impersonateTenant,
   setSelectedTenantForConfig,
 
-  setConfigCustomDomain,
   setConfigStorageMode,
   setConfigBucketName,
   setConfigStorageLimitMb,
@@ -445,25 +443,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                         <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
                           ID Tenant: {t.subdomain || t.id}
                         </p>
-                        {t.branding?.customDomain && (
-                          <div className="flex flex-col gap-1 mt-1.5">
-                            <span className="inline-flex items-center gap-1 text-[9px] bg-accent-lighter dark:bg-indigo-950/30 text-accent dark:text-accent px-1.5 py-0.5 rounded font-mono font-semibold w-max">
-                              🔗 {t.branding.customDomain}
-                            </span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="inline-flex items-center gap-1 text-[8px] text-emerald-600 dark:text-emerald-400 font-bold">
-                                <span className="w-1 h-1 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                                DNS OK
-                              </span>
-                              <span className="text-slate-300 dark:text-zinc-800 text-[8px] font-bold">
-                                |
-                              </span>
-                              <span className="inline-flex items-center gap-0.5 text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
-                                🛡️ SSL SECURE
-                              </span>
-                            </div>
-                          </div>
-                        )}
                       </td>
 
                       <td className="px-5 py-4">
@@ -594,7 +573,6 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
                             disabled={readOnlyMode}
                             onClick={() => {
                               setSelectedTenantForConfig(t.id);
-                              setConfigCustomDomain(t.branding?.customDomain || '');
                               const sSettings = (t as any).settings?.storageSettings || {};
                               setConfigStorageMode(sSettings.mode || 'SYSTEM');
                               setConfigBucketName(sSettings.bucketName || '');

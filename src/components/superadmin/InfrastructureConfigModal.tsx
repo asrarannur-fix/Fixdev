@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Server, X, Globe } from 'lucide-react';
+import { Server, X } from 'lucide-react';
 import { Tenant, SubscriptionTier, TenantStatus } from '../../types';
 
 interface InfrastructureConfigModalProps {
@@ -8,8 +8,6 @@ interface InfrastructureConfigModalProps {
   selectedTenantForConfig: string | null;
   setSelectedTenantForConfig: (id: string | null) => void;
 
-  configCustomDomain: string;
-  setConfigCustomDomain: (v: string) => void;
   configStorageMode: string;
   setConfigStorageMode: (v: string) => void;
   configBucketName: string;
@@ -38,8 +36,6 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
   selectedTenantForConfig,
   setSelectedTenantForConfig,
 
-  configCustomDomain,
-  setConfigCustomDomain,
   configStorageMode,
   setConfigStorageMode,
   configBucketName,
@@ -74,7 +70,7 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
               <Server className="w-4 h-4 text-blue-600" /> Konfigurasi Infrastruktur Tenant
             </h3>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              Mengonfigurasi identitas tenant, custom domain, dan storage cloud untuk{' '}
+              Mengonfigurasi identitas tenant dan storage cloud untuk{' '}
               <strong className="text-slate-800 dark:text-slate-200">{tenant.name}</strong>
             </p>
           </div>
@@ -164,29 +160,15 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
 
           <hr className="border-slate-100 dark:border-zinc-800" />
 
-          {/* 1. Subdomain & Custom Domain Group */}
+          {/* 1. Domain tenant tunggal */}
           <div className="space-y-3">
             <h4 className="font-bold text-[11px] uppercase text-blue-700 dark:text-blue-400 tracking-wider font-mono">
-              1. Domain & Jaringan
+              1. Domain Tenant
             </h4>
 
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">
-                Custom Domain (CNAME SSL/TLS)
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Globe className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="text"
-                    value={configCustomDomain}
-                    onChange={(e) => setConfigCustomDomain(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none text-xs focus:border-accent font-mono"
-                    placeholder="cth: repair.tokosaya.id"
-                  />
-                </div>
-              </div>
-            </div>
+            <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-slate-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+              {tenant.subdomain}.fixdev.web.id
+            </p>
           </div>
 
           <hr className="border-slate-100 dark:border-zinc-800" />
@@ -435,7 +417,6 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
           <button
             onClick={async () => {
               const cleanName = configName.trim();
-              const cleanCustomDomain = configCustomDomain.trim().toLowerCase();
 
               if (!cleanName) {
                 showToast('Nama tenant tidak boleh kosong.', 'error');
@@ -457,10 +438,6 @@ export const InfrastructureConfigModal: React.FC<InfrastructureConfigModalProps>
                     users: safeUsers,
                     branches: safeBranches,
                     features: configFeatures,
-                  },
-                  branding: {
-                    ...tenant.branding,
-                    customDomain: cleanCustomDomain || undefined,
                   },
                   settings: {
                     ...tenant.settings,

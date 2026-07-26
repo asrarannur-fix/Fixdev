@@ -43,7 +43,6 @@ const schemas = {
       logoUrl: httpsUrl.optional(),
       slogan: text(250).optional(),
       fontFamily: text(50).optional(),
-      customDomain: text(253).optional(),
       portalHelpTitle: text(150).optional(),
       portalContactText: text(1000).optional(),
       whiteLabelEnabled: bool.optional(),
@@ -359,8 +358,17 @@ export async function getSettingsDomain(req: Request, res: Response) {
     );
     const tenant = result.rows[0];
     if (!tenant) return res.status(404).json({ error: 'Tenant tidak ditemukan.' });
-    const value =
+    const rawValue =
       resolved === 'branding' ? tenant.branding || {} : tenant.settings?.[resolved] || {};
+    const value = { ...rawValue };
+    for (const field of SECRET_FIELDS[resolved] || []) delete value[field];
+    if (resolved === 'emailSettings') value.smtpConfigured = Boolean(rawValue.smtpPass);
+    if (resolved === 'notificationSettings')
+      value.telegramConfigured = Boolean(rawValue.telegramBotToken);
+    if (resolved === 'waConfig')
+      value.credentialsConfigured = Boolean(
+        rawValue.apiToken || rawValue.webhookSecret || rawValue.whatsappKey
+      );
     res.json({ domain: resolved, value, version: tenant.version });
   } catch (err: any) {
     logger.error({ err: err.message, tenantId: req.tenantId, domain }, 'Settings get failed');
@@ -398,7 +406,19 @@ export async function updateSettingsDomain(req: Request, res: Response) {
       return res
         .status(409)
         .json({ error: 'Pengaturan telah berubah. Muat ulang halaman.', code: 'VERSION_CONFLICT' });
-    res.json(toApiResponse(result.rows[0]));
+    const updated = result.rows[0];
+    const rawValue =
+      domain === 'branding' ? updated.branding || {} : updated.settings?.[domain] || {};
+    const value = { ...rawValue };
+    for (const field of SECRET_FIELDS[domain] || []) delete value[field];
+    if (domain === 'emailSettings') value.smtpConfigured = Boolean(rawValue.smtpPass);
+    if (domain === 'notificationSettings')
+      value.telegramConfigured = Boolean(rawValue.telegramBotToken);
+    if (domain === 'waConfig')
+      value.credentialsConfigured = Boolean(
+        rawValue.apiToken || rawValue.webhookSecret || rawValue.whatsappKey
+      );
+    res.json({ domain, value, version: updated.version });
   } catch (err: any) {
     logger.error({ err: err.message, tenantId: req.tenantId, domain }, 'Settings update failed');
     res.status(500).json({ error: 'Pengaturan gagal disimpan.' });
@@ -463,8 +483,13 @@ export async function updateUserRbac(req: Request, res: Response) {
 export async function getBranches(req: Request, res: Response) {
   try {
     const result = await dbQuery(
-      `SELECT * FROM branches WHERE tenant_id=$1 AND deleted_at IS NULL ORDER BY created_at ASC`,
-      [req.tenantId]
+      `SELECT b.* FROM branches b LEFT JOIN user_branches ub ON ub.branch_id=b.id AND ub.user_id=$2
+       WHERE b.tenant_id=$1 AND b.deleted_at IS NULL AND ($3 OR ub.user_id IS NOT NULL) ORDER BY b.created_at ASC`,
+      [
+        req.tenantId,
+        req.authActor?.userId,
+        ['OWNER', 'ADMIN', 'SUPER_ADMIN'].includes(req.authActor?.role || ''),
+      ]
     );
     res.json({ data: result.rows });
   } catch (err: any) {

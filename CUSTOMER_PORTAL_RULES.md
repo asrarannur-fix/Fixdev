@@ -18,7 +18,7 @@ Aturan akses portal pelanggan publik. Sumber: `src/components/CustomerPortal.tsx
 4. Jangan memuat data massal di portal; gunakan pagination/query per tiket agar tetap ringan di mobile.
 
 ## Resolusi Tenant Berdasarkan Hostname
-- Middleware server mencocokkan subdomain di bawah `TENANT_ROOT_DOMAIN` atau `custom_domain` yang sudah terverifikasi sebelum endpoint publik diproses.
+- Middleware server hanya mencocokkan subdomain di bawah `TENANT_ROOT_DOMAIN` sebelum endpoint publik diproses.
 - Host tenant yang tidak dikenal ditolak dengan 404; kegagalan database saat resolusi host menghasilkan 503.
 - Endpoint `/api/public/tenant-context` hanya mengirim branding publik yang diizinkan dan `publicBaseUrl` tenant untuk link keluar.
 - Tracking tiket, verifikasi garansi, login, dan JWT pada host tenant wajib cocok dengan tenant hasil resolusi hostname.

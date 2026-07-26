@@ -37,7 +37,8 @@ import {
   onboardingRegisterHandler,
   upgradeTrialHandler,
   extendTrialHandler,
-  loginHandler
+  loginHandler,
+  logoutHandler
 } from "./src/server/controllers/auth.controller.js";
 import {
   moduleRecordsGetHandler,
@@ -131,6 +132,13 @@ app.use((req, res, next) => {
   if (isProduction) res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+
+app.use((req, res, next) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method) || !String(req.headers.cookie || "").includes("fixdev_session=")) return next();
+  const origin = String(req.headers.origin || "").replace(/\/$/, "");
+  if (!origin || !allowedOrigins.includes(origin)) return res.status(403).json({ error: "Origin tidak diizinkan untuk mutasi sesi." });
   next();
 });
 
@@ -297,6 +305,7 @@ app.get("/api/qz/installer.bat", qzInstallerBatHandler);
 app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
 
 app.post("/api/auth/login", loginLimiter, validateSchema(loginSchema), loginHandler);
+app.post("/api/auth/logout", requireJwt, logoutHandler);
 app.post("/api/platform/telegram/manual-payment-webhook", telegramManualPaymentWebhook);
 app.post("/api/auth/profile/password", requireJwt, validateSchema(passwordChangeSchema), authPasswordUpdateHandler);
 app.post("/api/onboarding/register", onboardingLimiter, validateSchema(onboardingSchema), onboardingRegisterHandler);

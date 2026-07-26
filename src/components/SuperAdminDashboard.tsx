@@ -128,7 +128,6 @@ export const SuperAdminDashboard: React.FC<{
   // Tenant Infrastructure Configuration States
   const [selectedTenantForConfig, setSelectedTenantForConfig] = useState<string | null>(null);
 
-  const [configCustomDomain, setConfigCustomDomain] = useState('');
   const [configStorageMode, setConfigStorageMode] = useState('SYSTEM');
   const [configBucketName, setConfigBucketName] = useState('');
   const [configStorageLimitMb, setConfigStorageLimitMb] = useState(1024);
@@ -380,7 +379,6 @@ export const SuperAdminDashboard: React.FC<{
           updateTenantStatus={updateTenantStatus}
           impersonateTenant={impersonateTenant}
           setSelectedTenantForConfig={setSelectedTenantForConfig}
-          setConfigCustomDomain={setConfigCustomDomain}
           setConfigStorageMode={setConfigStorageMode}
           setConfigBucketName={setConfigBucketName}
           setConfigStorageLimitMb={setConfigStorageLimitMb}
@@ -414,8 +412,6 @@ export const SuperAdminDashboard: React.FC<{
           selectedTenantForConfig={selectedTenantForConfig}
           setSelectedTenantForConfig={setSelectedTenantForConfig}
 
-          configCustomDomain={configCustomDomain}
-          setConfigCustomDomain={setConfigCustomDomain}
           configStorageMode={configStorageMode}
           setConfigStorageMode={setConfigStorageMode}
           configBucketName={configBucketName}

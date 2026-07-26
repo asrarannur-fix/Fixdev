@@ -72,8 +72,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [skActiveTab, setSkActiveTab] = useState('general');
   const [brandingPreviewTab, setBrandingPreviewTab] = useState('login');
-  const [domainVerified, setDomainVerified] = useState(!!tenantObj?.customDomainVerifiedAt);
-  const [isVerifyingDomain, setIsVerifyingDomain] = useState(false);
 
   // Single branding state object
   const [branding, setBranding] = useState<TenantBranding>({
@@ -89,18 +87,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     accentColor: tenantObj?.branding?.accentColor || BRANDING_PRESETS.blue.secondaryColor,
     whiteLabelEnabled: tenantObj?.branding?.whiteLabelEnabled || false,
   });
-
-  const verifyDomain = (domain: string) => {
-    setDomainVerified(false);
-    if (!domain.trim()) {
-      showToast('Masukkan custom domain terlebih dahulu.', 'error');
-      return;
-    }
-    showToast(
-      'Verifikasi DNS otomatis belum tersedia. Domain belum dianggap aktif; arahkan CNAME lalu verifikasi dari infrastruktur hosting.',
-      'warning'
-    );
-  };
 
   const [paperSize, setPaperSize] = useState(
     tenantObj?.settings?.printConfig?.paperSize || 'thermal_80'
@@ -362,8 +348,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setTermsSalesText(pc.termsSalesText || '');
     setTermsRentalText(pc.termsRentalText || '');
     setTermsAndConditionsText(pc.termsAndConditionsText || '');
-    setDomainVerified(false);
-    setIsVerifyingDomain(false);
   }, [tenantObj]);
 
   const settingsTabs = useMemo(
@@ -599,14 +583,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     activeTenant,
                     branding,
                     brandingPreviewTab,
-                    domainVerified,
-                    isVerifyingDomain,
                     setBranding,
                     setBrandingPreviewTab,
-                    setDomainVerified,
                     showToast,
                     updateTenant,
-                    verifyDomain,
                   }}
                 />
               )}
