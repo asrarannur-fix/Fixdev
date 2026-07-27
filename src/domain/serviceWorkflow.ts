@@ -115,6 +115,10 @@ export const SERVICE_STATUS_META: Record<
     tone: 'orange',
     terminal: true,
   },
+  [ServiceStatus.DIBATALKAN]: {
+    label: 'Dibatalkan',
+    hint: 'Tiket dibatalkan oleh pelanggan atau admin.',
+  },
   [ServiceStatus.RUSAK]: { label: 'Rusak', tone: 'rose', terminal: true },
 };
 
@@ -191,5 +195,49 @@ export const NEXT_STEP: Record<
   [ServiceStatus.DIAMBIL]: {
     label: 'Unit Diambil',
     hint: 'Unit berhasil diambil oleh customer. Servis selesai.',
+  },
+  [ServiceStatus.DRAFT]: {
+    label: 'Buat Tiket',
+    hint: 'Tiket masih dalam draft. Klik "Masuk Antrian" untuk memulai.',
+  },
+  [ServiceStatus.BOOKING]: {
+    label: 'Booking Diproses',
+    hint: 'Tiket sedang dipesan. Tunggu konfirmasi dari admin.',
+  },
+  [ServiceStatus.APPROVAL_DITOLAK]: {
+    label: 'Estimasi Ditolak',
+    hint: 'Pelanggan menolak estimasi. Hubungi untuk diskusi ulang.',
+  },
+  [ServiceStatus.DIKIRIM_KE_VENDOR]: {
+    label: 'Kirim ke Vendor',
+    hint: 'Unit sedang dikirim ke vendor pihak untuk perbaikan.',
+  },
+  [ServiceStatus.MENUGGU_PEMBAYARAN]: {
+    label: 'Tunggu Pembayaran',
+    hint: 'Lunasi biaya perbaikan untuk melanjutkan proses.',
+  },
+  [ServiceStatus.KLAIM_GARANSI]: {
+    label: 'Proses Klaim Garansi',
+    hint: 'Unit masih dalam masa garansi. Ikuti prosedur klaim.',
+  },
+  [ServiceStatus.TIDAK_BISA_DIPERBAIKI]: {
+    label: 'Tidak Bisa Diperbaiki',
+    hint: 'Unit tidak dapat diperbaiki. Pilih opsi lain.',
+  },
+  [ServiceStatus.CUSTOMER_TIDAK_MERESPON]: {
+    label: 'Tunggu Respon Customer',
+    hint: 'Belum ada respon dari pelanggan. Kirim follow-up.',
+  },
+  [ServiceStatus.BARANG_TIDAK_DIAMBIL]: {
+    label: 'Barang Tidak Diambil',
+    hint: 'Unit tidak diambil dalam 7 hari. Hubungi customer.',
+  },
+  [ServiceStatus.DIBATALKAN]: {
+    label: 'Dibatalkan',
+    hint: 'Tiket dibatalkan oleh pelanggan atau admin.',
+  },
+  [ServiceStatus.RUSAK]: {
+    label: 'Unit Rusak Parah',
+    hint: 'Unit tidak dapat diperbaiki. Proses CLaim Garansi.',
   },
 };

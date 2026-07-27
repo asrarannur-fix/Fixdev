@@ -57,6 +57,29 @@ export const ServiceTicketInfo: React.FC<ServiceTicketInfoProps> = ({
           </p>
         )}
 
+        {ticket.technician && (
+          <p>
+            <span className="text-slate-400 font-mono text-[10px]">TEKNISI:</span>{' '}
+            <strong className="text-slate-700">{ticket.technician.name || ticket.technician}</strong>
+          </p>
+        )}
+
+        {!ticket.technician && onTechChange && (
+          <p>
+            <span className="text-slate-400 font-mono text-[10px]">TEKNISI:</span>{' '}
+            <select
+              defaultValue=""
+              onChange={(e) => onTechChange(e.target.value)}
+              className="font-bold text-accent text-[10px] bg-transparent border border-slate-200 rounded px-1 py-0.5 focus:outline-none"
+            >
+              <option value="" disabled>Pilih Teknisi</option>
+              <option value="tech1">Budi (Elektro)</option>
+              <option value="tech2">Siti (Hardware)</option>
+              <option value="tech3">Andi (Software)</option>
+            </select>
+          </p>
+        )}
+
         {ticket.estimatedCompletionDate && (
           <p>
             <span className="text-slate-400 font-mono text-[10px]">EST. SELESAI:</span>{' '}
