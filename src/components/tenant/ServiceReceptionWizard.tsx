@@ -192,15 +192,6 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,1fr)] gap-6 items-start">
           {/* Left Column: Device & Customer Info */}
           <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-              <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-accent text-white text-xs font-extrabold shadow-sm">
-                1
-              </span>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                Pelanggan & Identitas Unit
-              </span>
-            </div>
-
             <div className="rounded-2xl border border-indigo-100 bg-accent-lighter/40 p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
@@ -834,15 +825,6 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
           {/* Right Column: Checklist, Photos, and Outsourcing */}
           <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm xl:sticky xl:top-28">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-              <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-600 text-white text-xs font-extrabold shadow-sm">
-                2
-              </span>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                Kondisi Unit Saat Diterima
-              </span>
-            </div>
-
             {/* Checklist */}
             <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm space-y-3">
               <div className="flex items-center justify-between">
