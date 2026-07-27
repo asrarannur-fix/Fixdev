@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   Handshake,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface ServiceTicketActionsProps {
@@ -49,6 +50,8 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
   liveTimerSeconds = 0,
   repairStartTime,
 }) => {
+  const [showHandoverConfirm, setShowHandoverConfirm] = React.useState(false);
+
   const getActiveStepIndex = (st: ServiceStatus) => {
     switch (st) {
       case ServiceStatus.DITERIMA:
@@ -173,13 +176,49 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
           {ticket.status === ServiceStatus.SELESAI && (
             <button
               type="button"
-              onClick={() => {
-                if (onHandover) onHandover();
-              }}
+              onClick={() => setShowHandoverConfirm(true)}
               className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
             >
               <Handshake className="w-3.5 h-3.5" /> Ambil Unit
             </button>
+          )}
+
+          {/* Handover Confirmation Dialog */}
+          {showHandoverConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="w-80 rounded-xl bg-white p-4 shadow-xl">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-slate-800">Konfirmasi Ambil Unit</h3>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Tandai tiket ini sebagai <strong>diambil</strong> oleh pemilik? Pastikan unit sudah diserahkan dan pembayaran lunas.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowHandoverConfirm(false)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHandoverConfirm(false);
+                      if (onHandover) onHandover();
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-[10px] font-bold"
+                  >
+                    Ya, Ambil Unit
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* SLA Timer */}
