@@ -2360,6 +2360,8 @@ const NEXT_STEP: Record<string, { label: string; hint: string }> = {
   [ServiceStatus.MENUGGU_SPAREPART]: { label: 'Terima Sparepart', hint: 'Setelah spare part tiba, lanjutkan ke proses perbaikan.' },
   [ServiceStatus.QC]: { label: 'Lakukan QC / Testing', hint: 'Klik "Selesaikan QC" dan isi checklist pengujian.' },
   [ServiceStatus.SELESAI]: { label: 'Serah Terima (Handover)', hint: 'Klik "Serah Terima Unit" untuk menyelesaikan servis.' },
+  [ServiceStatus.SIAP_DIAMBIL]: { label: 'Unit Siap Diambil', hint: 'Customer dapat mengambil unit setelah pembayaran selesai.' },
+  [ServiceStatus.DIAMBIL]: { label: 'Unit Diambil', hint: 'Unit berhasil diambil oleh customer. Servis selesai.' },
 };
 
 const NextStepBanner: React.FC<{ ticket: any }> = ({ ticket }) => {

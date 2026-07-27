@@ -10,6 +10,7 @@ import {
   Send,
   CheckCircle2,
   ShieldCheck,
+  Handshake,
 } from 'lucide-react';
 
 interface ServiceTicketActionsProps {
@@ -34,6 +35,8 @@ const WORKFLOW_STEPS = [
   { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan' },
   { status: ServiceStatus.QC, label: 'QC/Testing' },
   { status: ServiceStatus.SELESAI, label: 'Siap Diambil' },
+  { status: ServiceStatus.SIAP_DIAMBIL, label: 'Siap Diambil' },
+  { status: ServiceStatus.DIAMBIL, label: 'Diambil' },
 ];
 
 export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
@@ -165,6 +168,18 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
                 <PlusCircle className="w-3.5 h-3.5" /> Tambahan Biaya Disetujui
               </button>
             </>
+          )}
+
+          {ticket.status === ServiceStatus.SELESAI && (
+            <button
+              type="button"
+              onClick={() => {
+                if (onHandover) onHandover();
+              }}
+              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
+            >
+              <Handshake className="w-3.5 h-3.5" /> Ambil Unit
+            </button>
           )}
 
           {/* SLA Timer */}
