@@ -170,10 +170,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     ) : null;
 
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-indigo-100/50 via-violet-50/40 to-sky-100/50 rounded-3xl ring-1 ring-white/40 overflow-hidden">
+    <div className="min-h-[calc(100vh-120px)] bg-white/60 rounded-3xl ring-2 ring-accent/20 overflow-hidden">
       <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30">
+          <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-accent text-white shadow-sm shadow-accent/15">
             <ClipboardList className="w-5 h-5" />
           </div>
           <div className="flex-1">
@@ -276,7 +276,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       />
                     </div>
                     {custOpen && (
-                      <div className="absolute z-30 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg">
+                      <div className="absolute z-30 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-md shadow-slate-900/5">
                         {customers
                           .filter((c) =>
                             `${c.name} ${c.phone}`.toLowerCase().includes(custQuery.toLowerCase())
@@ -817,7 +817,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 ))}
               </select>
               {autoAssignReason && (
-                <div className="text-[9.5px] text-indigo-800 leading-relaxed bg-white border border-indigo-200 p-2 rounded-lg font-medium shadow-2xs">
+                <div className="text-[9.5px] text-indigo-800 leading-relaxed bg-white border border-indigo-200 p-2 rounded-lg font-medium shadow-xs">
                   {autoAssignReason}
                 </div>
               )}
@@ -1099,7 +1099,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                                   prev.filter((x) => x.id !== cap.id)
                                 )
                               }
-                              className="absolute top-1 right-1 p-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 p-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
                             >
                               <X className="w-2.5 h-2.5" />
                             </button>
@@ -1165,7 +1165,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
         </div>
 
-        <div className="sticky bottom-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 bg-white/95 backdrop-blur p-3 sm:px-4 rounded-2xl shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
+        <div className="sticky bottom-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 bg-white/90 p-3 sm:px-4 rounded-2xl shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
           <div className="flex items-center gap-2 text-[11px] text-slate-500">
             <Save className="w-3.5 h-3.5 text-emerald-600" />
             <span>Perubahan tersimpan otomatis sebagai draft di perangkat ini.</span>
@@ -1181,7 +1181,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             <button
               type="submit"
               disabled={isSubmittingReception}
-              className="bg-gradient-to-r from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer transition-all shadow-lg shadow-accent/25 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer transition-all shadow-accent/15 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmittingReception ? (
                 <>
