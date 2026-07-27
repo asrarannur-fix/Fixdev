@@ -2,6 +2,10 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { Badge } from '../ui/Badge';
 import { DocumentPrintouts } from './services/DocumentPrintouts';
+import { ServiceTicketHeader } from './services/ServiceTicketHeader';
+import { ServiceTicketInfo } from './services/ServiceTicketInfo';
+import { ServiceTicketCamera } from './services/ServiceTicketCamera';
+import { ServiceTicketActions } from './services/ServiceTicketActions';
 import { getStorageLocations } from './StorageLocationManager';
 import { buildServiceReceptionPreview } from '../../utils/serviceReceptionUtils';
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from '../../types';
@@ -32,7 +36,6 @@ import {
   Search,
   CheckSquare,
   Activity,
-  Camera,
   Maximize,
   Check,
   Calendar,
@@ -229,9 +232,56 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
       p.name.toLowerCase().includes('connector')
   );
 
-  // Local dynamic tab state inside modal
-  // We use React state via an inline trick or store it in state variables. Since we need state, let's use the local storage or a variable. We can define a local toggle inside.
-  // Let's create an elegant tabs selector inside the modal
+  // Photo capture handlers (extracted for ServiceTicketCamera component)
+  const handleCapturePhoto = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx && videoRef.current) {
+        ctx.drawImage(videoRef.current, 0, 0, 640, 480);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        const newPhoto = {
+          id: 'photo-' + Date.now().toString(36) + 'a',
+          url: dataUrl,
+          category: 'Kerusakan Fisik',
+          timestamp: new Date().toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        };
+        updateServiceTicket(ticket.id, {
+          capturedConditions: [...(ticket.capturedConditions || []), newPhoto],
+        });
+        showToast('Foto berhasil diambil dan disimpan langsung ke tiket!', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDemoPhoto = () => {
+    const images = [
+      'https://images.unsplash.com/photo-1601524909162-be87252be298?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80',
+    ];
+    const randomImg = images[Math.floor(Math.random() * images.length)];
+    const newPhoto = {
+      id: 'photo-' + Date.now().toString(36) + 'b',
+      url: randomImg,
+      category: 'Internal Damaged Component',
+      timestamp: new Date().toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+    updateServiceTicket(ticket.id, {
+      capturedConditions: [...(ticket.capturedConditions || []), newPhoto],
+    });
+  };
 
   return createPortal(
     <div
@@ -246,61 +296,23 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="p-2 bg-accent-lighter rounded-lg text-accent">
-              <Wrench className="w-5 h-5" />
-            </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 id="service-detail-title" className="font-bold text-sm text-slate-800">
-                  Manajemen Perbaikan & Servis
-                </h3>
-                <span className="font-mono text-xs font-bold text-accent">#{ticket.ticketNo}</span>
-              </div>
-              <p className="text-[10px] text-slate-400">
-                Status Aktif: <strong className="text-accent">{ticket.status}</strong>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowSpkPrintout(ticket.id)}
-              className="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
-            >
-              <Printer className="w-3.5 h-3.5 text-slate-500" /> Cetak SPK
-            </button>
-            {['SELESAI', 'SIAP_DIAMBIL', 'DIAMBIL'].includes(ticket.status) && (
-              <>
-                <button
-                  onClick={() => setShowInvoicePrintout(ticket.id)}
-                  className="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
-                >
-                  <FileText className="w-3.5 h-3.5 text-emerald-500" /> Cetak Invoice Pembayaran
-                </button>
-                <button
-                  onClick={() => setShowWarrantyPrintout(ticket.id)}
-                  className="px-2.5 py-1.5 bg-accent-lighter border border-indigo-100 hover:bg-indigo-200 text-accent rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" /> Cetak Kartu Garansi
-                </button>
-              </>
-            )}
-            <button
-              onClick={() => {
-                setViewingServiceTicketId(null);
-                setInternalCommentText('');
-                setManualDiagNotes('');
-                setManualDiagCost('');
-                setSelectedSparepartId('');
-                setSparepartSN('');
-              }}
-              className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        <ServiceTicketHeader
+          ticket={ticket}
+          customer={customer}
+          currentUserPermissions={currentUserPermissions}
+          currentUserRole={currentUser?.role || UserRole.OWNER}
+          onPrintSpk={() => setShowSpkPrintout(ticket.id)}
+          onPrintInvoice={() => setShowInvoicePrintout(ticket.id)}
+          onPrintWarranty={() => setShowWarrantyPrintout(ticket.id)}
+          onClose={() => {
+            setViewingServiceTicketId(null);
+            setInternalCommentText('');
+            setManualDiagNotes('');
+            setManualDiagCost('');
+            setSelectedSparepartId('');
+            setSparepartSN('');
+          }}
+        />
 
         <div className="flex-1 flex flex-col xl:flex-row overflow-hidden">
           {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
@@ -535,7 +547,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               </div>
             </div>
 
-            {/* Section: Photos */}
+            {/* Section: Photos (hidden wrapper for initial photos kept for compat) */}
             <div className="hidden">
               {ticket.initialPhotos && ticket.initialPhotos.length > 0 && (
                 <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-2 shadow-xs">
@@ -553,134 +565,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               )}
             </div>
 
-            {/* Interactive Camera & Ticket Captured Conditions Gallery */}
-            <div className="p-2.5 bg-white border border-slate-100 rounded-xl space-y-2 shadow-xs">
-              <h4 className="font-bold text-[10px] text-slate-500 uppercase font-mono tracking-wider flex items-center justify-between">
-                <span>Foto ({ticket.capturedConditions?.length || 0})</span>
-                <span className="text-[8px] font-mono font-bold bg-amber-50 text-amber-700 border border-amber-100 px-1 py-0.5 rounded-md">
-                  Live Capture
-                </span>
-              </h4>
-
-              {ticket.capturedConditions && ticket.capturedConditions.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                  {ticket.capturedConditions.map((cap) => (
-                    <div
-                      key={cap.id}
-                      className="relative rounded-lg overflow-hidden border border-slate-200 h-16 group bg-slate-900"
-                    >
-                      <img
-                        src={cap.url}
-                        alt={cap.category}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-black/75 p-0.5 flex items-center justify-between">
-                        <span className="text-[7px] font-mono font-bold text-white uppercase truncate max-w-[50px]">
-                          {cap.category}
-                        </span>
-                        <span className="text-[6.5px] font-mono text-slate-300">
-                          {cap.timestamp}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[10px] text-slate-400 italic text-center">
-                  Belum ada foto rekam kondisi terlampir.
-                </p>
-              )}
-
-              {/* Live Workstation Camera Trigger */}
-              {cameraActive ? (
-                <div className="border border-indigo-100 rounded-lg p-2 bg-slate-900 space-y-2">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-24 object-cover bg-black rounded"
-                  />
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => {
-                        // Real capture photo and append
-                        try {
-                          const canvas = document.createElement('canvas');
-                          canvas.width = 640;
-                          canvas.height = 480;
-                          const ctx = canvas.getContext('2d');
-                          if (ctx && videoRef.current) {
-                            ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-                            const dataUrl = canvas.toDataURL('image/jpeg');
-                            const newPhoto = {
-                              id: 'photo-' + Date.now().toString(36) + 'a',
-                              url: dataUrl,
-                              category: 'Kerusakan Fisik',
-                              timestamp: new Date().toLocaleTimeString('id-ID', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              }),
-                            };
-                            updateServiceTicket(ticket.id, {
-                              capturedConditions: [...(ticket.capturedConditions || []), newPhoto],
-                            });
-                            showToast(
-                              'Foto berhasil diambil dan disimpan langsung ke tiket!',
-                              'success'
-                            );
-                          }
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold py-1 rounded cursor-pointer"
-                    >
-                      Jepret
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Simulation trigger inside workstation
-                        const images = [
-                          'https://images.unsplash.com/photo-1601524909162-be87252be298?auto=format&fit=crop&w=400&q=80',
-                          'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=400&q=80',
-                          'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80',
-                          'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80',
-                        ];
-                        const randomImg = images[Math.floor(Math.random() * images.length)];
-                        const newPhoto = {
-                          id: 'photo-' + Date.now().toString(36) + 'b',
-                          url: randomImg,
-                          category: 'Internal Damaged Component',
-                          timestamp: new Date().toLocaleTimeString('id-ID', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          }),
-                        };
-                        updateServiceTicket(ticket.id, {
-                          capturedConditions: [...(ticket.capturedConditions || []), newPhoto],
-                        });
-                      }}
-                      className="bg-accent hover:bg-accent-hover text-white text-[9px] font-bold px-1.5 py-1 rounded cursor-pointer"
-                    >
-                      Demo
-                    </button>
-                    <button
-                      onClick={stopCamera}
-                      className="bg-slate-700 text-white text-[9px] font-bold px-1.5 py-1 rounded cursor-pointer"
-                    >
-                      X
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={startCamera}
-                  className="w-full bg-slate-50 border border-dashed border-slate-200 hover:bg-accent-lighter text-[10.5px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-accent cursor-pointer"
-                >
-                  <Camera className="w-3.5 h-3.5" /> Ambil Foto Kondisi Baru
-                </button>
-              )}
-            </div>
+            <ServiceTicketCamera
+              ticket={ticket}
+              cameraActive={cameraActive}
+              startCamera={startCamera}
+              stopCamera={stopCamera}
+              videoRef={videoRef}
+              onCapture={handleCapturePhoto}
+              onDemo={handleDemoPhoto}
+            />
 
             {/* Section: Checklist */}
             {ticket.initialChecklist && ticket.initialChecklist.length > 0 && (
@@ -820,120 +713,18 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
           <div className="xl:w-[70%] 2xl:w-[72%] p-3 lg:p-5 overflow-y-auto space-y-4 lg:space-y-5 flex flex-col justify-between">
             <div className="space-y-6">
               {/* Visual Repair Workflow Stepper */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-xs">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-bold text-[10px] text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-indigo-500" /> Visual Repair Workflow
-                  </h4>
-                  <div className="flex items-center gap-1.5 bg-accent-lighter border border-indigo-100 px-2 py-0.5 rounded-lg">
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
-                    <span className="text-[9px] font-mono font-bold text-accent">
-                      Live Tracker & Control
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between relative mt-4 px-2">
-                  {/* Connector Track line */}
-                  <div className="absolute top-4 left-6 right-6 h-1 bg-slate-200 z-0 rounded" />
-
-                  {(() => {
-                    const getActiveStepIndex = (st: ServiceStatus) => {
-                      switch (st) {
-                        case ServiceStatus.DITERIMA:
-                        case ServiceStatus.ANTRIAN:
-                        case ServiceStatus.DIAGNOSA:
-                          return 0; // Diagnosa
-                        case ServiceStatus.MENUGGU_APPROVAL:
-                        case ServiceStatus.APPROVAL_DITOLAK:
-                          return 1; // Menunggu Persetujuan
-                        case ServiceStatus.SEDANG_DIKERJAKAN:
-                        case ServiceStatus.MENUGGU_SPAREPART:
-                          return 2; // Proses Perbaikan
-                        case ServiceStatus.QC:
-                        case ServiceStatus.REWORK:
-                          return 3; // QC/Testing
-                        case ServiceStatus.SELESAI:
-                        case ServiceStatus.SIAP_DIAMBIL:
-                        case ServiceStatus.DIAMBIL:
-                          return 4; // Siap Diambil
-                        default:
-                          return 0;
-                      }
-                    };
-
-                    const steps = [
-                      {
-                        label: 'Diagnosa',
-                        status: ServiceStatus.DIAGNOSA,
-                        desc: 'Pengecekan Kendala',
-                      },
-                      {
-                        label: 'Persetujuan',
-                        status: ServiceStatus.MENUGGU_APPROVAL,
-                        desc: 'Konfirmasi Estimasi',
-                      },
-                      {
-                        label: 'Perbaikan',
-                        status: ServiceStatus.SEDANG_DIKERJAKAN,
-                        desc: 'Eksekusi Teknisi',
-                      },
-                      {
-                        label: 'QC/Testing',
-                        status: ServiceStatus.QC,
-                        desc: 'Uji Layakan & Fungsi',
-                      },
-                      {
-                        label: 'Siap Diambil',
-                        status: ServiceStatus.SIAP_DIAMBIL,
-                        desc: 'Siap Diserahkan',
-                      },
-                    ];
-
-                    const activeIndex = getActiveStepIndex(ticket.status);
-
-                    return steps.map((step, idx) => {
-                      const isCompleted = idx < activeIndex;
-                      const isActive = idx === activeIndex;
-
-                      return (
-                        <div key={idx} className="flex flex-col items-center flex-1 relative z-10">
-                          <button
-                            type="button"
-                            disabled={!canTransition(ticket.status, step.status)}
-                            onClick={() => {
-                              if (!canTransition(ticket.status, step.status)) return;
-                              const note = `Status diperbarui via Visual Workflow ke: ${step.label}`;
-                              updateServiceStatus(ticket.id, step.status, note);
-                            }}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all border-2 outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-                              isCompleted
-                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                                : isActive
-                                  ? 'bg-accent border-accent text-white ring-4 ring-indigo-100 shadow-md shadow-accent/20'
-                                  : 'bg-white border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600'
-                            }`}
-                            title={`Ubah status ke ${step.label}`}
-                          >
-                            {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
-                          </button>
-                          <span
-                            className={`text-[9px] font-bold mt-1.5 text-center transition-colors ${
-                              isActive
-                                ? 'text-accent font-extrabold'
-                                : isCompleted
-                                  ? 'text-emerald-600'
-                                  : 'text-slate-500'
-                            }`}
-                          >
-                            {step.label}
-                          </span>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
+              <ServiceTicketActions
+                ticket={ticket}
+                currentUser={currentUser}
+                liveTimerSeconds={liveTimerSeconds}
+                repairStartTime={ticket.repairStartTime}
+                onStatusChange={(status, note) => updateServiceStatus(ticket.id, status, note)}
+                onPartOrder={() => setPartOrderTicket(ticket)}
+                onAdditionalCost={() => {
+                  setAdditionalCostTicket(ticket);
+                  setAdditionalCostApprovedBy(customer?.name || '');
+                }}
+              />
 
               {/* Technician Tools Center */}
               {(currentUser.role === 'TEKNISI' ||
