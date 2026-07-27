@@ -503,6 +503,26 @@ export const voidSale = async (req: any, res: any) => {
         }
       }
 
+      // ── Void should fully reverse side-effects of the original sale ──
+      // 1) Voucher: refund the used_count so the code is usable again.
+      if (tx.paymentDetails && String(tx.paymentDetails).startsWith('VOUCHER:')) {
+        const voucherCode = String(tx.paymentDetails).replace('VOUCHER:', '');
+        await client.query(
+          `UPDATE discount_vouchers SET used_count = GREATEST(0, used_count - 1)
+           WHERE tenant_id=$1 AND code=$2`,
+          [tenantId, voucherCode]
+        );
+      }
+      // 2) TEMPO receivable: cancel the open AR so the customer isn't billed
+      //    for a sale that no longer exists.
+      if (tx.paymentMethod === 'TEMPO') {
+        await client.query(
+          `UPDATE pos_receivables SET status='CANCELLED'
+           WHERE tenant_id=$1 AND transaction_id=$2 AND status='RECEIVABLE'`,
+          [tenantId, id]
+        );
+      }
+
       const journalRes = await client.query(
         `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, 'POS_VOID', $5) RETURNING id`,

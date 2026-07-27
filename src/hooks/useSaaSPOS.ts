@@ -132,12 +132,40 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
       }
     }
 
-    const payload = {
+    // Split payment support: the UI encodes the secondary leg as a JSON
+    // string inside paymentDetails ({splitMethod, splitNominal}). Reconstruct
+    // a proper splitPayments array (both legs) so the backend records each
+    // method against the correct journal/ledger account. Without this the
+    // secondary payment is silently dropped and cash reports are wrong.
+    let splitPayments: { method: PaymentMethod; amount: number }[] | null = null;
+    let finalDetails: string | undefined = paymentDetails;
+    if (paymentDetails) {
+      try {
+        const parsed = JSON.parse(paymentDetails);
+        if (parsed.splitMethod && parsed.splitNominal) {
+          const splitNominal = Number(parsed.splitNominal) || 0;
+          const mainAmount = Math.max(0, (Number(amountPaid) || 0) - splitNominal);
+          splitPayments = [
+            { method: paymentMethod, amount: mainAmount },
+            { method: parsed.splitMethod as PaymentMethod, amount: splitNominal },
+          ];
+          // Don't persist the internal JSON blob as paymentDetails.
+          finalDetails = undefined;
+        }
+      } catch {
+        // Not a split JSON (e.g. "VOUCHER:CODE") — keep as-is.
+      }
+    }
+
+    const payload: any = {
       customerId: customerId || null,
       paymentMethod,
-      amountPaid,
+      // When split, amountPaid is the PRIMARY-LEG only; the backend adds
+      // splitPayments to derive totalPaid. Sending totalPaid here would
+      // double-count the split leg.
+      amountPaid: splitPayments ? splitPayments[0].amount : amountPaid,
       depositUsed,
-      paymentDetails,
+      paymentDetails: finalDetails || null,
       discountAmount: cart.reduce((acc, c) => acc + c.discount, 0),
       items: cart.map((c) => ({
         productId: c.product.id,
@@ -147,6 +175,7 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
         discount: c.discount,
       })),
     };
+    if (splitPayments) payload.splitPayments = splitPayments;
 
     const res = await api.post('/pos/sales', payload, { headers: getHeaders() });
     const newTx = res.data.data;

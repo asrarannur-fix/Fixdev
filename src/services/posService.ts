@@ -643,8 +643,12 @@ export async function processPartialRefund(
     : 0;
   const netRefund = refundAmount + refundTax;
 
-  // Update original transaction
-  const newStatus = tx.status === 'PARTIAL_REFUND' ? 'PARTIAL_REFUND' : 'FULL_REFUND';
+  // Decide refund status by comparing total originally-sold units vs total
+  // refunded units (cumulative across all prior refunds for this tx).
+  const totalQty = allItems.reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+  const refundQty = allItems.reduce((s, it) => s + (Number(it.refundedQty) || 0), 0);
+  const newStatus =
+    tx.status === 'PARTIAL_REFUND' || refundQty < totalQty ? 'PARTIAL_REFUND' : 'FULL_REFUND';
   await client.query(
     `UPDATE pos_transactions SET
        is_refunded = TRUE, status = $1, voided_at = NOW(),
