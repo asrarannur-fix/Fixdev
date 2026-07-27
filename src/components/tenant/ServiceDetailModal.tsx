@@ -3,9 +3,12 @@ import { createPortal } from 'react-dom';
 import { Badge } from '../ui/Badge';
 import { DocumentPrintouts } from './services/DocumentPrintouts';
 import { ServiceTicketHeader } from './services/ServiceTicketHeader';
-import { ServiceTicketInfo } from './services/ServiceTicketInfo';
 import { ServiceTicketCamera } from './services/ServiceTicketCamera';
-import { ServiceTicketActions } from './services/ServiceTicketActions';
+import {
+  ServiceTicketActions,
+  SERVICE_TRANSITIONS,
+  canTransition,
+} from './services/ServiceTicketActions';
 import { getStorageLocations } from './StorageLocationManager';
 import { buildServiceReceptionPreview } from '../../utils/serviceReceptionUtils';
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from '../../types';
@@ -65,27 +68,6 @@ import {
   PackagePlus,
   ListChecks,
 } from 'lucide-react';
-
-const SERVICE_TRANSITIONS: Record<string, string[]> = {
-  DITERIMA: ['ANTRIAN', 'DIAGNOSA', 'DIBATALKAN'],
-  ANTRIAN: ['DIAGNOSA', 'DIBATALKAN'],
-  DIAGNOSA: ['MENUGGU_APPROVAL', 'TIDAK_BISA_DIPERBAIKI', 'DIBATALKAN'],
-  MENUGGU_APPROVAL: ['SEDANG_DIKERJAKAN', 'APPROVAL_DITOLAK', 'DIBATALKAN'],
-  ESTIMATE_PENDING: ['SEDANG_DIKERJAKAN', 'APPROVAL_DITOLAK'],
-  APPROVAL_DITOLAK: ['MENUGGU_APPROVAL', 'DIBATALKAN'],
-  MENUGGU_SPAREPART: ['SEDANG_DIKERJAKAN', 'DIBATALKAN'],
-  SEDANG_DIKERJAKAN: ['QC', 'MENUGGU_SPAREPART', 'TIDAK_BISA_DIPERBAIKI', 'DIKIRIM_KE_VENDOR'],
-  DIKIRIM_KE_VENDOR: ['SEDANG_DIKERJAKAN', 'QC'],
-  TIDAK_BISA_DIPERBAIKI: ['SELESAI', 'DIBATALKAN', 'KLAIM_GARANSI'],
-  REWORK: ['SEDANG_DIKERJAKAN', 'QC'],
-  QC: ['SELESAI', 'REWORK'],
-  SELESAI: ['MENUGGU_PEMBAYARAN', 'SIAP_DIAMBIL', 'DIAMBIL', 'KLAIM_GARANSI'],
-  KLAIM_GARANSI: ['SELESAI', 'DIBATALKAN'],
-  MENUGGU_PEMBAYARAN: ['SIAP_DIAMBIL', 'DIAMBIL'],
-  SIAP_DIAMBIL: ['DIAMBIL'],
-};
-const canTransition = (from: ServiceStatus, to: ServiceStatus): boolean =>
-  from === to || (SERVICE_TRANSITIONS[from] || []).includes(to);
 
 const INTAKE_STATUSES: ServiceStatus[] = [
   ServiceStatus.DITERIMA,
