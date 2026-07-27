@@ -156,7 +156,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     showToast,
   } = props;
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+    <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 rounded-3xl shadow-sm ring-1 ring-slate-100 overflow-hidden">
       <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/70 backdrop-blur">
         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
           <Save className="w-3 h-3" /> Draft otomatis
@@ -191,8 +191,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
         )}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,1fr)] gap-6 items-start">
           {/* Left Column: Device & Customer Info */}
-          <div className="space-y-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-            <div className="rounded-2xl border border-indigo-100 bg-accent-lighter/40 p-4">
+          <div className="space-y-4 bg-slate-50/60 rounded-2xl p-4 shadow-sm">
+            <div className="rounded-2xl bg-white p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
@@ -760,9 +760,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               )}
             </div>
 
-            <div className="space-y-2 bg-accent-lighter/40 p-3.5 rounded-xl border border-indigo-100">
+            <div className="space-y-2 bg-indigo-50/40 p-3.5 rounded-xl">
               <div className="flex items-center justify-between">
-                <label className="block text-[10px] font-mono text-accent uppercase">
+                <label className="block text-[11px] font-semibold text-accent">
                   Tugaskan Teknisi
                 </label>
                 <button
@@ -795,7 +795,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               )}
 
               <div className="mt-3 pt-3 border-t border-indigo-100">
-                <label className="block text-[10px] font-mono text-amber-800 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-amber-800 mb-1">
                   Lokasi Rak Unit
                 </label>
                 <select
@@ -824,14 +824,14 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
 
           {/* Right Column: Checklist, Photos, and Outsourcing */}
-          <div className="space-y-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm xl:sticky xl:top-28">
+          <div className="space-y-4 bg-slate-50/60 rounded-2xl p-4 shadow-sm xl:sticky xl:top-28">
             {/* Checklist */}
-            <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-sm space-y-2.5">
+            <div className="bg-white p-3 rounded-xl ring-1 ring-slate-100 space-y-2.5">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-[11px] text-slate-600">
                   Checklist Uji Fungsi & Kondisi Masuk:
                 </p>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-accent-lighter text-accent border border-indigo-100">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-accent-lighter text-accent">
                   {Object.values(newSrvChecklist).filter(Boolean).length} /{' '}
                   {Object.keys(newSrvChecklist).length} OK
                 </span>
@@ -895,7 +895,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Accessories Left Selection */}
-            <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-sm space-y-2.5">
+            <div className="bg-white p-3 rounded-xl ring-1 ring-slate-100 space-y-2.5">
               <p className="font-semibold text-[11px] text-slate-600">
                 Aksesoris Titipan / Bawaan:
               </p>
@@ -932,7 +932,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 })}
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
+                <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
                   Aksesoris Tambahan Lainnya (Opsional)
                 </label>
                 <input
@@ -1082,7 +1082,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Outsourcing Section */}
-            <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-3">
+            <div className="bg-slate-100/70 p-4 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -1103,7 +1103,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               {newSrvIsOutsourced && (
                 <div className="grid grid-cols-2 gap-3 pt-1 animate-fadeIn">
                   <div>
-                    <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
                       Nama Vendor Rekanan
                     </label>
                     <input
@@ -1116,7 +1116,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
                       Estimasi Biaya Vendor (HPP)
                     </label>
                     <input
@@ -1134,7 +1134,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
         </div>
 
-        <div className="sticky bottom-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-200 bg-white/95 backdrop-blur p-3 sm:px-4 rounded-2xl shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
+        <div className="sticky bottom-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 bg-white/95 backdrop-blur p-3 sm:px-4 rounded-2xl shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
           <div className="flex items-center gap-2 text-[11px] text-slate-500">
             <Save className="w-3.5 h-3.5 text-emerald-600" />
             <span>Perubahan tersimpan otomatis sebagai draft di perangkat ini.</span>
