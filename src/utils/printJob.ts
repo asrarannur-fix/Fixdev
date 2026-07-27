@@ -1,5 +1,6 @@
 import type { PrintConfig } from './print';
 import { escapeHtml, getPrintBaseCss, getPaperWidthStyle } from './print';
+import { generateQrSvg } from './qrSvg';
 
 export type PrintJob = {
   title: string;
@@ -12,20 +13,31 @@ export type PrintJob = {
   documentId?: string;
   reprint?: boolean;
   reprintReason?: string;
+  qrPayload?: string;
 };
 
-const sanitizePrintHtml = (html: string): string =>
-  html
+const sanitizePrintHtml = (html: string, qrPayload?: string): string => {
+  let safe = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
     .replace(
       /<img\b[^>]*src=["'](?:https?:)?\/\/[^"']*["'][^>]*>/gi,
       '<div class="image-placeholder">Gambar eksternal dihapus dari dokumen print</div>'
-    )
-    .replace(
-      /<img\b[^>]*src=["'][^"']*(?:qr|qrcode)[^"']*["'][^>]*>/gi,
-      '<div class="qr-placeholder">Lacak status melalui URL atau nomor tiket</div>'
     );
+  if (qrPayload) {
+    const svg = generateQrSvg(qrPayload, 3, 2);
+    safe = safe.replace(
+      /<div class="qr-placeholder">[^<]*<\/div>/gi,
+      `<div class="qr-rendered">${svg}</div>`
+    );
+  } else {
+    safe = safe.replace(
+      /<div class="qr-placeholder">[^<]*<\/div>/gi,
+      '<div class="qr-rendered" style="text-align:center;padding:4px;font-size:9px;color:#666">[QR]</div>'
+    );
+  }
+  return safe;
+};
 
 export type PrintResult = {
   ok: boolean;
@@ -105,13 +117,41 @@ const configureQzSigning = async (): Promise<void> => {
   qzSigningConfigured = true;
 };
 
-export const createPrintDocument = (title: string, html: string, printConfig?: PrintConfig) =>
-  `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title || 'Print Job')}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}button{display:none!important}</style></head><body><main class="print-root">${sanitizePrintHtml(html)}</main></body></html>`;
+export const createPrintDocument = (
+  title: string,
+  html: string,
+  printConfig?: PrintConfig,
+  qrPayload?: string
+) =>
+  `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title || 'Print Job')}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}.qr-rendered{text-align:center;margin:8px 0}.qr-rendered svg{display:inline-block}button{display:none!important}</style></head><body><main class="print-root">${sanitizePrintHtml(html, qrPayload)}</main></body></html>`;
+
+const escPosRaw = (cmd: string): { type: string; format: string; data: string } => ({
+  type: 'raw',
+  format: 'plain',
+  data: cmd,
+});
+
+const buildEscPosPrefix = (pc: PrintConfig): string => {
+  const cmds: string[] = [];
+  if (pc.density != null && pc.density >= 0 && pc.density <= 100) {
+    const level = Math.min(7, Math.max(0, Math.round(pc.density / 14.3)));
+    cmds.push(`\x1B\x37\x00${String.fromCharCode(level)}\x00`);
+  }
+  return cmds.join('');
+};
+
+const buildEscPosSuffix = (pc: PrintConfig): string => {
+  const cmds: string[] = [];
+  if (pc.feed && pc.feed > 0) cmds.push(`\x1B\x64${String.fromCharCode(pc.feed)}`);
+  if (pc.cut) cmds.push('\x1D\x56\x00');
+  return cmds.join('');
+};
 
 const qzPrint = async (
   title: string,
   html: string,
-  printConfig: PrintConfig
+  printConfig: PrintConfig,
+  qrPayload?: string
 ): Promise<PrintResult> => {
   const qz = window.qz;
   const printerName = printConfig.printerName?.trim();
@@ -143,6 +183,16 @@ const qzPrint = async (
     }
     const printer = await qz.printers.find(printerName);
     if (!printer) throw new Error(`Printer tidak ditemukan: ${printConfig.printerName}`);
+    const htmlDoc = createPrintDocument(title, html, printConfig, qrPayload);
+    const prefix = buildEscPosPrefix(printConfig);
+    const suffix = buildEscPosSuffix(printConfig);
+    const dataQueue: Array<
+      | { type: string; format: string; data: string }
+      | { type: string; format: string; flavor: string; data: string }
+    > = [];
+    if (prefix) dataQueue.push(escPosRaw(prefix));
+    dataQueue.push({ type: 'pixel', format: 'html', flavor: 'plain', data: htmlDoc });
+    if (suffix) dataQueue.push(escPosRaw(suffix));
     await queuePrinter(printerName, () =>
       withTimeout(
         qz.print(
@@ -156,14 +206,7 @@ const qzPrint = async (
             size: { width: printConfig.printableWidthMm, height: null },
             margins: printConfig.printMargin,
           }),
-          [
-            {
-              type: 'pixel',
-              format: 'html',
-              flavor: 'plain',
-              data: createPrintDocument(title, html, printConfig),
-            },
-          ]
+          dataQueue
         ),
         30_000
       )
@@ -210,7 +253,8 @@ export const checkQzTray = async (): Promise<{
 export const printFrame = async (
   frame: HTMLIFrameElement | Window,
   printConfig?: PrintConfig,
-  title = 'Print Job'
+  title = 'Print Job',
+  qrPayload?: string
 ): Promise<PrintResult> => {
   const target: Window | null =
     typeof HTMLIFrameElement !== 'undefined' && frame instanceof HTMLIFrameElement
@@ -229,12 +273,86 @@ export const printFrame = async (
   const styles = Array.from(source?.head?.querySelectorAll('style') || [])
     .map((node) => node.outerHTML)
     .join('');
-  return printJobAsync({ title, html: styles + root.innerHTML, printConfig });
+  return printJobAsync({ title, html: styles + root.innerHTML, printConfig, qrPayload });
 };
 
-/** QZ Tray when configured; browser dialog remains safe fallback. */
+const MAX_QZ_RETRIES = 2;
+const QZ_RETRY_DELAY_MS = 800;
+
+const browserPrint = async (
+  title: string,
+  html: string,
+  printConfig?: PrintConfig,
+  qrPayload?: string
+): Promise<PrintResult> => {
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none';
+  frame.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(frame);
+  const doc = frame.contentDocument;
+  if (!doc) {
+    frame.remove();
+    return {
+      ok: false,
+      state: 'failed',
+      transport: 'browser',
+      errorCode: 'DOCUMENT_UNAVAILABLE',
+      error: 'Dokumen print tidak dapat dibuat',
+    };
+  }
+  try {
+    doc.open();
+    doc.write(createPrintDocument(title, html, printConfig, qrPayload));
+    doc.close();
+    await new Promise<void>((resolve) => {
+      const imgs = Array.from(doc.querySelectorAll('img'));
+      if (!imgs.length) return resolve();
+      let pending = imgs.length;
+      const done = () => {
+        if (--pending <= 0) resolve();
+      };
+      imgs.forEach((img) => {
+        if (img.complete) done();
+        else {
+          img.addEventListener('load', done);
+          img.addEventListener('error', done);
+        }
+      });
+      window.setTimeout(resolve, 2500);
+    });
+    await new Promise<void>((resolve, reject) =>
+      window.setTimeout(() => {
+        const target = frame.contentWindow;
+        if (!target || typeof target.print !== 'function') {
+          reject(new Error('Browser print tidak tersedia'));
+          return;
+        }
+        try {
+          target.focus();
+          target.print();
+          window.setTimeout(resolve, 1000);
+        } catch (err) {
+          reject(err);
+        }
+      }, 100)
+    );
+    return { ok: true, state: 'submitted', transport: 'browser' };
+  } catch (error) {
+    return {
+      ok: false,
+      state: 'failed',
+      transport: 'browser',
+      errorCode: 'BROWSER_SUBMIT_FAILED',
+      error: error instanceof Error ? error.message : 'Gagal mencetak lewat browser',
+    };
+  } finally {
+    frame.remove();
+  }
+};
+
+/** QZ Tray when configured; browser dialog remains safe fallback. Retries once on QZ failure. */
 export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
-  const { title, printConfig } = job;
+  const { title, printConfig, qrPayload } = job;
   if (job.reprint && !job.reprintReason?.trim())
     return {
       ok: false,
@@ -293,70 +411,25 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
       }).catch(() => undefined);
     return { ...result, jobId: serverJobId };
   };
-  if (printConfig?.printMode === 'qz') return qzPrint(title, html, printConfig).then(finish);
-  const frame = document.createElement('iframe');
-  frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none';
-  frame.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument;
-  if (!doc) {
-    frame.remove();
-    return finish({
-      ok: false,
-      state: 'failed',
-      transport: 'browser',
-      errorCode: 'DOCUMENT_UNAVAILABLE',
-      error: 'Dokumen print tidak dapat dibuat',
-    });
+
+  if (printConfig?.printMode === 'qz') {
+    let lastQzError: PrintResult | undefined;
+    for (let attempt = 0; attempt <= MAX_QZ_RETRIES; attempt++) {
+      if (attempt > 0) await new Promise<void>((r) => window.setTimeout(r, QZ_RETRY_DELAY_MS));
+      const qzResult = await qzPrint(title, html, printConfig, qrPayload);
+      if (qzResult.ok) return finish(qzResult);
+      lastQzError = qzResult;
+    }
+    const fallbackResult = await browserPrint(title, html, printConfig, qrPayload);
+    void finish({ ...fallbackResult, transport: 'browser' });
+    if (lastQzError) {
+      lastQzError.error = `QZ gagal (${MAX_QZ_RETRIES + 1}x). Fallback browser: ${lastQzError.error}`;
+      return finish(lastQzError);
+    }
+    return finish(fallbackResult);
   }
-  try {
-    doc.open();
-    doc.write(createPrintDocument(title, html, printConfig));
-    doc.close();
-    await new Promise<void>((resolve) => {
-      const imgs = Array.from(doc.querySelectorAll('img'));
-      if (!imgs.length) return resolve();
-      let pending = imgs.length;
-      const done = () => {
-        if (--pending <= 0) resolve();
-      };
-      imgs.forEach((img) => {
-        if (img.complete) done();
-        else {
-          img.addEventListener('load', done);
-          img.addEventListener('error', done);
-        }
-      });
-      window.setTimeout(resolve, 2500);
-    });
-    await new Promise<void>((resolve, reject) =>
-      window.setTimeout(() => {
-        const target = frame.contentWindow;
-        if (!target || typeof target.print !== 'function') {
-          reject(new Error('Browser print tidak tersedia'));
-          return;
-        }
-        try {
-          target.focus();
-          target.print();
-          window.setTimeout(resolve, 1000);
-        } catch (error) {
-          reject(error);
-        }
-      }, 100)
-    );
-    return finish({ ok: true, state: 'submitted', transport: 'browser' });
-  } catch (error) {
-    return finish({
-      ok: false,
-      state: 'failed',
-      transport: 'browser',
-      errorCode: 'BROWSER_SUBMIT_FAILED',
-      error: error instanceof Error ? error.message : 'Gagal mencetak lewat browser',
-    });
-  } finally {
-    frame.remove();
-  }
+
+  return browserPrint(title, html, printConfig, qrPayload).then(finish);
 };
 
 export const printJob = (job: PrintJob): Promise<PrintResult> => printJobAsync(job);

@@ -69,10 +69,21 @@ export const getPrintBaseCss = (pc?: PrintConfig): string => {
   const width = Number(pc?.printableWidthMm);
   const printableWidth = Number.isFinite(width) ? `${width}mm` : getPaperWidthStyle(pc);
   const density = Number.isFinite(pc?.density) ? pc?.density : 100;
+  const compact = pc?.thermalCompact;
+  const compactLineHeight = compact ? '1.1' : '1.3';
+  const compactFontSize = compact ? Math.max(8, fontSize - 2) : fontSize;
+  const compactMargin = compact ? Math.max(2, margin - 4) : margin;
+  const compactPadding = compact ? '0' : '0';
+  const compactSpacing = compact
+    ? `table td, table th { padding: 1px 2px !important; }
+       hr, .print-root > div { margin-top: 4px !important; margin-bottom: 4px !important; }
+       .print-root { padding: 0 2px !important; }`
+    : '';
   return `
-    @page { size: ${pageSize} ${orientation}; margin: ${margin}mm; }
-    body { font-family: 'Courier New', Courier, monospace; color: #000; padding: 0; font-size: ${fontSize}px; line-height: 1.3; width: ${printableWidth}; max-width: 100%; filter: contrast(${density}%); }
+    @page { size: ${pageSize} ${orientation}; margin: ${compactMargin}mm; }
+    body { font-family: 'Courier New', Courier, monospace; color: #000; padding: ${compactPadding}; font-size: ${compactFontSize}px; line-height: ${compactLineHeight}; width: ${printableWidth}; max-width: 100%; filter: contrast(${density}%); }
     @media print { body { padding: 0; } }
+    ${compactSpacing}
   `;
 };
 

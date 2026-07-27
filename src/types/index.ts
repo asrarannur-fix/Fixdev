@@ -81,6 +81,7 @@ export interface TenantSettings {
     cut?: boolean;
     reprintPolicy?: 'allow' | 'reason_required' | 'deny';
     reprintCopyCap?: number;
+    thermalCompact?: boolean;
     documentProfiles?: Record<string, Record<string, unknown>>;
     printQrCode?: boolean;
     printHeaderLogo?: boolean;

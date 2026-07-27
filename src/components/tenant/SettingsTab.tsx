@@ -677,6 +677,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     termsAndConditionsText,
                     termsRentalText,
                     termsSalesText,
+                    apiFetch,
                   }}
                 />
               )}
