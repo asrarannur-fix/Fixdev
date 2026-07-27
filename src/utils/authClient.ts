@@ -6,6 +6,7 @@
  */
 import { safeLocalStorage } from './safeStorage';
 import { toSnakeCase } from './saasUtils';
+import { readJsonResponse } from './apiResponse';
 
 const localStorage = safeLocalStorage;
 
@@ -40,13 +41,13 @@ export const getAuthClient = () => {
     auth: {
       signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
         try {
-          const res = await fetch(`${getBaseUrl()}/api/auth/login`, {
+          const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
           });
-          const data = await res.json();
-          if (!res.ok || !data.user) {
+          const data = await readJsonResponse<{ user?: any; error?: string }>(response, 'Auth Login');
+          if (!data.user) {
             return { data: null, error: { message: data.error || 'Login failed' } };
           }
           return {
@@ -69,7 +70,7 @@ export const getAuthClient = () => {
 
       signUp: async ({ email, password, options }: any) => {
         try {
-          const res = await fetch(`${getBaseUrl()}/api/onboarding/register`, {
+          const response = await fetch(`${getBaseUrl()}/api/onboarding/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -79,8 +80,8 @@ export const getAuthClient = () => {
               shopName: options?.data?.name || 'My Shop',
             }),
           });
-          const data = await res.json();
-          if (!res.ok)
+          const data = await readJsonResponse<{ owner?: any; message?: string; error?: string }>(response, 'Signup');
+          if (!data.owner)
             return {
               data: null,
               error: { message: data.message || data.error || 'Signup failed' },
@@ -101,13 +102,10 @@ export const getAuthClient = () => {
 
       getSession: async () => {
         try {
-          const res = await fetch(`${getBaseUrl()}/api/auth/profile`, {
+          const response = await fetch(`${getBaseUrl()}/api/auth/profile`, {
             credentials: 'include',
           });
-          if (!res.ok) {
-            return { data: { session: null }, error: null };
-          }
-          const profile = await res.json();
+          const profile = await readJsonResponse<any>(response, 'Profile');
           return {
             data: {
               session: {
@@ -125,11 +123,8 @@ export const getAuthClient = () => {
 
       getUser: async () => {
         try {
-          const res = await fetch(`${getBaseUrl()}/api/auth/profile`, { credentials: 'include' });
-          if (!res.ok) {
-            return { data: { user: null }, error: null };
-          }
-          const profile = await res.json();
+          const response = await fetch(`${getBaseUrl()}/api/auth/profile`, { credentials: 'include' });
+          const profile = await readJsonResponse<any>(response, 'User Profile');
           return { data: { user: profile }, error: null };
         } catch {
           return { data: { user: null }, error: null };

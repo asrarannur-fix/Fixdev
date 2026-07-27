@@ -6,6 +6,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSaaS } from '../context/SaaSContext';
+import { readJsonResponse } from '../utils/apiResponse';
 import { ServiceStatus, CustomerSegment, PaymentMethod, Customer } from '../types';
 import jsQR from 'jsqr';
 import { motion, AnimatePresence } from 'motion/react';
@@ -268,9 +269,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
 
     // Fallback search online on server
     try {
-      const res = await fetch(`/api/service-tracking/status/${trimmed}`);
-      if (!res.ok) throw new Error('Tiket tidak ditemukan di server');
-      const data = await res.json();
+      const response = await fetch(`/api/service-tracking/status/${trimmed}`);
+      const data = await readJsonResponse<{ id?: string; ticketNo: string; deviceName: string; deviceBrandModel: string; status: string; customerApprovalStatus: string; estimatedCost: number; downPayment: number; timeline: any; customerNameObscured: string; warrantyMonths: number; warrantyEndsAt: Date }>(response, 'Service Tracking API');
       setSearchedTicket({
         id: data.id || 'temp-srv-id',
         ticketNo: data.ticketNo,
