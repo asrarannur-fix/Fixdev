@@ -177,8 +177,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             <ClipboardList className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-slate-800 leading-tight">Penerimaan Servis</h2>
-            <p className="text-[11px] text-slate-500">Daftarkan unit pelanggan & buat tiket servis</p>
+            <span className="text-sm font-bold text-slate-800">Penerimaan Servis</span>
           </div>
           <div className="hidden sm:flex items-center gap-1.5">
             {['Pelanggan', 'Kondisi', 'Penugasan'].map((step, i) => (
