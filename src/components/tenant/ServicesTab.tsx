@@ -295,7 +295,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [selectedCaptureCategory, setSelectedCaptureCategory] = useState<string>('Bodi Luar');
   // Outsourcing states
-  const [receptionErrors, setReceptionErrors] = useState<string[]>([]);
+  const [receptionErrors, setReceptionErrors] = useState<Record<string, string>>({});
   const [isSubmittingReception, setIsSubmittingReception] = useState<boolean>(false);
   const [previewReceptionTicket, setPreviewReceptionTicket] = useState<any | null>(null);
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState<boolean>(false);

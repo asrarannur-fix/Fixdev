@@ -32,33 +32,37 @@ export function isValidIndonesianPhone(value: string): boolean {
 }
 
 export function validateServiceReceptionForm(input: ServiceReceptionValidationInput): string[] {
-  const errors: string[] = [];
+  return Object.values(validateServiceReceptionFields(input));
+}
+
+export function validateServiceReceptionFields(input: ServiceReceptionValidationInput): Record<string, string> {
+  const errors: Record<string, string> = {};
 
   if (!input.customerId) {
     if (!input.customerName?.trim()) {
-      errors.push("Nama pelanggan baru wajib diisi.");
+      errors.customerName = "Nama pelanggan baru wajib diisi.";
     }
     if (!input.customerPhone?.trim()) {
-      errors.push("Nomor WhatsApp pelanggan baru wajib diisi.");
+      errors.customerPhone = "Nomor WhatsApp pelanggan baru wajib diisi.";
     } else if (!isValidIndonesianPhone(input.customerPhone)) {
-      errors.push("Nomor WhatsApp tidak valid. Gunakan nomor Indonesia aktif, misalnya 081234567890.");
+      errors.customerPhone = "Nomor WhatsApp tidak valid. Gunakan nomor Indonesia aktif, misalnya 081234567890.";
     }
   }
 
   if (!input.deviceName?.trim()) {
-    errors.push("Nama perangkat wajib diisi.");
+    errors.deviceName = "Nama perangkat wajib diisi.";
   }
 
   if (!input.complaint?.trim()) {
-    errors.push("Keluhan kerusakan wajib diisi.");
+    errors.complaint = "Keluhan kerusakan wajib diisi.";
   }
 
   if (input.isOutsourced) {
     if (!input.outsourcedVendor?.trim()) {
-      errors.push("Isi nama vendor rekanan jika unit dikirim ke pihak luar.");
+      errors.outsourcedVendor = "Isi nama vendor rekanan jika unit dikirim ke pihak luar.";
     }
     if (!input.outsourcingCost || Number(input.outsourcingCost) <= 0) {
-      errors.push("Isi estimasi biaya vendor jika unit dikirim ke pihak luar.");
+      errors.outsourcingCost = "Isi estimasi biaya vendor jika unit dikirim ke pihak luar.";
     }
   }
 

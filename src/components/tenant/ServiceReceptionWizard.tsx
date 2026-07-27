@@ -155,6 +155,15 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     isSubmittingReception,
     showToast,
   } = props;
+
+  const fieldError = (k: string): string | undefined => receptionErrors?.[k];
+  const fieldBorder = (k: string) =>
+    fieldError(k) ? 'border-red-400 focus:ring-red-300' : 'border-slate-200 focus:ring-accent/30';
+  const FieldError = ({ name }: { name: string }) =>
+    fieldError(name) ? (
+      <p className="text-[10px] font-medium text-rose-600 mt-1">{fieldError(name)}</p>
+    ) : null;
+
   return (
     <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 rounded-3xl shadow-sm ring-1 ring-slate-100 overflow-hidden">
       <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/70 backdrop-blur">
@@ -177,7 +186,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
         </div>
       </div>
       <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-6 space-y-6">
-        {receptionErrors.length > 0 && (
+        {Object.keys(receptionErrors).length > 0 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">
               Data wajib belum lengkap
@@ -335,8 +344,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                           value={newSrvCustName}
                           onChange={(e) => setNewSrvCustName(e.target.value)}
                           placeholder="Nama lengkap"
-                          className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
+                          className={`w-full text-xs px-3 py-2 ${fieldBorder('customerName')} rounded-lg outline-none focus:border-accent`}
                         />
+                        <FieldError name="customerName" />
                       </div>
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -350,8 +360,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                             setNewSrvCustPhone(normalizeIndonesianPhone(newSrvCustPhone))
                           }
                           placeholder="081234567890"
-                          className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent font-mono"
+                          className={`w-full text-xs px-3 py-2 ${fieldBorder('customerPhone')} rounded-lg outline-none focus:border-accent font-mono`}
                         />
+                        <FieldError name="customerPhone" />
                       </div>
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -439,9 +450,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   placeholder="Asus ROG GL503"
                   value={newSrvDevice}
                   onChange={(e) => setNewSrvDevice(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
+                  className={`w-full text-xs px-3 py-2 ${fieldBorder('deviceName')} rounded-lg outline-none focus:border-accent transition-all`}
                   required
                 />
+                <FieldError name="deviceName" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -598,9 +610,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 placeholder="cth: Layar bergaris horizontal setelah terjatuh dari meja."
                 value={newSrvComplaint}
                 onChange={(e) => setNewSrvComplaint(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
+                className={`w-full text-xs px-3 py-2 ${fieldBorder('complaint')} rounded-lg outline-none focus:border-accent transition-all`}
                 required
               />
+              <FieldError name="complaint" />
             </div>
 
             {/* Dynamic Configuration Engine: Device Category Specification Fields */}

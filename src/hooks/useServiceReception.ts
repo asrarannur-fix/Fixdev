@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   normalizeIndonesianPhone,
   validateServiceReceptionForm,
+  validateServiceReceptionFields,
   isValidIndonesianPhone,
 } from '../utils/serviceReceptionUtils';
 import { CATEGORY_CONFIGS } from '../config/categoryConfigs';
@@ -17,7 +18,7 @@ interface UseServiceReceptionDeps {
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   showNewSrvCustForm: boolean;
   setShowNewSrvCustForm: (v: boolean) => void;
-  setReceptionErrors: (v: string[]) => void;
+  setReceptionErrors: (v: Record<string, string>) => void;
   setIsSubmittingReception: (v: boolean) => void;
   setJustCreatedTicket: (v: any) => void;
   setPreviewReceptionTicket: (v: any) => void;
@@ -213,7 +214,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     e.preventDefault();
     const newCustomerName = newSrvCustName.trim();
     const newCustomerPhone = normalizeIndonesianPhone(newSrvCustPhone);
-    const errors = validateServiceReceptionForm({
+    const errors = validateServiceReceptionFields({
       customerId: newSrvCustomer || undefined,
       customerName: newCustomerName,
       customerPhone: newCustomerPhone,
@@ -225,7 +226,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     });
 
     setReceptionErrors(errors);
-    if (errors.length > 0) {
+    if (Object.keys(errors).length > 0) {
       showToast('Harap lengkapi data wajib sebelum mendaftarkan unit.', 'error');
       requestAnimationFrame(() => {
         receptionFormRef.current
@@ -334,7 +335,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       const createdTicket = await addServiceTicket(newTicket);
       setJustCreatedTicket(createdTicket);
       setPreviewReceptionTicket(createdTicket);
-      setReceptionErrors([]);
+      setReceptionErrors({});
       setNewSrvCustomer('');
       setShowNewSrvCustForm(false);
       setNewSrvCustName('');
@@ -373,7 +374,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       setActiveSubTab('list');
     } catch (error: any) {
       const message = error?.message || 'Gagal menyimpan penerimaan unit ke server.';
-      setReceptionErrors([message]);
+      setReceptionErrors({ form: message });
       showToast(message, 'error');
     } finally {
       setIsSubmittingReception(false);
