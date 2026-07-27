@@ -30,15 +30,8 @@ const canTransition = (from: ServiceStatus, to: ServiceStatus): boolean =>
 
 export { SERVICE_TRANSITIONS, canTransition };
 
-const WORKFLOW_STEPS = [
-  { status: ServiceStatus.DIAGNOSA, label: 'Diagnosa' },
-  { status: ServiceStatus.MENUGGU_APPROVAL, label: 'Menunggu Persetujuan' },
-  { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan' },
-  { status: ServiceStatus.QC, label: 'QC/Testing' },
-  { status: ServiceStatus.SELESAI, label: 'Siap Diambil' },
-  { status: ServiceStatus.SIAP_DIAMBIL, label: 'Siap Diambil' },
-  { status: ServiceStatus.DIAMBIL, label: 'Diambil' },
-];
+// Workflow steps imported from domain layer
+const { WORKFLOW_STEPS } = require('../../../domain/serviceWorkflow');
 
 export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
   ticket,

@@ -126,3 +126,70 @@ export const SERVICE_TERMINAL_STATUSES = new Set(
 
 export const canServiceTransition = (from: string, to: string) =>
   SERVICE_TRANSITIONS[from as ServiceStatus]?.includes(to as ServiceStatus) ?? false;
+
+
+// Workflow steps for ServiceTicketActions component
+export const WORKFLOW_STEPS = [
+  { status: ServiceStatus.DIAGNOSA, label: 'Diagnosa' },
+  { status: ServiceStatus.MENUGGU_APPROVAL, label: 'Menunggu Persetujuan' },
+  { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan' },
+  { status: ServiceStatus.QC, label: 'QC/Testing' },
+  { status: ServiceStatus.SELESAI, label: 'Siap Diambil' },
+  { status: ServiceStatus.SIAP_DIAMBIL, label: 'Siap Diambil' },
+  { status: ServiceStatus.DIAMBIL, label: 'Diambil' },
+];
+
+// Next step guidance banner for ServiceDetailModal
+export const NEXT_STEP: Record<
+  ServiceStatus,
+  { label: string; hint: string }
+> = {
+  [ServiceStatus.DITERIMA]: {
+    label: 'Isi Diagnosa & Estimasi',
+    hint: 'Buka bagian "Diagnosa Teknis", tulis hasil & estimasi biaya, lalu simpan.',
+  },
+  [ServiceStatus.ANTRIAN]: {
+    label: 'Isi Diagnosa & Estimasi',
+    hint: 'Buka bagian "Diagnosa Teknis", tulis hasil & estimasi biaya, lalu simpan.',
+  },
+  [ServiceStatus.DIAGNOSA]: {
+    label: 'Kirim Estimasi ke Pelanggan',
+    hint: 'Gunakan "Kirim Estimasi via WhatsApp" agar pelanggan bisa menyetujui.',
+  },
+  [ServiceStatus.ESTIMATE_PENDING]: {
+    label: 'Persetujuan Pelanggan',
+    hint: 'Tunggu pelanggan menyetujui estimasi (link WhatsApp) lalu klik "Setujui Digital".',
+  },
+  [ServiceStatus.MENUGGU_APPROVAL]: {
+    label: 'Persetujuan Pelanggan',
+    hint: 'Tunggu pelanggan menyetujui estimasi (link WhatsApp) lalu klik "Setujui Digital".',
+  },
+  [ServiceStatus.SEDANG_DIKERJAKAN]: {
+    label: 'Proses Perbaikan',
+    hint: 'Gunakan "Pusat Kendali Teknisi" untuk spare part / biaya tambahan.',
+  },
+  [ServiceStatus.REWORK]: {
+    label: 'Proses Perbaikan (Rework)',
+    hint: 'Lanjutkan perbaikan pada unit yang dikembalikan.',
+  },
+  [ServiceStatus.MENUGGU_SPAREPART]: {
+    label: 'Terima Sparepart',
+    hint: 'Setelah spare part tiba, lanjutkan ke proses perbaikan.',
+  },
+  [ServiceStatus.QC]: {
+    label: 'Lakukan QC / Testing',
+    hint: 'Klik "Selesaikan QC" dan isi checklist pengujian.',
+  },
+  [ServiceStatus.SELESAI]: {
+    label: 'Serah Terima (Handover)',
+    hint: 'Klik "Serah Terima Unit" untuk menyelesaikan servis.',
+  },
+  [ServiceStatus.SIAP_DIAMBIL]: {
+    label: 'Unit Siap Diambil',
+    hint: 'Customer dapat mengambil unit setelah pembayaran selesai.',
+  },
+  [ServiceStatus.DIAMBIL]: {
+    label: 'Unit Diambil',
+    hint: 'Unit berhasil diambil oleh customer. Servis selesai.',
+  },
+};
