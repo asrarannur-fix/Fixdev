@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { Badge } from '../ui/Badge';
-import { DocumentPrintouts } from './services/DocumentPrintouts';
 import { ServiceModals } from './ServiceModals';
 import { ServiceDetailModal } from './ServiceDetailModal';
 import { getStorageLocations } from './StorageLocationManager';
 import { buildServiceReceptionPreview } from '../../utils/serviceReceptionUtils';
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from '../../types';
+import { SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../domain/serviceWorkflow';
 import {
   Building2,
   Sliders,
@@ -230,18 +230,7 @@ export const ServiceList: React.FC<any> = (props) => {
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const finalStatuses = new Set([
-          ServiceStatus.SELESAI,
-          ServiceStatus.DIAMBIL,
-          ServiceStatus.DIBATALKAN,
-          ServiceStatus.KLAIM_GARANSI,
-          ServiceStatus.TIDAK_BISA_DIPERBAIKI,
-          ServiceStatus.CUSTOMER_TIDAK_MERESPON,
-          ServiceStatus.BARANG_TIDAK_DIAMBIL,
-          ServiceStatus.RUSAK,
-          ServiceStatus.APPROVAL_DITOLAK,
-        ]);
-        const active = tenantServices.filter((s) => !finalStatuses.has(s.status));
+        const active = tenantServices.filter((s) => !SERVICE_TERMINAL_STATUSES.has(s.status));
         const baruHariIni = tenantServices.filter((s) => {
           const d = s.createdAt ? new Date(s.createdAt) : null;
           return d && d >= todayStart;
@@ -264,7 +253,7 @@ export const ServiceList: React.FC<any> = (props) => {
         ).length;
         const terlambat = tenantServices.filter((s) => {
           const est = s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate) : null;
-          return est && est < now && !finalStatuses.has(s.status);
+          return est && est < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
         }).length;
         const totalEstimasiBulanIni = Math.round(
           tenantServices
@@ -486,6 +475,18 @@ export const ServiceList: React.FC<any> = (props) => {
             color:
               'border-slate-300 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800/40',
           },
+          ...[
+            ServiceStatus.MENUGGU_SPAREPART,
+            ServiceStatus.DIKIRIM_KE_VENDOR,
+            ServiceStatus.QC,
+            ServiceStatus.MENUGGU_PEMBAYARAN,
+            ServiceStatus.SIAP_DIAMBIL,
+          ].map((status) => ({
+            label: SERVICE_STATUS_META[status].label,
+            filter: status,
+            count: tenantServices.filter((s) => s.status === status).length,
+            color: 'border-indigo-200 text-indigo-800 bg-indigo-50/30',
+          })),
         ]
           .filter((card) => card.label === 'Semua Unit' || card.count > 0)
           .map((card) => (
@@ -508,7 +509,8 @@ export const ServiceList: React.FC<any> = (props) => {
           <div className="relative flex-1 flex items-center gap-2">
             <input
               type="text"
-              placeholder="Cari tiket, nama, device..."
+              aria-label="Cari tiket servis"
+              placeholder="Cari tiket, nama, perangkat..."
               value={srvSearchQuery}
               onChange={(e) => setSrvSearchQuery(e.target.value)}
               className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg outline-none focus:border-accent dark:focus:border-accent bg-white dark:bg-zinc-900"
@@ -547,9 +549,15 @@ export const ServiceList: React.FC<any> = (props) => {
             .filter((s) => {
               const q = srvSearchQuery.toLowerCase();
               const matchesQuery =
-                s.ticketNo.toLowerCase().includes(q) ||
-                s.deviceName.toLowerCase().includes(q) ||
-                (s.deviceBrandModel && s.deviceBrandModel.toLowerCase().includes(q)) ||
+                String(s.ticketNo || '')
+                  .toLowerCase()
+                  .includes(q) ||
+                String(s.deviceName || '')
+                  .toLowerCase()
+                  .includes(q) ||
+                String(s.deviceBrandModel || '')
+                  .toLowerCase()
+                  .includes(q) ||
                 (customers.find((c) => c.id === s.customerId)?.name || '')
                   .toLowerCase()
                   .includes(q);
@@ -569,34 +577,22 @@ export const ServiceList: React.FC<any> = (props) => {
               const customer = customers.find((c) => c.id === s.customerId);
               const technician = employees.find((e) => e.id === s.assignedTechId);
 
-              // Style Status Badges
               const getStatusBadge = (status: ServiceStatus) => {
-                switch (status) {
-                  case ServiceStatus.DITERIMA:
-                  case ServiceStatus.ANTRIAN:
-                    return 'bg-slate-100 text-slate-800 border-slate-200';
-                  case ServiceStatus.DIAGNOSA:
-                    return 'bg-amber-100 text-amber-800 border-amber-200';
-                  case ServiceStatus.MENUGGU_APPROVAL:
-                    return 'bg-sky-100 text-sky-800 border-sky-200';
-                  case ServiceStatus.SEDANG_DIKERJAKAN:
-                    return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-                  case ServiceStatus.QC:
-                    return 'bg-teal-100 text-teal-800 border-teal-200';
-                  case ServiceStatus.SELESAI:
-                  case ServiceStatus.SIAP_DIAMBIL:
-                    return 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold';
-                  case ServiceStatus.DIAMBIL:
-                    return 'bg-slate-100 text-slate-500 border-slate-200';
-                  case ServiceStatus.REWORK:
-                    return 'bg-orange-100 text-orange-800 border-orange-200';
-                  case ServiceStatus.MENUGGU_SPAREPART:
-                    return 'bg-purple-100 text-purple-800 border-purple-200';
-                  case ServiceStatus.DIKIRIM_KE_VENDOR:
-                    return 'bg-pink-100 text-pink-800 border-pink-200';
-                  default:
-                    return 'bg-slate-100 text-slate-800 border-slate-200';
-                }
+                const tone = SERVICE_STATUS_META[status]?.tone;
+                const tones: Record<string, string> = {
+                  slate: 'bg-slate-100 text-slate-800 border-slate-200',
+                  sky: 'bg-sky-100 text-sky-800 border-sky-200',
+                  blue: 'bg-blue-100 text-blue-800 border-blue-200',
+                  amber: 'bg-amber-100 text-amber-800 border-amber-200',
+                  orange: 'bg-orange-100 text-orange-800 border-orange-200',
+                  indigo: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+                  teal: 'bg-teal-100 text-teal-800 border-teal-200',
+                  emerald: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                  violet: 'bg-purple-100 text-purple-800 border-purple-200',
+                  pink: 'bg-pink-100 text-pink-800 border-pink-200',
+                  rose: 'bg-rose-100 text-rose-800 border-rose-200',
+                };
+                return tones[tone || 'slate'] || tones.slate;
               };
 
               const statusRail =
@@ -618,10 +614,20 @@ export const ServiceList: React.FC<any> = (props) => {
               return (
                 <div
                   key={s.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     setViewingServiceTicketId(s.id);
                     setManualDiagNotes(s.techDiagnosis || '');
                     setManualDiagCost(String(Number(s.estimatedCost) || 0));
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setViewingServiceTicketId(s.id);
+                      setManualDiagNotes(s.techDiagnosis || '');
+                      setManualDiagCost(String(Number(s.estimatedCost) || 0));
+                    }
                   }}
                   className={`group relative bg-white dark:bg-zinc-900 rounded-2xl border border-l-[4px] ${statusRail} border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer select-none ${
                     viewingServiceTicketId === s.id
@@ -713,17 +719,7 @@ export const ServiceList: React.FC<any> = (props) => {
                       <span
                         className={`px-2 py-0.5 text-[8px] font-bold rounded-md border uppercase font-mono tracking-wide ${getStatusBadge(s.status)}`}
                       >
-                        {s.status === ServiceStatus.DITERIMA
-                          ? 'Baru'
-                          : s.status === ServiceStatus.MENUGGU_APPROVAL
-                            ? 'Pending'
-                            : s.status === ServiceStatus.SEDANG_DIKERJAKAN
-                              ? 'Kerja'
-                              : s.status === ServiceStatus.SIAP_DIAMBIL
-                                ? 'Ambil'
-                                : s.status === ServiceStatus.DIKIRIM_KE_VENDOR
-                                  ? 'Vendor'
-                                  : s.status}
+                        {SERVICE_STATUS_META[s.status]?.label || s.status}
                       </span>
                       <span className="font-bold font-mono text-[10px] text-slate-700 dark:text-zinc-300 tabular-nums">
                         Rp{Number(s.estimatedCost || 0).toLocaleString('id-ID')}
@@ -784,22 +780,6 @@ export const ServiceList: React.FC<any> = (props) => {
       )}
 
       <ServiceDetailModal {...props} />
-      <DocumentPrintouts
-        showSpkPrintout={showSpkPrintout}
-        setShowSpkPrintout={setShowSpkPrintout}
-        showInvoicePrintout={showInvoicePrintout}
-        setShowInvoicePrintout={setShowInvoicePrintout}
-        showProvisionalQuote={showProvisionalQuote}
-        setShowProvisionalQuote={setShowProvisionalQuote}
-        showWarrantyPrintout={showWarrantyPrintout}
-        setShowWarrantyPrintout={setShowWarrantyPrintout}
-        tenantServices={tenantServices}
-        customers={customers}
-        employees={employees}
-        currentUser={currentUser}
-        showToast={showToast}
-        printConfig={tenantObj?.settings?.printConfig}
-      />
       <ServiceModals {...props} />
     </div>
   );

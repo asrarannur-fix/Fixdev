@@ -1,6 +1,16 @@
 # Changelog
 
 ## 27 Juli 2026
+- Konsolidasi manajemen servis menghapus renderer print ganda, launcher part/tambahan biaya ganda, kalkulasi estimasi lokal stale setelah reservasi/batal part, serta autosave catatan teknisi per karakter.
+- Timer kerja dan catatan teknisi kini memakai endpoint metadata workflow; fallback offline menunggu update selesai agar kontrak mutasi konsisten.
+- File terkait: `src/components/tenant/ServiceList.tsx`, `src/components/tenant/ServiceDetailModal.tsx`, `src/context/SaaSContext.tsx`.
+
+## 27 Juli 2026
+- Manajemen servis operasional kini membatasi tiket sesuai tenant-cabang aktif, memakai metadata status tunggal pada backend dan frontend, menyediakan jalur exception operasional, serta mencegah pilihan status manual yang tidak sah.
+- Daftar dan detail servis memakai label status konsisten, pencarian aman terhadap data kosong, akses keyboard pada kartu tiket, lock diagnosis/terminal, dan kegagalan mutasi diteruskan agar UI tidak menyatakan sukses palsu.
+- File terkait: `src/domain/serviceWorkflow.ts`, `src/components/tenant/ServiceList.tsx`, `src/components/tenant/ServicesTab.tsx`, `src/components/tenant/ServiceDetailModal.tsx`, `src/components/tenant/services/ServiceTicketActions.tsx`, `src/components/tenant/services/ServiceTicketHeader.tsx`, `src/context/SaaSContext.tsx`, `src/server/controllers/serviceWorkflow.controller.ts`, `tests/service-workflow.test.ts`.
+
+## 27 Juli 2026
 - Audit lanjutan alur servis memperbaiki tombol masuk QC agar benar-benar mentransisikan status, validasi gagal QC, approval panel untuk status `MENUGGU_APPROVAL`, penantian request approval, serta reset state QC dan handover antartiket.
 - Handover kini menyimpan part yang benar-benar dikonsumsi, mewajibkan checklist serah-terima di server, memvalidasi termin `TEMPO`, dan memakai sisa tagihan setelah DP pada UI.
 - Metadata kerja memvalidasi teknisi cabang, rentang waktu perbaikan, jumlah part integer, dan mengarahkan assignment/lokasi penyimpanan melalui endpoint workflow.

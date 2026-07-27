@@ -153,7 +153,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const { confirm: showConfirm } = useConfirm();
   const activeTenantId = currentTenantId || contextTenantId;
   const tenantObj = tenants.find((t: Tenant) => t.id === activeTenantId);
-  const serviceTickets = services;
+  const serviceTickets = services.filter(
+    (service) => service.tenantId === activeTenantId && service.branchId === currentBranchId
+  );
   const triggers = [] as any[];
 
   const currentUserPermissions = useMemo(() => {
@@ -277,6 +279,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
       );
     } catch (error: any) {
       showToast(error?.message || 'Gagal memproses persetujuan estimasi.', 'error');
+      throw error;
     }
   };
   const updateServiceStatus = async (ticketId: string, status: ServiceStatus, note: string) => {
@@ -284,6 +287,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
       await updateServiceStatusContext(ticketId, status, note);
     } catch (error: any) {
       showToast(error?.message || 'Gagal memperbarui status servis.', 'error');
+      throw error;
     }
   };
   // Camera capture states and refs
@@ -414,7 +418,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     setAutoAssignReason,
   });
 
-  const tenantServices = serviceTickets.filter((s: any) => s.tenantId === activeTenantId);
+  const tenantServices = serviceTickets;
   const selectedReceptionCustomer = customers.find((customer) => customer.id === newSrvCustomer);
   const receptionProgress = [
     Boolean(newSrvCustomer || (newSrvCustName.trim() && isValidIndonesianPhone(newSrvCustPhone))),

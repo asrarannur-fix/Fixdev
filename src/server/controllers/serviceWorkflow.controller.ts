@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { dbTransaction, dbQuery } from '../../lib/db.js';
 import { ensureAccount, paymentDebitAccountCode } from '../lib/coa.js';
 import type { WhatsAppTemplate } from '../../types/index.js';
+import {
+  SERVICE_TRANSITIONS as DOMAIN_SERVICE_TRANSITIONS,
+  canServiceTransition,
+} from '../../domain/serviceWorkflow.js';
+
+export const SERVICE_TRANSITIONS: Record<string, string[]> = DOMAIN_SERVICE_TRANSITIONS;
 
 // Rate limiting: track last transition time per ticket
 const ticketTransitionTimes: Map<string, number> = new Map();
@@ -18,27 +24,11 @@ function checkTransitionCooldown(ticketId: string): { ok: boolean; remainingMs?:
   return { ok: true };
 }
 
-export const SERVICE_TRANSITIONS: Record<string, string[]> = {
-  DITERIMA: ['ANTRIAN', 'DIAGNOSA', 'DIBATALKAN'],
-  ANTRIAN: ['DIAGNOSA', 'DIBATALKAN'],
-  DIAGNOSA: ['MENUGGU_APPROVAL', 'TIDAK_BISA_DIPERBAIKI', 'DIBATALKAN'],
-  MENUGGU_APPROVAL: ['SEDANG_DIKERJAKAN', 'APPROVAL_DITOLAK', 'DIBATALKAN'],
-  ESTIMATE_PENDING: ['SEDANG_DIKERJAKAN', 'APPROVAL_DITOLAK'],
-  APPROVAL_DITOLAK: ['MENUGGU_APPROVAL', 'DIBATALKAN'],
-  MENUGGU_SPAREPART: ['SEDANG_DIKERJAKAN', 'DIBATALKAN'],
-  SEDANG_DIKERJAKAN: ['QC', 'MENUGGU_SPAREPART', 'TIDAK_BISA_DIPERBAIKI', 'DIKIRIM_KE_VENDOR'],
-  DIKIRIM_KE_VENDOR: ['SEDANG_DIKERJAKAN', 'QC'],
-  TIDAK_BISA_DIPERBAIKI: ['SELESAI', 'DIBATALKAN', 'KLAIM_GARANSI'],
-  REWORK: ['SEDANG_DIKERJAKAN', 'QC'],
-  QC: ['SELESAI', 'REWORK'],
-  SELESAI: ['MENUGGU_PEMBAYARAN', 'SIAP_DIAMBIL', 'DIAMBIL', 'KLAIM_GARANSI'],
-  KLAIM_GARANSI: ['SELESAI', 'DIBATALKAN'],
-  MENUGGU_PEMBAYARAN: ['SIAP_DIAMBIL', 'DIAMBIL'],
-  SIAP_DIAMBIL: ['DIAMBIL'],
-};
-
 export function canTransition(from: string, to: string): boolean {
-  return (SERVICE_TRANSITIONS[from] || []).includes(to);
+  return canServiceTransition(
+    from as keyof typeof SERVICE_TRANSITIONS,
+    to as keyof typeof SERVICE_TRANSITIONS
+  );
 }
 
 export function calculateServiceInvoice(

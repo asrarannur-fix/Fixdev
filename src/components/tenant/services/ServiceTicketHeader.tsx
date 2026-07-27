@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Badge } from '../../ui/Badge';
 import { ServiceStatus, UserRole } from '../../../types';
+import { SERVICE_STATUS_META } from '../../../domain/serviceWorkflow';
 import { Wrench, Printer, FileText, ShieldCheck, X } from 'lucide-react';
 
 interface ServiceTicketHeaderProps {
@@ -25,7 +26,7 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
   onClose,
 }) => {
   return (
-    <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+    <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-3">
         <span className="p-2 bg-accent-lighter rounded-lg text-accent">
           <Wrench className="w-5 h-5" />
@@ -38,7 +39,10 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
             <span className="font-mono text-xs font-bold text-accent">#{ticket.ticketNo}</span>
           </div>
           <p className="text-[10px] text-slate-400">
-            Status Aktif: <strong className="text-accent">{ticket.status}</strong>
+            Status Aktif:{' '}
+            <strong className="text-accent">
+              {SERVICE_STATUS_META[ticket.status as ServiceStatus]?.label || ticket.status}
+            </strong>
           </p>
         </div>
       </div>
@@ -67,7 +71,8 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
         )}
         <button
           onClick={onClose}
-          className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer transition-all"
+          aria-label="Tutup detail tiket servis"
+          className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer transition-all"
         >
           <X className="w-5 h-5" />
         </button>

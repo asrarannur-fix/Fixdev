@@ -89,6 +89,9 @@ const LOCKED_STATUSES: ServiceStatus[] = [
   ServiceStatus.DIAMBIL,
   ServiceStatus.DIBATALKAN,
   ServiceStatus.TIDAK_BISA_DIPERBAIKI,
+  ServiceStatus.CUSTOMER_TIDAK_MERESPON,
+  ServiceStatus.BARANG_TIDAK_DIAMBIL,
+  ServiceStatus.RUSAK,
 ];
 
 const hasAnyPermission = (permissions: string[], keys: string[]) =>
@@ -738,28 +741,6 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {(ticket.status === ServiceStatus.SEDANG_DIKERJAKAN ||
-                        ticket.status === ServiceStatus.REWORK) && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setPartOrderTicket(ticket)}
-                            className="px-3 py-1.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
-                          >
-                            <PackagePlus className="w-3.5 h-3.5" /> Menunggu Spare Part
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdditionalCostTicket(ticket);
-                              setAdditionalCostApprovedBy(customer?.name || '');
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
-                          >
-                            <PlusCircle className="w-3.5 h-3.5" /> Tambahan Biaya Disetujui
-                          </button>
-                        </>
-                      )}
                       {/* Timer Controls */}
                       {(() => {
                         const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
@@ -802,7 +783,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             ) : !ticket.repairStartTime ? (
                               <button
                                 onClick={() =>
-                                  updateServiceTicket(ticket.id, {
+                                  void props.patchServiceWork(ticket.id, {
                                     repairStartTime: new Date().toISOString(),
                                   })
                                 }
@@ -813,7 +794,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             ) : !ticket.repairEndTime ? (
                               <button
                                 onClick={() =>
-                                  updateServiceTicket(ticket.id, {
+                                  void props.patchServiceWork(ticket.id, {
                                     repairEndTime: new Date().toISOString(),
                                   })
                                 }
@@ -842,13 +823,21 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         </span>
                       </label>
                       <textarea
-                        value={ticket.technicianNotes || ''}
-                        onChange={(e) =>
-                          updateServiceTicket(ticket.id, {
-                            technicianNotes: e.target.value,
-                          })
-                        }
-                        placeholder="Tulis kendala teknis, pin iclude, atau catatan skema di sini..."
+                        key={ticket.id}
+                        defaultValue={ticket.technicianNotes || ''}
+                        onBlur={async (event) => {
+                          try {
+                            await props.patchServiceWork(ticket.id, {
+                              technicianNotes: event.target.value,
+                            });
+                          } catch (error: any) {
+                            showToast(
+                              error?.message || 'Gagal menyimpan catatan teknisi.',
+                              'error'
+                            );
+                          }
+                        }}
+                        placeholder="Tulis kendala teknis, PIN, atau catatan skema di sini..."
                         className="w-full h-24 p-3 text-xs border border-slate-200 rounded-xl focus:border-accent focus:ring-1 focus:ring-accent outline-none resize-none"
                       />
                     </div>
@@ -1489,176 +1478,174 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               )}
 
               {/* Grid 1: Diagnostic and Parts Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Left Workshop column: Manual Diagnostic Updates */}
-                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
-                  <h4 className="font-bold text-[11px] text-slate-700 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                    <Wrench className="w-4 h-4 text-slate-400" /> Analisa Kerusakan Teknis
-                  </h4>
+              {editableIntake && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Left Workshop column: Manual Diagnostic Updates */}
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
+                    <h4 className="font-bold text-[11px] text-slate-700 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                      <Wrench className="w-4 h-4 text-slate-400" /> Analisa Kerusakan Teknis
+                    </h4>
 
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
-                      Diagnosa Masalah Perangkat
-                    </label>
-                    <textarea
-                      rows={3}
-                      placeholder="Masukkan hasil diagnosa teknisi secara detail..."
-                      value={manualDiagNotes}
-                      onChange={(e) => setManualDiagNotes(e.target.value)}
-                      className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
-                        Estimasi Biaya Jasa Servis
+                        Diagnosa Masalah Perangkat
                       </label>
-                      <input
-                        type="number"
-                        placeholder="Rp..."
-                        value={manualDiagCost}
-                        onChange={(e) => setManualDiagCost(e.target.value)}
+                      <textarea
+                        rows={3}
+                        placeholder="Masukkan hasil diagnosa teknisi secara detail..."
+                        value={manualDiagNotes}
+                        onChange={(e) => setManualDiagNotes(e.target.value)}
                         className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                       />
                     </div>
-                    <div className="flex items-end">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const estCost = Number(manualDiagCost || 0);
-                          if (!manualDiagNotes.trim()) {
-                            showToast('Catatan diagnosis wajib diisi.', 'error');
-                            return;
-                          }
-                          try {
-                            await addServiceDiagnostic(
-                              ticket.id,
-                              manualDiagNotes,
-                              estCost,
-                              ticket.partsRequested || ticket.partsUsed || []
-                            );
-                            showToast(
-                              'Diagnosa teknis berhasil disimpan dan penawaran siap dikirim.',
-                              'success'
-                            );
-                            const sendingMethod =
-                              tenantObj?.settings?.waConfig?.sendingMethod || 'MANUAL';
-                            if (sendingMethod === 'MANUAL') {
-                              openManualEstimateWhatsApp(
-                                ticket,
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
+                          Estimasi Biaya Jasa Servis
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="Rp..."
+                          value={manualDiagCost}
+                          onChange={(e) => setManualDiagCost(e.target.value)}
+                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const estCost = Number(manualDiagCost || 0);
+                            if (!manualDiagNotes.trim()) {
+                              showToast('Catatan diagnosis wajib diisi.', 'error');
+                              return;
+                            }
+                            try {
+                              await addServiceDiagnostic(
+                                ticket.id,
                                 manualDiagNotes,
                                 estCost,
                                 ticket.partsRequested || ticket.partsUsed || []
                               );
-                            } else {
-                              showToast('Penawaran dimasukkan ke antrean WhatsApp API.', 'info');
+                              showToast(
+                                'Diagnosa teknis berhasil disimpan dan penawaran siap dikirim.',
+                                'success'
+                              );
+                              const sendingMethod =
+                                tenantObj?.settings?.waConfig?.sendingMethod || 'MANUAL';
+                              if (sendingMethod === 'MANUAL') {
+                                openManualEstimateWhatsApp(
+                                  ticket,
+                                  manualDiagNotes,
+                                  estCost,
+                                  ticket.partsRequested || ticket.partsUsed || []
+                                );
+                              } else {
+                                showToast('Penawaran dimasukkan ke antrean WhatsApp API.', 'info');
+                              }
+                            } catch (error: any) {
+                              showToast(error?.message || 'Gagal menyimpan diagnosis.', 'error');
                             }
-                          } catch (error: any) {
-                            showToast(error?.message || 'Gagal menyimpan diagnosis.', 'error');
-                          }
-                        }}
-                        className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
+                          }}
+                          className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
+                        >
+                          Simpan Diagnosa & Kirim Penawaran
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Workshop column: Spareparts Inventory Integration */}
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
+                    <h4 className="font-bold text-[11px] text-slate-700 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                      <Package className="w-4 h-4 text-slate-400" /> Penggantian Suku Cadang
+                      (Inventory)
+                    </h4>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
+                        Cari & Pilih Suku Cadang
+                      </label>
+                      <select
+                        value={selectedSparepartId}
+                        onChange={(e) => setSelectedSparepartId(e.target.value)}
+                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                       >
-                        Simpan Diagnosa & Kirim Penawaran
-                      </button>
+                        <option value="">-- Pilih part di stok toko --</option>
+                        {sparepartsList.map((prod) => (
+                          <option key={prod.id} value={prod.id} disabled={prod.stockQty <= 0}>
+                            {prod.name} (Stok: {prod.stockQty}) - Rp{' '}
+                            {(prod.sellPrice ?? 0).toLocaleString()}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
+                          Jumlah (Qty)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={sparepartQty}
+                          onChange={(e) => setSparepartQty(Number(e.target.value))}
+                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
+                          Serial Number (Opsional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Scan / Ketik SN LCD dll"
+                          value={sparepartSN}
+                          onChange={(e) => setSparepartSN(e.target.value)}
+                          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!selectedSparepartId) return;
+                            const partProd = products.find((p) => p.id === selectedSparepartId);
+                            if (!partProd) return;
+                            const warehouseId = Object.keys(partProd.warehouseStock || {})[0];
+                            if (!warehouseId) {
+                              showToast('Gudang spare part belum ditentukan.', 'error');
+                              return;
+                            }
+                            try {
+                              await requestServicePart(ticket.id, {
+                                productId: selectedSparepartId,
+                                warehouseId,
+                                quantity: sparepartQty,
+                                serialNumber: sparepartSN || undefined,
+                              });
+                              setSelectedSparepartId('');
+                              setSparepartQty(1);
+                              setSparepartSN('');
+                              showToast(
+                                `${partProd.name} berhasil direservasi. Stok dipotong saat handover.`,
+                                'success'
+                              );
+                            } catch (error: any) {
+                              showToast(error?.message || 'Gagal mereservasi spare part.', 'error');
+                            }
+                          }}
+                          className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
+                        >
+                          Reservasi Spare Part
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Right Workshop column: Spareparts Inventory Integration */}
-                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
-                  <h4 className="font-bold text-[11px] text-slate-700 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                    <Package className="w-4 h-4 text-slate-400" /> Penggantian Suku Cadang
-                    (Inventory)
-                  </h4>
-
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
-                      Cari & Pilih Suku Cadang
-                    </label>
-                    <select
-                      value={selectedSparepartId}
-                      onChange={(e) => setSelectedSparepartId(e.target.value)}
-                      className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
-                    >
-                      <option value="">-- Pilih part di stok toko --</option>
-                      {sparepartsList.map((prod) => (
-                        <option key={prod.id} value={prod.id} disabled={prod.stockQty <= 0}>
-                          {prod.name} (Stok: {prod.stockQty}) - Rp{' '}
-                          {(prod.sellPrice ?? 0).toLocaleString()}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
-                        Jumlah (Qty)
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={sparepartQty}
-                        onChange={(e) => setSparepartQty(Number(e.target.value))}
-                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
-                        Serial Number (Opsional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Scan / Ketik SN LCD dll"
-                        value={sparepartSN}
-                        onChange={(e) => setSparepartSN(e.target.value)}
-                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!selectedSparepartId) return;
-                          const partProd = products.find((p) => p.id === selectedSparepartId);
-                          if (!partProd) return;
-                          const warehouseId = Object.keys(partProd.warehouseStock || {})[0];
-                          if (!warehouseId) {
-                            showToast('Gudang spare part belum ditentukan.', 'error');
-                            return;
-                          }
-                          try {
-                            await requestServicePart(ticket.id, {
-                              productId: selectedSparepartId,
-                              warehouseId,
-                              quantity: sparepartQty,
-                              serialNumber: sparepartSN || undefined,
-                            });
-                            const updatedCost =
-                              (Number(ticket.estimatedCost) || 0) +
-                              (partProd.sellPrice ?? 0) * sparepartQty;
-                            setSelectedSparepartId('');
-                            setSparepartQty(1);
-                            setSparepartSN('');
-                            setManualDiagCost(String(updatedCost));
-                            showToast(
-                              `${partProd.name} berhasil direservasi. Stok dipotong saat handover.`,
-                              'success'
-                            );
-                          } catch (error: any) {
-                            showToast(error?.message || 'Gagal mereservasi spare part.', 'error');
-                          }
-                        }}
-                        className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
-                      >
-                        Reservasi Spare Part
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Section 2: Spareparts Used Ledger */}
               <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
@@ -1704,11 +1691,6 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   }
                                   try {
                                     await cancelServicePart(ticket.id, (part as any).id);
-                                    const updatedCost = Math.max(
-                                      0,
-                                      (Number(ticket.estimatedCost) || 0) - part.totalPrice
-                                    );
-                                    setManualDiagCost(String(updatedCost));
                                     showToast(`Reservasi ${part.name} dibatalkan.`, 'success');
                                   } catch (error: any) {
                                     showToast(
@@ -1751,21 +1733,35 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     </label>
                     <select
                       value={ticket.status}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const newStatus = e.target.value as ServiceStatus;
-                        updateServiceStatus(
-                          ticket.id,
-                          newStatus,
-                          `Diubah secara manual oleh operator.`
-                        );
+                        try {
+                          await updateServiceStatus(
+                            ticket.id,
+                            newStatus,
+                            'Status diperbarui melalui aksi operasional.'
+                          );
+                        } catch {
+                          return;
+                        }
                       }}
                       className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                     >
-                      {Object.values(ServiceStatus).map((st) => (
-                        <option key={st} value={st}>
-                          {st}
-                        </option>
-                      ))}
+                      <option value={ticket.status}>Status saat ini: {ticket.status}</option>
+                      {(SERVICE_TRANSITIONS[ticket.status] || [])
+                        .filter(
+                          (status) =>
+                            ![
+                              ServiceStatus.MENUGGU_PEMBAYARAN,
+                              ServiceStatus.SIAP_DIAMBIL,
+                              ServiceStatus.DIAMBIL,
+                            ].includes(status as ServiceStatus)
+                        )
+                        .map((st) => (
+                          <option key={st} value={st}>
+                            {st}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 </div>
@@ -1791,17 +1787,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         Ajukan Estimasi Biaya ke Pelanggan
                       </button>
                       <button
-                        onClick={() => {
-                          updateServiceStatus(
-                            ticket.id,
-                            ServiceStatus.ESTIMATE_PENDING,
-                            "Teknisi menandai perbaikan dengan status 'Estimate Pending' dan menerbitkan Surat Penawaran Biaya Sementara."
-                          );
-                          setShowProvisionalQuote(ticket.id);
-                        }}
+                        onClick={() => setShowProvisionalQuote(ticket.id)}
                         className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-xs"
                       >
-                        <FileText className="w-4 h-4" /> Tandai 'Estimate Pending' & Terbitkan Quote
+                        <FileText className="w-4 h-4" /> Terbitkan Quote Estimasi
                       </button>
                     </div>
                   )}

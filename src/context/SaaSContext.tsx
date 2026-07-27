@@ -2560,8 +2560,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateServiceTicket = async (id: string, updates: Partial<ServiceTicket>) => {
     const existing = services.find((s) => s.id === id);
-    if (!existing) return;
-    verifyScope(existing.tenantId);
+    if (!existing) throw new Error('Tiket servis tidak ditemukan.');
+    verifyScope(existing.tenantId, existing.branchId);
 
     const timeline = updates.timeline ? [...updates.timeline] : [...existing.timeline];
     if (updates.status && updates.status !== existing.status) {
@@ -2615,6 +2615,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       setServices((prev) => prev.map((s) => (s.id === id ? existing : s)));
       showToast('Gagal menyimpan perubahan tiket: ' + (err?.message || 'unknown error'), 'error');
+      throw err;
     }
   };
 
@@ -2940,7 +2941,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const patchServiceWork = async (id: string, updates: Record<string, any>) => {
     if (!isBackendConfigured()) {
-      updateServiceTicket(id, updates);
+      await updateServiceTicket(id, updates);
       return;
     }
     const response = await apiFetch(`/api/services/${id}/work-metadata`, {

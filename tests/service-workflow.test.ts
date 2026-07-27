@@ -7,6 +7,8 @@ import {
   canTransition,
   SERVICE_TRANSITIONS,
 } from "../src/server/controllers/serviceWorkflow.controller.ts";
+import { ServiceStatus } from "../src/types/index.ts";
+import { SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from "../src/domain/serviceWorkflow.ts";
 
 test("service workflow supports the complete happy path", () => {
   const path = ["DITERIMA", "DIAGNOSA", "MENUGGU_APPROVAL", "SEDANG_DIKERJAKAN", "QC", "SELESAI", "DIAMBIL"];
@@ -23,6 +25,25 @@ test("service workflow blocks invalid handover from reception", () => {
 test("QC can return a unit to rework and back to repair", () => {
   assert.ok(SERVICE_TRANSITIONS.QC.includes("REWORK"));
   assert.ok(SERVICE_TRANSITIONS.REWORK.includes("SEDANG_DIKERJAKAN"));
+});
+
+test("every service status has operational metadata", () => {
+  for (const status of Object.values(ServiceStatus)) {
+    assert.ok(SERVICE_STATUS_META[status], `missing metadata for ${status}`);
+  }
+});
+
+test("terminal service statuses have no outgoing transitions", () => {
+  for (const status of SERVICE_TERMINAL_STATUSES) {
+    assert.deepEqual(SERVICE_TRANSITIONS[status] || [], [], status);
+  }
+});
+
+test("operational exception paths remain reachable", () => {
+  assert.equal(canTransition("MENUGGU_APPROVAL", "CUSTOMER_TIDAK_MERESPON"), true);
+  assert.equal(canTransition("SEDANG_DIKERJAKAN", "RUSAK"), true);
+  assert.equal(canTransition("SIAP_DIAMBIL", "BARANG_TIDAK_DIAMBIL"), true);
+  assert.equal(canTransition("APPROVAL_DITOLAK", "DIAGNOSA"), true);
 });
 
 test("invoice calculation applies tax and consumes down payment", () => {
