@@ -176,6 +176,15 @@ const schemas = {
       printMode: z.enum(['browser', 'qz']).optional(),
       printerName: text(250).optional(),
       paperSize: z.enum(['thermal_58', 'thermal_80', 'a4', 'hvs_a4', 'hvs_letter']).optional(),
+      printableWidthMm: z.number().min(20).max(216).optional(),
+      printableHeightMm: z.number().min(20).max(500).optional(),
+      orientation: z.enum(['portrait', 'landscape']).optional(),
+      density: z.number().int().min(0).max(100).optional(),
+      copies: z.number().int().min(1).max(20).optional(),
+      feed: z.number().int().min(0).max(100).optional(),
+      cut: bool.optional(),
+      reprintPolicy: z.enum(['allow', 'reason_required', 'deny']).optional(),
+      reprintCopyCap: z.number().int().min(1).max(20).optional(),
       printQrCode: bool.optional(),
       printHeaderLogo: bool.optional(),
       printCustomerNotes: bool.optional(),
@@ -194,8 +203,71 @@ const schemas = {
       labelCustomText: text(1000).optional(),
       termsSalesText: z.string().max(20_000).optional(),
       termsRentalText: z.string().max(20_000).optional(),
+      documentProfiles: z
+        .record(
+          z.string().max(100),
+          z
+            .object({
+              printMode: z.enum(['browser', 'qz']).optional(),
+              printerName: text(250).optional(),
+              paperSize: z
+                .enum(['thermal_58', 'thermal_80', 'a4', 'hvs_a4', 'hvs_letter'])
+                .optional(),
+              printableWidthMm: z.number().min(20).max(216).optional(),
+              printMargin: z.number().min(0).max(100).optional(),
+              orientation: z.enum(['portrait', 'landscape']).optional(),
+              density: z.number().int().min(0).max(100).optional(),
+              copies: z.number().int().min(1).max(20).optional(),
+              feed: z.number().int().min(0).max(100).optional(),
+              cut: bool.optional(),
+              printableHeightMm: z.number().min(20).max(500).optional(),
+              reprintPolicy: z.enum(['allow', 'reason_required', 'deny']).optional(),
+              reprintCopyCap: z.number().int().min(1).max(20).optional(),
+            })
+            .strict()
+        )
+        .optional(),
       branches: z
-        .record(z.string().max(100), z.record(z.string().max(100), z.unknown()))
+        .record(
+          z.string().max(100),
+          z
+            .object({
+              printMode: z.enum(['browser', 'qz']).optional(),
+              printerName: text(250).optional(),
+              paperSize: z
+                .enum(['thermal_58', 'thermal_80', 'a4', 'hvs_a4', 'hvs_letter'])
+                .optional(),
+              printableWidthMm: z.number().min(20).max(216).optional(),
+              printMargin: z.number().min(0).max(100).optional(),
+              orientation: z.enum(['portrait', 'landscape']).optional(),
+              density: z.number().int().min(0).max(100).optional(),
+              copies: z.number().int().min(1).max(20).optional(),
+              feed: z.number().int().min(0).max(100).optional(),
+              cut: bool.optional(),
+              documentProfiles: z
+                .record(
+                  z.string().max(100),
+                  z
+                    .object({
+                      printMode: z.enum(['browser', 'qz']).optional(),
+                      printerName: text(250).optional(),
+                      paperSize: z
+                        .enum(['thermal_58', 'thermal_80', 'a4', 'hvs_a4', 'hvs_letter'])
+                        .optional(),
+                      printableWidthMm: z.number().min(20).max(216).optional(),
+                      printMargin: z.number().min(0).max(100).optional(),
+                      orientation: z.enum(['portrait', 'landscape']).optional(),
+                      density: z.number().int().min(0).max(100).optional(),
+                      copies: z.number().int().min(1).max(20).optional(),
+                      feed: z.number().int().min(0).max(100).optional(),
+                      cut: bool.optional(),
+                    })
+                    .strict()
+                )
+                .optional(),
+            })
+            .strict()
+        )
         .optional(),
     })
     .strict(),

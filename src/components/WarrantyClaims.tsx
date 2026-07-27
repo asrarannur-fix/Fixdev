@@ -147,19 +147,7 @@ export const WarrantyClaims: React.FC = () => {
   }, [tenantServices, customers, selectedCustId]);
 
   const handlePrintWarranty = (ticket: ServiceTicket) => {
-    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-    if (!printIframe) {
-      printIframe = document.createElement('iframe');
-      printIframe.id = 'print-job-frame';
-      printIframe.style.position = 'fixed';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0';
-      document.body.appendChild(printIframe);
-    }
-    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) return;
+    const printDoc = document.createElement('div');
 
     const businessName = activeTenant?.name || 'Layanan Servis';
     const customer = customers.find(
@@ -185,8 +173,7 @@ export const WarrantyClaims: React.FC = () => {
     const footerHtml = getPrintFooterHtml(printConfig, 'Keep this card as proof of warranty.');
     const termsHtml = getPrintTermsHtml(printConfig, 'general');
 
-    printDoc.open();
-    printDoc.write(`
+    printDoc.innerHTML = `
       <html>
         <head>
           <title>Warranty Card - ${safeTicketNo}</title>
@@ -210,8 +197,8 @@ export const WarrantyClaims: React.FC = () => {
           <p>Warranty Ends: ${ticket.warrantyEndsAt?.split('T')[0]}</p>
           <p>Status: VALID / REGISTERED</p>
           <div class="text-center">
-            <div class="qr" style="width:80px;height:80px;margin:10px auto;border:1px dashed #64748b;padding:8px;font-size:8px;display:flex;align-items:center;justify-content:center;">URL: ${escapeHtml(`${publicBaseUrl}/?ticket=${ticket.ticketNo || '-'}`)}</div>
-            <p style="font-size: 8px;">Buka URL untuk verifikasi status garansi</p>
+            <div class="qr" style="width:80px;height:80px;margin:10px auto;border:1px dashed #64748b;padding:8px;font-size:8px;display:flex;align-items:center;justify-content:center;">TIKET: ${safeTicketNo}</div>
+            <p style="font-size: 8px;">Gunakan nomor tiket untuk verifikasi status garansi</p>
           </div>
           <div class="hr"></div>
           <div class="text-center">
@@ -220,19 +207,23 @@ export const WarrantyClaims: React.FC = () => {
           </div>
         </body>
       </html>
-    `);
-    printDoc.close();
-    setTimeout(() => {
-      if (printIframe.contentWindow) {
-        void printJobAsync({ title: 'Warranty Claim', html: printDoc.body.innerHTML, printConfig });
+    `;
+    void printJobAsync({
+      title: 'Warranty Claim',
+      html: printDoc.innerHTML,
+      printConfig,
+      documentType: 'warranty_claim',
+      documentId: ticket.id,
+    }).then((result) => {
+      if (result.ok)
         addLog(
           'Print Warranty',
           `Mencetak kartu garansi digital untuk tiket ${ticket.ticketNo}.`,
           'SERVICE',
           'LOW'
         );
-      }
-    }, 500);
+      else showToast(result.error || 'Cetak kartu garansi gagal.', 'error');
+    });
   };
 
   // Handle Search Ticket in Tracker Tab

@@ -175,7 +175,7 @@ export const TenantDashboard = ({
     [posCart, selectedPosCust, posPaymentMethod, posAmountPaid, depositUsed, createPOSTransaction]
   );
   const handlePrintPOSReceipt = React.useCallback(
-    (tx: any) => {
+    async (tx: any) => {
       const branchName = branches.find((b) => b.id === currentBranchId)?.name || '';
       const cust = customers.find((c) => c.id === tx.customerId);
       const escapeHtml = (value: string) =>
@@ -221,9 +221,23 @@ export const TenantDashboard = ({
       ${footerHtml}
       ${termsHtml}
       </body></html>`;
-      void printJobAsync({ title: 'POS Receipt', html, printConfig });
+      const result = await printJobAsync({
+        title: 'POS Receipt',
+        html,
+        printConfig,
+        tenantId: currentTenantId,
+        branchId: currentBranchId,
+        documentType: 'pos_receipt',
+        documentId: tx.invoiceNo,
+      });
+      showToast(
+        result.ok
+          ? `Cetak dikirim (${result.transport}); hasil fisik belum terkonfirmasi.`
+          : result.error || 'Cetak gagal.',
+        result.ok ? 'success' : 'error'
+      );
     },
-    [branches, currentBranchId, customers, printConfig, showToast]
+    [branches, currentBranchId, currentTenantId, customers, printConfig, showToast]
   );
 
   // Auto-send WhatsApp notification on stock shortage events

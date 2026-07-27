@@ -62,7 +62,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   showToast,
   printConfig,
 }) => {
-  const { currentTenantId, tenants, publicBaseUrl } = useSaaS();
+  const { currentTenantId, currentBranchId, tenants, publicBaseUrl } = useSaaS();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
   const businessName = activeTenant?.name || 'Layanan Servis';
   const logoUrl = getSafePrintImageUrl(activeTenant?.branding?.logoUrl);
@@ -365,27 +365,8 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
-                      let printIframe = document.getElementById(
-                        'print-job-frame'
-                      ) as HTMLIFrameElement;
-                      if (!printIframe) {
-                        printIframe = document.createElement('iframe');
-                        printIframe.id = 'print-job-frame';
-                        printIframe.style.position = 'fixed';
-                        printIframe.style.width = '0';
-                        printIframe.style.height = '0';
-                        printIframe.style.border = 'none';
-                        printIframe.style.opacity = '0';
-                        document.body.appendChild(printIframe);
-                      }
-                      const printDoc =
-                        printIframe.contentWindow?.document || printIframe.contentDocument;
-                      if (!printDoc) {
-                        showToast('Gagal menginisialisasi modul pencetakan.', 'error');
-                        return;
-                      }
-                      printDoc.open();
-                      printDoc.write(`
+                      const printDoc = document.createElement('div');
+                      printDoc.innerHTML = `
                       <html>
                         <head>
                           <title>Invoice - ${ticket.ticketNo}</title>
@@ -500,7 +481,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                             printConfig?.printQrCode
                               ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <div class="qr-placeholder">Lacak status: ${escapeHtml(publicBaseUrl + '/?ticket=' + ticket.ticketNo)}</div>
+                             <div class="qr-placeholder">Lacak status dengan nomor tiket: ${escapeHtml(ticket.ticketNo)}</div>
                           </div>
                           `
                               : ''
@@ -510,13 +491,16 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                           </div>
                         </body>
                       </html>
-                    `);
-                      printDoc.close();
+                    `;
                       window.setTimeout(async () => {
                         const result = await printJobAsync({
                           title: 'Service Document',
-                          html: printDoc.body?.innerHTML || '',
+                          html: printDoc.innerHTML || '',
                           printConfig,
+                          tenantId: currentTenantId,
+                          branchId: currentBranchId,
+                          documentType: 'service_document',
+                          documentId: ticket.id,
                         });
                         if (!result.ok)
                           showToast(result.error || 'Gagal mencetak dokumen.', 'error');
@@ -670,27 +654,8 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
-                      let printIframe = document.getElementById(
-                        'print-job-frame'
-                      ) as HTMLIFrameElement;
-                      if (!printIframe) {
-                        printIframe = document.createElement('iframe');
-                        printIframe.id = 'print-job-frame';
-                        printIframe.style.position = 'fixed';
-                        printIframe.style.width = '0';
-                        printIframe.style.height = '0';
-                        printIframe.style.border = 'none';
-                        printIframe.style.opacity = '0';
-                        document.body.appendChild(printIframe);
-                      }
-                      const printDoc =
-                        printIframe.contentWindow?.document || printIframe.contentDocument;
-                      if (!printDoc) {
-                        showToast('Gagal menginisialisasi modul pencetakan.', 'error');
-                        return;
-                      }
-                      printDoc.open();
-                      printDoc.write(`
+                      const printDoc = document.createElement('div');
+                      printDoc.innerHTML = `
                       <html>
                         <head>
                           <title>Penawaran Biaya - ${ticket.ticketNo}</title>
@@ -807,7 +772,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                              printConfig?.printQrCode
                                ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <div class="qr-placeholder">Persetujuan: ${escapeHtml(publicBaseUrl + '/?tab=service&sub=approve-quote&ticket=' + ticket.ticketNo)}</div>
+                             <div class="qr-placeholder">Persetujuan dengan nomor tiket: ${escapeHtml(ticket.ticketNo)}</div>
                           </div>
                           `
                                : ''
@@ -817,13 +782,16 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                           </div>
                         </body>
                       </html>
-                    `);
-                      printDoc.close();
+                    `;
                       window.setTimeout(async () => {
                         const result = await printJobAsync({
                           title: 'Service Document',
-                          html: printDoc.body?.innerHTML || '',
+                          html: printDoc.innerHTML || '',
                           printConfig,
+                          tenantId: currentTenantId,
+                          branchId: currentBranchId,
+                          documentType: 'service_document',
+                          documentId: ticket.id,
                         });
                         if (!result.ok)
                           showToast(result.error || 'Gagal mencetak dokumen.', 'error');
@@ -987,27 +955,8 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => {
-                        let printIframe = document.getElementById(
-                          'print-job-frame'
-                        ) as HTMLIFrameElement;
-                        if (!printIframe) {
-                          printIframe = document.createElement('iframe');
-                          printIframe.id = 'print-job-frame';
-                          printIframe.style.position = 'fixed';
-                          printIframe.style.width = '0';
-                          printIframe.style.height = '0';
-                          printIframe.style.border = 'none';
-                          printIframe.style.opacity = '0';
-                          document.body.appendChild(printIframe);
-                        }
-                        const printDoc =
-                          printIframe.contentWindow?.document || printIframe.contentDocument;
-                        if (!printDoc) {
-                          showToast('Gagal menginisialisasi modul pencetakan.', 'error');
-                          return;
-                        }
-                        printDoc.open();
-                        printDoc.write(`
+                        const printDoc = document.createElement('div');
+                        printDoc.innerHTML = `
                         <html>
                           <head>
                             <title>Warranty - ${ticket.ticketNo}</title>
@@ -1083,7 +1032,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                printConfig?.printQrCode
                                  ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <div class="qr-placeholder">Klaim garansi: ${escapeHtml(claimUrl)}</div>
+                             <div class="qr-placeholder">Klaim garansi dengan nomor tiket: ${escapeHtml(ticket.ticketNo)}</div>
                           </div>
                           `
                                  : ''
@@ -1093,13 +1042,16 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                             </div>
                           </body>
                         </html>
-                      `);
-                        printDoc.close();
+                      `;
                         window.setTimeout(async () => {
                           const result = await printJobAsync({
                             title: 'Warranty Card',
-                            html: printDoc.body?.innerHTML || '',
+                            html: printDoc.innerHTML || '',
                             printConfig,
+                            tenantId: currentTenantId,
+                            branchId: currentBranchId,
+                            documentType: 'service_receipt',
+                            documentId: ticket.id,
                           });
                           if (!result.ok)
                             showToast(result.error || 'Gagal mencetak kartu garansi.', 'error');

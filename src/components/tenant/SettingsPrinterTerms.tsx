@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useToast } from '../ui/Toast';
-import { escapeHtml } from '../../utils/print';
+import { escapeHtml, resolvePrintConfig } from '../../utils/print';
 import { createPrintDocument } from '../../utils/printJob';
 import {
   Building2,
@@ -59,6 +59,10 @@ import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from '../../ty
 export const SettingsPrinterTerms: React.FC<any> = (props) => {
   const {
     activeTenant,
+    branches,
+    currentBranchId,
+    profileDocumentType,
+    setProfileDocumentType,
     customFooterText,
     customHeaderTitle,
     publicBaseUrl,
@@ -95,6 +99,9 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
     termsRentalText,
     termsSalesText,
   } = props;
+  const selectedProfile =
+    resolvePrintConfig(activeTenant?.settings?.printConfig, currentBranchId, profileDocumentType) ||
+    {};
   const previewPrintConfig = {
     paperSize,
     printMode,
@@ -108,6 +115,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
     customHeaderTitle,
     customFooterText,
     termsAndConditionsText,
+    ...selectedProfile,
   };
   const previewBody = `
     <section>
@@ -128,7 +136,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
           <tr><td>Status Awal</td><td style="text-align:right;font-weight:bold">DITERIMA</td></tr>
         </tbody>
       </table>
-      ${printQrCode ? `<div style="border:1px solid #000;margin-top:12px;padding:8px;text-align:center;font-weight:bold">PINDAI QR UNTUK LACAK STATUS<br><small>${escapeHtml(publicBaseUrl || '')}/?ticket=SVC-2026-0099</small></div>` : ''}
+      ${printQrCode ? '<div style="border:1px solid #000;margin-top:12px;padding:8px;text-align:center;font-weight:bold">STATUS TIKET: SVC-2026-0099<br><small>Gunakan nomor tiket saat menghubungi toko</small></div>' : ''}
       ${printTermsAndConditions && termsAndConditionsText.trim() ? `<div style="border-top:1px dashed #000;margin-top:12px;padding-top:8px;white-space:pre-wrap"><strong>SYARAT & KETENTUAN LAYANAN (SERVIS):</strong><br>${escapeHtml(termsAndConditionsText.trim())}</div>` : ''}
       <footer style="border-top:1px dashed #000;margin-top:12px;padding-top:8px;text-align:center;white-space:pre-wrap">${escapeHtml(customFooterText || '')}</footer>
     </section>`;
@@ -226,6 +234,130 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
               ))}
             </select>
           )}
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <div>
+            <h4 className="font-bold text-xs uppercase text-slate-800">Profil Operasional</h4>
+            <p className="text-[10px] text-slate-400">
+              Snapshot cabang aktif per jenis dokumen. Default tenant tidak diubah.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+              Cabang Aktif
+              <input
+                readOnly
+                value={
+                  branches?.find((branch: any) => branch.id === currentBranchId)?.name ||
+                  currentBranchId ||
+                  '-'
+                }
+                className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-slate-50"
+              />
+            </label>
+            <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+              Jenis Dokumen
+              <select
+                aria-label="Jenis Dokumen Profil"
+                value={profileDocumentType}
+                onChange={(e) => setProfileDocumentType(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
+              >
+                {[
+                  'default',
+                  'pos_receipt',
+                  'service_receipt',
+                  'service_invoice',
+                  'service_label',
+                  'warranty',
+                  'rental',
+                  'inventory',
+                  'report',
+                ].map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              ['Mode', 'printMode', 'select', ['browser', 'qz']],
+              ['Nama Printer', 'printerName', 'text'],
+              [
+                'Kertas',
+                'paperSize',
+                'select',
+                ['thermal_58', 'thermal_80', 'hvs_a4', 'hvs_letter'],
+              ],
+              ['Margin mm', 'printMargin', 'number'],
+              ['Lebar mm', 'printableWidthMm', 'number'],
+              ['Tinggi mm', 'printableHeightMm', 'number'],
+              ['Orientasi', 'orientation', 'select', ['portrait', 'landscape']],
+              ['Densitas', 'density', 'number'],
+              ['Salinan', 'copies', 'number'],
+              ['Feed', 'feed', 'number'],
+              ['Cetak Ulang', 'reprintPolicy', 'select', ['allow', 'reason_required', 'deny']],
+              ['Batas Salinan Ulang', 'reprintCopyCap', 'number'],
+            ].map(([label, key, kind, values]: any) => (
+              <label key={key} className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+                {label}
+                {kind === 'select' ? (
+                  <select
+                    aria-label={label}
+                    value={
+                      (selectedProfile as any)[key] ??
+                      (key === 'printMode'
+                        ? 'browser'
+                        : key === 'orientation'
+                          ? 'portrait'
+                          : key === 'reprintPolicy'
+                            ? 'reason_required'
+                            : values[0])
+                    }
+                    onChange={(e) =>
+                      savePrinterSettings({ profileSnapshot: true, [key]: e.target.value })
+                    }
+                    className="mt-1 w-full px-2 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
+                  >
+                    {values.map((value: string) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    aria-label={label}
+                    type={kind}
+                    min="0"
+                    value={(selectedProfile as any)[key] ?? ''}
+                    onChange={(e) =>
+                      savePrinterSettings({
+                        profileSnapshot: true,
+                        [key]: e.target.value === '' ? undefined : Number(e.target.value),
+                      })
+                    }
+                    className="mt-1 w-full px-2 py-2 border border-slate-200 rounded-xl text-xs font-semibold"
+                  />
+                )}
+              </label>
+            ))}
+            <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+              Potong Kertas
+              <input
+                aria-label="Potong Kertas"
+                type="checkbox"
+                checked={selectedProfile.cut ?? false}
+                onChange={(e) =>
+                  savePrinterSettings({ profileSnapshot: true, cut: e.target.checked })
+                }
+                className="ml-3"
+              />
+            </label>
+          </div>
         </div>
 
         {/* Card 1: Layout & Size Setup */}

@@ -5,6 +5,7 @@ import { useToast } from './ui/Toast';
 import { usePrintConfig } from '../hooks/usePrintConfig';
 import { printJobAsync } from '../utils/printJob';
 import {
+  escapeHtml,
   getPrintFontSizePx,
   getPrintHeaderHtml,
   getPrintFooterHtml,
@@ -140,23 +141,6 @@ export const SmallPartsSearch: React.FC = () => {
   const handlePrintPurchaseOrder = () => {
     if (!selectedPoComp) return;
 
-    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-    if (!printIframe) {
-      printIframe = document.createElement('iframe');
-      printIframe.id = 'print-job-frame';
-      printIframe.style.position = 'fixed';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0';
-      document.body.appendChild(printIframe);
-    }
-    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) {
-      showToast('Gagal menginisialisasi modul pencetakan.', 'error');
-      return;
-    }
-
     const poNo = stablePoNo;
     const supplier = selectedPoComp.supplierName || 'Supplier Mitra Resmi';
     const today = new Date().toISOString().split('T')[0];
@@ -175,11 +159,10 @@ export const SmallPartsSearch: React.FC = () => {
     const footerHtml = getPrintFooterHtml(printConfig, 'Dibuat otomatis oleh sistem prediksi stok');
     const termsHtml = getPrintTermsHtml(printConfig, 'general');
 
-    printDoc.open();
-    printDoc.write(`
+    const html = `
       <html>
         <head>
-          <title>PO - \${poNo}</title>
+          <title>PO - ${escapeHtml(poNo)}</title>
           <style>
             @page {
               size: auto;
@@ -187,12 +170,12 @@ export const SmallPartsSearch: React.FC = () => {
             }
             body {
               font-family: 'Courier New', Courier, monospace;
-              width: \${widthStyle};
+              width: ${widthStyle};
               margin: 0 auto;
               padding: 10px;
               color: #000;
               background: #fff;
-              font-size: \${fontSizePx}px;
+              font-size: ${fontSizePx}px;
               line-height: 1.2;
             }
             .text-center { text-align: center; }
@@ -206,7 +189,7 @@ export const SmallPartsSearch: React.FC = () => {
             }
             .header h2 {
               margin: 0 0 4px 0;
-              font-size: \${is80 ? "14px" : "12px"};
+              font-size: ${is80 ? '14px' : '12px'};
               letter-spacing: 1px;
             }
             .header p { margin: 2px 0; }
@@ -237,7 +220,7 @@ export const SmallPartsSearch: React.FC = () => {
             }
             .footer {
               margin-top: 15px;
-              font-size: \${is80 ? "9px" : "8px"};
+              font-size: ${is80 ? '9px' : '8px'};
               color: #555;
               border-top: 1px dashed #000;
               padding-top: 8px;
@@ -251,15 +234,15 @@ export const SmallPartsSearch: React.FC = () => {
           <table class="meta-table">
             <tr>
               <td class="bold">PO No:</td>
-              <td class="text-right">\${poNo}</td>
+              <td class="text-right">${poNo}</td>
             </tr>
             <tr>
               <td class="bold">Supplier:</td>
-              <td class="text-right">\${supplier}</td>
+              <td class="text-right">${escapeHtml(supplier)}</td>
             </tr>
             <tr>
               <td class="bold">Tanggal:</td>
-              <td class="text-right">\${today}</td>
+              <td class="text-right">${today}</td>
             </tr>
             <tr>
               <td class="bold">Status:</td>
@@ -277,14 +260,14 @@ export const SmallPartsSearch: React.FC = () => {
             <tbody>
               <tr>
                 <td>
-                  \${selectedPoComp.name}<br/>
-                  <span style="font-size: 8px; color: #444;">SKU: \${selectedPoComp.sku}</span>
+                  ${escapeHtml(selectedPoComp.name)}<br/>
+                  <span style="font-size: 8px; color: #444;">SKU: ${escapeHtml(selectedPoComp.sku)}</span>
                 </td>
-                <td class="text-right" style="vertical-align: top;">\${poQuantity} Pcs</td>
+                <td class="text-right" style="vertical-align: top;">${poQuantity} Pcs</td>
               </tr>
               <tr>
                 <td style="font-size: 8px; padding-top: 4px; color: #333;">Harga Satuan (Est):</td>
-                <td class="text-right" style="font-size: 8px; padding-top: 4px;">Rp \${unitPrice.toLocaleString()}</td>
+                <td class="text-right" style="font-size: 8px; padding-top: 4px;">Rp ${unitPrice.toLocaleString()}</td>
               </tr>
             </tbody>
           </table>
@@ -292,7 +275,7 @@ export const SmallPartsSearch: React.FC = () => {
           <div class="total-section">
             <div style="display: flex; justify-content: space-between;" class="bold">
               <span>ESTIMASI TOTAL:</span>
-              <span>Rp \${estTotal.toLocaleString()}</span>
+              <span>Rp ${estTotal.toLocaleString()}</span>
             </div>
           </div>
 
@@ -306,25 +289,27 @@ export const SmallPartsSearch: React.FC = () => {
           </script>
         </body>
       </html>
-    `);
-    printDoc.close();
-
-    setTimeout(() => {
-      const pIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-      if (pIframe && pIframe.contentWindow) {
-        void printJobAsync({
-          title: 'Purchase Order',
-          html: pIframe.contentDocument?.body.innerHTML || '',
-          printConfig,
-        });
-        addLog(
-          'Print Purchase Order',
-          `Mencetak dokumen Purchase Order \${poNo} ke printer thermal \${poPrinterFormat}mm.`,
-          'INVENTORY',
-          'LOW'
-        );
+    `;
+    void printJobAsync({
+      title: 'Purchase Order',
+      html,
+      printConfig,
+      tenantId: currentTenantId,
+      branchId: currentBranchId,
+      documentType: 'purchase_order',
+      documentId: poNo,
+    }).then((result) => {
+      if (!result.ok) {
+        showToast(result.error || 'Cetak Purchase Order gagal.', 'error');
+        return;
       }
-    }, 500);
+      addLog(
+        'Print Purchase Order',
+        `Mencetak dokumen Purchase Order ${poNo} ke printer thermal ${poPrinterFormat}mm.`,
+        'INVENTORY',
+        'LOW'
+      );
+    });
   };
 
   const selectedComponent = components.find((c) => c.id === selectedCompId) || components[0];

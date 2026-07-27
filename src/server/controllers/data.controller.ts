@@ -50,7 +50,7 @@ const SERVICE_TICKET_ALLOWED_COLUMNS = [
   'accessories_left',
   'custom_accessories',
   'physical_condition',
-  'screen_lock_pin',
+  // screen_lock_pin removed - sensitive PIN data, not syncable via API
   'estimated_completion_date',
   'captured_conditions',
   'provisional_signature',

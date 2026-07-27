@@ -265,7 +265,17 @@ export const OwnerReports: React.FC<{
             onClick={() => {
               const report = document.getElementById('owner-reports');
               if (report)
-                void printJobAsync({ title: 'Laporan Owner', html: report.innerHTML, printConfig });
+                void printJobAsync({
+                  title: 'Laporan Owner',
+                  html: report.innerHTML,
+                  printConfig,
+                  tenantId: currentTenantId,
+                  branchId: currentBranchId,
+                  documentType: 'owner_report',
+                  documentId: `${Df.toISOString()}_${Dt.toISOString()}`,
+                }).then((result) => {
+                  if (!result.ok) window.alert(result.error || 'Cetak gagal.');
+                });
             }}
             className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all"
             title="Cetak"

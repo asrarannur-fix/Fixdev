@@ -5,6 +5,13 @@ export type PrintJob = {
   title: string;
   html: string;
   printConfig?: PrintConfig;
+  tenantId?: string;
+  branchId?: string;
+  userId?: string;
+  documentType?: string;
+  documentId?: string;
+  reprint?: boolean;
+  reprintReason?: string;
 };
 
 const sanitizePrintHtml = (html: string): string =>
@@ -22,8 +29,11 @@ const sanitizePrintHtml = (html: string): string =>
 
 export type PrintResult = {
   ok: boolean;
-  transport: 'qz' | 'browser' | 'failed';
+  state: 'submitted' | 'failed';
+  transport: 'qz' | 'browser';
+  errorCode?: string;
   error?: string;
+  jobId?: string;
 };
 
 declare global {
@@ -33,6 +43,29 @@ declare global {
 }
 
 let qzSigningConfigured = false;
+const printerQueues = new Map<string, Promise<unknown>>();
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  let timer = 0;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error('Batas waktu printer terlampaui')), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    window.clearTimeout(timer);
+  }
+};
+
+const queuePrinter = <T>(printer: string, task: () => Promise<T>): Promise<T> => {
+  const previous = printerQueues.get(printer) || Promise.resolve();
+  const current = previous.catch(() => undefined).then(task);
+  printerQueues.set(printer, current);
+  void current.finally(() => {
+    if (printerQueues.get(printer) === current) printerQueues.delete(printer);
+  });
+  return current;
+};
 
 const configureQzSigning = async (): Promise<void> => {
   if (qzSigningConfigured) return;
@@ -83,11 +116,19 @@ const qzPrint = async (
   const qz = window.qz;
   const printerName = printConfig.printerName?.trim();
   if (!printerName)
-    return { ok: false, transport: 'failed', error: 'Nama printer QZ belum dikonfigurasi.' };
+    return {
+      ok: false,
+      state: 'failed',
+      transport: 'qz',
+      errorCode: 'PRINTER_UNCONFIGURED',
+      error: 'Nama printer QZ belum dikonfigurasi.',
+    };
   if (!qz?.websocket || !qz?.printers || !qz?.configs) {
     return {
       ok: false,
-      transport: 'failed',
+      state: 'failed',
+      transport: 'qz',
+      errorCode: 'QZ_UNAVAILABLE',
       error: 'QZ Tray belum terpasang atau belum berjalan.',
     };
   }
@@ -102,19 +143,38 @@ const qzPrint = async (
     }
     const printer = await qz.printers.find(printerName);
     if (!printer) throw new Error(`Printer tidak ditemukan: ${printConfig.printerName}`);
-    await qz.print(qz.configs.create(printer, { jobName: title }), [
-      {
-        type: 'pixel',
-        format: 'html',
-        flavor: 'plain',
-        data: createPrintDocument(title, html, printConfig),
-      },
-    ]);
-    return { ok: true, transport: 'qz' };
+    await queuePrinter(printerName, () =>
+      withTimeout(
+        qz.print(
+          qz.configs.create(printer, {
+            jobName: title,
+            copies: printConfig.copies || 1,
+            density: printConfig.density,
+            feed: printConfig.feed,
+            cut: printConfig.cut,
+            orientation: printConfig.orientation,
+            size: { width: printConfig.printableWidthMm, height: null },
+            margins: printConfig.printMargin,
+          }),
+          [
+            {
+              type: 'pixel',
+              format: 'html',
+              flavor: 'plain',
+              data: createPrintDocument(title, html, printConfig),
+            },
+          ]
+        ),
+        30_000
+      )
+    );
+    return { ok: true, state: 'submitted', transport: 'qz' };
   } catch (error) {
     return {
       ok: false,
-      transport: 'failed',
+      state: 'failed',
+      transport: 'qz',
+      errorCode: 'QZ_SUBMIT_FAILED',
       error: error instanceof Error ? error.message : 'QZ Tray gagal mencetak.',
     };
   }
@@ -159,7 +219,12 @@ export const printFrame = async (
   const source = target?.document;
   const root = source?.querySelector<HTMLElement>('.print-root');
   if (!root?.innerHTML) {
-    return { ok: false, transport: 'failed', error: 'Root dokumen print tidak ditemukan' };
+    return {
+      ok: false,
+      state: 'failed',
+      transport: 'browser',
+      error: 'Root dokumen print tidak ditemukan',
+    };
   }
   const styles = Array.from(source?.head?.querySelectorAll('style') || [])
     .map((node) => node.outerHTML)
@@ -168,12 +233,67 @@ export const printFrame = async (
 };
 
 /** QZ Tray when configured; browser dialog remains safe fallback. */
-export const printJobAsync = async ({
-  title,
-  html,
-  printConfig,
-}: PrintJob): Promise<PrintResult> => {
-  if (printConfig?.printMode === 'qz') return qzPrint(title, html, printConfig);
+export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
+  const { title, printConfig } = job;
+  if (job.reprint && !job.reprintReason?.trim())
+    return {
+      ok: false,
+      state: 'failed',
+      transport: printConfig?.printMode === 'qz' ? 'qz' : 'browser',
+      errorCode: 'REPRINT_REASON_REQUIRED',
+      error: 'Alasan cetak ulang wajib diisi.',
+    };
+  const watermark = job.reprint
+    ? '<div style="position:fixed;inset:40% 0 auto;text-align:center;font-size:42px;font-weight:bold;opacity:.16;transform:rotate(-25deg);z-index:9999">SALINAN / REPRINT</div>'
+    : '';
+  const html = watermark + job.html;
+  const idempotencyKey = crypto.randomUUID();
+  const transport = printConfig?.printMode === 'qz' ? 'qz' : 'browser';
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(html));
+  const contentHash = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('');
+  let serverJobId: string | undefined;
+  try {
+    const response = await fetch('/api/print-jobs', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(job.branchId ? { 'X-Branch-ID': job.branchId } : {}),
+      },
+      body: JSON.stringify({
+        idempotencyKey,
+        documentType: job.documentType || 'general',
+        documentId: job.documentId,
+        printer: printConfig?.printerName,
+        transport,
+        contentHash,
+        copies: printConfig?.copies || 1,
+        reprint: job.reprint || false,
+        reprintReason: job.reprintReason,
+      }),
+    });
+    if (response.ok) serverJobId = (await response.json()).id;
+  } catch {}
+  const finish = async (result: PrintResult) => {
+    if (serverJobId)
+      void fetch(`/api/print-jobs/${encodeURIComponent(serverJobId)}/result`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(job.branchId ? { 'X-Branch-ID': job.branchId } : {}),
+        },
+        body: JSON.stringify({
+          status: result.state,
+          errorCode: result.errorCode,
+          errorMessage: result.error,
+        }),
+      }).catch(() => undefined);
+    return { ...result, jobId: serverJobId };
+  };
+  if (printConfig?.printMode === 'qz') return qzPrint(title, html, printConfig).then(finish);
   const frame = document.createElement('iframe');
   frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none';
   frame.setAttribute('aria-hidden', 'true');
@@ -181,7 +301,13 @@ export const printJobAsync = async ({
   const doc = frame.contentDocument;
   if (!doc) {
     frame.remove();
-    return { ok: false, transport: 'failed', error: 'Dokumen print tidak dapat dibuat' };
+    return finish({
+      ok: false,
+      state: 'failed',
+      transport: 'browser',
+      errorCode: 'DOCUMENT_UNAVAILABLE',
+      error: 'Dokumen print tidak dapat dibuat',
+    });
   }
   try {
     doc.open();
@@ -219,13 +345,15 @@ export const printJobAsync = async ({
         }
       }, 100)
     );
-    return { ok: true, transport: 'browser' };
+    return finish({ ok: true, state: 'submitted', transport: 'browser' });
   } catch (error) {
-    return {
+    return finish({
       ok: false,
-      transport: 'failed',
+      state: 'failed',
+      transport: 'browser',
+      errorCode: 'BROWSER_SUBMIT_FAILED',
       error: error instanceof Error ? error.message : 'Gagal mencetak lewat browser',
-    };
+    });
   } finally {
     frame.remove();
   }

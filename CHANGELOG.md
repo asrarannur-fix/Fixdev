@@ -1,5 +1,23 @@
 # Changelog
 
+## 27 Juli 2026
+- Menambah UI profil operasional printer per cabang aktif dan jenis dokumen, mencakup mode, printer, media, dimensi mm, orientasi, densitas, salinan, feed, potong, serta kebijakan cetak ulang.
+- Pratinjau memakai profil ter-resolve; snapshot tersimpan di `branches[currentBranchId].documentProfiles` tanpa mengubah default tenant.
+- File terkait: `src/components/tenant/SettingsTab.tsx`, `src/components/tenant/SettingsPrinterTerms.tsx`, `src/server/controllers/settings.controller.ts`, `src/types/index.ts`.
+
+## 27 Juli 2026
+- Menghapus iframe tetap dari cetak Purchase Order SmallPartsSearch; template HTML dikirim langsung ke `printJobAsync` dengan interpolasi dan escaping aman.
+- File terkait: `src/components/SmallPartsSearch.tsx`.
+
+
+## 26 Juli 2026
+- Menambah profil printer per cabang dan tipe dokumen, kalibrasi media, status job `submitted`/`failed`, watermark cetak ulang, serta audit job tanpa HTML atau data pelanggan.
+- Menambah endpoint riwayat dan pencatatan best-effort klien; alasan cetak ulang wajib diisi.
+- Profil precedence dan metadata job kini tenant → dokumen → cabang → dokumen cabang; hasil hanya hash konten, idempotency key, dan status.
+- Job QZ diantrekan per printer, punya timeout 30 detik, batas copy 20, sequence reprint, dan endpoint hasil/reprint scoped tenant-cabang.
+- File terkait: `src/utils/print.ts`, `src/utils/printJob.ts`, `src/server/controllers/printJob.controller.ts`, `src/server/routes/printJob.routes.ts`, `src/server/controllers/settings.controller.ts`, `migrations/060_print_jobs.sql`, `tests/print-operations.test.ts`.
+
+
 ## 2026-07-26
 ### Print blocker cleanup
 - Menghapus URL QR pihak ketiga dari alur print/tracking, mengganti dengan fallback URL atau teks lokal; cache sertifikat QZ memakai no-store dan nosniff.
@@ -13,6 +31,8 @@
 - Laporan Owner dan HR tidak lagi memakai fallback `document.body.innerHTML` atau `window.print`.
 - Resolver profil print per cabang memakai `currentBranchId`; call site rental, PO, garansi, langganan, dan tracker dialihkan ke renderer bersama.
 - QR garansi eksternal diganti placeholder URL aman tanpa request pihak ketiga.
+- Lifecycle audit job cetak terhubung ke route tenant/cabang; POS, dokumen servis, laporan Owner, dan laporan HR mengirim metadata dokumen serta menampilkan status submit.
+- Menambah uji urutan route dan kontrak controller print tanpa koneksi database nyata.
 - File terkait: `src/utils/print.ts`, `src/utils/printJob.ts`, `src/hooks/usePrintConfig.ts`, `src/types/index.ts`, `src/server.ts`, `src/server/controllers/settings.controller.ts`, `src/components/DeviceRentalDashboard.tsx`, `src/components/SmallPartsSearch.tsx`, `src/components/WarrantyClaims.tsx`, `src/components/SaaSSubscription.tsx`, `src/hooks/useServiceTrackerQr.ts`, `src/components/tenant/OwnerReports.tsx`, `src/components/tenant/hr/HRReports.tsx`, `src/components/tenant/SettingsPrinterTerms.tsx`, `tests/print-security.test.ts`.
 
 ## 2026-07-26

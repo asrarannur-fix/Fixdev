@@ -97,8 +97,7 @@ export function useServiceTrackerQr(
    * Open a print-friendly overlay window to print the tracking receipt card beautifully.
    */
   const handlePrintReceipt = async (ticket: ServiceTicket, businessName = tenantName) => {
-    const qrUrl = getQrCodeUrl(ticket.ticketNo);
-    const trackingUrl = getTrackingUrl(ticket.ticketNo);
+    const qrUrl = '';
     const dateStr = ticket.customerApprovalDate
       ? new Date(ticket.customerApprovalDate).toLocaleDateString('id-ID', {
           day: 'numeric',
@@ -111,25 +110,8 @@ export function useServiceTrackerQr(
           year: 'numeric',
         });
 
-    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-    if (!printIframe) {
-      printIframe = document.createElement('iframe');
-      printIframe.id = 'print-job-frame';
-      printIframe.style.position = 'fixed';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0';
-      document.body.appendChild(printIframe);
-    }
-    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) {
-      showToast('Gagal menginisialisasi modul pencetakan.', 'error');
-      return;
-    }
-
-    printDoc.open();
-    printDoc.write(`
+    const printDoc = document.createElement('div');
+    printDoc.innerHTML = `
       <html>
         <head>
           <title>Nota Penerimaan & QR Lacak - ${ticket.ticketNo}</title>
@@ -293,12 +275,8 @@ export function useServiceTrackerQr(
               printConfig?.printQrCode !== false
                 ? `
             <div class="qr-section">
-              <img src="${qrUrl}" class="qr-code" alt="QR Lacak" />
-              <div class="scan-instructions">
-                <strong>PINDAI QR UNTUK LACAK STATUS</strong><br/>
-                Scan QR Code di atas menggunakan HP Anda untuk memantau perkembangan servis unit ini secara real-time.
-              </div>
-              <div class="url-display">${trackingUrl}</div>
+               <div class="qr-code" style="border:1px dashed #64748b;display:flex;align-items:center;justify-content:center;font-size:12px">TIKET<br/>${ticket.ticketNo}</div>
+               <div class="scan-instructions">Sebutkan nomor tiket saat memantau status servis.</div>
             </div>`
                 : ''
             }
@@ -313,18 +291,19 @@ export function useServiceTrackerQr(
           </script>
         </body>
       </html>
-    `);
-    printDoc.close();
-    setTimeout(() => {
-      const pIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-      if (pIframe && pIframe.contentWindow) {
-        void printJobAsync({
-          title: 'Service Tracker',
-          html: pIframe.contentDocument?.body.innerHTML || '',
-          printConfig,
-        });
-      }
-    }, 500);
+    `;
+    void printJobAsync({
+      title: 'Service Tracker',
+      html: printDoc.innerHTML,
+      printConfig,
+      documentType: 'service_receipt',
+      documentId: ticket.id,
+    }).then((result) =>
+      showToast(
+        result.ok ? 'Nota servis dikirim ke printer.' : result.error || 'Cetak nota servis gagal.',
+        result.ok ? 'success' : 'error'
+      )
+    );
   };
 
   /**
@@ -341,7 +320,7 @@ export function useServiceTrackerQr(
   };
 
   const handleDirectPrintLabel = (ticket: ServiceTicket, businessName = tenantName) => {
-    const qrUrl = getQrCodeUrl(ticket.ticketNo);
+    const qrUrl = '';
     const dateStr = ticket.createdAt
       ? new Date(ticket.createdAt).toLocaleDateString('id-ID', {
           day: 'numeric',
@@ -349,24 +328,7 @@ export function useServiceTrackerQr(
           year: 'numeric',
         })
       : new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-    if (!printIframe) {
-      printIframe = document.createElement('iframe');
-      printIframe.id = 'print-job-frame';
-      printIframe.style.position = 'fixed';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0';
-      document.body.appendChild(printIframe);
-    }
-    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) {
-      showToast('Gagal menginisialisasi modul pencetakan.', 'error');
-      return;
-    }
-    printDoc.open();
-    printDoc.write(`
+    const printDoc = `
       <html><head><title>Label ${ticket.ticketNo}</title>
       <style>
         @page { size: ${getLabelSizeMm(printConfig)}; margin: ${getPrintMargin(printConfig)}mm; }
@@ -378,26 +340,29 @@ export function useServiceTrackerQr(
         .lbl-foot { text-align: center; font-size: 8px; color: #64748b; margin-top: 4px; }
       </style></head>
       <body>
-        ${printConfig?.labelShowLogo !== false ? `<div class="lbl-head">${businessName}</div>` : ''}
-        <div class="lbl-row"><span>Tiket:</span><strong>${ticket.ticketNo}</strong></div>
-        <div class="lbl-row"><span>Device:</span><span>${ticket.deviceName || '-'}</span></div>
-        <div class="lbl-row"><span>Masuk:</span><span>${dateStr}</span></div>
-        ${printConfig?.printCustomerNotes !== false ? `<div class="lbl-row"><span>Keluhan:</span><span>${ticket.customerComplaints || '-'}</span></div>` : ''}
-        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr"><img src="${qrUrl}" alt="QR" /></div>` : ''}
+        ${printConfig?.labelShowLogo !== false ? `<div class="lbl-head">${escapeHtml(businessName)}</div>` : ''}
+        <div class="lbl-row"><span>Tiket:</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
+        <div class="lbl-row"><span>Device:</span><span>${escapeHtml(ticket.deviceName || '-')}</span></div>
+        <div class="lbl-row"><span>Masuk:</span><span>${escapeHtml(dateStr)}</span></div>
+        ${printConfig?.printCustomerNotes !== false ? `<div class="lbl-row"><span>Keluhan:</span><span>${escapeHtml(ticket.customerComplaints || '-')}</span></div>` : ''}
+        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr">TIKET ${escapeHtml(ticket.ticketNo)}</div>` : ''}
         <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || 'Scan untuk lacak status servis')}</div>
       </body></html>
-    `);
-    printDoc.close();
-    setTimeout(() => {
-      const pIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-      if (pIframe && pIframe.contentWindow) {
-        void printJobAsync({
-          title: 'Service Tracker',
-          html: pIframe.contentDocument?.body.innerHTML || '',
-          printConfig,
-        });
-      }
-    }, 400);
+    `;
+    void printJobAsync({
+      title: 'Service Label',
+      html: printDoc,
+      printConfig,
+      documentType: 'service_label',
+      documentId: ticket.id,
+    }).then((result) =>
+      showToast(
+        result.ok
+          ? 'Label servis dikirim ke printer.'
+          : result.error || 'Cetak label servis gagal.',
+        result.ok ? 'success' : 'error'
+      )
+    );
   };
 
   return {

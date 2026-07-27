@@ -71,7 +71,17 @@ export interface TenantSettings {
   printConfig?: {
     printMode?: 'browser' | 'qz';
     printerName?: string;
-    paperSize?: string;
+    paperSize?: 'thermal_58' | 'thermal_80' | 'a4' | 'hvs_a4' | 'hvs_letter';
+    printableWidthMm?: number;
+    printableHeightMm?: number;
+    orientation?: 'portrait' | 'landscape';
+    density?: number;
+    copies?: number;
+    feed?: number;
+    cut?: boolean;
+    reprintPolicy?: 'allow' | 'reason_required' | 'deny';
+    reprintCopyCap?: number;
+    documentProfiles?: Record<string, Record<string, unknown>>;
     printQrCode?: boolean;
     printHeaderLogo?: boolean;
     printCustomerNotes?: boolean;

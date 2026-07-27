@@ -147,6 +147,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [qzStatus, setQzStatus] = useState('Belum dicek');
   const [qzPrinters, setQzPrinters] = useState<string[]>([]);
   const [qzChecking, setQzChecking] = useState(false);
+  const [profileDocumentType, setProfileDocumentType] = useState('default');
 
   const [termsSalesText, setTermsSalesText] = useState(
     tenantObj?.settings?.printConfig?.termsSalesText || ''
@@ -201,9 +202,29 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
   const savePrinterSettings = async (options?: any) => {
     if (!options || !tenantObj) return;
-    // Serialize writes. Rapid controls must merge against latest queued config, not stale tenantObj.
-    const updated = { ...printConfigRef.current, ...options };
+    const { profileSnapshot, ...changes } = options;
+    const updated = profileSnapshot
+      ? {
+          ...printConfigRef.current,
+          branches: {
+            ...printConfigRef.current.branches,
+            [currentBranchId]: {
+              ...printConfigRef.current.branches?.[currentBranchId],
+              documentProfiles: {
+                ...printConfigRef.current.branches?.[currentBranchId]?.documentProfiles,
+                [profileDocumentType]: {
+                  ...printConfigRef.current.branches?.[currentBranchId]?.documentProfiles?.[
+                    profileDocumentType
+                  ],
+                  ...changes,
+                },
+              },
+            },
+          },
+        }
+      : { ...printConfigRef.current, ...changes };
     printConfigRef.current = updated;
+    options = changes;
     if (options.printMode !== undefined) {
       setPrintMode(options.printMode);
       updated.printMode = options.printMode;
@@ -617,6 +638,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <SettingsPrinterTerms
                   {...{
                     activeTenant,
+                    branches,
+                    currentBranchId,
+                    profileDocumentType,
+                    setProfileDocumentType,
                     publicBaseUrl,
                     customFooterText,
                     customHeaderTitle,

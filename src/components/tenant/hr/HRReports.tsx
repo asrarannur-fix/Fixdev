@@ -16,6 +16,7 @@ import {
 import { useSaaS } from '../../../context/SaaSContext';
 import { useToast } from '../../ui/Toast';
 import { printJobAsync } from '../../../utils/printJob';
+import { usePrintConfig } from '../../../hooks/usePrintConfig';
 
 interface HRReportsProps {
   activeSubTab: string;
@@ -30,8 +31,10 @@ const REPORT_TABS: { key: ReportType; label: string }[] = [
 ];
 
 export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
-  const { employees, payroll, scopedCommissions, currentUser } = useSaaS();
+  const { employees, payroll, scopedCommissions, currentUser, currentTenantId, currentBranchId } =
+    useSaaS();
   const { showToast } = useToast();
+  const printConfig = usePrintConfig();
 
   const [reportType, setReportType] = useState<ReportType>('attendance');
   const [filterMonth, setFilterMonth] = useState<string>(() => {
@@ -210,9 +213,24 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
     });
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const report = document.querySelector('[data-hr-report]');
-    if (report) void printJobAsync({ title: 'Laporan HR', html: report.innerHTML });
+    if (!report) return;
+    const result = await printJobAsync({
+      title: 'Laporan HR',
+      html: report.innerHTML,
+      printConfig,
+      tenantId: currentTenantId,
+      branchId: currentBranchId,
+      documentType: 'hr_report',
+      documentId: `${reportType}_${filterMonth}`,
+    });
+    showToast(
+      result.ok
+        ? `Cetak dikirim (${result.transport}); hasil fisik belum terkonfirmasi.`
+        : result.error || 'Cetak gagal.',
+      result.ok ? 'success' : 'error'
+    );
   };
 
   return (

@@ -4,11 +4,27 @@ export type PrintConfig = NonNullable<TenantSettings['printConfig']>;
 
 export const resolvePrintConfig = (
   config?: PrintConfig,
-  currentBranchId?: string
+  currentBranchId?: string,
+  documentType?: string
 ): PrintConfig | undefined => {
-  if (!config || !currentBranchId) return config;
-  const branchConfig = config.branches?.[currentBranchId] as Partial<PrintConfig> | undefined;
-  return branchConfig ? { ...config, ...branchConfig, branches: config.branches } : config;
+  if (!config) return config;
+  const branchConfig = currentBranchId
+    ? (config.branches?.[currentBranchId] as Partial<PrintConfig> | undefined)
+    : undefined;
+  const globalDocumentConfig = documentType
+    ? (config.documentProfiles?.[documentType] as Partial<PrintConfig> | undefined)
+    : undefined;
+  const branchDocumentConfig = documentType
+    ? (branchConfig?.documentProfiles?.[documentType] as Partial<PrintConfig> | undefined)
+    : undefined;
+  return {
+    ...config,
+    ...globalDocumentConfig,
+    ...branchConfig,
+    ...branchDocumentConfig,
+    branches: config.branches,
+    documentProfiles: config.documentProfiles,
+  };
 };
 
 export const getPrintPageSize = (pc?: PrintConfig): string => {
@@ -49,9 +65,13 @@ export const getPrintBaseCss = (pc?: PrintConfig): string => {
   const fontSize = getPrintFontSizePx(pc);
   const margin = getPrintMargin(pc);
   const pageSize = getPrintPageSize(pc);
+  const orientation = pc?.orientation || 'portrait';
+  const width = Number(pc?.printableWidthMm);
+  const printableWidth = Number.isFinite(width) ? `${width}mm` : getPaperWidthStyle(pc);
+  const density = Number.isFinite(pc?.density) ? pc?.density : 100;
   return `
-    @page { size: ${pageSize}; margin: ${margin}mm; }
-    body { font-family: 'Courier New', Courier, monospace; color: #000; padding: 0; font-size: ${fontSize}px; line-height: 1.3; }
+    @page { size: ${pageSize} ${orientation}; margin: ${margin}mm; }
+    body { font-family: 'Courier New', Courier, monospace; color: #000; padding: 0; font-size: ${fontSize}px; line-height: 1.3; width: ${printableWidth}; max-width: 100%; filter: contrast(${density}%); }
     @media print { body { padding: 0; } }
   `;
 };

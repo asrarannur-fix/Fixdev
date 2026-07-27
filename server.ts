@@ -73,6 +73,7 @@ import purchasingRoutes from "./src/server/routes/purchasing.routes.js";
 import complaintTemplateRoutes from "./src/server/routes/complaintTemplate.routes.js";
 import monitoringRoutes from "./src/server/routes/monitoring.routes.js";
 import superadminRoutes from "./src/server/routes/superadmin.routes.js";
+import printJobRoutes from "./src/server/routes/printJob.routes.js";
 import { platformHealthHandler } from "./src/server/controllers/monitoring.controller.js";
 import { acceptInvitation, validateInvitation } from "./src/server/controllers/invitation.controller.js";
 import { telegramManualPaymentWebhook, telegramTestHandler } from "./src/server/controllers/telegram.controller.js";
@@ -329,6 +330,7 @@ app.use("/api/billing", billingRoutes);
 app.use("/api/superadmin", superadminRoutes);
 
 app.use("/api/tenant", requireJwt, requireTenantScope, tenantRoutes);
+app.use("/api/print-jobs", requireJwt, requireTenantScope, printJobRoutes);
 app.post("/api/tenant/telegram/test", requireJwt, requireTenantScope, requireSettingsDomain("notification"), telegramTestHandler);
 app.post("/api/tenant/whatsapp/test", requireJwt, requireTenantScope, requireSettingsDomain("whatsapp"), whatsappTestHandler);
 app.use("/api/service-receptions", serviceReceptionRoutes);

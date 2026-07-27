@@ -301,19 +301,7 @@ export const DeviceRentalDashboard: React.FC = () => {
 
   // Print functions
   const handlePrintRentalContract = (contract: RentalContract) => {
-    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-    if (!printIframe) {
-      printIframe = document.createElement('iframe');
-      printIframe.id = 'print-job-frame';
-      printIframe.style.position = 'fixed';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0';
-      document.body.appendChild(printIframe);
-    }
-    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) return;
+    const printDoc = document.createElement('div');
 
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
@@ -324,8 +312,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     const footerHtml = getPrintFooterHtml(printConfig, 'Simpan sebagai bukti jaminan deposit');
     const termsHtml = getPrintTermsHtml(printConfig, 'rental');
 
-    printDoc.open();
-    printDoc.write(`
+    printDoc.innerHTML = `
       <html>
         <head>
           <title>Contract - ${contract.contract_number}</title>
@@ -366,29 +353,23 @@ export const DeviceRentalDashboard: React.FC = () => {
           ${termsHtml}
         </body>
       </html>
-    `);
-    printDoc.close();
-    setTimeout(() => {
-      if (printIframe.contentWindow) {
-        void printJobAsync({ title: 'Rental Receipt', html: printDoc.body.innerHTML, printConfig });
-      }
-    }, 500);
+    `;
+    void printJobAsync({
+      title: 'Rental Receipt',
+      html: printDoc.innerHTML,
+      printConfig,
+      documentType: 'rental_contract',
+      documentId: contract.id,
+    }).then((result) =>
+      showToast(
+        result.ok ? 'Dokumen sewa dikirim ke printer.' : result.error || 'Cetak gagal.',
+        result.ok ? 'success' : 'error'
+      )
+    );
   };
 
   const handlePrintReturnReceipt = (contract: RentalContract, damage: number, notes: string) => {
-    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-    if (!printIframe) {
-      printIframe = document.createElement('iframe');
-      printIframe.id = 'print-job-frame';
-      printIframe.style.position = 'fixed';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0';
-      document.body.appendChild(printIframe);
-    }
-    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) return;
+    const printDoc = document.createElement('div');
 
     const netRefund = contract.deposit_amount - damage;
 
@@ -401,8 +382,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     const footerHtml = getPrintFooterHtml(printConfig, 'Refund diproses otomatis ke saldo/cash.');
     const termsHtml = getPrintTermsHtml(printConfig, 'rental');
 
-    printDoc.open();
-    printDoc.write(`
+    printDoc.innerHTML = `
       <html>
         <head>
           <title>Return - ${contract.contract_number}</title>
@@ -433,13 +413,19 @@ export const DeviceRentalDashboard: React.FC = () => {
           ${termsHtml}
         </body>
       </html>
-    `);
-    printDoc.close();
-    setTimeout(() => {
-      if (printIframe.contentWindow) {
-        void printJobAsync({ title: 'Rental Receipt', html: printDoc.body.innerHTML, printConfig });
-      }
-    }, 500);
+    `;
+    void printJobAsync({
+      title: 'Rental Return Receipt',
+      html: printDoc.innerHTML,
+      printConfig,
+      documentType: 'rental_return',
+      documentId: contract.id,
+    }).then((result) =>
+      showToast(
+        result.ok ? 'Bukti pengembalian dikirim ke printer.' : result.error || 'Cetak gagal.',
+        result.ok ? 'success' : 'error'
+      )
+    );
   };
 
   if (initialLoading) {

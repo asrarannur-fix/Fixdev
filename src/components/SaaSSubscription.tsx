@@ -127,19 +127,7 @@ export default function SaaSSubscription({
   const overdueInvoices = invoices.filter((inv) => inv.status === 'OVERDUE').length;
 
   const handlePrintInvoice = (inv: SaaSInvoice) => {
-    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
-    if (!printIframe) {
-      printIframe = document.createElement('iframe');
-      printIframe.id = 'print-job-frame';
-      printIframe.style.position = 'fixed';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0';
-      document.body.appendChild(printIframe);
-    }
-    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) return;
+    const printDoc = document.createElement('div');
 
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
@@ -149,8 +137,7 @@ export default function SaaSSubscription({
     const footerHtml = getPrintFooterHtml(printConfig, 'Terima kasih atas kepercayaan Anda.');
     const termsHtml = getPrintTermsHtml(printConfig, 'general');
 
-    printDoc.open();
-    printDoc.write(`
+    printDoc.innerHTML = `
       <html>
         <head>
           <title>Invoice - ${inv.id}</title>
@@ -182,13 +169,19 @@ export default function SaaSSubscription({
           ${termsHtml}
         </body>
       </html>
-    `);
-    printDoc.close();
-    setTimeout(() => {
-      if (printIframe.contentWindow) {
-        void printJobAsync({ title: 'SaaS Invoice', html: printDoc.body.innerHTML, printConfig });
-      }
-    }, 500);
+    `;
+    void printJobAsync({
+      title: 'SaaS Invoice',
+      html: printDoc.innerHTML,
+      printConfig,
+      documentType: 'saas_invoice',
+      documentId: inv.id,
+    }).then((result) =>
+      showToast(
+        result.ok ? 'Invoice dikirim ke printer.' : result.error || 'Cetak invoice gagal.',
+        result.ok ? 'success' : 'error'
+      )
+    );
   };
 
   // Payment Gateway Config State (Super Admin Only)
