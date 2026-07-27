@@ -546,8 +546,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               </div>
             </div>
 
-            {/* Section: Photos (hidden wrapper for initial photos kept for compat) */}
-            <div className="hidden">
+            {/* Section: Photos (initial photos) */}
+            <div className="mt-4">
               {ticket.initialPhotos && ticket.initialPhotos.length > 0 && (
                 <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-2 shadow-xs">
                   <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
@@ -629,7 +629,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
             </div>
 
             {/* Section: Internal Discussions */}
-            <div className="hidden bg-amber-50/50 p-3.5 border border-amber-100 rounded-xl space-y-3 shadow-xs flex-col max-h-80">
+            <div className="mt-4 bg-amber-50/50 p-3.5 border border-amber-100 rounded-xl space-y-3 shadow-xs flex-col max-h-80">
               <h4 className="font-bold text-[10px] text-amber-700 uppercase font-mono tracking-wider flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5 text-amber-500" /> Diskusi Internal (Tim)
               </h4>
