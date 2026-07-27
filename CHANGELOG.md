@@ -1,6 +1,13 @@
 # Changelog
 
 ## 27 Juli 2026
+- Memperbaiki workflow servis agar tiket soft-delete tidak dapat dimutasi, garansi nol tetap tanpa tanggal garansi, dan handover tersedia pada status menunggu pembayaran.
+- Menyamakan perhitungan pajak handover dengan pengaturan tenant, menunggu bulk delete selesai sebelum sukses, serta memperbaiki pesan cooldown status.
+- Memvalidasi gudang part terhadap cabang sejak diagnosis/reservasi, membatasi konsumsi stok ke part `RESERVED`, dan menolak QC lulus bila part `REQUESTED` belum diselesaikan.
+- Menyamakan kalkulator invoice backend dengan `taxEnabled`, `taxRate`, dan `taxInclusive` tenant agar preview dan handover memakai total yang sama.
+- File terkait: `src/server/controllers/serviceWorkflow.controller.ts`, `src/components/tenant/ServiceDetailModal.tsx`, `src/components/tenant/ServiceList.tsx`, `migrations/062_service_warranty_zero.sql`, `tests/service-workflow-security.test.ts`.
+
+## 27 Juli 2026
 - Memperbaiki alur printer: fallback QZ hanya menyelesaikan job sekali, tombol hentikan batch print memakai ref, queue offline dimulai dari bootstrap aplikasi, serta toast hasil print kini ter-mount global.
 - Memperbaiki total invoice/quote agar memakai pengaturan pajak tenant dan memasukkan PPN ke grand total saat pajak eksklusif.
 - Memperketat renderer HTML print dengan DOMParser, menolak node/URL executable, namun mempertahankan gambar base64 yang valid; validasi backend kini menerima seluruh konfigurasi printer UI.

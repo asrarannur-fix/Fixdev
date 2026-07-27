@@ -15,7 +15,9 @@ test("workflow mencegah handover dan payment method invalid", () => {
   assert.match(workflow, /if \(ticket\.handoverAt\)/);
   assert.match(workflow, /z\.enum\(\['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'TEMPO'\]\)/);
   assert.match(workflow, /requireTicketWarehouse/);
-  assert.match(workflow, /deleted_at IS NULL/);
+  assert.match(workflow, /WHERE id=\$1 AND tenant_id=\$2 AND branch_id=\$3 AND deleted_at IS NULL/);
+  assert.match(workflow, /status='RESERVED'/);
+  assert.match(workflow, /status='REQUESTED'/);
 });
 
 test("API v1 menolak mutasi ticket legacy", () => {

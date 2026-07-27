@@ -757,11 +757,14 @@ export const ServiceList: React.FC<any> = (props) => {
                       type: 'danger',
                     })
                   ) {
-                    selectedServiceIds.forEach((id) =>
-                      updateServiceTicket(id, { deletedAt: new Date().toISOString() } as any)
+                    const selectedCount = selectedServiceIds.length;
+                    await Promise.all(
+                      selectedServiceIds.map((id) =>
+                        updateServiceTicket(id, { deletedAt: new Date().toISOString() } as any)
+                      )
                     );
                     setSelectedServiceIds([]);
-                    showToast(`${selectedServiceIds.length} tiket dihapus.`, 'success');
+                    showToast(`${selectedCount} tiket dihapus.`, 'success');
                   }
                 }}
                 className="px-2.5 py-1 text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100"

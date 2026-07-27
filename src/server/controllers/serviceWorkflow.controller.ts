@@ -41,10 +41,20 @@ export function canTransition(from: string, to: string): boolean {
   return (SERVICE_TRANSITIONS[from] || []).includes(to);
 }
 
-export function calculateServiceInvoice(estimatedCost: number, downPayment: number, taxRate = 11) {
+export function calculateServiceInvoice(
+  estimatedCost: number,
+  downPayment: number,
+  taxRate = 0,
+  taxInclusive = false
+) {
   const subtotal = Math.max(0, Number(estimatedCost) || 0);
-  const taxAmount = Math.round(subtotal * (Math.max(0, taxRate) / 100));
-  const total = subtotal + taxAmount;
+  const normalizedTaxRate = Math.max(0, taxRate);
+  const taxAmount = Math.round(
+    taxInclusive && normalizedTaxRate > 0
+      ? subtotal - subtotal / (1 + normalizedTaxRate / 100)
+      : subtotal * (normalizedTaxRate / 100)
+  );
+  const total = taxInclusive ? subtotal : subtotal + taxAmount;
   const downPaymentUsed = Math.min(total, Math.max(0, Number(downPayment) || 0));
   return { subtotal, taxAmount, total, downPaymentUsed, amountDue: total - downPaymentUsed };
 }
@@ -208,7 +218,7 @@ async function requireTicketWarehouse(client: any, ticket: any, warehouseId: str
 async function lockedTicket(client: any, req: Request) {
   const result = await client.query(
     `SELECT ${ticketSelect()} FROM service_tickets
-     WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 FOR UPDATE`,
+     WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 AND deleted_at IS NULL FOR UPDATE`,
     [req.params.id, req.tenantId, req.branchId || req.headers['x-branch-id']]
   );
   const ticket = result.rows[0];
@@ -363,7 +373,7 @@ async function queueNotification(
 async function finalTicket(client: any, req: Request) {
   return (
     await client.query(
-      `SELECT ${ticketSelect()} FROM service_tickets WHERE id=$1 AND tenant_id=$2`,
+      `SELECT ${ticketSelect()} FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
       [req.params.id, req.tenantId]
     )
   ).rows[0];
@@ -410,7 +420,9 @@ export async function transitionServiceTicket(req: Request, res: Response) {
   if (!cooldown.ok) {
     return res
       .status(429)
-      .json({ error: `Tunggu ${cooldown.remainingMs} detik sebelum ubah status lagi.` });
+      .json({
+        error: `Tunggu ${Math.ceil(cooldown.remainingMs / 1000)} detik sebelum ubah status lagi.`,
+      });
   }
   try {
     const ticket = await dbTransaction(async (client) => {
@@ -506,6 +518,7 @@ export async function diagnoseServiceTicket(req: Request, res: Response) {
             error.status = 404;
             throw error;
           }
+          await requireTicketWarehouse(client, current, part.warehouseId);
         }
         await client.query(
           `INSERT INTO service_parts (tenant_id,ticket_id,product_id,warehouse_id,name,quantity,unit_price,serial_number,status)
@@ -613,6 +626,19 @@ export async function completeServiceQc(req: Request, res: Response) {
         );
         error.status = 409;
         throw error;
+      }
+      if (parsed.data.passed) {
+        const unresolved = await client.query(
+          `SELECT COUNT(*)::int AS total FROM service_parts WHERE tenant_id=$1 AND ticket_id=$2 AND status='REQUESTED'`,
+          [req.tenantId, current.id]
+        );
+        if ((unresolved.rows[0]?.total || 0) > 0) {
+          const error: any = new Error(
+            'Masih ada spare part REQUESTED yang belum direservasi atau dibatalkan.'
+          );
+          error.status = 409;
+          throw error;
+        }
       }
       await client.query(
         `UPDATE service_tickets SET qc_score=$1,qc_notes=$2,qc_checklist=$3::jsonb,qc_photos=$4::jsonb,qc_status=$5,updated_at=NOW()
@@ -951,6 +977,7 @@ export async function requestServicePart(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
+      await requireTicketWarehouse(client, ticket, parsed.data.warehouseId);
       const product = await client.query(
         `SELECT p.id,p.name,p.sell_price,p.purchase_cost,COALESCE(ps.quantity,0)::float AS stock
           FROM products p LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
@@ -1216,16 +1243,25 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         throw error;
       }
       const tenantSettings = await client.query(
-        `SELECT COALESCE((settings #>> '{taxSettings,taxRate}')::numeric, 0) AS tax_rate
+        `SELECT COALESCE((settings #>> '{taxSettings,taxRate}')::numeric, 0) AS tax_rate,
+                 COALESCE((settings #>> '{taxSettings,taxEnabled}')::boolean, FALSE) AS tax_enabled,
+                 COALESCE((settings #>> '{taxSettings,taxInclusive}')::boolean, FALSE) AS tax_inclusive
          FROM tenants WHERE id=$1`,
         [req.tenantId]
       );
-      const taxRate = Math.max(0, Math.min(100, Number(tenantSettings.rows[0]?.tax_rate) || 0));
-      const invoice = calculateServiceInvoice(ticket.estimatedCost, ticket.downPayment, taxRate);
+      const taxRate = tenantSettings.rows[0]?.tax_enabled
+        ? Math.max(0, Math.min(100, Number(tenantSettings.rows[0]?.tax_rate) || 0))
+        : 0;
+      const invoice = calculateServiceInvoice(
+        ticket.estimatedCost,
+        ticket.downPayment,
+        taxRate,
+        Boolean(tenantSettings.rows[0]?.tax_inclusive)
+      );
       const parts = await client.query(
         `SELECT sp.*,p.purchase_cost FROM service_parts sp
          JOIN products p ON p.id=sp.product_id AND p.tenant_id=sp.tenant_id
-         WHERE sp.tenant_id=$1 AND sp.ticket_id=$2 AND sp.status IN ('REQUESTED','RESERVED') FOR UPDATE OF sp`,
+         WHERE sp.tenant_id=$1 AND sp.ticket_id=$2 AND sp.status='RESERVED' FOR UPDATE OF sp`,
         [req.tenantId, ticket.id]
       );
       for (const part of parts.rows) {

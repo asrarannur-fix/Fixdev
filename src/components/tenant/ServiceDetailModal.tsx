@@ -1829,7 +1829,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     </button>
                   )}
 
-                  {['SELESAI', 'SIAP_DIAMBIL'].includes(ticket.status) &&
+                  {['SELESAI', 'MENUGGU_PEMBAYARAN', 'SIAP_DIAMBIL'].includes(ticket.status) &&
                     (() => {
                       const isRefOrProofRequired =
                         handoverPaymentMethod !== PaymentMethod.CASH &&
@@ -1840,9 +1840,16 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         handoverProofName.trim() !== '';
 
                       const estCost = Number(ticket.estimatedCost) || 0;
-                      const tenantTaxRate = Number(tenantObj?.settings?.taxSettings?.taxRate) || 11;
-                      const taxAmt = Math.round(estCost * (tenantTaxRate / 100));
-                      const totalAmt = estCost + taxAmt;
+                      const taxSettings = tenantObj?.settings?.taxSettings;
+                      const tenantTaxRate = taxSettings?.taxEnabled
+                        ? Math.max(0, Number(taxSettings.taxRate) || 0)
+                        : 0;
+                      const taxAmt = Math.round(
+                        taxSettings?.taxInclusive && tenantTaxRate > 0
+                          ? estCost - estCost / (1 + tenantTaxRate / 100)
+                          : estCost * (tenantTaxRate / 100)
+                      );
+                      const totalAmt = taxSettings?.taxInclusive ? estCost : estCost + taxAmt;
                       const downPayment = Number(ticket.downPayment) || 0;
                       const amountDue = Math.max(0, totalAmt - downPayment);
                       const targetAccountLabel =
