@@ -171,7 +171,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
   return (
     <div className="min-h-[calc(100vh-120px)] bg-white/60 rounded-3xl ring-2 ring-accent/20 overflow-hidden">
-      <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-5 space-y-4">
+      <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-3 sm:p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-accent text-white shadow-sm shadow-accent/15">
             <ClipboardList className="w-5 h-5" />
@@ -201,10 +201,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </ul>
           </div>
         )}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_minmax(340px,400px)] gap-4 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_minmax(280px,340px)] gap-3 items-start">
           {/* Left Column: Device & Customer Info */}
           <div className="space-y-3 figma-card p-3.5">
-            <div className="figma-sub p-3">
+            <div className="figma-sub p-2.5">
               <div className="figma-head">
                 <span className="figma-chip"><User /></span>
               </div>
@@ -342,7 +342,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   {showNewSrvCustForm && !newSrvCustomer && (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-indigo-100 bg-white p-3">
                       <div className="relative">
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                           Nama Pelanggan Baru *
                         </label>
                         <input
@@ -356,7 +356,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <FieldError name="customerName" />
                       </div>
                       <div className="relative">
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                           Nomor WhatsApp *
                         </label>
                         <input
@@ -373,7 +373,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <FieldError name="customerPhone" />
                       </div>
                       <div className="relative">
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                           Email
                         </label>
                         <input
@@ -386,7 +386,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                           Alamat
                         </label>
                         <input
@@ -418,7 +418,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Kategori Perangkat
                 </label>
                 <select
@@ -437,7 +437,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Estimasi Selesai
                 </label>
                 <input
@@ -451,7 +451,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="relative">
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Nama Perangkat
                 </label>
                 <input
@@ -466,7 +466,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 <FieldError name="deviceName" />
               </div>
               <div className="relative">
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Brand / Model
                 </label>
                 <input
@@ -495,7 +495,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 <div className="px-4 pb-4 pt-2 space-y-3 border-t border-slate-200">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                         Serial Number (SN)
                       </label>
                       <input
@@ -507,7 +507,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                         Masa Garansi Bawaan
                       </label>
                       <select
@@ -576,7 +576,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Kondisi Fisik Perangkat
                 </label>
                 <select
@@ -592,7 +592,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   PIN / Pola / Password Kunci Layar
                 </label>
                 <input
@@ -613,7 +613,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                 Keluhan Kerusakan / Kendala Perangkat
               </label>
               <textarea
@@ -851,7 +851,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
 
           {/* Right Column: Checklist, Photos, and Outsourcing */}
-          <div className="space-y-3 figma-card p-3.5 xl:sticky xl:top-28">
+          <div className="space-y-2 figma-card p-3 xl:sticky xl:top-20">
             <div className="figma-head">
               <span className="figma-chip"><ListChecks /></span>
             </div>
