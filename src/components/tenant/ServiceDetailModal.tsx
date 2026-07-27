@@ -1745,7 +1745,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             newStatus,
                             'Status diperbarui melalui aksi operasional.'
                           );
-                        } catch {
+                        } catch (err) {
+                          console.error('Failed to update service status:', err);
                           return;
                         }
                       }}
