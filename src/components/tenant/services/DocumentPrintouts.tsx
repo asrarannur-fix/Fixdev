@@ -268,13 +268,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
 
                     {printConfig?.printQrCode && (
                       <div className="flex flex-col items-center justify-center py-2 border-t border-dashed border-slate-200">
-                        <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${publicBaseUrl}/?ticket=${ticket.ticketNo}`)}`}
-                          alt={`QR tracking ${ticket.ticketNo}`}
-                          className="w-20 h-20"
-                        />
-                        <span className="text-[8px] text-slate-500 mt-1">
-                          Scan untuk lacak status servis
+                        <span className="text-[8px] text-slate-500 mt-1 break-all text-center">
+                          Lacak status: {publicBaseUrl}/?ticket=
+                          {encodeURIComponent(ticket.ticketNo)}
                         </span>
                       </div>
                     )}
@@ -370,11 +366,11 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   <button
                     onClick={() => {
                       let printIframe = document.getElementById(
-                        'hidden-print-iframe'
+                        'print-job-frame'
                       ) as HTMLIFrameElement;
                       if (!printIframe) {
                         printIframe = document.createElement('iframe');
-                        printIframe.id = 'hidden-print-iframe';
+                        printIframe.id = 'print-job-frame';
                         printIframe.style.position = 'fixed';
                         printIframe.style.width = '0';
                         printIframe.style.height = '0';
@@ -504,7 +500,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                             printConfig?.printQrCode
                               ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + '/?ticket=' + ticket.ticketNo)}" alt="QR Code" />
+                             <div class="qr-placeholder">Lacak status: ${escapeHtml(publicBaseUrl + '/?ticket=' + ticket.ticketNo)}</div>
                           </div>
                           `
                               : ''
@@ -675,11 +671,11 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   <button
                     onClick={() => {
                       let printIframe = document.getElementById(
-                        'hidden-print-iframe'
+                        'print-job-frame'
                       ) as HTMLIFrameElement;
                       if (!printIframe) {
                         printIframe = document.createElement('iframe');
-                        printIframe.id = 'hidden-print-iframe';
+                        printIframe.id = 'print-job-frame';
                         printIframe.style.position = 'fixed';
                         printIframe.style.width = '0';
                         printIframe.style.height = '0';
@@ -811,7 +807,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                              printConfig?.printQrCode
                                ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + '/?tab=service&sub=approve-quote&ticket=' + ticket.ticketNo)}" alt="QR Code" />
+                             <div class="qr-placeholder">Persetujuan: ${escapeHtml(publicBaseUrl + '/?tab=service&sub=approve-quote&ticket=' + ticket.ticketNo)}</div>
                           </div>
                           `
                                : ''
@@ -992,11 +988,11 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     <button
                       onClick={() => {
                         let printIframe = document.getElementById(
-                          'hidden-print-iframe'
+                          'print-job-frame'
                         ) as HTMLIFrameElement;
                         if (!printIframe) {
                           printIframe = document.createElement('iframe');
-                          printIframe.id = 'hidden-print-iframe';
+                          printIframe.id = 'print-job-frame';
                           printIframe.style.position = 'fixed';
                           printIframe.style.width = '0';
                           printIframe.style.height = '0';
@@ -1087,7 +1083,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                printConfig?.printQrCode
                                  ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(claimUrl)}" alt="QR Code" />
+                             <div class="qr-placeholder">Klaim garansi: ${escapeHtml(claimUrl)}</div>
                           </div>
                           `
                                  : ''

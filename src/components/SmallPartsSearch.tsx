@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSaaS } from '../context/SaaSContext';
 import { useToast } from './ui/Toast';
 import { usePrintConfig } from '../hooks/usePrintConfig';
-import { printFrame } from '../utils/printJob';
+import { printJobAsync } from '../utils/printJob';
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
@@ -140,10 +140,10 @@ export const SmallPartsSearch: React.FC = () => {
   const handlePrintPurchaseOrder = () => {
     if (!selectedPoComp) return;
 
-    let printIframe = document.getElementById('hidden-print-iframe') as HTMLIFrameElement;
+    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
     if (!printIframe) {
       printIframe = document.createElement('iframe');
-      printIframe.id = 'hidden-print-iframe';
+      printIframe.id = 'print-job-frame';
       printIframe.style.position = 'fixed';
       printIframe.style.width = '0';
       printIframe.style.height = '0';
@@ -310,9 +310,13 @@ export const SmallPartsSearch: React.FC = () => {
     printDoc.close();
 
     setTimeout(() => {
-      const pIframe = document.getElementById('hidden-print-iframe') as HTMLIFrameElement;
+      const pIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
       if (pIframe && pIframe.contentWindow) {
-        printFrame(pIframe, printConfig, 'Purchase Order');
+        void printJobAsync({
+          title: 'Purchase Order',
+          html: pIframe.contentDocument?.body.innerHTML || '',
+          printConfig,
+        });
         addLog(
           'Print Purchase Order',
           `Mencetak dokumen Purchase Order \${poNo} ke printer thermal \${poPrinterFormat}mm.`,

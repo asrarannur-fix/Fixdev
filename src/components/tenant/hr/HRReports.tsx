@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from 'react';
 import {
   BarChart3,
   Printer,
@@ -12,53 +12,52 @@ import {
   UserPlus,
   UserMinus,
   CheckCircle2,
-} from "lucide-react";
-import { useSaaS } from "../../../context/SaaSContext";
-import { useToast } from "../../ui/Toast";
+} from 'lucide-react';
+import { useSaaS } from '../../../context/SaaSContext';
+import { useToast } from '../../ui/Toast';
+import { printJobAsync } from '../../../utils/printJob';
 
 interface HRReportsProps {
   activeSubTab: string;
 }
 
-type ReportType = "attendance" | "payroll" | "turnover";
+type ReportType = 'attendance' | 'payroll' | 'turnover';
 
 const REPORT_TABS: { key: ReportType; label: string }[] = [
-  { key: "attendance", label: "Rekap Kehadiran" },
-  { key: "payroll", label: "Rekap Payroll" },
-  { key: "turnover", label: "Turnover Report" },
+  { key: 'attendance', label: 'Rekap Kehadiran' },
+  { key: 'payroll', label: 'Rekap Payroll' },
+  { key: 'turnover', label: 'Turnover Report' },
 ];
 
 export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
   const { employees, payroll, scopedCommissions, currentUser } = useSaaS();
   const { showToast } = useToast();
 
-  const [reportType, setReportType] = useState<ReportType>("attendance");
+  const [reportType, setReportType] = useState<ReportType>('attendance');
   const [filterMonth, setFilterMonth] = useState<string>(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [turnoverFrom, setTurnoverFrom] = useState<string>(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [turnoverTo, setTurnoverTo] = useState<string>(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  if (activeSubTab !== "reports") return null;
+  if (activeSubTab !== 'reports') return null;
 
-  const tenantEmployees = employees.filter(
-    (e) => e.tenantId === currentUser?.tenantId,
-  );
+  const tenantEmployees = employees.filter((e) => e.tenantId === currentUser?.tenantId);
 
   // ──────────────────────────────────────────
   // ATTENDANCE REPORT
   // ──────────────────────────────────────────
 
   const attendanceData = useMemo(() => {
-    if (reportType !== "attendance") return [];
-    const [yStr, mStr] = filterMonth.split("-");
+    if (reportType !== 'attendance') return [];
+    const [yStr, mStr] = filterMonth.split('-');
     const year = parseInt(yStr, 10);
     const month = parseInt(mStr, 10);
 
@@ -68,25 +67,16 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
         return d.getFullYear() === year && d.getMonth() + 1 === month;
       });
 
-      const totalHadir = monthAttendances.filter(
-        (a) => a.status === "PRESENT",
-      ).length;
-      const totalTerlambat = monthAttendances.filter(
-        (a) => a.status === "LATE",
-      ).length;
-      const totalAlpha = monthAttendances.filter(
-        (a) => a.status === "ABSENT",
-      ).length;
+      const totalHadir = monthAttendances.filter((a) => a.status === 'PRESENT').length;
+      const totalTerlambat = monthAttendances.filter((a) => a.status === 'LATE').length;
+      const totalAlpha = monthAttendances.filter((a) => a.status === 'ABSENT').length;
       const approvedLeaves = (emp.leaves || []).filter((l) => {
-        if (l.status !== "APPROVED") return false;
+        if (l.status !== 'APPROVED') return false;
         const ld = new Date(l.start);
         return ld.getFullYear() === year && ld.getMonth() + 1 === month;
       }).length;
       const totalCuti = approvedLeaves;
-      const totalJamKerja = monthAttendances.reduce(
-        (s, a) => s + (a.workHours || 0),
-        0,
-      );
+      const totalJamKerja = monthAttendances.reduce((s, a) => s + (a.workHours || 0), 0);
 
       return {
         id: emp.id,
@@ -106,22 +96,15 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
     const totalEmp = attendanceData.length;
     const avgHadir =
       totalEmp > 0
-        ? Math.round(
-            attendanceData.reduce((s, e) => s + e.totalHadir, 0) / totalEmp,
-          )
+        ? Math.round(attendanceData.reduce((s, e) => s + e.totalHadir, 0) / totalEmp)
         : 0;
     const avgTerlambat =
       totalEmp > 0
-        ? Math.round(
-            (attendanceData.reduce((s, e) => s + e.totalTerlambat, 0) /
-              totalEmp) *
-              10,
-          ) / 10
+        ? Math.round((attendanceData.reduce((s, e) => s + e.totalTerlambat, 0) / totalEmp) * 10) /
+          10
         : 0;
     const totalJam =
-      Math.round(
-        attendanceData.reduce((s, e) => s + e.totalJamKerja, 0) * 100,
-      ) / 100;
+      Math.round(attendanceData.reduce((s, e) => s + e.totalJamKerja, 0) * 100) / 100;
     const totalAlpha = attendanceData.reduce((s, e) => s + e.totalAlpha, 0);
     return { totalEmp, avgHadir, avgTerlambat, totalJam, totalAlpha };
   }, [attendanceData]);
@@ -131,9 +114,9 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
   // ──────────────────────────────────────────
 
   const payrollData = useMemo(() => {
-    if (reportType !== "payroll") return [];
+    if (reportType !== 'payroll') return [];
     const monthPayroll = payroll.filter(
-      (p) => p.tenantId === currentUser?.tenantId && p.monthYear === filterMonth,
+      (p) => p.tenantId === currentUser?.tenantId && p.monthYear === filterMonth
     );
 
     return monthPayroll.map((p) => {
@@ -141,7 +124,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
       return {
         ...p,
         empName: emp?.name || p.employeeId,
-        empPosition: emp?.position || "-",
+        empPosition: emp?.position || '-',
       };
     });
   }, [payroll, tenantEmployees, filterMonth, reportType, currentUser?.tenantId]);
@@ -152,17 +135,11 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
     const totalPotongan = payrollData.reduce(
       (s, p) =>
         s + p.bpjsKesehatan + p.bpjsKetenagakerjaan + p.pph21 + p.deductions + p.kasbonDeduction,
-      0,
+      0
     );
     const totalBruto = payrollData.reduce(
-      (s, p) =>
-        s +
-        p.basicSalary +
-        p.commissions +
-        p.allowances +
-        p.overtimePay +
-        p.thrAmount,
-      0,
+      (s, p) => s + p.basicSalary + p.commissions + p.allowances + p.overtimePay + p.thrAmount,
+      0
     );
     return { totalGaji, totalKomisi, totalPotongan, totalBruto };
   }, [payrollData]);
@@ -172,9 +149,9 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
   // ──────────────────────────────────────────
 
   const turnoverData = useMemo(() => {
-    if (reportType !== "turnover") return null;
-    const fromDate = new Date(turnoverFrom + "-01");
-    const toDate = new Date(turnoverTo + "-28");
+    if (reportType !== 'turnover') return null;
+    const fromDate = new Date(turnoverFrom + '-01');
+    const toDate = new Date(turnoverTo + '-28');
     toDate.setMonth(toDate.getMonth() + 1);
     toDate.setDate(0);
 
@@ -185,16 +162,13 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
     });
 
     const leftEmployees = tenantEmployees.filter((emp) => {
-      if (
-        (emp.status === "RESIGNED" || emp.status === "TERMINATED") &&
-        emp.resignedAt
-      ) {
+      if ((emp.status === 'RESIGNED' || emp.status === 'TERMINATED') && emp.resignedAt) {
         const rd = new Date(emp.resignedAt);
         return rd >= fromDate && rd <= toDate;
       }
       if (emp.leaves) {
         for (const l of emp.leaves) {
-          if (l.status === "APPROVED") {
+          if (l.status === 'APPROVED') {
             const ld = new Date(l.end);
             if (ld >= fromDate && ld <= toDate) return false;
           }
@@ -204,14 +178,10 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
     });
 
     const activeNow = tenantEmployees.filter(
-      (e) => !e.status || e.status === "ACTIVE" || e.status === "ON_LEAVE",
+      (e) => !e.status || e.status === 'ACTIVE' || e.status === 'ON_LEAVE'
     ).length;
-    const resignedNow = tenantEmployees.filter(
-      (e) => e.status === "RESIGNED",
-    ).length;
-    const terminatedNow = tenantEmployees.filter(
-      (e) => e.status === "TERMINATED",
-    ).length;
+    const resignedNow = tenantEmployees.filter((e) => e.status === 'RESIGNED').length;
+    const terminatedNow = tenantEmployees.filter((e) => e.status === 'TERMINATED').length;
 
     return {
       newJoins,
@@ -221,11 +191,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
       terminatedCount: terminatedNow,
       turnoverRate:
         activeNow + leftEmployees.length > 0
-          ? Math.round(
-              (leftEmployees.length /
-                (activeNow + leftEmployees.length)) *
-                1000,
-            ) / 10
+          ? Math.round((leftEmployees.length / (activeNow + leftEmployees.length)) * 1000) / 10
           : 0,
     };
   }, [tenantEmployees, turnoverFrom, turnoverTo, reportType]);
@@ -234,20 +200,26 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
   // HELPERS
   // ──────────────────────────────────────────
 
-  const fmtCurrency = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
+  const fmtCurrency = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
   const fmtMonthLabel = (ym: string) => {
-    const [y, m] = ym.split("-");
+    const [y, m] = ym.split('-');
     const date = new Date(parseInt(y), parseInt(m) - 1);
-    return date.toLocaleDateString("id-ID", {
-      month: "long",
-      year: "numeric",
+    return date.toLocaleDateString('id-ID', {
+      month: 'long',
+      year: 'numeric',
     });
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const report = document.querySelector('[data-hr-report]');
+    if (report) void printJobAsync({ title: 'Laporan HR', html: report.innerHTML });
+  };
 
   return (
-    <div className="space-y-6 animate-fadeIn dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_.text-slate-500]:text-zinc-400 dark:[&_.text-slate-400]:text-zinc-500 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-100 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-100 dark:[&_tr:hover]:bg-zinc-900 print:space-y-4 print:p-0">
+    <div
+      data-hr-report
+      className="space-y-6 animate-fadeIn dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-900]:text-zinc-100 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_.text-slate-500]:text-zinc-400 dark:[&_.text-slate-400]:text-zinc-500 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-100 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-100 dark:[&_tr:hover]:bg-zinc-900 print:space-y-4 print:p-0"
+    >
       {/* Header */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm print:rounded-none print:border-0 print:p-2 print:shadow-none">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -280,8 +252,8 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
             onClick={() => setReportType(tab.key)}
             className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-full border cursor-pointer transition-all ${
               reportType === tab.key
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-400"
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-400'
             }`}
           >
             {tab.label}
@@ -292,7 +264,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
       {/* ═══════════════════════════════════════
           ATTENDANCE REPORT
           ═══════════════════════════════════════ */}
-      {reportType === "attendance" && (
+      {reportType === 'attendance' && (
         <div className="space-y-5 print:space-y-3">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:gap-2">
@@ -309,7 +281,8 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                 Rata-rata Hadir
               </p>
               <p className="text-lg font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-                {attendanceKpis.avgHadir} <span className="text-xs font-medium text-slate-400">hari</span>
+                {attendanceKpis.avgHadir}{' '}
+                <span className="text-xs font-medium text-slate-400">hari</span>
               </p>
             </div>
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 print:p-2 print:shadow-none">
@@ -317,7 +290,8 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                 Rata-rata Terlambat
               </p>
               <p className="text-lg font-extrabold font-mono text-amber-600 dark:text-amber-400">
-                {attendanceKpis.avgTerlambat} <span className="text-xs font-medium text-slate-400">hari</span>
+                {attendanceKpis.avgTerlambat}{' '}
+                <span className="text-xs font-medium text-slate-400">hari</span>
               </p>
             </div>
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 print:p-2 print:shadow-none">
@@ -325,7 +299,8 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                 Total Jam Kerja
               </p>
               <p className="text-lg font-extrabold font-mono text-blue-600 dark:text-blue-400">
-                {attendanceKpis.totalJam.toLocaleString("id-ID")} <span className="text-xs font-medium text-slate-400">jam</span>
+                {attendanceKpis.totalJam.toLocaleString('id-ID')}{' '}
+                <span className="text-xs font-medium text-slate-400">jam</span>
               </p>
             </div>
           </div>
@@ -380,10 +355,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                     {attendanceData.map((row) => {
                       const total =
-                        row.totalHadir +
-                        row.totalTerlambat +
-                        row.totalAlpha +
-                        row.totalCuti;
+                        row.totalHadir + row.totalTerlambat + row.totalAlpha + row.totalCuti;
                       const maxVal = Math.max(total, 1);
                       return (
                         <tr
@@ -394,9 +366,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                             <p className="font-semibold text-slate-700 dark:text-zinc-200">
                               {row.name}
                             </p>
-                            <p className="text-[10px] text-slate-400">
-                              {row.position}
-                            </p>
+                            <p className="text-[10px] text-slate-400">{row.position}</p>
                           </td>
                           <td className="px-3 py-2.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
                             {row.totalHadir}
@@ -485,7 +455,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
       {/* ═══════════════════════════════════════
           PAYROLL REPORT
           ═══════════════════════════════════════ */}
-      {reportType === "payroll" && (
+      {reportType === 'payroll' && (
         <div className="space-y-5 print:space-y-3">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:gap-2">
@@ -591,9 +561,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                             <p className="font-semibold text-slate-700 dark:text-zinc-200">
                               {row.empName}
                             </p>
-                            <p className="text-[10px] text-slate-400">
-                              {row.empPosition}
-                            </p>
+                            <p className="text-[10px] text-slate-400">{row.empPosition}</p>
                           </td>
                           <td className="px-3 py-2.5 text-right font-mono text-slate-600 dark:text-zinc-300">
                             {fmtCurrency(row.basicSalary)}
@@ -616,12 +584,12 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                           <td className="px-3 py-2.5">
                             <span
                               className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                row.status === "PAID"
-                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                                  : "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                                row.status === 'PAID'
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
                               }`}
                             >
-                              {row.status === "PAID" ? "DIBAYAR" : "DRAFT"}
+                              {row.status === 'PAID' ? 'DIBAYAR' : 'DRAFT'}
                             </span>
                           </td>
                         </tr>
@@ -646,11 +614,18 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                         {fmtCurrency(payrollData.reduce((s, r) => s + r.overtimePay, 0))}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-[10px] text-rose-600">
-                        {fmtCurrency(payrollData.reduce(
-                          (s, r) =>
-                            s + r.bpjsKesehatan + r.bpjsKetenagakerjaan + r.pph21 + r.deductions + r.kasbonDeduction,
-                          0,
-                        ))}
+                        {fmtCurrency(
+                          payrollData.reduce(
+                            (s, r) =>
+                              s +
+                              r.bpjsKesehatan +
+                              r.bpjsKetenagakerjaan +
+                              r.pph21 +
+                              r.deductions +
+                              r.kasbonDeduction,
+                            0
+                          )
+                        )}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-[10px] text-emerald-700 font-extrabold">
                         {fmtCurrency(payrollData.reduce((s, r) => s + r.netSalary, 0))}
@@ -668,7 +643,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
       {/* ═══════════════════════════════════════
           TURNOVER REPORT
           ═══════════════════════════════════════ */}
-      {reportType === "turnover" && turnoverData && (
+      {reportType === 'turnover' && turnoverData && (
         <div className="space-y-5 print:space-y-3">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:gap-2">
@@ -726,9 +701,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                 Periode
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-slate-400">
-                  Dari
-                </label>
+                <label className="text-[10px] font-bold text-slate-400">Dari</label>
                 <input
                   type="month"
                   value={turnoverFrom}
@@ -737,9 +710,7 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-slate-400">
-                  Sampai
-                </label>
+                <label className="text-[10px] font-bold text-slate-400">Sampai</label>
                 <input
                   type="month"
                   value={turnoverTo}
@@ -793,11 +764,11 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                         <td className="px-3 py-2.5">
                           <span
                             className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                              emp.contractStatus === "PERMANENT"
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                                : emp.contractStatus === "CONTRACT"
-                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
-                                  : "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                              emp.contractStatus === 'PERMANENT'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                : emp.contractStatus === 'CONTRACT'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
+                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
                             }`}
                           >
                             {emp.contractStatus}
@@ -805,12 +776,12 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                         </td>
                         <td className="px-3 py-2.5 font-mono text-slate-500">
                           {emp.joinDate
-                            ? new Date(emp.joinDate).toLocaleDateString("id-ID", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
+                            ? new Date(emp.joinDate).toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
                               })
-                            : "-"}
+                            : '-'}
                         </td>
                       </tr>
                     ))}
@@ -864,25 +835,25 @@ export const HRReports: React.FC<HRReportsProps> = ({ activeSubTab }) => {
                         <td className="px-3 py-2.5">
                           <span
                             className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                              emp.status === "RESIGNED"
-                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                                : "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                              emp.status === 'RESIGNED'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                                : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
                             }`}
                           >
-                            {emp.status === "RESIGNED" ? "RESIGN" : "TERMINATED"}
+                            {emp.status === 'RESIGNED' ? 'RESIGN' : 'TERMINATED'}
                           </span>
                         </td>
                         <td className="px-3 py-2.5 font-mono text-slate-500">
                           {emp.resignedAt
-                            ? new Date(emp.resignedAt).toLocaleDateString("id-ID", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
+                            ? new Date(emp.resignedAt).toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
                               })
-                            : "-"}
+                            : '-'}
                         </td>
                         <td className="px-3 py-2.5 text-slate-500 max-w-[200px] truncate">
-                          {emp.exitInterviewNotes || "-"}
+                          {emp.exitInterviewNotes || '-'}
                         </td>
                       </tr>
                     ))}

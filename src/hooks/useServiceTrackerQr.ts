@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { ServiceTicket } from "../types";
-import { useToast } from "../components/ui/Toast";
-import { usePrintConfig } from "./usePrintConfig";
-import { useSaaS } from "../context/SaaSContext";
-import { printFrame } from "../utils/printJob";
+import { useState, useEffect } from 'react';
+import { ServiceTicket } from '../types';
+import { useToast } from '../components/ui/Toast';
+import { usePrintConfig } from './usePrintConfig';
+import { useSaaS } from '../context/SaaSContext';
+import { printJobAsync } from '../utils/printJob';
 import {
   getPrintPageSize,
   getPrintMargin,
@@ -12,37 +12,33 @@ import {
   getPrintFooterHtml,
   getPrintTermsHtml,
   escapeHtml,
-} from "../utils/print";
+} from '../utils/print';
 
 export function useServiceTrackerQr(
   services: ServiceTicket[],
   currentTenantId: string,
-  apiFetch: (url: string, init?: RequestInit) => Promise<Response>,
+  apiFetch: (url: string, init?: RequestInit) => Promise<Response>
 ) {
   const { showToast } = useToast();
   const { tenants, publicBaseUrl } = useSaaS();
   const printConfig = usePrintConfig();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
-  const tenantName = activeTenant?.name || "Layanan Servis";
+  const tenantName = activeTenant?.name || 'Layanan Servis';
   const logoUrl = activeTenant?.branding?.logoUrl;
-  const [selectedTicketId, setSelectedTicketId] = useState<string>("");
-  const [selectedTicket, setSelectedTicket] = useState<ServiceTicket | null>(
-    null,
-  );
-  const [syncStatus, setSyncStatus] = useState<
-    "idle" | "syncing" | "success" | "error"
-  >("idle");
-  const [syncMessage, setSyncMessage] = useState<string>("");
+  const [selectedTicketId, setSelectedTicketId] = useState<string>('');
+  const [selectedTicket, setSelectedTicket] = useState<ServiceTicket | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [syncMessage, setSyncMessage] = useState<string>('');
 
   // Update selected ticket details when selection or services list changes
   useEffect(() => {
     if (selectedTicketId) {
       const ticket = services.find(
-        (s) => s.id === selectedTicketId && s.tenantId === currentTenantId,
+        (s) => s.id === selectedTicketId && s.tenantId === currentTenantId
       );
       setSelectedTicket(ticket || null);
-      setSyncStatus("idle");
-      setSyncMessage("");
+      setSyncStatus('idle');
+      setSyncMessage('');
     } else {
       setSelectedTicket(null);
     }
@@ -50,14 +46,12 @@ export function useServiceTrackerQr(
 
   // Set default selection to the first available service ticket on load or tenant change
   useEffect(() => {
-    const tenantServices = services.filter(
-      (s) => s.tenantId === currentTenantId,
-    );
+    const tenantServices = services.filter((s) => s.tenantId === currentTenantId);
     const isValid = tenantServices.some((s) => s.id === selectedTicketId);
     if (tenantServices.length > 0 && (!selectedTicketId || !isValid)) {
       setSelectedTicketId(tenantServices[0].id);
     } else if (tenantServices.length === 0) {
-      setSelectedTicketId("");
+      setSelectedTicketId('');
     }
   }, [services, currentTenantId, selectedTicketId]);
 
@@ -68,25 +62,25 @@ export function useServiceTrackerQr(
   const handleSyncTicket = async (ticket: ServiceTicket) => {
     if (!ticket) return;
     try {
-      setSyncStatus("syncing");
-      const response = await apiFetch("/api/service-tracking/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      setSyncStatus('syncing');
+      const response = await apiFetch('/api/service-tracking/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticket }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setSyncStatus("success");
-        setSyncMessage("Tiket sukses disinkronkan ke gateway tracking online!");
+        setSyncStatus('success');
+        setSyncMessage('Tiket sukses disinkronkan ke gateway tracking online!');
       } else {
-        setSyncStatus("error");
-        setSyncMessage("Gagal menyelaraskan tiket dengan server.");
+        setSyncStatus('error');
+        setSyncMessage('Gagal menyelaraskan tiket dengan server.');
       }
     } catch (err) {
-      console.error("Tracking sync error:", err);
-      setSyncStatus("error");
-      setSyncMessage("Kesalahan jaringan saat menyinkronkan data.");
+      console.error('Tracking sync error:', err);
+      setSyncStatus('error');
+      setSyncMessage('Kesalahan jaringan saat menyinkronkan data.');
     }
   };
 
@@ -97,52 +91,40 @@ export function useServiceTrackerQr(
     return `${publicBaseUrl}/?ticket=${encodeURIComponent(ticketNo)}`;
   };
 
-  /**
-   * Generates a QR Code image URL via the secure global QR Server API.
-   */
-  const getQrCodeUrl = (ticketNo: string) => {
-    const trackingUrl = getTrackingUrl(ticketNo);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=10&data=${encodeURIComponent(trackingUrl)}`;
-  };
+  const getQrCodeUrl = (ticketNo: string) => getTrackingUrl(ticketNo);
 
   /**
    * Open a print-friendly overlay window to print the tracking receipt card beautifully.
    */
-  const handlePrintReceipt = (
-    ticket: ServiceTicket,
-    businessName = tenantName,
-  ) => {
+  const handlePrintReceipt = async (ticket: ServiceTicket, businessName = tenantName) => {
     const qrUrl = getQrCodeUrl(ticket.ticketNo);
     const trackingUrl = getTrackingUrl(ticket.ticketNo);
     const dateStr = ticket.customerApprovalDate
-      ? new Date(ticket.customerApprovalDate).toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
+      ? new Date(ticket.customerApprovalDate).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
         })
-      : new Date().toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
+      : new Date().toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
         });
 
-    let printIframe = document.getElementById(
-      "hidden-print-iframe",
-    ) as HTMLIFrameElement;
+    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
     if (!printIframe) {
-      printIframe = document.createElement("iframe");
-      printIframe.id = "hidden-print-iframe";
-      printIframe.style.position = "fixed";
-      printIframe.style.width = "0";
-      printIframe.style.height = "0";
-      printIframe.style.border = "none";
-      printIframe.style.opacity = "0";
+      printIframe = document.createElement('iframe');
+      printIframe.id = 'print-job-frame';
+      printIframe.style.position = 'fixed';
+      printIframe.style.width = '0';
+      printIframe.style.height = '0';
+      printIframe.style.border = 'none';
+      printIframe.style.opacity = '0';
       document.body.appendChild(printIframe);
     }
-    const printDoc =
-      printIframe.contentWindow?.document || printIframe.contentDocument;
+    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
     if (!printDoc) {
-      showToast("Gagal menginisialisasi modul pencetakan.", "error");
+      showToast('Gagal menginisialisasi modul pencetakan.', 'error');
       return;
     }
 
@@ -265,9 +247,9 @@ export function useServiceTrackerQr(
           <div class="receipt-card">
             ${getPrintHeaderHtml(printConfig, {
               businessName: businessName,
-               subtitle: "Layanan Service & Solusi Gadget Terpercaya",
-               logoUrl,
-             })}
+              subtitle: 'Layanan Service & Solusi Gadget Terpercaya',
+              logoUrl,
+            })}
 
             <div class="row">
               <span class="label">Tanggal Diterima:</span>
@@ -279,20 +261,24 @@ export function useServiceTrackerQr(
             </div>
             <div class="row">
               <span class="label">Brand & Model:</span>
-              <span class="value">${ticket.deviceBrandModel || "-"}</span>
+              <span class="value">${ticket.deviceBrandModel || '-'}</span>
             </div>
-            ${printConfig?.printCustomerNotes !== false ? `
+            ${
+              printConfig?.printCustomerNotes !== false
+                ? `
               <div class="row">
                 <span class="label">Keluhan Utama:</span>
                 <span class="value">${ticket.customerComplaints}</span>
               </div>
-            ` : ""}
+            `
+                : ''
+            }
             
             <div class="divider"></div>
 
             <div class="row">
               <span class="label">Jenis Layanan:</span>
-              <span class="value">${ticket.isCheckOnly ? "Hanya Diagnosis / Cek" : "Reparasi Penuh"}</span>
+              <span class="value">${ticket.isCheckOnly ? 'Hanya Diagnosis / Cek' : 'Reparasi Penuh'}</span>
             </div>
             <div class="row">
               <span class="label">Estimasi Biaya:</span>
@@ -303,7 +289,9 @@ export function useServiceTrackerQr(
               <span class="value">${ticket.status}</span>
             </div>
 
-            ${printConfig?.printQrCode !== false ? `
+            ${
+              printConfig?.printQrCode !== false
+                ? `
             <div class="qr-section">
               <img src="${qrUrl}" class="qr-code" alt="QR Lacak" />
               <div class="scan-instructions">
@@ -311,10 +299,12 @@ export function useServiceTrackerQr(
                 Scan QR Code di atas menggunakan HP Anda untuk memantau perkembangan servis unit ini secara real-time.
               </div>
               <div class="url-display">${trackingUrl}</div>
-            </div>` : ""}
+            </div>`
+                : ''
+            }
 
-            ${getPrintFooterHtml(printConfig, "Simpan lembaran bukti penerimaan unit ini secara aman.\nTunjukkan QR Code atau sebutkan Nomor Tiket saat pengambilan unit.\nTerima kasih atas kunjungan Anda!")}
-            ${printConfig?.showTermsInTracking !== false ? getPrintTermsHtml(printConfig, "general") : ""}
+            ${getPrintFooterHtml(printConfig, 'Simpan lembaran bukti penerimaan unit ini secara aman.\nTunjukkan QR Code atau sebutkan Nomor Tiket saat pengambilan unit.\nTerima kasih atas kunjungan Anda!')}
+            ${printConfig?.showTermsInTracking !== false ? getPrintTermsHtml(printConfig, 'general') : ''}
           </div>
           <script>
             window.onload = function() {
@@ -326,11 +316,13 @@ export function useServiceTrackerQr(
     `);
     printDoc.close();
     setTimeout(() => {
-      const pIframe = document.getElementById(
-        "hidden-print-iframe",
-      ) as HTMLIFrameElement;
+      const pIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
       if (pIframe && pIframe.contentWindow) {
-        printFrame(pIframe, printConfig, "Service Tracker");
+        void printJobAsync({
+          title: 'Service Tracker',
+          html: pIframe.contentDocument?.body.innerHTML || '',
+          printConfig,
+        });
       }
     }, 500);
   };
@@ -339,39 +331,46 @@ export function useServiceTrackerQr(
    * Cetak label thermal kecil (58mm) — alamat & customer, tanpa QR besar.
    * Dipanggil dari hover action card di inbox servis.
    */
-const getLabelSizeMm = (pc: any): string => {
-  const w = Math.min(600, Math.max(200, Number(pc?.labelWidth) || 320));
-  const h = Math.min(400, Math.max(100, Number(pc?.labelHeight) || 180));
-  // convert viewport px (~96dpi) to mm
-  const wmm = Math.round(w * 25.4 / 96);
-  const hmm = Math.round(h * 25.4 / 96);
-  return `${Math.max(30, wmm)}mm ${Math.max(20, hmm)}mm`;
-};
+  const getLabelSizeMm = (pc: any): string => {
+    const w = Math.min(600, Math.max(200, Number(pc?.labelWidth) || 320));
+    const h = Math.min(400, Math.max(100, Number(pc?.labelHeight) || 180));
+    // convert viewport px (~96dpi) to mm
+    const wmm = Math.round((w * 25.4) / 96);
+    const hmm = Math.round((h * 25.4) / 96);
+    return `${Math.max(30, wmm)}mm ${Math.max(20, hmm)}mm`;
+  };
 
   const handleDirectPrintLabel = (ticket: ServiceTicket, businessName = tenantName) => {
     const qrUrl = getQrCodeUrl(ticket.ticketNo);
     const dateStr = ticket.createdAt
-      ? new Date(ticket.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
-      : new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-    let printIframe = document.getElementById("hidden-print-iframe") as HTMLIFrameElement;
+      ? new Date(ticket.createdAt).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
     if (!printIframe) {
-      printIframe = document.createElement("iframe");
-      printIframe.id = "hidden-print-iframe";
-      printIframe.style.position = "fixed";
-      printIframe.style.width = "0";
-      printIframe.style.height = "0";
-      printIframe.style.border = "none";
-      printIframe.style.opacity = "0";
+      printIframe = document.createElement('iframe');
+      printIframe.id = 'print-job-frame';
+      printIframe.style.position = 'fixed';
+      printIframe.style.width = '0';
+      printIframe.style.height = '0';
+      printIframe.style.border = 'none';
+      printIframe.style.opacity = '0';
       document.body.appendChild(printIframe);
     }
     const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
-    if (!printDoc) { showToast("Gagal menginisialisasi modul pencetakan.", "error"); return; }
+    if (!printDoc) {
+      showToast('Gagal menginisialisasi modul pencetakan.', 'error');
+      return;
+    }
     printDoc.open();
     printDoc.write(`
       <html><head><title>Label ${ticket.ticketNo}</title>
       <style>
         @page { size: ${getLabelSizeMm(printConfig)}; margin: ${getPrintMargin(printConfig)}mm; }
-        body { font-family: 'Inter', sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: ${printConfig?.labelFontSize === "lg" ? 13 : printConfig?.labelFontSize === "base" ? 11 : printConfig?.labelFontSize === "sm" ? 10 : 8}px; }
+        body { font-family: 'Inter', sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: ${printConfig?.labelFontSize === 'lg' ? 13 : printConfig?.labelFontSize === 'base' ? 11 : printConfig?.labelFontSize === 'sm' ? 10 : 8}px; }
         .lbl-head { font-weight: 800; font-size: 13px; text-align: center; }
         .lbl-row { display: flex; justify-content: space-between; margin-top: 4px; }
         .lbl-qr { text-align: center; margin-top: 6px; }
@@ -379,20 +378,24 @@ const getLabelSizeMm = (pc: any): string => {
         .lbl-foot { text-align: center; font-size: 8px; color: #64748b; margin-top: 4px; }
       </style></head>
       <body>
-        ${printConfig?.labelShowLogo !== false ? `<div class="lbl-head">${businessName}</div>` : ""}
+        ${printConfig?.labelShowLogo !== false ? `<div class="lbl-head">${businessName}</div>` : ''}
         <div class="lbl-row"><span>Tiket:</span><strong>${ticket.ticketNo}</strong></div>
-        <div class="lbl-row"><span>Device:</span><span>${ticket.deviceName || "-"}</span></div>
+        <div class="lbl-row"><span>Device:</span><span>${ticket.deviceName || '-'}</span></div>
         <div class="lbl-row"><span>Masuk:</span><span>${dateStr}</span></div>
-        ${printConfig?.printCustomerNotes !== false ? `<div class="lbl-row"><span>Keluhan:</span><span>${ticket.customerComplaints || "-"}</span></div>` : ""}
-        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr"><img src="${qrUrl}" alt="QR" /></div>` : ""}
-        <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || "Scan untuk lacak status servis")}</div>
+        ${printConfig?.printCustomerNotes !== false ? `<div class="lbl-row"><span>Keluhan:</span><span>${ticket.customerComplaints || '-'}</span></div>` : ''}
+        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr"><img src="${qrUrl}" alt="QR" /></div>` : ''}
+        <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || 'Scan untuk lacak status servis')}</div>
       </body></html>
     `);
     printDoc.close();
     setTimeout(() => {
-      const pIframe = document.getElementById("hidden-print-iframe") as HTMLIFrameElement;
+      const pIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
       if (pIframe && pIframe.contentWindow) {
-        printFrame(pIframe, printConfig, "Service Tracker");
+        void printJobAsync({
+          title: 'Service Tracker',
+          html: pIframe.contentDocument?.body.innerHTML || '',
+          printConfig,
+        });
       }
     }, 400);
   };

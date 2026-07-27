@@ -335,13 +335,13 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                 Margin Kertas Cetakan
               </label>
               <span className="text-[10px] font-mono font-bold text-accent bg-accent-lighter px-2 py-0.5 rounded">
-                {printMargin} px
+                {printMargin} mm
               </span>
             </div>
             <input
               type="range"
               min="0"
-              max="40"
+              max="25"
               value={printMargin}
               onChange={(e) =>
                 savePrinterSettings({
@@ -351,9 +351,9 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
               className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-accent"
             />
             <div className="flex justify-between text-[8px] text-slate-400 font-mono mt-1">
-              <span>0 px (Tanpa Margin)</span>
-              <span>20 px</span>
-              <span>40 px (Sangat Lebar)</span>
+              <span>0 mm (Tanpa Margin)</span>
+              <span>12 mm</span>
+              <span>25 mm (Sangat Lebar)</span>
             </div>
           </div>
 

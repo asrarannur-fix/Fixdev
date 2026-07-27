@@ -1,6 +1,21 @@
 # Changelog
 
 ## 2026-07-26
+### Print blocker cleanup
+- Menghapus URL QR pihak ketiga dari alur print/tracking, mengganti dengan fallback URL atau teks lokal; cache sertifikat QZ memakai no-store dan nosniff.
+- Menghapus ID iframe print tetap dari call site terkait.
+- File terkait: `src/hooks/useServiceTrackerQr.ts`, `src/components/tenant/services/DocumentPrintouts.tsx`, `src/components/AssetManager.tsx`, `src/components/SaaSSubscription.tsx`, `src/server/controllers/qz.controller.ts`.
+
+## 2026-07-26
+### Hardening print P0/P1
+- Renderer pusat membersihkan script, event handler, dan gambar QR eksternal; QZ/browser tetap memakai dokumen yang sama.
+- Menambah retry koneksi QZ sebelum submit, limiter endpoint signing, enum backend untuk pengaturan print, serta label margin UI dalam mm.
+- Laporan Owner dan HR tidak lagi memakai fallback `document.body.innerHTML` atau `window.print`.
+- Resolver profil print per cabang memakai `currentBranchId`; call site rental, PO, garansi, langganan, dan tracker dialihkan ke renderer bersama.
+- QR garansi eksternal diganti placeholder URL aman tanpa request pihak ketiga.
+- File terkait: `src/utils/print.ts`, `src/utils/printJob.ts`, `src/hooks/usePrintConfig.ts`, `src/types/index.ts`, `src/server.ts`, `src/server/controllers/settings.controller.ts`, `src/components/DeviceRentalDashboard.tsx`, `src/components/SmallPartsSearch.tsx`, `src/components/WarrantyClaims.tsx`, `src/components/SaaSSubscription.tsx`, `src/hooks/useServiceTrackerQr.ts`, `src/components/tenant/OwnerReports.tsx`, `src/components/tenant/hr/HRReports.tsx`, `src/components/tenant/SettingsPrinterTerms.tsx`, `tests/print-security.test.ts`.
+
+## 2026-07-26
 ### Paritas pratinjau dan hasil cetak nota
 - Pratinjau nota pengaturan printer kini memakai `createPrintDocument` yang sama dengan cetak QZ Tray dan browser; skala tampilan hanya diterapkan pada elemen iframe di luar dokumen cetak.
 - Renderer nota simulasi lama dihapus, sedangkan pratinjau label tetap memakai tampilan sebelumnya.

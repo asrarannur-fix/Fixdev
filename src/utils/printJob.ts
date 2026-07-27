@@ -1,11 +1,24 @@
 import type { PrintConfig } from './print';
 import { escapeHtml, getPrintBaseCss, getPaperWidthStyle } from './print';
 
-type PrintJob = {
+export type PrintJob = {
   title: string;
   html: string;
   printConfig?: PrintConfig;
 };
+
+const sanitizePrintHtml = (html: string): string =>
+  html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(
+      /<img\b[^>]*src=["'](?:https?:)?\/\/[^"']*["'][^>]*>/gi,
+      '<div class="image-placeholder">Gambar eksternal dihapus dari dokumen print</div>'
+    )
+    .replace(
+      /<img\b[^>]*src=["'][^"']*(?:qr|qrcode)[^"']*["'][^>]*>/gi,
+      '<div class="qr-placeholder">Lacak status melalui URL atau nomor tiket</div>'
+    );
 
 export type PrintResult = {
   ok: boolean;
@@ -60,7 +73,7 @@ const configureQzSigning = async (): Promise<void> => {
 };
 
 export const createPrintDocument = (title: string, html: string, printConfig?: PrintConfig) =>
-  `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title || 'Print Job')}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}button{display:none!important}</style></head><body><main class="print-root">${html}</main></body></html>`;
+  `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title || 'Print Job')}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}button{display:none!important}</style></head><body><main class="print-root">${sanitizePrintHtml(html)}</main></body></html>`;
 
 const qzPrint = async (
   title: string,
@@ -80,7 +93,13 @@ const qzPrint = async (
   }
   try {
     if (qz.signingConfigured !== false) await configureQzSigning();
-    if (!qz.websocket.isActive?.()) await qz.websocket.connect();
+    if (!qz.websocket.isActive?.()) {
+      try {
+        await qz.websocket.connect();
+      } catch {
+        if (!qz.websocket.isActive?.()) await qz.websocket.connect();
+      }
+    }
     const printer = await qz.printers.find(printerName);
     if (!printer) throw new Error(`Printer tidak ditemukan: ${printConfig.printerName}`);
     await qz.print(qz.configs.create(printer, { jobName: title }), [
@@ -128,22 +147,24 @@ export const checkQzTray = async (): Promise<{
   }
 };
 
-export const printFrame = (
+export const printFrame = async (
   frame: HTMLIFrameElement | Window,
   printConfig?: PrintConfig,
   title = 'Print Job'
-): boolean => {
+): Promise<PrintResult> => {
   const target: Window | null =
     typeof HTMLIFrameElement !== 'undefined' && frame instanceof HTMLIFrameElement
       ? frame.contentWindow
       : (frame as Window);
   const source = target?.document;
-  if (!source?.body?.innerHTML) return false;
-  const headAssets = Array.from(source.head?.querySelectorAll("style,link[rel='stylesheet']") || [])
+  const root = source?.querySelector<HTMLElement>('.print-root');
+  if (!root?.innerHTML) {
+    return { ok: false, transport: 'failed', error: 'Root dokumen print tidak ditemukan' };
+  }
+  const styles = Array.from(source?.head?.querySelectorAll('style') || [])
     .map((node) => node.outerHTML)
     .join('');
-  void printJobAsync({ title, html: headAssets + source.body.innerHTML, printConfig });
-  return true;
+  return printJobAsync({ title, html: styles + root.innerHTML, printConfig });
 };
 
 /** QZ Tray when configured; browser dialog remains safe fallback. */

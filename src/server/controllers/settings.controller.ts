@@ -175,25 +175,28 @@ const schemas = {
     .object({
       printMode: z.enum(['browser', 'qz']).optional(),
       printerName: text(250).optional(),
-      paperSize: text(50).optional(),
+      paperSize: z.enum(['thermal_58', 'thermal_80', 'a4', 'hvs_a4', 'hvs_letter']).optional(),
       printQrCode: bool.optional(),
       printHeaderLogo: bool.optional(),
       printCustomerNotes: bool.optional(),
       printTermsAndConditions: bool.optional(),
       showTermsInTracking: bool.optional(),
-      printFontSize: text(20).optional(),
+      printFontSize: z.enum(['sm', 'base', 'lg', 'small', 'large']).optional(),
       printMargin: z.number().min(0).max(100).optional(),
       customHeaderTitle: text(250).optional(),
       customFooterText: text(1000).optional(),
       termsAndConditionsText: z.string().max(20_000).optional(),
       labelWidth: z.number().min(20).max(600).optional(),
       labelHeight: z.number().min(20).max(400).optional(),
-      labelFontSize: text(20).optional(),
+      labelFontSize: z.enum(['sm', 'base', 'lg']).optional(),
       labelShowQr: bool.optional(),
       labelShowLogo: bool.optional(),
       labelCustomText: text(1000).optional(),
       termsSalesText: z.string().max(20_000).optional(),
       termsRentalText: z.string().max(20_000).optional(),
+      branches: z
+        .record(z.string().max(100), z.record(z.string().max(100), z.unknown()))
+        .optional(),
     })
     .strict(),
   waConfig: z

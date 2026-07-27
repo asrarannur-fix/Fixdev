@@ -262,14 +262,11 @@ export const OwnerReports: React.FC<{
             </span>
           )}
           <button
-            onClick={() =>
-              void printJobAsync({
-                title: 'Laporan Owner',
-                html:
-                  document.getElementById('owner-reports')?.innerHTML || document.body.innerHTML,
-                printConfig,
-              })
-            }
+            onClick={() => {
+              const report = document.getElementById('owner-reports');
+              if (report)
+                void printJobAsync({ title: 'Laporan Owner', html: report.innerHTML, printConfig });
+            }}
             className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all"
             title="Cetak"
           >

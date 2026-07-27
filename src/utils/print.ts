@@ -2,6 +2,15 @@ import type { TenantSettings } from '../types';
 
 export type PrintConfig = NonNullable<TenantSettings['printConfig']>;
 
+export const resolvePrintConfig = (
+  config?: PrintConfig,
+  currentBranchId?: string
+): PrintConfig | undefined => {
+  if (!config || !currentBranchId) return config;
+  const branchConfig = config.branches?.[currentBranchId] as Partial<PrintConfig> | undefined;
+  return branchConfig ? { ...config, ...branchConfig, branches: config.branches } : config;
+};
+
 export const getPrintPageSize = (pc?: PrintConfig): string => {
   const size = pc?.paperSize || 'thermal_80';
   if (size === 'a4' || size === 'hvs_a4') return 'A4';

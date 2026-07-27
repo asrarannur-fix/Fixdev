@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
-import { createPortal } from "react-dom";
-import { safeLocalStorage } from "../utils/safeStorage";
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { safeLocalStorage } from '../utils/safeStorage';
 
 const localStorage = safeLocalStorage;
-import { useSaaS } from "../context/SaaSContext";
+import { useSaaS } from '../context/SaaSContext';
 import {
   Layers,
   Plus,
@@ -31,7 +31,7 @@ import {
   ScanLine,
   Bell,
   MessageSquare,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -43,12 +43,12 @@ import {
   Legend,
   AreaChart,
   Area,
-} from "recharts";
+} from 'recharts';
 
 interface Asset {
   id: string;
   name: string;
-  category: "LAPTOP" | "PRINTER" | "VEHICLE" | "TECH_TOOL" | "FURNITURE";
+  category: 'LAPTOP' | 'PRINTER' | 'VEHICLE' | 'TECH_TOOL' | 'FURNITURE';
   serialNo: string;
   purchaseDate: string;
   purchaseCost: number;
@@ -57,17 +57,17 @@ interface Asset {
   currentValue: number;
   location: string;
   custodianId: string; // Employee ID or Empty
-  status: "ACTIVE" | "MAINTENANCE" | "RETIRED" | "SCRAPPED" | string;
+  status: 'ACTIVE' | 'MAINTENANCE' | 'RETIRED' | 'SCRAPPED' | string;
 }
 
 interface MaintenanceRecord {
   id: string;
   assetId: string;
   maintenanceDate: string;
-  type: "ROUTINE" | "REPAIR" | "CALIBRATION";
+  type: 'ROUTINE' | 'REPAIR' | 'CALIBRATION';
   cost: number;
   notes: string;
-  status: "SCHEDULED" | "COMPLETED";
+  status: 'SCHEDULED' | 'COMPLETED';
 }
 
 interface AssignmentLog {
@@ -92,173 +92,162 @@ export const AssetManager: React.FC = () => {
 
   // 1. Core Assets State (loaded from localStorage with dynamic fallback)
   const [assets, setAssets] = useState<Asset[]>(() => {
-    const saved = localStorage.getItem(
-      "saas_assets_" + (currentTenantId || "default"),
-    );
+    const saved = localStorage.getItem('saas_assets_' + (currentTenantId || 'default'));
     return saved
       ? JSON.parse(saved)
       : [
           {
-            id: "AST-1001",
-            name: "Apple MacBook Air M1 2020 Admin (Makassar)",
-            category: "LAPTOP",
-            serialNo: "C02DG3G2Q6L4",
-            purchaseDate: "2024-01-15",
+            id: 'AST-1001',
+            name: 'Apple MacBook Air M1 2020 Admin (Makassar)',
+            category: 'LAPTOP',
+            serialNo: 'C02DG3G2Q6L4',
+            purchaseDate: '2024-01-15',
             purchaseCost: 12500000,
             residualValue: 2000000,
             usefulLifeYears: 5,
             currentValue: 8300000,
-            location: "Cabang Makassar",
-            custodianId: "emp-2", // Siti Rahma
-            status: "ACTIVE",
+            location: 'Cabang Makassar',
+            custodianId: 'emp-2', // Siti Rahma
+            status: 'ACTIVE',
           },
           {
-            id: "AST-1002",
-            name: "Printer Thermal Zebra ZD220 POS Label",
-            category: "PRINTER",
-            serialNo: "ZBR-ZD220-4491",
-            purchaseDate: "2024-06-10",
+            id: 'AST-1002',
+            name: 'Printer Thermal Zebra ZD220 POS Label',
+            category: 'PRINTER',
+            serialNo: 'ZBR-ZD220-4491',
+            purchaseDate: '2024-06-10',
             purchaseCost: 2800000,
             residualValue: 300000,
             usefulLifeYears: 4,
             currentValue: 1800000,
-            location: "Gudang Utama",
-            custodianId: "",
-            status: "ACTIVE",
+            location: 'Gudang Utama',
+            custodianId: '',
+            status: 'ACTIVE',
           },
           {
-            id: "AST-1003",
-            name: "Stasiun Solder Inframerah Jovy RE-7000",
-            category: "TECH_TOOL",
-            serialNo: "JVY-RE7500-291",
-            purchaseDate: "2023-03-01",
+            id: 'AST-1003',
+            name: 'Stasiun Solder Inframerah Jovy RE-7000',
+            category: 'TECH_TOOL',
+            serialNo: 'JVY-RE7500-291',
+            purchaseDate: '2023-03-01',
             purchaseCost: 18500000,
             residualValue: 2500000,
             usefulLifeYears: 6,
             currentValue: 10500000,
-            location: "Divisi Reparasi Utama",
-            custodianId: "emp-1", // Andi
-            status: "MAINTENANCE",
+            location: 'Divisi Reparasi Utama',
+            custodianId: 'emp-1', // Andi
+            status: 'MAINTENANCE',
           },
           {
-            id: "AST-1004",
-            name: "Motor Listrik Gesits Kurir Makassar",
-            category: "VEHICLE",
-            serialNo: "GST-E-MKS-992",
-            purchaseDate: "2025-01-10",
+            id: 'AST-1004',
+            name: 'Motor Listrik Gesits Kurir Makassar',
+            category: 'VEHICLE',
+            serialNo: 'GST-E-MKS-992',
+            purchaseDate: '2025-01-10',
             purchaseCost: 24000000,
             residualValue: 6000000,
             usefulLifeYears: 6,
             currentValue: 22000000,
-            location: "Gudang Logistik",
-            custodianId: "",
-            status: "ACTIVE",
+            location: 'Gudang Logistik',
+            custodianId: '',
+            status: 'ACTIVE',
           },
         ];
   });
 
   // 2. Maintenance Logs
-  const [maintenanceRecords, setMaintenanceRecords] = useState<
-    MaintenanceRecord[]
-  >(() => {
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>(() => {
     const saved = localStorage.getItem(
-      "saas_maintenance_records_" + (currentTenantId || "default"),
+      'saas_maintenance_records_' + (currentTenantId || 'default')
     );
     return saved
       ? JSON.parse(saved)
       : [
           {
-            id: "MNT-101",
-            assetId: "AST-1003",
-            maintenanceDate: "2026-06-28",
-            type: "CALIBRATION",
+            id: 'MNT-101',
+            assetId: 'AST-1003',
+            maintenanceDate: '2026-06-28',
+            type: 'CALIBRATION',
             cost: 450000,
-            notes: "Kalibrasi sensor suhu inframerah bga rework station",
-            status: "COMPLETED",
+            notes: 'Kalibrasi sensor suhu inframerah bga rework station',
+            status: 'COMPLETED',
           },
           {
-            id: "MNT-102",
-            assetId: "AST-1004",
-            maintenanceDate: "2026-07-05",
-            type: "ROUTINE",
+            id: 'MNT-102',
+            assetId: 'AST-1004',
+            maintenanceDate: '2026-07-05',
+            type: 'ROUTINE',
             cost: 150000,
-            notes: "Servis rutin kelistrikan & rem berkala motor",
-            status: "SCHEDULED",
+            notes: 'Servis rutin kelistrikan & rem berkala motor',
+            status: 'SCHEDULED',
           },
         ];
   });
 
   // 3. Assignment Logs
   const [assignmentLogs, setAssignmentLogs] = useState<AssignmentLog[]>(() => {
-    const saved = localStorage.getItem(
-      "saas_assignment_logs_" + (currentTenantId || "default"),
-    );
+    const saved = localStorage.getItem('saas_assignment_logs_' + (currentTenantId || 'default'));
     return saved
       ? JSON.parse(saved)
       : [
           {
-            id: "ASG-001",
-            assetId: "AST-1001",
-            employeeName: "Siti Rahma",
-            assignDate: "2024-01-20",
+            id: 'ASG-001',
+            assetId: 'AST-1001',
+            employeeName: 'Siti Rahma',
+            assignDate: '2024-01-20',
             returnDate: null,
-            notes: "Dipinjamkan untuk operasional kasir & rekap data",
+            notes: 'Dipinjamkan untuk operasional kasir & rekap data',
           },
           {
-            id: "ASG-002",
-            assetId: "AST-1003",
-            employeeName: "Andi",
-            assignDate: "2023-03-05",
+            id: 'ASG-002',
+            assetId: 'AST-1003',
+            employeeName: 'Andi',
+            assignDate: '2023-03-05',
             returnDate: null,
-            notes: "Peralatan utama servis motherboard level 3",
+            notes: 'Peralatan utama servis motherboard level 3',
           },
         ];
   });
 
   // Persist local state changes to localStorage
   React.useEffect(() => {
-    localStorage.setItem(
-      "saas_assets_" + (currentTenantId || "default"),
-      JSON.stringify(assets),
-    );
+    localStorage.setItem('saas_assets_' + (currentTenantId || 'default'), JSON.stringify(assets));
   }, [assets, currentTenantId]);
 
   React.useEffect(() => {
     localStorage.setItem(
-      "saas_maintenance_records_" + (currentTenantId || "default"),
-      JSON.stringify(maintenanceRecords),
+      'saas_maintenance_records_' + (currentTenantId || 'default'),
+      JSON.stringify(maintenanceRecords)
     );
   }, [maintenanceRecords, currentTenantId]);
 
   React.useEffect(() => {
     localStorage.setItem(
-      "saas_assignment_logs_" + (currentTenantId || "default"),
-      JSON.stringify(assignmentLogs),
+      'saas_assignment_logs_' + (currentTenantId || 'default'),
+      JSON.stringify(assignmentLogs)
     );
   }, [assignmentLogs, currentTenantId]);
 
   // Synchronize on storage changes (e.g., when OfflineSyncModal triggers changes)
   React.useEffect(() => {
     const handleStorageSync = () => {
-      const savedAssets = localStorage.getItem(
-        "saas_assets_" + (currentTenantId || "default"),
-      );
+      const savedAssets = localStorage.getItem('saas_assets_' + (currentTenantId || 'default'));
       const savedMnt = localStorage.getItem(
-        "saas_maintenance_records_" + (currentTenantId || "default"),
+        'saas_maintenance_records_' + (currentTenantId || 'default')
       );
       const savedAsg = localStorage.getItem(
-        "saas_assignment_logs_" + (currentTenantId || "default"),
+        'saas_assignment_logs_' + (currentTenantId || 'default')
       );
       if (savedAssets) setAssets(JSON.parse(savedAssets));
       if (savedMnt) setMaintenanceRecords(JSON.parse(savedMnt));
       if (savedAsg) setAssignmentLogs(JSON.parse(savedAsg));
     };
 
-    window.addEventListener("storage", handleStorageSync);
-    window.addEventListener("saas-assets-updated", handleStorageSync);
+    window.addEventListener('storage', handleStorageSync);
+    window.addEventListener('saas-assets-updated', handleStorageSync);
     return () => {
-      window.removeEventListener("storage", handleStorageSync);
-      window.removeEventListener("saas-assets-updated", handleStorageSync);
+      window.removeEventListener('storage', handleStorageSync);
+      window.removeEventListener('saas-assets-updated', handleStorageSync);
     };
   }, []);
 
@@ -274,8 +263,8 @@ export const AssetManager: React.FC = () => {
   const runSchedulerCheck = () => {
     setIsCheckingScheduler(true);
     setSchedulerLogs([
-      "[Scheduler Server] Memulai crawler pemeriksaan pemeliharaan aset...",
-      "[Crawler] Melakukan pemindaian ERP Asset Registry...",
+      '[Scheduler Server] Memulai crawler pemeriksaan pemeliharaan aset...',
+      '[Crawler] Melakukan pemindaian ERP Asset Registry...',
     ]);
 
     setTimeout(() => {
@@ -285,9 +274,7 @@ export const AssetManager: React.FC = () => {
       ]);
 
       setTimeout(() => {
-        const upcoming = maintenanceRecords.filter(
-          (m) => m.status === "SCHEDULED",
-        );
+        const upcoming = maintenanceRecords.filter((m) => m.status === 'SCHEDULED');
         setSchedulerLogs((prev) => [
           ...prev,
           `[Crawler] Terdeteksi ${upcoming.length} jadwal perawatan terjadwal.`,
@@ -306,23 +293,23 @@ export const AssetManager: React.FC = () => {
 
                 // Trigger real browser notification
                 setNotification({
-                  id: "notif-" + Date.now(),
+                  id: 'notif-' + Date.now(),
                   title: `⚠️ Kalibrasi Aset Tetap Terjadwal!`,
                   body: `Aset ${asset.name} (${asset.id}) membutuhkan perawatan rutin pada ${record.maintenanceDate}. Estimasi biaya: Rp ${(record.cost ?? 0).toLocaleString()}`,
                 });
 
                 // Add SaaS CRM notification/journal
                 addJournalEntry(
-                  "ALRT-" + record.id,
+                  'ALRT-' + record.id,
                   `[Auto Alert] Background Scheduler Triggered: Servis Aset ${asset.id}`,
-                  [],
+                  []
                 );
               }
             });
           } else {
             setSchedulerLogs((prev) => [
               ...prev,
-              "✓ Seluruh aset dalam kondisi prima. Tidak ada tanggal kalibrasi terlampaui.",
+              '✓ Seluruh aset dalam kondisi prima. Tidak ada tanggal kalibrasi terlampaui.',
             ]);
           }
           setIsCheckingScheduler(false);
@@ -332,26 +319,25 @@ export const AssetManager: React.FC = () => {
   };
 
   // 4. Form states
-  const [newAssetName, setNewAssetName] = useState("");
-  const [newAssetCategory, setNewAssetCategory] =
-    useState<Asset["category"]>("LAPTOP");
-  const [newAssetSerial, setNewAssetSerial] = useState("");
-  const [newAssetCost, setNewAssetCost] = useState("");
-  const [newAssetResidual, setNewAssetResidual] = useState("");
-  const [newAssetLife, setNewAssetLife] = useState("5");
-  const [newAssetLocation, setNewAssetLocation] = useState("Cabang Makassar");
+  const [newAssetName, setNewAssetName] = useState('');
+  const [newAssetCategory, setNewAssetCategory] = useState<Asset['category']>('LAPTOP');
+  const [newAssetSerial, setNewAssetSerial] = useState('');
+  const [newAssetCost, setNewAssetCost] = useState('');
+  const [newAssetResidual, setNewAssetResidual] = useState('');
+  const [newAssetLife, setNewAssetLife] = useState('5');
+  const [newAssetLocation, setNewAssetLocation] = useState('Cabang Makassar');
 
   // Maintenance Planner form states
-  const [mntAssetId, setMntAssetId] = useState("AST-1001");
-  const [mntType, setMntType] = useState<MaintenanceRecord["type"]>("ROUTINE");
-  const [mntCost, setMntCost] = useState("");
-  const [mntNotes, setMntNotes] = useState("");
-  const [mntDate, setMntDate] = useState("2026-07-01");
+  const [mntAssetId, setMntAssetId] = useState('AST-1001');
+  const [mntType, setMntType] = useState<MaintenanceRecord['type']>('ROUTINE');
+  const [mntCost, setMntCost] = useState('');
+  const [mntNotes, setMntNotes] = useState('');
+  const [mntDate, setMntDate] = useState('2026-07-01');
 
   // Assignment Modal/Form states
-  const [asgAssetId, setAsgAssetId] = useState("AST-1001");
-  const [asgEmployeeId, setAsgEmployeeId] = useState("");
-  const [asgNotes, setAsgNotes] = useState("");
+  const [asgAssetId, setAsgAssetId] = useState('AST-1001');
+  const [asgEmployeeId, setAsgEmployeeId] = useState('');
+  const [asgNotes, setAsgNotes] = useState('');
 
   // QR scanner state engine
   const [scannedAsset, setScannedAsset] = useState<Asset | null>(null);
@@ -359,19 +345,16 @@ export const AssetManager: React.FC = () => {
 
   // Active view tabs
   const [activeSubView, setActiveSubView] = useState<
-    "DIRECTORY" | "MAINTENANCE" | "DEPRECIATION" | "ANALYTICS"
-  >("DIRECTORY");
+    'DIRECTORY' | 'MAINTENANCE' | 'DEPRECIATION' | 'ANALYTICS'
+  >('DIRECTORY');
 
   // Toasts
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "warning" | "error";
+    type: 'success' | 'warning' | 'error';
   } | null>(null);
 
-  const showToast = (
-    message: string,
-    type: "success" | "warning" | "error" = "success",
-  ) => {
+  const showToast = (message: string, type: 'success' | 'warning' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
@@ -385,17 +368,14 @@ export const AssetManager: React.FC = () => {
     const costNum = Math.max(0, Number(newAssetCost) || 0);
     const residualNum = Math.min(
       costNum,
-      Math.max(0, Number(newAssetResidual) || Math.round(costNum * 0.1)),
+      Math.max(0, Number(newAssetResidual) || Math.round(costNum * 0.1))
     );
-    const lifeYears = Math.min(
-      100,
-      Math.max(1, Math.trunc(Number(newAssetLife) || 5)),
-    );
+    const lifeYears = Math.min(100, Math.max(1, Math.trunc(Number(newAssetLife) || 5)));
 
     // If offline, save action to local queue
     if (!isOnline) {
       addOfflineAction({
-        type: "CREATE_ASSET",
+        type: 'CREATE_ASSET',
         label: `Daftar Aset Baru: ${cleanName}`,
         payload: {
           name: cleanName,
@@ -407,19 +387,19 @@ export const AssetManager: React.FC = () => {
           location: cleanLocation,
         },
       });
-      setNewAssetName("");
-      setNewAssetSerial("");
-      setNewAssetCost("");
-      setNewAssetResidual("");
+      setNewAssetName('');
+      setNewAssetSerial('');
+      setNewAssetCost('');
+      setNewAssetResidual('');
       showToast(
-        "Koneksi terputus! Tindakan pendaftaran aset disimpan ke Antrean Offline.",
-        "warning",
+        'Koneksi terputus! Tindakan pendaftaran aset disimpan ke Antrean Offline.',
+        'warning'
       );
       return;
     }
 
     const newAsset: Asset = {
-      id: "AST-" + Date.now().toString().slice(-6),
+      id: 'AST-' + Date.now().toString().slice(-6),
       name: cleanName,
       category: newAssetCategory,
       serialNo: cleanSerial,
@@ -429,8 +409,8 @@ export const AssetManager: React.FC = () => {
       usefulLifeYears: lifeYears,
       currentValue: costNum,
       location: cleanLocation,
-      custodianId: "",
-      status: "ACTIVE",
+      custodianId: '',
+      status: 'ACTIVE',
     };
 
     setAssets((prev) => [newAsset, ...prev]);
@@ -439,44 +419,35 @@ export const AssetManager: React.FC = () => {
     const assetAccountId = `coa-${currentTenantId}-10400`; // Persediaan/Peralatan (or Asset)
     const bankAccountId = `coa-${currentTenantId}-10100`; // Kas Utama
 
-    addJournalEntry(
-      newAsset.id + "-CAP",
-      `Kapitalisasi Aset Tetap Baru: ${newAsset.name}`,
-      [
-        { accountId: assetAccountId, debit: costNum, credit: 0 },
-        { accountId: bankAccountId, debit: 0, credit: costNum },
-      ],
-    );
+    addJournalEntry(newAsset.id + '-CAP', `Kapitalisasi Aset Tetap Baru: ${newAsset.name}`, [
+      { accountId: assetAccountId, debit: costNum, credit: 0 },
+      { accountId: bankAccountId, debit: 0, credit: costNum },
+    ]);
 
     // Subtract bank balance & Add to asset register
     if (setAccounts) {
       setAccounts((prevAccounts) =>
         prevAccounts.map((acc) => {
-          if (acc.id === bankAccountId)
-            return { ...acc, balance: acc.balance - costNum };
-          if (acc.id === assetAccountId)
-            return { ...acc, balance: acc.balance + costNum };
+          if (acc.id === bankAccountId) return { ...acc, balance: acc.balance - costNum };
+          if (acc.id === assetAccountId) return { ...acc, balance: acc.balance + costNum };
           return acc;
-        }),
+        })
       );
     }
 
-    setNewAssetName("");
-    setNewAssetSerial("");
-    setNewAssetCost("");
-    setNewAssetResidual("");
+    setNewAssetName('');
+    setNewAssetSerial('');
+    setNewAssetCost('');
+    setNewAssetResidual('');
 
-    showToast(
-      `Aset ${newAsset.id} berhasil didaftarkan dan diposting di Buku Besar!`,
-      "success",
-    );
+    showToast(`Aset ${newAsset.id} berhasil didaftarkan dan diposting di Buku Besar!`, 'success');
   };
 
   // 2. Assign Custodian
   const handleAssignCustodian = (e: React.FormEvent) => {
     e.preventDefault();
     if (!asgEmployeeId) {
-      showToast("Pilih karyawan untuk bertanggung jawab!", "warning");
+      showToast('Pilih karyawan untuk bertanggung jawab!', 'warning');
       return;
     }
 
@@ -485,7 +456,7 @@ export const AssetManager: React.FC = () => {
 
     if (!isOnline) {
       addOfflineAction({
-        type: "ASSIGN_CUSTODIAN",
+        type: 'ASSIGN_CUSTODIAN',
         label: `Penugasan Tanggung Jawab Aset ${asgAssetId}`,
         payload: {
           assetId: asgAssetId,
@@ -493,68 +464,55 @@ export const AssetManager: React.FC = () => {
           notes: asgNotes,
         },
       });
-      setAsgNotes("");
-      showToast(
-        "Koneksi terputus! Penugasan disimpan ke Antrean Offline.",
-        "warning",
-      );
+      setAsgNotes('');
+      showToast('Koneksi terputus! Penugasan disimpan ke Antrean Offline.', 'warning');
       return;
     }
 
     setAssets((prev) =>
-      prev.map((a) =>
-        a.id === asgAssetId ? { ...a, custodianId: asgEmployeeId } : a,
-      ),
+      prev.map((a) => (a.id === asgAssetId ? { ...a, custodianId: asgEmployeeId } : a))
     );
 
     const newLog: AssignmentLog = {
-      id: "ASG-" + Date.now().toString().slice(-6),
+      id: 'ASG-' + Date.now().toString().slice(-6),
       assetId: asgAssetId,
       employeeName: emp.name,
       assignDate: new Date().toISOString().slice(0, 10),
       returnDate: null,
-      notes: asgNotes || "Penugasan aset operasional rutin.",
+      notes: asgNotes || 'Penugasan aset operasional rutin.',
     };
 
     setAssignmentLogs((prev) => [newLog, ...prev]);
-    setAsgNotes("");
-    showToast(
-      `Tanggung jawab aset didelegasikan kepada ${emp.name}!`,
-      "success",
-    );
+    setAsgNotes('');
+    showToast(`Tanggung jawab aset didelegasikan kepada ${emp.name}!`, 'success');
   };
 
   // 3. Return Asset
   const handleReturnAsset = (assetId: string) => {
-    setAssets((prev) =>
-      prev.map((a) => (a.id === assetId ? { ...a, custodianId: "" } : a)),
-    );
+    setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, custodianId: '' } : a)));
 
     setAssignmentLogs((prev) =>
       prev.map((log) =>
         log.assetId === assetId && log.returnDate === null
           ? { ...log, returnDate: new Date().toISOString().slice(0, 10) }
-          : log,
-      ),
+          : log
+      )
     );
 
-    showToast(
-      "Aset berhasil dikembalikan ke status Standby di cabang.",
-      "success",
-    );
+    showToast('Aset berhasil dikembalikan ke status Standby di cabang.', 'success');
   };
 
   // 4. Create Scheduled Maintenance
   const handleScheduleMaintenance = (e: React.FormEvent) => {
     e.preventDefault();
     if (!mntCost) {
-      showToast("Lengkapi estimasi biaya perawatan!", "warning");
+      showToast('Lengkapi estimasi biaya perawatan!', 'warning');
       return;
     }
 
     if (!isOnline) {
       addOfflineAction({
-        type: "SCHEDULE_MAINTENANCE",
+        type: 'SCHEDULE_MAINTENANCE',
         label: `Jadwal Pemeliharaan Aset ${mntAssetId}`,
         payload: {
           assetId: mntAssetId,
@@ -564,33 +522,27 @@ export const AssetManager: React.FC = () => {
           maintenanceDate: mntDate,
         },
       });
-      setMntCost("");
-      setMntNotes("");
-      showToast(
-        "Koneksi terputus! Tindakan pemeliharaan disimpan ke Antrean Offline.",
-        "warning",
-      );
+      setMntCost('');
+      setMntNotes('');
+      showToast('Koneksi terputus! Tindakan pemeliharaan disimpan ke Antrean Offline.', 'warning');
       return;
     }
 
     const newMnt: MaintenanceRecord = {
-      id: "MNT-" + Date.now().toString().slice(-6),
+      id: 'MNT-' + Date.now().toString().slice(-6),
       assetId: mntAssetId,
       maintenanceDate: mntDate,
       type: mntType,
       cost: Number(mntCost),
-      notes: mntNotes || "Perawatan preventif standar.",
-      status: "SCHEDULED",
+      notes: mntNotes || 'Perawatan preventif standar.',
+      status: 'SCHEDULED',
     };
 
     setMaintenanceRecords((prev) => [newMnt, ...prev]);
-    setMntCost("");
-    setMntNotes("");
+    setMntCost('');
+    setMntNotes('');
 
-    showToast(
-      `Jadwal perawatan ${newMnt.id} berhasil direncanakan!`,
-      "success",
-    );
+    showToast(`Jadwal perawatan ${newMnt.id} berhasil direncanakan!`, 'success');
   };
 
   // 5. Complete Maintenance & Post Expense
@@ -600,13 +552,11 @@ export const AssetManager: React.FC = () => {
 
     // Mutate state
     setMaintenanceRecords((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: "COMPLETED" } : m)),
+      prev.map((m) => (m.id === id ? { ...m, status: 'COMPLETED' } : m))
     );
 
     setAssets((prev) =>
-      prev.map((a) =>
-        a.id === record.assetId ? { ...a, status: "ACTIVE" } : a,
-      ),
+      prev.map((a) => (a.id === record.assetId ? { ...a, status: 'ACTIVE' } : a))
     );
 
     // Book accounting entry for Maintenance Expense!
@@ -615,35 +565,30 @@ export const AssetManager: React.FC = () => {
     const maintenanceExpenseAccountId = `coa-${currentTenantId}-50100`; // Beban Pemeliharaan (using standard expense)
     const bankAccountId = `coa-${currentTenantId}-10100`; // Kas Utama
 
-    addJournalEntry(
-      record.id + "-EXP",
-      `Beban Perawatan & Servis Aset ${record.assetId}`,
-      [
-        {
-          accountId: maintenanceExpenseAccountId,
-          debit: record.cost,
-          credit: 0,
-        },
-        { accountId: bankAccountId, debit: 0, credit: record.cost },
-      ],
-    );
+    addJournalEntry(record.id + '-EXP', `Beban Perawatan & Servis Aset ${record.assetId}`, [
+      {
+        accountId: maintenanceExpenseAccountId,
+        debit: record.cost,
+        credit: 0,
+      },
+      { accountId: bankAccountId, debit: 0, credit: record.cost },
+    ]);
 
     // Update Cash Balance in COA
     if (setAccounts) {
       setAccounts((prevAccounts) =>
         prevAccounts.map((acc) => {
-          if (acc.id === bankAccountId)
-            return { ...acc, balance: acc.balance - record.cost };
+          if (acc.id === bankAccountId) return { ...acc, balance: acc.balance - record.cost };
           if (acc.id === maintenanceExpenseAccountId)
             return { ...acc, balance: acc.balance + record.cost };
           return acc;
-        }),
+        })
       );
     }
 
     showToast(
       `Servis ${id} selesai! Biaya Rp ${(record.cost ?? 0).toLocaleString()} diposting sebagai beban operasional Buku Besar.`,
-      "success",
+      'success'
     );
   };
 
@@ -653,30 +598,24 @@ export const AssetManager: React.FC = () => {
 
     // Straight line depreciation: (Cost - Residual) / (Life * 12) per month
     const updatedAssets = assets.map((asset) => {
-      if (asset.status === "RETIRED" || asset.status === "SCRAPPED")
-        return asset;
+      if (asset.status === 'RETIRED' || asset.status === 'SCRAPPED') return asset;
 
-      const monthlyDep =
-        (asset.purchaseCost - asset.residualValue) /
-        (asset.usefulLifeYears * 12);
+      const monthlyDep = (asset.purchaseCost - asset.residualValue) / (asset.usefulLifeYears * 12);
       const newBookValue = Math.max(
         asset.residualValue,
-        asset.currentValue - Math.round(monthlyDep),
+        asset.currentValue - Math.round(monthlyDep)
       );
 
       totalDepreciationAmount += Math.round(asset.currentValue - newBookValue);
       return {
         ...asset,
         currentValue: newBookValue,
-        status: newBookValue <= asset.residualValue ? "RETIRED" : asset.status,
+        status: newBookValue <= asset.residualValue ? 'RETIRED' : asset.status,
       };
     });
 
     if (totalDepreciationAmount === 0) {
-      showToast(
-        "Semua aset sudah mencapai nilai residu minimum (penyusutan penuh).",
-        "warning",
-      );
+      showToast('Semua aset sudah mencapai nilai residu minimum (penyusutan penuh).', 'warning');
       return;
     }
 
@@ -689,8 +628,8 @@ export const AssetManager: React.FC = () => {
     const accumDepAccountId = `coa-${currentTenantId}-10400`; // Persediaan Peralatan (reducing asset value)
 
     addJournalEntry(
-      "DEP-" + new Date().toISOString().slice(0, 7),
-      "Jurnal Penyusutan Aset Bulanan (Straight-Line)",
+      'DEP-' + new Date().toISOString().slice(0, 7),
+      'Jurnal Penyusutan Aset Bulanan (Straight-Line)',
       [
         {
           accountId: depExpenseAccountId,
@@ -702,7 +641,7 @@ export const AssetManager: React.FC = () => {
           debit: 0,
           credit: totalDepreciationAmount,
         },
-      ],
+      ]
     );
 
     if (setAccounts) {
@@ -713,13 +652,13 @@ export const AssetManager: React.FC = () => {
           if (acc.id === accumDepAccountId)
             return { ...acc, balance: acc.balance - totalDepreciationAmount };
           return acc;
-        }),
+        })
       );
     }
 
     showToast(
       `Penyusutan Bulanan Berhasil Diposting! Total: Rp ${totalDepreciationAmount.toLocaleString()} dipotong dari nilai buku seluruh aset operasional.`,
-      "success",
+      'success'
     );
   };
 
@@ -736,34 +675,23 @@ export const AssetManager: React.FC = () => {
   const totalBookValue = assets.reduce((sum, a) => sum + a.currentValue, 0);
   const totalDepreciatedAmount = totalPurchaseValue - totalBookValue;
   const maintenanceExpenses = maintenanceRecords
-    .filter((m) => m.status === "COMPLETED")
+    .filter((m) => m.status === 'COMPLETED')
     .reduce((sum, m) => sum + m.cost, 0);
 
   // Dynamic projected depreciation data based on current active assets (Straight-Line method)
   const generateDepreciationProjectionData = () => {
-    const labels = [
-      "Sekarang",
-      "Tahun 1",
-      "Tahun 2",
-      "Tahun 3",
-      "Tahun 4",
-      "Tahun 5",
-    ];
+    const labels = ['Sekarang', 'Tahun 1', 'Tahun 2', 'Tahun 3', 'Tahun 4', 'Tahun 5'];
     return labels.map((lbl, idx) => {
       const dataPoint: any = { year: lbl };
       let totalValue = 0;
       assets.forEach((ast) => {
-        const annualDep =
-          (ast.purchaseCost - ast.residualValue) / ast.usefulLifeYears;
-        const projectedValue = Math.max(
-          ast.residualValue,
-          ast.purchaseCost - idx * annualDep,
-        );
+        const annualDep = (ast.purchaseCost - ast.residualValue) / ast.usefulLifeYears;
+        const projectedValue = Math.max(ast.residualValue, ast.purchaseCost - idx * annualDep);
         const rounded = Math.round(projectedValue);
         dataPoint[ast.name] = rounded;
         totalValue += rounded;
       });
-      dataPoint["Total Aset Tetap"] = totalValue;
+      dataPoint['Total Aset Tetap'] = totalValue;
       return dataPoint;
     });
   };
@@ -776,20 +704,20 @@ export const AssetManager: React.FC = () => {
       {toast && (
         <div
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold animate-fadeIn ${
-            toast.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-zinc-950 dark:text-emerald-400 dark:border-emerald-900/40"
-              : toast.type === "warning"
-                ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-zinc-950 dark:text-amber-400 dark:border-amber-900/40"
-                : "bg-red-50 text-red-800 border-red-200 dark:bg-zinc-950 dark:text-red-400 dark:border-red-900/40"
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-zinc-950 dark:text-emerald-400 dark:border-emerald-900/40'
+              : toast.type === 'warning'
+                ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-zinc-950 dark:text-amber-400 dark:border-amber-900/40'
+                : 'bg-red-50 text-red-800 border-red-200 dark:bg-zinc-950 dark:text-red-400 dark:border-red-900/40'
           }`}
         >
-          {toast.type === "success" && (
+          {toast.type === 'success' && (
             <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           )}
-          {toast.type === "warning" && (
+          {toast.type === 'warning' && (
             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           )}
-          {toast.type === "error" && (
+          {toast.type === 'error' && (
             <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
           )}
           <span>{toast.message}</span>
@@ -803,18 +731,14 @@ export const AssetManager: React.FC = () => {
             <Bell className="w-5 h-5 text-amber-500 animate-bounce" />
           </div>
           <div className="flex-1 space-y-1">
-            <h4 className="font-bold text-xs text-amber-400">
-              {notification.title}
-            </h4>
+            <h4 className="font-bold text-xs text-amber-400">{notification.title}</h4>
             <p className="text-[10px] text-slate-300 dark:text-slate-400 leading-relaxed">
               {notification.body}
             </p>
             <div className="flex items-center gap-2 pt-1.5">
               <button
                 onClick={() => {
-                  showToast(
-                    "Staff penanggung jawab telah diberi alert WhatsApp otomatis!",
-                  );
+                  showToast('Staff penanggung jawab telah diberi alert WhatsApp otomatis!');
                   setNotification(null);
                 }}
                 className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[9px] rounded-lg flex items-center gap-1 cursor-pointer transition-all"
@@ -848,9 +772,9 @@ export const AssetManager: React.FC = () => {
               Sistem Manajemen Aset Perusahaan
             </h2>
             <p className="text-xs text-slate-300 dark:text-slate-400 mt-1 max-w-xl">
-              Catat laptop, printer, kendaraan, dan toolkit teknisi. Delegasikan
-              tanggung jawab custodian staff, jadwalkan kalibrasi, dan
-              akumulasikan penyusutan aset otomatis ke Jurnal Buku Besar ERP.
+              Catat laptop, printer, kendaraan, dan toolkit teknisi. Delegasikan tanggung jawab
+              custodian staff, jadwalkan kalibrasi, dan akumulasikan penyusutan aset otomatis ke
+              Jurnal Buku Besar ERP.
             </p>
           </div>
           <button
@@ -867,52 +791,52 @@ export const AssetManager: React.FC = () => {
       <div className="flex gap-2 border-b border-slate-200 dark:border-zinc-900 pb-0.5 overflow-x-auto scrollbar-none">
         <button
           onClick={() => {
-            setActiveSubView("DIRECTORY");
+            setActiveSubView('DIRECTORY');
             setScannedAsset(null);
           }}
           className={`px-4 py-2 font-bold text-xs border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
-            activeSubView === "DIRECTORY"
-              ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
+            activeSubView === 'DIRECTORY'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
           }`}
         >
           Daftar & Penugasan Aset
         </button>
         <button
           onClick={() => {
-            setActiveSubView("MAINTENANCE");
+            setActiveSubView('MAINTENANCE');
             setScannedAsset(null);
           }}
           className={`px-4 py-2 font-bold text-xs border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
-            activeSubView === "MAINTENANCE"
-              ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
+            activeSubView === 'MAINTENANCE'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
           }`}
         >
           Pemeliharaan & Servis Alat
         </button>
         <button
           onClick={() => {
-            setActiveSubView("DEPRECIATION");
+            setActiveSubView('DEPRECIATION');
             setScannedAsset(null);
           }}
           className={`px-4 py-2 font-bold text-xs border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
-            activeSubView === "DEPRECIATION"
-              ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
+            activeSubView === 'DEPRECIATION'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
           }`}
         >
           Garis Penyusutan (Depreciation)
         </button>
         <button
           onClick={() => {
-            setActiveSubView("ANALYTICS");
+            setActiveSubView('ANALYTICS');
             setScannedAsset(null);
           }}
           className={`px-4 py-2 font-bold text-xs border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ${
-            activeSubView === "ANALYTICS"
-              ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
+            activeSubView === 'ANALYTICS'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
           }`}
         >
           Laporan Siklus Hidup Aset
@@ -920,7 +844,7 @@ export const AssetManager: React.FC = () => {
       </div>
 
       {/* RENDER VIEW: DIRECTORY */}
-      {activeSubView === "DIRECTORY" && (
+      {activeSubView === 'DIRECTORY' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Bento Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1000,7 +924,7 @@ export const AssetManager: React.FC = () => {
                     {assets.map((ast) => {
                       const custodianName =
                         employees.find((e) => e.id === ast.custodianId)?.name ||
-                        "Not Assigned (Standby)";
+                        'Not Assigned (Standby)';
                       return (
                         <tr
                           key={ast.id}
@@ -1011,8 +935,7 @@ export const AssetManager: React.FC = () => {
                               {ast.name}
                             </p>
                             <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">
-                              SN: {ast.serialNo} · Tag:{" "}
-                              <strong>{ast.id}</strong>
+                              SN: {ast.serialNo} · Tag: <strong>{ast.id}</strong>
                             </span>
                           </td>
                           <td className="px-3 py-3">
@@ -1078,10 +1001,7 @@ export const AssetManager: React.FC = () => {
                   <Plus className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span>Registrasi Aset Tetap</span>
                 </h3>
-                <form
-                  onSubmit={handleCreateAsset}
-                  className="mt-3 space-y-3 text-xs"
-                >
+                <form onSubmit={handleCreateAsset} className="mt-3 space-y-3 text-xs">
                   <div>
                     <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                       Nama Deskriptif Aset
@@ -1101,17 +1021,13 @@ export const AssetManager: React.FC = () => {
                       </label>
                       <select
                         value={newAssetCategory}
-                        onChange={(e) =>
-                          setNewAssetCategory(e.target.value as any)
-                        }
+                        onChange={(e) => setNewAssetCategory(e.target.value as any)}
                         className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       >
                         <option value="LAPTOP">Laptop / Komputer</option>
                         <option value="PRINTER">Printer / Zebra Label</option>
                         <option value="VEHICLE">Kendaraan Operasional</option>
-                        <option value="TECH_TOOL">
-                          Alat Reparasi / Solder
-                        </option>
+                        <option value="TECH_TOOL">Alat Reparasi / Solder</option>
                         <option value="FURNITURE">Mebel Kantor / Rak</option>
                       </select>
                     </div>
@@ -1164,9 +1080,7 @@ export const AssetManager: React.FC = () => {
                         onChange={(e) => setNewAssetLife(e.target.value)}
                         className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                       >
-                        <option value="3">
-                          3 Tahun (Peralatan Elektronik Ringan)
-                        </option>
+                        <option value="3">3 Tahun (Peralatan Elektronik Ringan)</option>
                         <option value="4">4 Tahun (Printer / Scanner)</option>
                         <option value="5">5 Tahun (Komputer / Laptop)</option>
                         <option value="6">6 Tahun (Toolkit / Mesin BGA)</option>
@@ -1200,10 +1114,7 @@ export const AssetManager: React.FC = () => {
                   <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>Delegasikan Custodian Aset</span>
                 </h3>
-                <form
-                  onSubmit={handleAssignCustodian}
-                  className="mt-3 space-y-3 text-xs"
-                >
+                <form onSubmit={handleAssignCustodian} className="mt-3 space-y-3 text-xs">
                   <div>
                     <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                       Pilih Unit Aset Standby
@@ -1268,7 +1179,7 @@ export const AssetManager: React.FC = () => {
       )}
 
       {/* RENDER VIEW: MAINTENANCE */}
-      {activeSubView === "MAINTENANCE" && (
+      {activeSubView === 'MAINTENANCE' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs">
             {/* Scheduled logs */}
@@ -1304,7 +1215,7 @@ export const AssetManager: React.FC = () => {
                           </td>
                           <td className="px-3 py-3">
                             <p className="font-bold text-slate-800 dark:text-zinc-200">
-                              {asset ? asset.name : "Unknown"}
+                              {asset ? asset.name : 'Unknown'}
                             </p>
                             <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">
                               ID: {mnt.assetId}
@@ -1322,22 +1233,18 @@ export const AssetManager: React.FC = () => {
                           <td className="px-3 py-3 text-center">
                             <span
                               className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                                mnt.status === "COMPLETED"
-                                  ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400"
-                                  : "bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 animate-pulse"
+                                mnt.status === 'COMPLETED'
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400'
+                                  : 'bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 animate-pulse'
                               }`}
                             >
-                              {mnt.status === "COMPLETED"
-                                ? "Selesai & Buku Jurnal"
-                                : "Scheduled"}
+                              {mnt.status === 'COMPLETED' ? 'Selesai & Buku Jurnal' : 'Scheduled'}
                             </span>
                           </td>
                           <td className="px-3 py-3 text-right">
-                            {mnt.status === "SCHEDULED" ? (
+                            {mnt.status === 'SCHEDULED' ? (
                               <button
-                                onClick={() =>
-                                  handleCompleteMaintenance(mnt.id)
-                                }
+                                onClick={() => handleCompleteMaintenance(mnt.id)}
                                 className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded cursor-pointer"
                               >
                                 Tandai Selesai & Posting
@@ -1365,8 +1272,7 @@ export const AssetManager: React.FC = () => {
                         Background Task Scheduler Alert Engine
                       </h4>
                       <p className="text-[9px] text-slate-400 dark:text-slate-500">
-                        Memeriksa tanggal kalibrasi / kalibrasi terjadwal aset
-                        secara berkala.
+                        Memeriksa tanggal kalibrasi / kalibrasi terjadwal aset secara berkala.
                       </p>
                     </div>
                   </div>
@@ -1375,9 +1281,7 @@ export const AssetManager: React.FC = () => {
                     disabled={isCheckingScheduler}
                     className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 cursor-pointer disabled:bg-slate-400 disabled:cursor-not-allowed"
                   >
-                    {isCheckingScheduler
-                      ? "Memindai..."
-                      : "Jalankan Background Task"}
+                    {isCheckingScheduler ? 'Memindai...' : 'Jalankan Background Task'}
                   </button>
                 </div>
 
@@ -1402,10 +1306,7 @@ export const AssetManager: React.FC = () => {
                 <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>Rencanakan Maintenance Baru</span>
               </h3>
-              <form
-                onSubmit={handleScheduleMaintenance}
-                className="mt-3 space-y-3"
-              >
+              <form onSubmit={handleScheduleMaintenance} className="mt-3 space-y-3">
                 <div>
                   <label className="block text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">
                     Pilih Peralatan / Aset
@@ -1431,15 +1332,9 @@ export const AssetManager: React.FC = () => {
                     onChange={(e) => setMntType(e.target.value as any)}
                     className="w-full border border-slate-200 dark:border-zinc-800 rounded-lg p-1.5 bg-white dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-accent"
                   >
-                    <option value="ROUTINE">
-                      Servis Rutin / Kalibrasi Ringan
-                    </option>
-                    <option value="REPAIR">
-                      Perbaikan Sparepart / Kerusakan
-                    </option>
-                    <option value="CALIBRATION">
-                      Kalibrasi Presisi Akurasi
-                    </option>
+                    <option value="ROUTINE">Servis Rutin / Kalibrasi Ringan</option>
+                    <option value="REPAIR">Perbaikan Sparepart / Kerusakan</option>
+                    <option value="CALIBRATION">Kalibrasi Presisi Akurasi</option>
                   </select>
                 </div>
                 <div>
@@ -1489,21 +1384,17 @@ export const AssetManager: React.FC = () => {
       )}
 
       {/* RENDER VIEW: DEPRECIATION */}
-      {activeSubView === "DEPRECIATION" && (
+      {activeSubView === 'DEPRECIATION' && (
         <div className="space-y-6 animate-fadeIn text-xs">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
             <h3 className="font-bold text-xs uppercase text-slate-800 dark:text-slate-200 tracking-wider flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-3">
               <TrendingDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>
-                Garis Amortisasi & Penyusutan Nilai Buku Aset (Straight-Line
-                Method)
-              </span>
+              <span>Garis Amortisasi & Penyusutan Nilai Buku Aset (Straight-Line Method)</span>
             </h3>
             <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
-              Metode Garis Lurus (Straight-Line) mengalokasikan beban penyusutan
-              secara merata setiap bulan selama masa manfaat aset hingga
-              menyentuh nilai residu akhir. Klik tombol "Posting Penyusutan
-              Bulanan" di header atas untuk menyusutkan nilai buku seluruh aset
+              Metode Garis Lurus (Straight-Line) mengalokasikan beban penyusutan secara merata
+              setiap bulan selama masa manfaat aset hingga menyentuh nilai residu akhir. Klik tombol
+              "Posting Penyusutan Bulanan" di header atas untuk menyusutkan nilai buku seluruh aset
               real-time dan menerbitkan Ledger penyesuaian.
             </p>
 
@@ -1515,9 +1406,7 @@ export const AssetManager: React.FC = () => {
                 </div>
                 <div className="p-3 space-y-4">
                   {assets.map((ast) => {
-                    const annualDep =
-                      (ast.purchaseCost - ast.residualValue) /
-                      ast.usefulLifeYears;
+                    const annualDep = (ast.purchaseCost - ast.residualValue) / ast.usefulLifeYears;
                     return (
                       <div
                         key={ast.id}
@@ -1556,10 +1445,7 @@ export const AssetManager: React.FC = () => {
                         <div>
                           <div className="flex justify-between text-[9px] text-slate-400 dark:text-slate-500 mb-1 font-mono">
                             <span>Sisa Manfaat: {ast.usefulLifeYears} Thn</span>
-                            <span>
-                              Limit Residu: Rp{" "}
-                              {ast.residualValue.toLocaleString()}
-                            </span>
+                            <span>Limit Residu: Rp {ast.residualValue.toLocaleString()}</span>
                           </div>
                           <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                             <div
@@ -1583,10 +1469,9 @@ export const AssetManager: React.FC = () => {
                   <span>Prinsip Akuntansi PSAK 16 (Aset Tetap)</span>
                 </h4>
                 <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Penyusutan didefinisikan sebagai alokasi sistematis jumlah
-                  yang dapat disusutkan dari suatu aset selama umur manfaatnya.
-                  Biaya penyusutan diakui dalam laba rugi bulanan sebagai beban
-                  operasional (Beban Non-Kas).
+                  Penyusutan didefinisikan sebagai alokasi sistematis jumlah yang dapat disusutkan
+                  dari suatu aset selama umur manfaatnya. Biaya penyusutan diakui dalam laba rugi
+                  bulanan sebagai beban operasional (Beban Non-Kas).
                 </p>
 
                 <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
@@ -1608,8 +1493,8 @@ export const AssetManager: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">
-                    *Alur ini mengurangi nilai bersih neraca aset tetap tanpa
-                    mengurangi arus kas (Non-cash reduction).
+                    *Alur ini mengurangi nilai bersih neraca aset tetap tanpa mengurangi arus kas
+                    (Non-cash reduction).
                   </p>
                 </div>
               </div>
@@ -1621,13 +1506,10 @@ export const AssetManager: React.FC = () => {
                 <div>
                   <h4 className="font-bold text-xs uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
                     <Activity className="w-4 h-4 text-blue-400" />
-                    <span>
-                      Visualisasi Proyeksi Penyusutan Nilai Buku 5 Tahun
-                    </span>
+                    <span>Visualisasi Proyeksi Penyusutan Nilai Buku 5 Tahun</span>
                   </h4>
                   <p className="text-[10px] text-slate-400">
-                    Grafik interaktif garis amortisasi akumulatif per aset
-                    operasional.
+                    Grafik interaktif garis amortisasi akumulatif per aset operasional.
                   </p>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400">
@@ -1649,25 +1531,21 @@ export const AssetManager: React.FC = () => {
                     <YAxis
                       stroke="#94a3b8"
                       fontSize={10}
-                      tickFormatter={(value) =>
-                        `Rp ${(value / 1000000).toFixed(1)} jt`
-                      }
+                      tickFormatter={(value) => `Rp ${(value / 1000000).toFixed(1)} jt`}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#0f172a",
-                        borderColor: "#1e293b",
-                        borderRadius: "12px",
-                        color: "#fff",
+                        backgroundColor: '#0f172a',
+                        borderColor: '#1e293b',
+                        borderRadius: '12px',
+                        color: '#fff',
                       }}
                       formatter={(value: any) => [
                         `Rp ${Number(value).toLocaleString()}`,
-                        "Nilai Buku",
+                        'Nilai Buku',
                       ]}
                     />
-                    <Legend
-                      wrapperStyle={{ color: "#94a3b8", fontSize: "9px" }}
-                    />
+                    <Legend wrapperStyle={{ color: '#94a3b8', fontSize: '9px' }} />
                     <Line
                       type="monotone"
                       dataKey="Total Aset Tetap"
@@ -1678,13 +1556,7 @@ export const AssetManager: React.FC = () => {
                       activeDot={{ r: 8 }}
                     />
                     {assets.map((ast, idx) => {
-                      const colors = [
-                        "#f97316",
-                        "#10b981",
-                        "#3b82f6",
-                        "#ec4899",
-                        "#8b5cf6",
-                      ];
+                      const colors = ['#f97316', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
                       const strokeColor = colors[idx % colors.length];
                       return (
                         <Line
@@ -1694,11 +1566,7 @@ export const AssetManager: React.FC = () => {
                           stroke={strokeColor}
                           strokeWidth={1.5}
                           dot={{ r: 2 }}
-                          name={
-                            ast.name.length > 25
-                              ? ast.name.slice(0, 25) + "..."
-                              : ast.name
-                          }
+                          name={ast.name.length > 25 ? ast.name.slice(0, 25) + '...' : ast.name}
                         />
                       );
                     })}
@@ -1711,7 +1579,7 @@ export const AssetManager: React.FC = () => {
       )}
 
       {/* RENDER VIEW: ANALYTICS & LIFECYCLE */}
-      {activeSubView === "ANALYTICS" && (
+      {activeSubView === 'ANALYTICS' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Custom SVG Dashboard visual graphs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1735,7 +1603,7 @@ export const AssetManager: React.FC = () => {
                   <div className="w-full bg-slate-100 dark:bg-slate-950 h-6 rounded-xl overflow-hidden relative border border-slate-200/50 dark:border-slate-800/80">
                     <div
                       className="bg-blue-600 h-6 rounded-xl text-[10px] text-white font-extrabold flex items-center pl-3"
-                      style={{ width: "100%" }}
+                      style={{ width: '100%' }}
                     >
                       100% Capitalized
                     </div>
@@ -1758,8 +1626,7 @@ export const AssetManager: React.FC = () => {
                         width: `${(totalBookValue / totalPurchaseValue) * 100}%`,
                       }}
                     >
-                      {Math.round((totalBookValue / totalPurchaseValue) * 100)}%
-                      Book Value
+                      {Math.round((totalBookValue / totalPurchaseValue) * 100)}% Book Value
                     </div>
                   </div>
                 </div>
@@ -1780,10 +1647,7 @@ export const AssetManager: React.FC = () => {
                         width: `${(totalDepreciatedAmount / totalPurchaseValue) * 100}%`,
                       }}
                     >
-                      {Math.round(
-                        (totalDepreciatedAmount / totalPurchaseValue) * 100,
-                      )}
-                      % Depreciated
+                      {Math.round((totalDepreciatedAmount / totalPurchaseValue) * 100)}% Depreciated
                     </div>
                   </div>
                 </div>
@@ -1797,8 +1661,7 @@ export const AssetManager: React.FC = () => {
                   Distribusi Sektor Aset Operasional
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                  Total {assets.length} Aset terdaftar lintas divisi
-                  operasional.
+                  Total {assets.length} Aset terdaftar lintas divisi operasional.
                 </p>
               </div>
 
@@ -1853,8 +1716,8 @@ export const AssetManager: React.FC = () => {
               <div className="p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-[11px] leading-relaxed text-blue-900 mt-4 flex items-center gap-1.5 dark:bg-zinc-800 dark:border-zinc-700 dark:text-blue-400">
                 <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>
-                  Rekomendasi Siklus Hidup: Seluruh komputer memiliki kesehatan
-                  prima. Toolkit inframerah butuh kalibrasi ulang dalam 5 hari.
+                  Rekomendasi Siklus Hidup: Seluruh komputer memiliki kesehatan prima. Toolkit
+                  inframerah butuh kalibrasi ulang dalam 5 hari.
                 </span>
               </div>
             </div>
@@ -1893,25 +1756,9 @@ export const AssetManager: React.FC = () => {
 
                 {/* Real Generated QR Code */}
                 <div className="w-32 h-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mx-auto flex items-center justify-center p-2 rounded-xl shadow-inner relative group">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f172a&data=${encodeURIComponent(
-                      JSON.stringify({
-                        id: showQRModal,
-                        name: assets.find((a) => a.id === showQRModal)?.name,
-                        serial: assets.find((a) => a.id === showQRModal)
-                          ?.serialNo,
-                        value: assets.find((a) => a.id === showQRModal)
-                          ?.currentValue,
-                        location: assets.find((a) => a.id === showQRModal)
-                          ?.location,
-                        status: assets.find((a) => a.id === showQRModal)
-                          ?.status,
-                      }),
-                    )}`}
-                    alt="Asset QR Code"
-                    className="w-28 h-28 object-contain rounded"
-                    referrerPolicy="no-referrer"
-                  />
+                  <div className="w-28 h-28 rounded text-[9px] break-all flex items-center justify-center text-center text-slate-600 dark:text-slate-300">
+                    ID aset: {showQRModal}
+                  </div>
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-blue-600/90 text-white rounded-xl">
                     <button
                       onClick={() => handleSimulateScan(showQRModal)}
@@ -1925,14 +1772,10 @@ export const AssetManager: React.FC = () => {
 
                 <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 space-y-1">
                   <p>
-                    Asset ID:{" "}
-                    <strong className="font-mono dark:text-zinc-200">
-                      {showQRModal}
-                    </strong>
+                    Asset ID:{' '}
+                    <strong className="font-mono dark:text-zinc-200">{showQRModal}</strong>
                   </p>
-                  <p>
-                    Branch: {assets.find((a) => a.id === showQRModal)?.location}
-                  </p>
+                  <p>Branch: {assets.find((a) => a.id === showQRModal)?.location}</p>
                 </div>
               </div>
 
@@ -1949,37 +1792,37 @@ export const AssetManager: React.FC = () => {
                   {/* Asset Details */}
                   <div className="space-y-1.5 text-[11px] leading-relaxed">
                     <p>
-                      • Aset ID:{" "}
+                      • Aset ID:{' '}
                       <strong className="font-mono text-blue-300 dark:text-blue-400">
                         {scannedAsset.id}
                       </strong>
                     </p>
                     <p>
-                      • Name:{" "}
+                      • Name:{' '}
                       <strong className="text-slate-200 dark:text-zinc-100">
                         {scannedAsset.name}
                       </strong>
                     </p>
                     <p>
-                      • Serial S/N:{" "}
+                      • Serial S/N:{' '}
                       <strong className="font-mono text-slate-300 dark:text-zinc-300">
                         {scannedAsset.serialNo}
                       </strong>
                     </p>
                     <p>
-                      • Buku Value:{" "}
+                      • Buku Value:{' '}
                       <strong className="text-emerald-400 font-mono">
                         Rp {(scannedAsset.currentValue ?? 0).toLocaleString()}
                       </strong>
                     </p>
                     <p>
-                      • Lokasi Aktif:{" "}
+                      • Lokasi Aktif:{' '}
                       <strong className="text-slate-300 dark:text-zinc-300">
                         {scannedAsset.location}
                       </strong>
                     </p>
                     <p>
-                      • Status Unit:{" "}
+                      • Status Unit:{' '}
                       <strong className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-900 dark:bg-blue-950 text-blue-200 dark:text-blue-300 font-mono">
                         {scannedAsset.status}
                       </strong>
@@ -1997,23 +1840,18 @@ export const AssetManager: React.FC = () => {
                           ID Personel: {scannedAsset.custodianId}
                         </p>
                         <p className="text-slate-400 dark:text-slate-500">
-                          Nama:{" "}
-                          {employees.find(
-                            (e) => e.id === scannedAsset.custodianId,
-                          )?.name || "Karyawan"}
+                          Nama:{' '}
+                          {employees.find((e) => e.id === scannedAsset.custodianId)?.name ||
+                            'Karyawan'}
                         </p>
                         {assignmentLogs.find(
-                          (l) =>
-                            l.assetId === scannedAsset.id &&
-                            l.returnDate === null,
+                          (l) => l.assetId === scannedAsset.id && l.returnDate === null
                         ) && (
                           <p className="text-[9px] text-slate-500 dark:text-slate-500 italic mt-1">
                             Catatan: "
                             {
                               assignmentLogs.find(
-                                (l) =>
-                                  l.assetId === scannedAsset.id &&
-                                  l.returnDate === null,
+                                (l) => l.assetId === scannedAsset.id && l.returnDate === null
                               )?.notes
                             }
                             "
@@ -2031,17 +1869,11 @@ export const AssetManager: React.FC = () => {
                   <div className="border-t border-blue-950 dark:border-blue-900/40 pt-3 space-y-2">
                     <h4 className="font-extrabold text-[9px] font-mono uppercase text-blue-400 dark:text-blue-300 tracking-wider">
                       Histori Pemeliharaan & Kalibrasi (
-                      {
-                        maintenanceRecords.filter(
-                          (m) => m.assetId === scannedAsset.id,
-                        ).length
-                      }
-                      )
+                      {maintenanceRecords.filter((m) => m.assetId === scannedAsset.id).length})
                     </h4>
                     <div className="space-y-2">
-                      {maintenanceRecords.filter(
-                        (m) => m.assetId === scannedAsset.id,
-                      ).length > 0 ? (
+                      {maintenanceRecords.filter((m) => m.assetId === scannedAsset.id).length >
+                      0 ? (
                         maintenanceRecords
                           .filter((m) => m.assetId === scannedAsset.id)
                           .map((record) => (
@@ -2062,14 +1894,13 @@ export const AssetManager: React.FC = () => {
                               </p>
                               <div className="flex justify-between items-center text-[9px]">
                                 <span className="text-slate-400 dark:text-slate-500 font-mono">
-                                  Biaya: Rp{" "}
-                                  {(record.cost ?? 0).toLocaleString()}
+                                  Biaya: Rp {(record.cost ?? 0).toLocaleString()}
                                 </span>
                                 <span
                                   className={`px-1.5 py-0.2 rounded font-bold uppercase ${
-                                    record.status === "COMPLETED"
-                                      ? "bg-emerald-950 text-emerald-400"
-                                      : "bg-amber-950 text-amber-400"
+                                    record.status === 'COMPLETED'
+                                      ? 'bg-emerald-950 text-emerald-400'
+                                      : 'bg-amber-950 text-amber-400'
                                   }`}
                                 >
                                   {record.status}
@@ -2088,7 +1919,7 @@ export const AssetManager: React.FC = () => {
               )}
             </div>
           </div>,
-          document.body,
+          document.body
         )}
     </div>
   );

@@ -4,7 +4,7 @@ import { useSaaS } from '../context/SaaSContext';
 import { useToast } from './ui/Toast';
 import { SubscriptionTier, SaaSInvoice, UserRole } from '../types';
 import { usePrintConfig } from '../hooks/usePrintConfig';
-import { printFrame } from '../utils/printJob';
+import { printJobAsync } from '../utils/printJob';
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
@@ -127,10 +127,10 @@ export default function SaaSSubscription({
   const overdueInvoices = invoices.filter((inv) => inv.status === 'OVERDUE').length;
 
   const handlePrintInvoice = (inv: SaaSInvoice) => {
-    let printIframe = document.getElementById('hidden-print-iframe') as HTMLIFrameElement;
+    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
     if (!printIframe) {
       printIframe = document.createElement('iframe');
-      printIframe.id = 'hidden-print-iframe';
+      printIframe.id = 'print-job-frame';
       printIframe.style.position = 'fixed';
       printIframe.style.width = '0';
       printIframe.style.height = '0';
@@ -186,7 +186,7 @@ export default function SaaSSubscription({
     printDoc.close();
     setTimeout(() => {
       if (printIframe.contentWindow) {
-        printFrame(printIframe, printConfig, 'SaaS Invoice');
+        void printJobAsync({ title: 'SaaS Invoice', html: printDoc.body.innerHTML, printConfig });
       }
     }, 500);
   };
@@ -2521,12 +2521,11 @@ export default function SaaSSubscription({
 
                 {/* QR Image Fetch from Live Server API */}
                 <div className="bg-slate-50 p-2 md:p-2.5 rounded-lg md:rounded-xl border border-slate-100 relative">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(invoice.qrisData)}`}
-                    alt="QRIS Code"
-                    referrerPolicy="no-referrer"
-                    className="w-36 h-36 md:w-44 md:h-44 border border-slate-100 bg-white"
-                  />
+                  <div className="w-36 h-36 md:w-44 md:h-44 border border-slate-100 bg-white p-2 text-[8px] break-all flex items-center justify-center text-center text-slate-500">
+                    QRIS data lokal:
+                    <br />
+                    {invoice.qrisData}
+                  </div>
                   {/* Scan line overlay */}
                   <div className="absolute top-2 md:top-2.5 left-2 md:left-2.5 right-2 md:right-2.5 h-0.5 bg-red-500/50 animate-bounce shadow-md" />
                 </div>

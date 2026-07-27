@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from "react";
-import { useSaaS } from "../context/SaaSContext";
-import { useToast } from "./ui/Toast";
-import { ServiceStatus, ServiceTicket, Customer } from "../types";
-import { usePrintConfig } from "../hooks/usePrintConfig";
-import { printFrame } from "../utils/printJob";
+import React, { useState, useMemo } from 'react';
+import { useSaaS } from '../context/SaaSContext';
+import { useToast } from './ui/Toast';
+import { ServiceStatus, ServiceTicket, Customer } from '../types';
+import { usePrintConfig } from '../hooks/usePrintConfig';
+import { printJobAsync } from '../utils/printJob';
 import {
   getPrintFontSizePx,
   getPrintHeaderHtml,
   getPrintFooterHtml,
   getPrintTermsHtml,
-} from "../utils/print";
+} from '../utils/print';
 import {
   ShieldCheck,
   RefreshCw,
@@ -32,7 +32,7 @@ import {
   Activity,
   History,
   DollarSign,
-} from "lucide-react";
+} from 'lucide-react';
 
 export const WarrantyClaims: React.FC = () => {
   const {
@@ -52,7 +52,7 @@ export const WarrantyClaims: React.FC = () => {
 
   const activeTenant = useMemo(
     () => tenants.find((t) => t.id === currentTenantId),
-    [tenants, currentTenantId],
+    [tenants, currentTenantId]
   );
 
   // Active sub-tabs inside Warranty & Returns Center
@@ -61,30 +61,26 @@ export const WarrantyClaims: React.FC = () => {
   // 3. "cust-history" - Customer Service History Look Up
   // 4. "tracker" - Interactive Ticket Tracking Simulator
   const [activeTab, setActiveTab] = useState<
-    "warranties" | "claim-form" | "cust-history" | "tracker"
-  >("warranties");
+    'warranties' | 'claim-form' | 'cust-history' | 'tracker'
+  >('warranties');
 
   // Search & Filter States
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCustId, setSelectedCustId] = useState<string>("");
-  const [trackTicketNo, setTrackTicketNo] = useState("SRV-2026-001");
-  const [trackedTicket, setTrackedTicket] = useState<ServiceTicket | null>(
-    null,
-  );
-  const [trackingError, setTrackingError] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCustId, setSelectedCustId] = useState<string>('');
+  const [trackTicketNo, setTrackTicketNo] = useState('SRV-2026-001');
+  const [trackedTicket, setTrackedTicket] = useState<ServiceTicket | null>(null);
+  const [trackingError, setTrackingError] = useState('');
 
   // Claim Form States
-  const [claimTicketId, setClaimTicketId] = useState("");
-  const [claimType, setClaimType] = useState<"REWORK" | "REFUND" | "COMPLAINT">(
-    "REWORK",
-  );
-  const [claimComplaints, setClaimComplaints] = useState("");
-  const [refundAmount, setRefundAmount] = useState("");
+  const [claimTicketId, setClaimTicketId] = useState('');
+  const [claimType, setClaimType] = useState<'REWORK' | 'REFUND' | 'COMPLAINT'>('REWORK');
+  const [claimComplaints, setClaimComplaints] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
   const [isClaimSubmitted, setIsClaimSubmitted] = useState(false);
 
   // Digital Signature States for tracking approval
-  const [signerName, setSignerName] = useState("");
-  const [signerText, setSignerText] = useState("");
+  const [signerName, setSignerName] = useState('');
+  const [signerText, setSignerText] = useState('');
 
   // Filtered services for current tenant
   const tenantServices = useMemo(() => {
@@ -95,17 +91,13 @@ export const WarrantyClaims: React.FC = () => {
   const activeWarranties = useMemo(() => {
     return tenantServices
       .filter((s) => {
-        if (
-          s.status !== ServiceStatus.DIAMBIL &&
-          s.status !== ServiceStatus.SELESAI
-        )
-          return false;
-        
+        if (s.status !== ServiceStatus.DIAMBIL && s.status !== ServiceStatus.SELESAI) return false;
+
         let endsStr = s.warrantyEndsAt;
         if (!endsStr && s.status === ServiceStatus.SELESAI) {
           const baseDate = s.updatedAt ? new Date(s.updatedAt) : new Date();
           const duration = (s.warrantyMonths || 3) * 30 * 24 * 60 * 60 * 1000;
-          endsStr = new Date(baseDate.getTime() + duration).toISOString().split("T")[0];
+          endsStr = new Date(baseDate.getTime() + duration).toISOString().split('T')[0];
         }
 
         if (!endsStr) return false;
@@ -116,7 +108,7 @@ export const WarrantyClaims: React.FC = () => {
         if (!s.warrantyEndsAt && s.status === ServiceStatus.SELESAI) {
           const baseDate = s.updatedAt ? new Date(s.updatedAt) : new Date();
           const duration = (s.warrantyMonths || 3) * 30 * 24 * 60 * 60 * 1000;
-          const endsStr = new Date(baseDate.getTime() + duration).toISOString().split("T")[0];
+          const endsStr = new Date(baseDate.getTime() + duration).toISOString().split('T')[0];
           return { ...s, warrantyEndsAt: endsStr };
         }
         return s;
@@ -129,9 +121,9 @@ export const WarrantyClaims: React.FC = () => {
       const q = searchQuery.toLowerCase().trim();
       if (!q) return true;
       const cust = customers.find((c) => c.id === w.customerId);
-      const custName = cust?.name?.toLowerCase() || "";
-      const devName = w.deviceName?.toLowerCase() || "";
-      const tNo = w.ticketNo?.toLowerCase() || "";
+      const custName = cust?.name?.toLowerCase() || '';
+      const devName = w.deviceName?.toLowerCase() || '';
+      const tNo = w.ticketNo?.toLowerCase() || '';
       return custName.includes(q) || devName.includes(q) || tNo.includes(q);
     });
   }, [activeWarranties, searchQuery, customers]);
@@ -149,53 +141,49 @@ export const WarrantyClaims: React.FC = () => {
       const ticketCust = customers.find((c) => c.id === s.customerId);
       if (!ticketCust) return false;
       return (
-        ticketCust.phone === cust.phone ||
-        ticketCust.name.toLowerCase() === cust.name.toLowerCase()
+        ticketCust.phone === cust.phone || ticketCust.name.toLowerCase() === cust.name.toLowerCase()
       );
     });
   }, [tenantServices, customers, selectedCustId]);
 
   const handlePrintWarranty = (ticket: ServiceTicket) => {
-    let printIframe = document.getElementById(
-      "hidden-print-iframe",
-    ) as HTMLIFrameElement;
+    let printIframe = document.getElementById('print-job-frame') as HTMLIFrameElement;
     if (!printIframe) {
-      printIframe = document.createElement("iframe");
-      printIframe.id = "hidden-print-iframe";
-      printIframe.style.position = "fixed";
-      printIframe.style.width = "0";
-      printIframe.style.height = "0";
-      printIframe.style.border = "none";
-      printIframe.style.opacity = "0";
+      printIframe = document.createElement('iframe');
+      printIframe.id = 'print-job-frame';
+      printIframe.style.position = 'fixed';
+      printIframe.style.width = '0';
+      printIframe.style.height = '0';
+      printIframe.style.border = 'none';
+      printIframe.style.opacity = '0';
       document.body.appendChild(printIframe);
     }
-    const printDoc =
-      printIframe.contentWindow?.document || printIframe.contentDocument;
+    const printDoc = printIframe.contentWindow?.document || printIframe.contentDocument;
     if (!printDoc) return;
 
-    const businessName = activeTenant?.name || "Layanan Servis";
-    const customer = customers.find((c) => c.id === ticket.customerId && c.tenantId === currentTenantId);
-    const escapeHtml = (value: string) => value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    const businessName = activeTenant?.name || 'Layanan Servis';
+    const customer = customers.find(
+      (c) => c.id === ticket.customerId && c.tenantId === currentTenantId
+    );
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     const safeBusinessName = escapeHtml(businessName.toUpperCase());
-    const safeTicketNo = escapeHtml(ticket.ticketNo || "-");
-    const safeCustomerName = escapeHtml(customer?.name || "Customer");
-    const safeDeviceName = escapeHtml(ticket.deviceName || "-");
+    const safeTicketNo = escapeHtml(ticket.ticketNo || '-');
+    const safeCustomerName = escapeHtml(customer?.name || 'Customer');
+    const safeDeviceName = escapeHtml(ticket.deviceName || '-');
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
       businessName,
-      subtitle: "DIGITAL WARRANTY CARD",
+      subtitle: 'DIGITAL WARRANTY CARD',
       logoUrl: activeTenant?.branding?.logoUrl,
     });
-    const footerHtml = getPrintFooterHtml(
-      printConfig,
-      "Keep this card as proof of warranty.",
-    );
-    const termsHtml = getPrintTermsHtml(printConfig, "general");
+    const footerHtml = getPrintFooterHtml(printConfig, 'Keep this card as proof of warranty.');
+    const termsHtml = getPrintTermsHtml(printConfig, 'general');
 
     printDoc.open();
     printDoc.write(`
@@ -219,11 +207,11 @@ export const WarrantyClaims: React.FC = () => {
           <p>Customer: ${safeCustomerName}</p>
           <p>Device: ${safeDeviceName}</p>
           <div class="hr"></div>
-          <p>Warranty Ends: ${ticket.warrantyEndsAt?.split("T")[0]}</p>
+          <p>Warranty Ends: ${ticket.warrantyEndsAt?.split('T')[0]}</p>
           <p>Status: VALID / REGISTERED</p>
           <div class="text-center">
-            <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent((publicBaseUrl) + "/?ticket=" + safeTicketNo)}" />
-            <p style="font-size: 8px;">Scan to verify warranty status</p>
+            <div class="qr" style="width:80px;height:80px;margin:10px auto;border:1px dashed #64748b;padding:8px;font-size:8px;display:flex;align-items:center;justify-content:center;">URL: ${escapeHtml(`${publicBaseUrl}/?ticket=${ticket.ticketNo || '-'}`)}</div>
+            <p style="font-size: 8px;">Buka URL untuk verifikasi status garansi</p>
           </div>
           <div class="hr"></div>
           <div class="text-center">
@@ -236,12 +224,12 @@ export const WarrantyClaims: React.FC = () => {
     printDoc.close();
     setTimeout(() => {
       if (printIframe.contentWindow) {
-        printFrame(printIframe, printConfig, "Warranty Claim");
+        void printJobAsync({ title: 'Warranty Claim', html: printDoc.body.innerHTML, printConfig });
         addLog(
-          "Print Warranty",
+          'Print Warranty',
           `Mencetak kartu garansi digital untuk tiket ${ticket.ticketNo}.`,
-          "SERVICE",
-          "LOW",
+          'SERVICE',
+          'LOW'
         );
       }
     }, 500);
@@ -250,17 +238,16 @@ export const WarrantyClaims: React.FC = () => {
   // Handle Search Ticket in Tracker Tab
   const handleTrackTicket = (e: React.FormEvent) => {
     e.preventDefault();
-    setTrackingError("");
+    setTrackingError('');
     const ticket = tenantServices.find(
-      (s) =>
-        s.ticketNo.toLowerCase().trim() === trackTicketNo.toLowerCase().trim(),
+      (s) => s.ticketNo.toLowerCase().trim() === trackTicketNo.toLowerCase().trim()
     );
     if (ticket) {
       setTrackedTicket(ticket);
     } else {
       setTrackedTicket(null);
       setTrackingError(
-        "Nomor tiket tidak ditemukan. Pastikan format penulisan benar (cth: SRV-2026-001).",
+        'Nomor tiket tidak ditemukan. Pastikan format penulisan benar (cth: SRV-2026-001).'
       );
     }
   };
@@ -268,29 +255,27 @@ export const WarrantyClaims: React.FC = () => {
   // Quick Action: Pre-fill claim form from warranty list
   const handleInitiateClaim = (ticketId: string) => {
     setClaimTicketId(ticketId);
-    setClaimType("REWORK");
-    setClaimComplaints("");
+    setClaimType('REWORK');
+    setClaimComplaints('');
     setIsClaimSubmitted(false);
-    setActiveTab("claim-form");
+    setActiveTab('claim-form');
   };
 
   // Submit Claim / Complaint / Return
   const handleSubmitClaim = (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimTicketId) {
-      showToast("Pilih tiket servis terlebih dahulu!", "error");
+      showToast('Pilih tiket servis terlebih dahulu!', 'error');
       return;
     }
     if (!claimComplaints.trim()) {
-      showToast("Harap isi deskripsi keluhan!", "error");
+      showToast('Harap isi deskripsi keluhan!', 'error');
       return;
     }
 
-    const tkt = tenantServices.find(
-      (s) => s.id === claimTicketId || s.ticketNo === claimTicketId,
-    );
+    const tkt = tenantServices.find((s) => s.id === claimTicketId || s.ticketNo === claimTicketId);
     if (!tkt) {
-      showToast("Tiket tidak ditemukan!", "error");
+      showToast('Tiket tidak ditemukan!', 'error');
       return;
     }
 
@@ -299,16 +284,16 @@ export const WarrantyClaims: React.FC = () => {
 
     // Track Audit Log
     addLog(
-      "Warranty Claim / Complaint Created",
+      'Warranty Claim / Complaint Created',
       `Keluhan Baru didaftarkan untuk unit ${tkt.deviceName} (${tkt.ticketNo}) - Tipe: ${claimType}`,
-      "SERVICE",
-      "HIGH",
+      'SERVICE',
+      'HIGH'
     );
 
     setIsClaimSubmitted(true);
     showToast(
       `Berhasil mendaftarkan komplain/klaim garansi untuk tiket ${tkt.ticketNo}! Unit kini berstatus KLAIM_GARANSI.`,
-      "success",
+      'success'
     );
   };
 
@@ -326,18 +311,18 @@ export const WarrantyClaims: React.FC = () => {
             </h2>
           </div>
           <p className="text-xs text-slate-400 mt-1.5 max-w-xl">
-            Modul purna-jual terintegrasi untuk mencatat klaim garansi rework
-            teknisi, penanganan komplain pelanggan, pengembalian dana (retur),
-            serta penelusuran riwayat servis komparatif.
+            Modul purna-jual terintegrasi untuk mencatat klaim garansi rework teknisi, penanganan
+            komplain pelanggan, pengembalian dana (retur), serta penelusuran riwayat servis
+            komparatif.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setActiveTab("warranties")}
+            onClick={() => setActiveTab('warranties')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              activeTab === "warranties"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "bg-slate-800/60 hover:bg-slate-800 text-slate-300"
+              activeTab === 'warranties'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'bg-slate-800/60 hover:bg-slate-800 text-slate-300'
             }`}
           >
             🛡️ Garansi Aktif
@@ -345,22 +330,22 @@ export const WarrantyClaims: React.FC = () => {
           <button
             onClick={() => {
               setIsClaimSubmitted(false);
-              setActiveTab("claim-form");
+              setActiveTab('claim-form');
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              activeTab === "claim-form"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "bg-slate-800/60 hover:bg-slate-800 text-slate-300"
+              activeTab === 'claim-form'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'bg-slate-800/60 hover:bg-slate-800 text-slate-300'
             }`}
           >
             ⚠️ Klaim &amp; Retur
           </button>
           <button
-            onClick={() => setActiveTab("cust-history")}
+            onClick={() => setActiveTab('cust-history')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              activeTab === "cust-history"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "bg-slate-800/60 hover:bg-slate-800 text-slate-300"
+              activeTab === 'cust-history'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'bg-slate-800/60 hover:bg-slate-800 text-slate-300'
             }`}
           >
             👥 Riwayat Customer
@@ -368,13 +353,13 @@ export const WarrantyClaims: React.FC = () => {
           <button
             onClick={() => {
               setTrackedTicket(null);
-              setTrackingError("");
-              setActiveTab("tracker");
+              setTrackingError('');
+              setActiveTab('tracker');
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              activeTab === "tracker"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "bg-slate-800/60 hover:bg-slate-800 text-slate-300"
+              activeTab === 'tracker'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'bg-slate-800/60 hover:bg-slate-800 text-slate-300'
             }`}
           >
             🔍 Tracking Tiket
@@ -383,7 +368,7 @@ export const WarrantyClaims: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      {activeTab === "warranties" && (
+      {activeTab === 'warranties' && (
         <div className="space-y-4" id="tab-warranties-view">
           {/* Filters card */}
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-3 items-center justify-between">
@@ -398,10 +383,10 @@ export const WarrantyClaims: React.FC = () => {
               />
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Ditemukan{" "}
+              Ditemukan{' '}
               <strong className="text-blue-600 dark:text-blue-400">
                 {filteredWarranties.length}
-              </strong>{" "}
+              </strong>{' '}
               unit bergaransi aktif.
             </div>
           </div>
@@ -414,25 +399,23 @@ export const WarrantyClaims: React.FC = () => {
                 Tidak Ada Garansi Aktif Terdeteksi
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
-                Belum ada tiket servis berstatus 'DIAMBIL' atau 'SELESAI' yang
-                memiliki sisa masa berlaku garansi pada pencarian ini.
+                Belum ada tiket servis berstatus 'DIAMBIL' atau 'SELESAI' yang memiliki sisa masa
+                berlaku garansi pada pencarian ini.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredWarranties.map((w) => {
-                const endsDate = new Date(w.warrantyEndsAt || "");
+                const endsDate = new Date(w.warrantyEndsAt || '');
                 const remainingDays = Math.max(
                   0,
-                  Math.ceil(
-                    (endsDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-                  ),
+                  Math.ceil((endsDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                 );
                 const warrantyMonthsTotal = w.warrantyMonths || 3;
                 const totalWarrantyDays = warrantyMonthsTotal * 30;
                 const percentLeft = Math.min(
                   100,
-                  Math.max(0, (remainingDays / totalWarrantyDays) * 100),
+                  Math.max(0, (remainingDays / totalWarrantyDays) * 100)
                 );
 
                 return (
@@ -449,14 +432,14 @@ export const WarrantyClaims: React.FC = () => {
                           {w.deviceName}
                         </h4>
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-                          SN: {w.deviceSerial || "Generik"}
+                          SN: {w.deviceSerial || 'Generik'}
                         </p>
                       </div>
                       <span
                         className={`px-2 py-1 rounded text-[9.5px] font-black font-mono tracking-wider ${
                           remainingDays > 15
-                            ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40"
-                            : "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40"
+                            ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40'
+                            : 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40'
                         }`}
                       >
                         🛡️ ACTIVE
@@ -467,20 +450,19 @@ export const WarrantyClaims: React.FC = () => {
                       <div className="flex justify-between text-slate-600 dark:text-slate-400">
                         <span>Pelanggan:</span>
                         <span className="font-bold text-slate-800 dark:text-zinc-200">
-                          {customers.find((c) => c.id === w.customerId)?.name ||
-                            "Umum"}
+                          {customers.find((c) => c.id === w.customerId)?.name || 'Umum'}
                         </span>
                       </div>
                       <div className="flex justify-between text-slate-600 dark:text-slate-400">
                         <span>Tgl Ambil Unit:</span>
                         <span className="font-mono text-slate-700 dark:text-zinc-300 font-bold">
-                          {w.updatedAt?.split("T")[0] || "-"}
+                          {w.updatedAt?.split('T')[0] || '-'}
                         </span>
                       </div>
                       <div className="flex justify-between text-slate-600 dark:text-slate-400">
                         <span>Batas Garansi:</span>
                         <span className="font-mono text-slate-700 dark:text-zinc-300 font-bold">
-                          {w.warrantyEndsAt?.split("T")[0] || "-"}
+                          {w.warrantyEndsAt?.split('T')[0] || '-'}
                         </span>
                       </div>
                     </div>
@@ -499,10 +481,10 @@ export const WarrantyClaims: React.FC = () => {
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             remainingDays > 30
-                              ? "bg-emerald-500"
+                              ? 'bg-emerald-500'
                               : remainingDays > 10
-                                ? "bg-amber-500"
-                                : "bg-rose-500"
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
                           }`}
                           style={{ width: `${percentLeft}%` }}
                         />
@@ -523,8 +505,8 @@ export const WarrantyClaims: React.FC = () => {
                         onClick={() => {
                           setTrackTicketNo(w.ticketNo);
                           setTrackedTicket(w);
-                          setTrackingError("");
-                          setActiveTab("tracker");
+                          setTrackingError('');
+                          setActiveTab('tracker');
                         }}
                         className="bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 transition cursor-pointer"
                       >
@@ -539,22 +521,18 @@ export const WarrantyClaims: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "claim-form" && (
-        <div
-          className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-          id="tab-claims-view"
-        >
+      {activeTab === 'claim-form' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="tab-claims-view">
           {/* Left Column: Form Submisi */}
           <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-5">
             <div className="border-b border-slate-100 dark:border-zinc-900 pb-3">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
-                <PlusCircle className="w-5 h-5 text-blue-500" /> Formulir
-                Registrasi Klaim &amp; Komplain Baru
+                <PlusCircle className="w-5 h-5 text-blue-500" /> Formulir Registrasi Klaim &amp;
+                Komplain Baru
               </h3>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                Gunakan form ini jika customer kembali membawa unit yang
-                bermasalah (rework), mengajukan pengembalian dana, atau
-                menyampaikan keluhan fisik.
+                Gunakan form ini jika customer kembali membawa unit yang bermasalah (rework),
+                mengajukan pengembalian dana, atau menyampaikan keluhan fisik.
               </p>
             </div>
 
@@ -565,24 +543,23 @@ export const WarrantyClaims: React.FC = () => {
                   Aduan Komplain Berhasil Didaftarkan!
                 </h4>
                 <p className="text-xs text-emerald-700 dark:text-emerald-400 max-w-sm mx-auto leading-relaxed">
-                  Status unit telah diubah menjadi{" "}
-                  <strong className="font-mono">KLAIM_GARANSI</strong>. Teknisi
-                  dan operator terkait telah diinstruksikan melalui log
-                  aktivitas sistem purna-jual.
+                  Status unit telah diubah menjadi{' '}
+                  <strong className="font-mono">KLAIM_GARANSI</strong>. Teknisi dan operator terkait
+                  telah diinstruksikan melalui log aktivitas sistem purna-jual.
                 </p>
                 <div className="pt-4 flex justify-center gap-2">
                   <button
                     onClick={() => {
                       setIsClaimSubmitted(false);
-                      setClaimTicketId("");
-                      setClaimComplaints("");
+                      setClaimTicketId('');
+                      setClaimComplaints('');
                     }}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-4 py-2 rounded-xl transition cursor-pointer"
                   >
                     Daftarkan Komplain Lain
                   </button>
                   <button
-                    onClick={() => setActiveTab("warranties")}
+                    onClick={() => setActiveTab('warranties')}
                     className="bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-zinc-800 font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
                   >
                     Lihat Garansi Aktif
@@ -606,9 +583,7 @@ export const WarrantyClaims: React.FC = () => {
                     {tenantServices.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.ticketNo} - {s.deviceName} (
-                        {customers.find((c) => c.id === s.customerId)?.name ||
-                          "Umum"}
-                        ) - {s.status}
+                        {customers.find((c) => c.id === s.customerId)?.name || 'Umum'}) - {s.status}
                       </option>
                     ))}
                   </select>
@@ -622,67 +597,55 @@ export const WarrantyClaims: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
-                      onClick={() => setClaimType("REWORK")}
+                      onClick={() => setClaimType('REWORK')}
                       className={`p-3 border rounded-xl text-center flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                        claimType === "REWORK"
-                          ? "bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-50 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30"
-                          : "bg-white dark:bg-zinc-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900"
+                        claimType === 'REWORK'
+                          ? 'bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-50 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30'
+                          : 'bg-white dark:bg-zinc-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900'
                       }`}
                     >
                       <RefreshCw className="w-5 h-5" />
                       <div className="text-left text-center">
-                        <p className="font-extrabold text-[10.5px]">
-                          Klaim Garansi
-                        </p>
-                        <p className="text-[8.5px] opacity-75">
-                          Rework / Servis Ulang
-                        </p>
+                        <p className="font-extrabold text-[10.5px]">Klaim Garansi</p>
+                        <p className="text-[8.5px] opacity-75">Rework / Servis Ulang</p>
                       </div>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setClaimType("REFUND")}
+                      onClick={() => setClaimType('REFUND')}
                       className={`p-3 border rounded-xl text-center flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                        claimType === "REFUND"
-                          ? "bg-rose-50 text-rose-700 border-rose-300 ring-2 ring-rose-50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30"
-                          : "bg-white dark:bg-zinc-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900"
+                        claimType === 'REFUND'
+                          ? 'bg-rose-50 text-rose-700 border-rose-300 ring-2 ring-rose-50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30'
+                          : 'bg-white dark:bg-zinc-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900'
                       }`}
                     >
                       <DollarSign className="w-5 h-5" />
                       <div className="text-left text-center">
-                        <p className="font-extrabold text-[10.5px]">
-                          Retur / Refund
-                        </p>
-                        <p className="text-[8.5px] opacity-75">
-                          Ganti Rugi Dana / Part
-                        </p>
+                        <p className="font-extrabold text-[10.5px]">Retur / Refund</p>
+                        <p className="text-[8.5px] opacity-75">Ganti Rugi Dana / Part</p>
                       </div>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setClaimType("COMPLAINT")}
+                      onClick={() => setClaimType('COMPLAINT')}
                       className={`p-3 border rounded-xl text-center flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                        claimType === "COMPLAINT"
-                          ? "bg-amber-50 text-amber-700 border-amber-300 ring-2 ring-amber-50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30"
-                          : "bg-white dark:bg-zinc-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900"
+                        claimType === 'COMPLAINT'
+                          ? 'bg-amber-50 text-amber-700 border-amber-300 ring-2 ring-amber-50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30'
+                          : 'bg-white dark:bg-zinc-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900'
                       }`}
                     >
                       <AlertTriangle className="w-5 h-5" />
                       <div className="text-left text-center">
-                        <p className="font-extrabold text-[10.5px]">
-                          Komplain Fisik
-                        </p>
-                        <p className="text-[8.5px] opacity-75">
-                          Keluhan Segel / Casing
-                        </p>
+                        <p className="font-extrabold text-[10.5px]">Komplain Fisik</p>
+                        <p className="text-[8.5px] opacity-75">Keluhan Segel / Casing</p>
                       </div>
                     </button>
                   </div>
                 </div>
 
-                {claimType === "REFUND" && (
+                {claimType === 'REFUND' && (
                   <div className="space-y-1 animate-fadeIn bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-3.5 rounded-xl">
                     <label className="block text-[10px] font-mono text-rose-800 dark:text-rose-400 uppercase">
                       Estimasi Nominal Pengembalian Dana (Rp)
@@ -695,9 +658,8 @@ export const WarrantyClaims: React.FC = () => {
                       className="w-full px-3 py-2 border border-rose-200 dark:border-rose-800/60 rounded-lg outline-none focus:border-rose-500 bg-white dark:bg-zinc-950 text-xs font-mono font-bold"
                     />
                     <p className="text-[9.5px] text-rose-600 dark:text-rose-400 mt-1">
-                      Catatan: Pengembalian dana akan dicatatkan pada jurnal kas
-                      akuntansi sebagai retur penjualan biaya operasional
-                      purna-jual.
+                      Catatan: Pengembalian dana akan dicatatkan pada jurnal kas akuntansi sebagai
+                      retur penjualan biaya operasional purna-jual.
                     </p>
                   </div>
                 )}
@@ -720,15 +682,14 @@ export const WarrantyClaims: React.FC = () => {
                 {/* Operator info info */}
                 <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 p-3.5 rounded-xl text-[10px] text-slate-500 space-y-1 font-mono">
                   <p>
-                    • Operator Input:{" "}
+                    • Operator Input:{' '}
                     <strong className="text-slate-700 dark:text-zinc-300">
                       {currentUser.name} ({currentUser.role})
                     </strong>
                   </p>
                   <p>
-                    • Tindakan Otomatis: Menambahkan log kronologi timeline,
-                    memposting event KLAIM_GARANSI, &amp; mengaktifkan radar
-                    pengerjaan ulang teknisi.
+                    • Tindakan Otomatis: Menambahkan log kronologi timeline, memposting event
+                    KLAIM_GARANSI, &amp; mengaktifkan radar pengerjaan ulang teknisi.
                   </p>
                 </div>
 
@@ -746,8 +707,8 @@ export const WarrantyClaims: React.FC = () => {
           <div className="lg:col-span-5 space-y-4">
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-3.5">
               <h4 className="font-extrabold text-xs text-slate-700 dark:text-zinc-300 flex items-center gap-1.5 uppercase font-mono tracking-wider">
-                <ShieldCheck className="w-4.5 h-4.5 text-blue-500" /> Regulasi
-                Garansi &amp; Purna Jual Toko
+                <ShieldCheck className="w-4.5 h-4.5 text-blue-500" /> Regulasi Garansi &amp; Purna
+                Jual Toko
               </h4>
               <div className="space-y-3 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 <div className="flex gap-2 items-start">
@@ -755,10 +716,9 @@ export const WarrantyClaims: React.FC = () => {
                     01
                   </span>
                   <p>
-                    <strong>Masa Berlaku</strong>: Garansi perbaikan standar
-                    adalah 1-3 bulan untuk jasa servis &amp; sparepart
-                    ic/solderan, dan 3-6 bulan untuk modul (baterai, keyboard,
-                    lcd).
+                    <strong>Masa Berlaku</strong>: Garansi perbaikan standar adalah 1-3 bulan untuk
+                    jasa servis &amp; sparepart ic/solderan, dan 3-6 bulan untuk modul (baterai,
+                    keyboard, lcd).
                   </p>
                 </div>
                 <div className="flex gap-2 items-start">
@@ -766,9 +726,9 @@ export const WarrantyClaims: React.FC = () => {
                     02
                   </span>
                   <p>
-                    <strong>Segel Toko Utuh</strong>: Klaim garansi / retur
-                    hanya valid jika stiker segel garansi fisik pada baut laptop
-                    masih dalam keadaan utuh tanpa robekan / modifikasi mandiri.
+                    <strong>Segel Toko Utuh</strong>: Klaim garansi / retur hanya valid jika stiker
+                    segel garansi fisik pada baut laptop masih dalam keadaan utuh tanpa robekan /
+                    modifikasi mandiri.
                   </p>
                 </div>
                 <div className="flex gap-2 items-start">
@@ -776,10 +736,9 @@ export const WarrantyClaims: React.FC = () => {
                     03
                   </span>
                   <p>
-                    <strong>Aspek Gugurnya Garansi</strong>: Unit terkena
-                    tumpahan air/cairan (liquid damage), jatuh/retak karena
-                    benturan keras pasca-diambil, atau tegangan listrik
-                    overvoltage (petir).
+                    <strong>Aspek Gugurnya Garansi</strong>: Unit terkena tumpahan air/cairan
+                    (liquid damage), jatuh/retak karena benturan keras pasca-diambil, atau tegangan
+                    listrik overvoltage (petir).
                   </p>
                 </div>
               </div>
@@ -788,8 +747,7 @@ export const WarrantyClaims: React.FC = () => {
             {/* Quick Stats of claims */}
             <div className="bg-gradient-to-br from-blue-50 to-slate-50 dark:from-zinc-900 dark:to-zinc-950 border border-blue-100 dark:border-zinc-800 rounded-2xl p-4.5 space-y-3">
               <h5 className="font-bold text-xs text-blue-900 dark:text-blue-300 flex items-center gap-1">
-                <Activity className="w-4 h-4 text-blue-500" /> Statistik Aduan
-                Bulan Ini
+                <Activity className="w-4 h-4 text-blue-500" /> Statistik Aduan Bulan Ini
               </h5>
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="bg-white dark:bg-zinc-950 border border-blue-100/50 dark:border-zinc-800 p-2.5 rounded-xl">
@@ -797,11 +755,7 @@ export const WarrantyClaims: React.FC = () => {
                     Total Klaim
                   </span>
                   <strong className="text-lg font-black text-slate-800 dark:text-zinc-100">
-                    {
-                      tenantServices.filter(
-                        (s) => s.status === ServiceStatus.KLAIM_GARANSI,
-                      ).length
-                    }{" "}
+                    {tenantServices.filter((s) => s.status === ServiceStatus.KLAIM_GARANSI).length}{' '}
                     Unit
                   </strong>
                 </div>
@@ -812,9 +766,8 @@ export const WarrantyClaims: React.FC = () => {
                   <strong className="text-lg font-black text-blue-700 dark:text-blue-400">
                     {tenantServices.length
                       ? (
-                          (tenantServices.filter(
-                            (s) => s.status === ServiceStatus.KLAIM_GARANSI,
-                          ).length /
+                          (tenantServices.filter((s) => s.status === ServiceStatus.KLAIM_GARANSI)
+                            .length /
                             tenantServices.length) *
                           100
                         ).toFixed(1)
@@ -828,22 +781,17 @@ export const WarrantyClaims: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "cust-history" && (
-        <div
-          className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-          id="tab-cust-history-view"
-        >
+      {activeTab === 'cust-history' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="tab-cust-history-view">
           {/* Left Column: Select Customer */}
           <div className="lg:col-span-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4">
             <div>
               <h4 className="font-extrabold text-xs text-slate-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                <Users className="w-4.5 h-4.5 text-blue-500" /> Pilih Database
-                Customer
+                <Users className="w-4.5 h-4.5 text-blue-500" /> Pilih Database Customer
               </h4>
               <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                Pilih nama customer untuk melacak riwayat lengkap unit, klaim
-                garansi, total pengeluaran belanja servis &amp; pembelian part
-                mereka.
+                Pilih nama customer untuk melacak riwayat lengkap unit, klaim garansi, total
+                pengeluaran belanja servis &amp; pembelian part mereka.
               </p>
             </div>
 
@@ -891,20 +839,19 @@ export const WarrantyClaims: React.FC = () => {
                   <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-1">
                     <span>Email:</span>
                     <span className="text-slate-800 dark:text-zinc-200">
-                      {selectedCustomerInfo.email || "-"}
+                      {selectedCustomerInfo.email || '-'}
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-1">
                     <span>Total Belanja:</span>
                     <span className="font-bold text-blue-700 dark:text-blue-400">
-                      Rp{" "}
-                      {selectedCustomerInfo.totalSpend?.toLocaleString() || "0"}
+                      Rp {selectedCustomerInfo.totalSpend?.toLocaleString() || '0'}
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-1">
                     <span>Lokasi Alamat:</span>
                     <span className="text-slate-800 dark:text-zinc-200">
-                      {selectedCustomerInfo.address || "Generik"}
+                      {selectedCustomerInfo.address || 'Generik'}
                     </span>
                   </div>
                 </div>
@@ -916,24 +863,23 @@ export const WarrantyClaims: React.FC = () => {
           <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4">
             <div className="border-b border-slate-100 dark:border-zinc-800 pb-3">
               <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <History className="w-5 h-5 text-blue-500" /> Riwayat Nota
-                Servis &amp; Klaim Terkait
+                <History className="w-5 h-5 text-blue-500" /> Riwayat Nota Servis &amp; Klaim
+                Terkait
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Daftar lengkap unit reparasi fisik yang terasosiasi dengan data
-                customer terpilih, disertai sisa status garansi.
+                Daftar lengkap unit reparasi fisik yang terasosiasi dengan data customer terpilih,
+                disertai sisa status garansi.
               </p>
             </div>
 
             {!selectedCustId ? (
               <div className="py-16 text-center text-slate-400 italic text-xs">
-                Silakan pilih pelanggan di menu sebelah kiri terlebih dahulu
-                untuk menarik riwayat database servis mereka.
+                Silakan pilih pelanggan di menu sebelah kiri terlebih dahulu untuk menarik riwayat
+                database servis mereka.
               </div>
             ) : customerServiceHistory.length === 0 ? (
               <div className="py-16 text-center text-slate-400 italic text-xs">
-                Pelanggan ini belum memiliki catatan tiket servis di sistem
-                tenant saat ini.
+                Pelanggan ini belum memiliki catatan tiket servis di sistem tenant saat ini.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -941,14 +887,10 @@ export const WarrantyClaims: React.FC = () => {
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-mono text-[9px] uppercase">
                       <th className="px-3 py-2.5">No. Tiket &amp; Tgl</th>
-                      <th className="px-3 py-2.5">
-                        Nama Perangkat &amp; Serial
-                      </th>
+                      <th className="px-3 py-2.5">Nama Perangkat &amp; Serial</th>
                       <th className="px-3 py-2.5">Status Akhir</th>
                       <th className="px-3 py-2.5 text-right">Biaya Servis</th>
-                      <th className="px-3 py-2.5 text-center">
-                        Status Garansi
-                      </th>
+                      <th className="px-3 py-2.5 text-center">Status Garansi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -957,19 +899,17 @@ export const WarrantyClaims: React.FC = () => {
                       if (!endsStr && s.status === ServiceStatus.SELESAI) {
                         const baseDate = s.updatedAt ? new Date(s.updatedAt) : new Date();
                         const duration = (s.warrantyMonths || 3) * 30 * 24 * 60 * 60 * 1000;
-                        endsStr = new Date(baseDate.getTime() + duration).toISOString().split("T")[0];
+                        endsStr = new Date(baseDate.getTime() + duration)
+                          .toISOString()
+                          .split('T')[0];
                       }
-                      const isWarrantyActive =
-                        endsStr &&
-                        new Date(endsStr).getTime() > Date.now();
+                      const isWarrantyActive = endsStr && new Date(endsStr).getTime() > Date.now();
                       const daysRemaining = endsStr
                         ? Math.max(
                             0,
                             Math.ceil(
-                              (new Date(endsStr).getTime() -
-                                Date.now()) /
-                                (1000 * 60 * 60 * 24),
-                            ),
+                              (new Date(endsStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                            )
                           )
                         : 0;
 
@@ -980,7 +920,7 @@ export const WarrantyClaims: React.FC = () => {
                               {s.ticketNo}
                             </span>
                             <span className="block text-[9.5px] text-slate-400 font-mono mt-1">
-                              {s.createdAt?.split("T")[0] || "2026-07-01"}
+                              {s.createdAt?.split('T')[0] || '2026-07-01'}
                             </span>
                           </td>
                           <td className="px-3 py-3">
@@ -988,7 +928,7 @@ export const WarrantyClaims: React.FC = () => {
                               {s.deviceName}
                             </p>
                             <p className="text-[9.5px] text-slate-400 font-mono mt-0.5 leading-none">
-                              SN: {s.deviceSerial || "Generik"}
+                              SN: {s.deviceSerial || 'Generik'}
                             </p>
                           </td>
                           <td className="px-3 py-3">
@@ -997,7 +937,7 @@ export const WarrantyClaims: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-3 py-3 text-right font-mono font-bold text-slate-800">
-                            Rp {s.estimatedCost?.toLocaleString() || "0"}
+                            Rp {s.estimatedCost?.toLocaleString() || '0'}
                           </td>
                           <td className="px-3 py-3 text-center">
                             {isWarrantyActive ? (
@@ -1025,22 +965,17 @@ export const WarrantyClaims: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "tracker" && (
-        <div
-          className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-          id="tab-tracker-view"
-        >
+      {activeTab === 'tracker' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="tab-tracker-view">
           {/* Tracker Search input */}
           <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4">
             <div>
               <h4 className="font-extrabold text-xs text-slate-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                <Search className="w-4.5 h-4.5 text-blue-500" /> Simulasi Portal
-                Lacak Pelanggan
+                <Search className="w-4.5 h-4.5 text-blue-500" /> Simulasi Portal Lacak Pelanggan
               </h4>
               <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                Masukkan kode tiket nota servis milik customer untuk memantau
-                status diagnosa, menyetujui estimasi, atau mengunduh kartu
-                garansi digital.
+                Masukkan kode tiket nota servis milik customer untuk memantau status diagnosa,
+                menyetujui estimasi, atau mengunduh kartu garansi digital.
               </p>
             </div>
 
@@ -1083,7 +1018,7 @@ export const WarrantyClaims: React.FC = () => {
                     onClick={() => {
                       setTrackTicketNo(s.ticketNo);
                       setTrackedTicket(s);
-                      setTrackingError("");
+                      setTrackingError('');
                     }}
                     className="px-2.5 py-1 rounded bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-[10px] font-mono font-extrabold cursor-pointer transition"
                   >
@@ -1105,8 +1040,8 @@ export const WarrantyClaims: React.FC = () => {
                       {trackedTicket.deviceName}
                     </h3>
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
-                      Nota: {trackedTicket.ticketNo} | Serial:{" "}
-                      {trackedTicket.deviceSerial || "Generik"}
+                      Nota: {trackedTicket.ticketNo} | Serial:{' '}
+                      {trackedTicket.deviceSerial || 'Generik'}
                     </p>
                   </div>
                   <span className="px-3 py-1 bg-blue-100 text-blue-900 font-black font-mono text-[10px] rounded-full uppercase self-start sm:self-auto dark:bg-blue-950/20 dark:text-blue-400">
@@ -1119,25 +1054,23 @@ export const WarrantyClaims: React.FC = () => {
                   trackedTicket.status === ServiceStatus.ESTIMATE_PENDING) && (
                   <div className="p-4 bg-amber-50/80 dark:bg-zinc-950/30 border border-amber-200 dark:border-amber-900/40 rounded-2xl space-y-3.5 text-xs">
                     <h4 className="font-bold text-amber-900 dark:text-amber-400 flex items-center gap-1.5 uppercase font-mono tracking-wider">
-                      <FileText className="w-4 h-4 text-amber-600 animate-pulse" />{" "}
-                      Surat Penawaran Resmi &amp; Persetujuan Digital
+                      <FileText className="w-4 h-4 text-amber-600 animate-pulse" /> Surat Penawaran
+                      Resmi &amp; Persetujuan Digital
                     </h4>
 
                     <div className="bg-white dark:bg-zinc-900 p-3 border border-amber-100 dark:border-zinc-800 rounded-lg space-y-1.5 font-mono text-[10.5px] text-slate-700 dark:text-zinc-300">
                       <div className="flex justify-between border-b border-slate-100 dark:border-zinc-800 pb-1">
                         <span>Estimasi Biaya:</span>
                         <span className="text-blue-700 font-bold dark:text-blue-400">
-                          Rp{" "}
-                          {trackedTicket.estimatedCost?.toLocaleString() || "0"}
+                          Rp {trackedTicket.estimatedCost?.toLocaleString() || '0'}
                         </span>
                       </div>
                       <div className="flex justify-between font-bold pt-1 text-slate-900 dark:text-zinc-100 text-xs">
                         <span>Sisa Tagihan Pelunasan:</span>
                         <span>
-                          Rp{" "}
+                          Rp{' '}
                           {(
-                            (trackedTicket.estimatedCost || 0) -
-                            (trackedTicket.downPayment || 0)
+                            (trackedTicket.estimatedCost || 0) - (trackedTicket.downPayment || 0)
                           ).toLocaleString()}
                         </span>
                       </div>
@@ -1180,16 +1113,16 @@ export const WarrantyClaims: React.FC = () => {
                           approveServiceEstimate(
                             trackedTicket.id,
                             false,
-                            signerName || "Customer",
-                            signerText || "DITOLAK",
+                            signerName || 'Customer',
+                            signerText || 'DITOLAK'
                           );
                           showToast(
-                            "Penawaran ditolak secara resmi. Unit akan segera dipacking kembali.",
-                            "info",
+                            'Penawaran ditolak secara resmi. Unit akan segera dipacking kembali.',
+                            'info'
                           );
                           setTrackedTicket(null);
-                          setSignerName("");
-                          setSignerText("");
+                          setSignerName('');
+                          setSignerText('');
                         }}
                         className="flex-1 bg-white dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-700 dark:text-rose-400 font-semibold py-2 rounded-lg border border-rose-200 dark:border-rose-900/40 cursor-pointer flex items-center justify-center gap-1.5"
                       >
@@ -1199,55 +1132,43 @@ export const WarrantyClaims: React.FC = () => {
                         type="button"
                         disabled={!signerName.trim() || !signerText.trim()}
                         onClick={() => {
-                          approveServiceEstimate(
-                            trackedTicket.id,
-                            true,
-                            signerName,
-                            signerText,
-                          );
+                          approveServiceEstimate(trackedTicket.id, true, signerName, signerText);
                           showToast(
                             `Terima kasih! Penawaran berhasil disetujui digital oleh ${signerName}. Teknisi kami akan memulai reparasi.`,
-                            "success",
+                            'success'
                           );
                           setTrackedTicket(null);
-                          setSignerName("");
-                          setSignerText("");
+                          setSignerName('');
+                          setSignerText('');
                         }}
                         className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <ThumbsUp className="w-3.5 h-3.5" /> Setujui &amp;
-                        Kerjakan
+                        <ThumbsUp className="w-3.5 h-3.5" /> Setujui &amp; Kerjakan
                       </button>
                     </div>
                   </div>
                 )}
 
                 {/* Digital Warranty active detail */}
-                {trackedTicket.status === ServiceStatus.DIAMBIL &&
-                  trackedTicket.warrantyEndsAt && (
-                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl text-xs space-y-2.5">
-                      <p className="font-black text-emerald-900 dark:text-emerald-400 flex items-center gap-1.5 uppercase font-mono tracking-wide text-[10.5px]">
-                        <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" />{" "}
-                        Kartu Garansi Digital Aktif!
-                      </p>
-                      <p className="text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                        Masa garansi perbaikan Anda berlaku{" "}
-                        {trackedTicket.warrantyMonths} bulan, berakhir resmi
-                        pada{" "}
-                        <strong>
-                          {trackedTicket.warrantyEndsAt?.split("T")[0]}
-                        </strong>
-                        .
-                      </p>
-                      <button
-                        onClick={() => handlePrintWarranty(trackedTicket)}
-                        className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-zinc-700 border border-emerald-200 dark:border-zinc-700 font-black px-3 py-1.5 rounded-lg text-[10px] cursor-pointer transition"
-                      >
-                        <Download className="w-3.5 h-3.5" /> Unduh Kartu Garansi
-                        PDF
-                      </button>
-                    </div>
-                  )}
+                {trackedTicket.status === ServiceStatus.DIAMBIL && trackedTicket.warrantyEndsAt && (
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl text-xs space-y-2.5">
+                    <p className="font-black text-emerald-900 dark:text-emerald-400 flex items-center gap-1.5 uppercase font-mono tracking-wide text-[10.5px]">
+                      <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" /> Kartu Garansi Digital
+                      Aktif!
+                    </p>
+                    <p className="text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                      Masa garansi perbaikan Anda berlaku {trackedTicket.warrantyMonths} bulan,
+                      berakhir resmi pada{' '}
+                      <strong>{trackedTicket.warrantyEndsAt?.split('T')[0]}</strong>.
+                    </p>
+                    <button
+                      onClick={() => handlePrintWarranty(trackedTicket)}
+                      className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-zinc-700 border border-emerald-200 dark:border-zinc-700 font-black px-3 py-1.5 rounded-lg text-[10px] cursor-pointer transition"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Unduh Kartu Garansi PDF
+                    </button>
+                  </div>
+                )}
 
                 {/* Timeline display */}
                 <div className="space-y-3.5">
@@ -1274,9 +1195,8 @@ export const WarrantyClaims: React.FC = () => {
               </div>
             ) : (
               <div className="py-24 text-center text-slate-400 dark:text-slate-500 italic text-xs">
-                Gunakan menu sebelah kiri untuk melacak data tiket. Detail
-                timeline pengerjaan, estimasi biaya, dan jaminan kartu garansi
-                akan terpampang lengkap di panel ini.
+                Gunakan menu sebelah kiri untuk melacak data tiket. Detail timeline pengerjaan,
+                estimasi biaya, dan jaminan kartu garansi akan terpampang lengkap di panel ini.
               </div>
             )}
           </div>

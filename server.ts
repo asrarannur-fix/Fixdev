@@ -240,6 +240,15 @@ const publicApiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const qzSigningLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 120,
+  message: { error: "Terlalu banyak permintaan tanda tangan QZ." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
+
 // Apply rate limiting
 app.use("/api/", (req, res, next) => {
   const path = req.path;
@@ -302,7 +311,7 @@ app.post("/api/data/sync", requireJwt, requireTenantScope, dataSyncHandler);
 app.get("/api/qz/certificate", qzPublicCertHandler);
 app.get("/api/qz/certificate/download", qzCertDownloadHandler);
 app.get("/api/qz/installer.bat", qzInstallerBatHandler);
-app.post("/api/qz/sign", requireJwt, requireTenantScope, qzSignHandler);
+app.post("/api/qz/sign", qzSigningLimiter, requireJwt, requireTenantScope, qzSignHandler);
 
 app.post("/api/auth/login", loginLimiter, validateSchema(loginSchema), loginHandler);
 app.post("/api/auth/logout", requireJwt, logoutHandler);

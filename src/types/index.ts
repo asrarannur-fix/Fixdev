@@ -90,6 +90,7 @@ export interface TenantSettings {
     labelCustomText?: string;
     termsSalesText?: string;
     termsRentalText?: string;
+    branches?: Record<string, Record<string, unknown>>;
   };
   waConfig?: {
     gateway?: string;
