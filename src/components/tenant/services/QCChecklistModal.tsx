@@ -94,7 +94,14 @@ export const QCChecklistModal: React.FC<{
 
   const handleSave = async () => {
     setSaving(true);
-    try { await onSave(items); } finally { setSaving(false); }
+    try {
+      await onSave(items);
+    } catch (err) {
+      console.error('Failed to save QC checklist:', err);
+      // Error already surfaced by parent component
+    } finally {
+      setSaving(false);
+    }
   };
 
   const barColor =

@@ -52,7 +52,15 @@ export const SparepartsLedger: React.FC<SparepartsLedgerProps> = ({
                   </td>
                   <td className="px-2 py-1.5 text-right">
                     <button
-                      onClick={() => cancelServicePart(ticket.id, part.id)}
+                      onClick={async () => {
+                        try {
+                          await cancelServicePart(ticket.id, part.id);
+                          showToast('Sparepart dibatalkan', 'success');
+                        } catch (err) {
+                          console.error('Failed to cancel service part:', err);
+                          showToast('Gagal membatalkan sparepart', 'error');
+                        }
+                      }}
                       className="text-rose-500 hover:text-rose-700"
                       title="Batalkan sparepart"
                     >
