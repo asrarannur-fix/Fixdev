@@ -101,6 +101,8 @@ export interface TenantSettings {
     labelCustomText?: string;
     termsSalesText?: string;
     termsRentalText?: string;
+    multiPrinterMap?: Record<string, string>;
+    printTemplates?: Record<string, string>;
     branches?: Record<string, Record<string, unknown>>;
   };
   waConfig?: {

@@ -17,7 +17,7 @@ export const resolvePrintConfig = (
   const branchDocumentConfig = documentType
     ? (branchConfig?.documentProfiles?.[documentType] as Partial<PrintConfig> | undefined)
     : undefined;
-  return {
+  const resolved = {
     ...config,
     ...globalDocumentConfig,
     ...branchConfig,
@@ -25,6 +25,38 @@ export const resolvePrintConfig = (
     branches: config.branches,
     documentProfiles: config.documentProfiles,
   };
+  if (!resolved.printerName && resolved.multiPrinterMap) {
+    const map = resolved.multiPrinterMap as Record<string, string>;
+    if (documentType && map[documentType]) resolved.printerName = map[documentType];
+    else if (map._default) resolved.printerName = map._default;
+  }
+  return resolved;
+};
+
+export const resolvePrinterName = (
+  config: PrintConfig | undefined,
+  documentType?: string,
+  branchId?: string
+): string | undefined => {
+  if (!config) return undefined;
+  if (branchId && config.branches?.[branchId]) {
+    const bc = config.branches[branchId] as Partial<PrintConfig>;
+    if (documentType) {
+      const bdc = bc.documentProfiles?.[documentType] as Partial<PrintConfig> | undefined;
+      if (bdc?.printerName) return bdc.printerName;
+    }
+    if (bc.printerName) return bc.printerName;
+  }
+  if (documentType && config.documentProfiles?.[documentType]) {
+    const dc = config.documentProfiles[documentType] as Partial<PrintConfig>;
+    if (dc.printerName) return dc.printerName;
+  }
+  if (config.multiPrinterMap) {
+    const map = config.multiPrinterMap as Record<string, string>;
+    if (documentType && map[documentType]) return map[documentType];
+    if (map._default) return map._default;
+  }
+  return config.printerName;
 };
 
 export const getPrintPageSize = (pc?: PrintConfig): string => {

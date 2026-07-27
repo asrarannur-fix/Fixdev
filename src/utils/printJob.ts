@@ -1,6 +1,13 @@
 import type { PrintConfig } from './print';
 import { escapeHtml, getPrintBaseCss, getPaperWidthStyle } from './print';
 import { generateQrSvg } from './qrSvg';
+import {
+  enqueuePrintJob,
+  getPendingPrintJobs,
+  markJobProcessing,
+  markJobDone,
+  markJobFailed,
+} from './offlinePrintQueue';
 
 export type PrintJob = {
   title: string;
@@ -250,6 +257,90 @@ export const checkQzTray = async (): Promise<{
   }
 };
 
+export interface PrinterCapabilities {
+  name: string;
+  supportedMedia: string[];
+  defaultWidthMm: number;
+  defaultPaperSize: 'thermal_58' | 'thermal_80' | 'a4' | 'hvs_a4' | 'hvs_letter';
+  maxCopies: number;
+  supportsCut: boolean;
+  supportsDensity: boolean;
+}
+
+export const detectPrinterCapabilities = async (
+  printerName: string
+): Promise<PrinterCapabilities | null> => {
+  const qz = window.qz;
+  if (!qz?.websocket || !qz?.printers) return null;
+  try {
+    if (qz.signingConfigured !== false) await configureQzSigning();
+    if (!qz.websocket.isActive?.()) await qz.websocket.connect();
+    const printer = await qz.printers.find(printerName);
+    if (!printer) return null;
+    const media: string[] = [];
+    let defaultWidthMm = 80;
+    let defaultPaperSize: PrinterCapabilities['defaultPaperSize'] = 'thermal_80';
+    let maxCopies = 99;
+    let supportsCut = true;
+    const supportsDensity = true;
+    try {
+      const capabilities = await qz.printers.capabilities(printerName);
+      if (capabilities?.media) {
+        for (const m of capabilities.media) {
+          if (m?.name) media.push(m.name);
+          if (m?.width && typeof m.width === 'number') {
+            const wMm = m.width * (m.units === 'in' ? 25.4 : m.units === 'cm' ? 10 : 1);
+            if (wMm > 0 && wMm < 500) {
+              if (wMm <= 60) {
+                defaultWidthMm = 54;
+                defaultPaperSize = 'thermal_58';
+              } else if (wMm <= 85) {
+                defaultWidthMm = 76;
+                defaultPaperSize = 'thermal_80';
+              } else if (wMm <= 220) {
+                defaultPaperSize = 'hvs_letter';
+                defaultWidthMm = 0;
+              } else {
+                defaultPaperSize = 'hvs_a4';
+                defaultWidthMm = 0;
+              }
+            }
+          }
+        }
+        if (capabilities?.maxCopies && typeof capabilities.maxCopies === 'number') {
+          maxCopies = capabilities.maxCopies;
+        }
+        if (capabilities?.cutAtEnd !== undefined) supportsCut = Boolean(capabilities.cutAtEnd);
+      }
+    } catch {}
+    return {
+      name: printerName,
+      supportedMedia: media,
+      defaultWidthMm,
+      defaultPaperSize,
+      maxCopies,
+      supportsCut,
+      supportsDensity,
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const autoDetectPrinterSettings = async (
+  printerName: string
+): Promise<Partial<PrintConfig> | null> => {
+  const caps = await detectPrinterCapabilities(printerName);
+  if (!caps) return null;
+  return {
+    printerName: caps.name,
+    paperSize: caps.defaultPaperSize,
+    printableWidthMm: caps.defaultWidthMm || undefined,
+    copies: 1,
+    cut: caps.supportsCut,
+  };
+};
+
 export const printFrame = async (
   frame: HTMLIFrameElement | Window,
   printConfig?: PrintConfig,
@@ -433,3 +524,45 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
 };
 
 export const printJob = (job: PrintJob): Promise<PrintResult> => printJobAsync(job);
+
+const processOfflineQueue = async () => {
+  if (!navigator.onLine) return;
+  const pending = await getPendingPrintJobs();
+  for (const job of pending) {
+    await markJobProcessing(job.id);
+    try {
+      const result = await printJobAsync({
+        title: job.title,
+        html: job.html,
+        printConfig: job.printConfig as PrintConfig | undefined,
+        qrPayload: job.qrPayload,
+        documentType: job.documentType,
+        documentId: job.documentId,
+        branchId: job.branchId,
+      });
+      if (result.ok) await markJobDone(job.id);
+      else await markJobFailed(job.id);
+    } catch {
+      await markJobFailed(job.id);
+    }
+  }
+};
+
+let offlineQueueTimer = 0;
+export const startOfflineQueueListener = () => {
+  if (offlineQueueTimer) return;
+  window.addEventListener('online', () => {
+    window.setTimeout(processOfflineQueue, 1000);
+  });
+  offlineQueueTimer = window.setInterval(() => {
+    if (navigator.onLine) void processOfflineQueue();
+  }, 30_000);
+};
+
+export const queueOfflinePrint = async (
+  job: Omit<Parameters<typeof enqueuePrintJob>[0], 'tenantId' | 'branchId' | 'userId'>
+): Promise<boolean> => {
+  if (navigator.onLine) return false;
+  await enqueuePrintJob(job);
+  return true;
+};

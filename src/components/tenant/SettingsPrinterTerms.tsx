@@ -1,7 +1,11 @@
 import * as React from 'react';
 import { useToast } from '../ui/Toast';
 import { escapeHtml, resolvePrintConfig } from '../../utils/print';
-import { createPrintDocument } from '../../utils/printJob';
+import {
+  createPrintDocument,
+  detectPrinterCapabilities,
+  autoDetectPrinterSettings,
+} from '../../utils/printJob';
 import {
   Building2,
   Sliders,
@@ -55,9 +59,15 @@ import {
   ClipboardCheck,
   History,
   HeartPulse,
+  Radar,
+  FileCode,
+  BarChart3,
+  ScanSearch,
 } from 'lucide-react';
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from '../../types';
 import { PrintHistory } from '../PrintHistory';
+import { PrintAnalytics } from '../PrintAnalytics';
+import { PrintTemplateManager } from '../PrintTemplateManager';
 import { checkQzTray } from '../../utils/printJob';
 
 export const SettingsPrinterTerms: React.FC<any> = (props) => {
@@ -104,7 +114,9 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
     termsSalesText,
     apiFetch,
   } = props;
-  const [settingsView, setSettingsView] = React.useState<'config' | 'history'>('config');
+  const [settingsView, setSettingsView] = React.useState<
+    'config' | 'history' | 'analytics' | 'templates'
+  >('config');
   const [thermalCompact, setThermalCompact] = React.useState(
     activeTenant?.settings?.printConfig?.thermalCompact ?? false
   );
@@ -112,6 +124,16 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
     'idle'
   );
   const [healthPrinters, setHealthPrinters] = React.useState<string[]>([]);
+  const [discoveredPrinters, setDiscoveredPrinters] = React.useState<
+    Array<{ name: string; caps: any }>
+  >([]);
+  const [autoDetecting, setAutoDetecting] = React.useState(false);
+  const [printTemplates, setPrintTemplates] = React.useState<Record<string, string>>(
+    (activeTenant?.settings?.printConfig?.printTemplates as Record<string, string>) || {}
+  );
+  const [multiPrinterMap, setMultiPrinterMap] = React.useState<Record<string, string>>(
+    (activeTenant?.settings?.printConfig?.multiPrinterMap as Record<string, string>) || {}
+  );
 
   React.useEffect(() => {
     setThermalCompact(activeTenant?.settings?.printConfig?.thermalCompact ?? false);
@@ -131,6 +153,46 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
   React.useEffect(() => {
     if (printMode === 'qz') runHealthCheck();
   }, [printMode, runHealthCheck]);
+
+  const runAutoDiscovery = React.useCallback(async () => {
+    setAutoDetecting(true);
+    try {
+      const result = await checkQzTray();
+      if (!result.connected || result.printers.length === 0) {
+        setDiscoveredPrinters([]);
+        setAutoDetecting(false);
+        return;
+      }
+      const discovered: Array<{ name: string; caps: any }> = [];
+      for (const name of result.printers) {
+        try {
+          const caps = await detectPrinterCapabilities(name);
+          discovered.push({ name, caps });
+        } catch {
+          discovered.push({ name, caps: null });
+        }
+      }
+      setDiscoveredPrinters(discovered);
+    } catch {
+      setDiscoveredPrinters([]);
+    } finally {
+      setAutoDetecting(false);
+    }
+  }, []);
+
+  const applyDiscoveredPrinter = React.useCallback(
+    async (name: string) => {
+      const settings = await autoDetectPrinterSettings(name);
+      if (settings) {
+        savePrinterSettings({
+          ...settings,
+          printMode: 'qz',
+        });
+        showToast(`Printer "${name}" berhasil dikonfigurasi otomatis.`, 'success');
+      }
+    },
+    [savePrinterSettings, showToast]
+  );
   const selectedProfile =
     resolvePrintConfig(activeTenant?.settings?.printConfig, currentBranchId, profileDocumentType) ||
     {};
@@ -182,32 +244,44 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_.hover\:bg-slate-50:hover]:bg-zinc-900">
       {/* Top View Toggle */}
-      <div className="xl:col-span-12 flex items-center gap-3">
-        <button
-          onClick={() => setSettingsView('config')}
-          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-            settingsView === 'config'
-              ? 'bg-indigo-500 text-white'
-              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-          }`}
-        >
-          <Settings className="w-3 h-3 inline mr-1" /> Konfigurasi
-        </button>
-        <button
-          onClick={() => setSettingsView('history')}
-          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-            settingsView === 'history'
-              ? 'bg-indigo-500 text-white'
-              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-          }`}
-        >
-          <History className="w-3 h-3 inline mr-1" /> Riwayat Cetak
-        </button>
+      <div className="xl:col-span-12 flex items-center gap-2 flex-wrap">
+        {[
+          { key: 'config' as const, icon: Settings, label: 'Konfigurasi' },
+          { key: 'history' as const, icon: History, label: 'Riwayat' },
+          { key: 'analytics' as const, icon: BarChart3, label: 'Analitik' },
+          { key: 'templates' as const, icon: FileCode, label: 'Template' },
+        ].map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            onClick={() => setSettingsView(key)}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+              settingsView === key
+                ? 'bg-indigo-500 text-white'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}
+          >
+            <Icon className="w-3 h-3 inline mr-1" /> {label}
+          </button>
+        ))}
       </div>
 
       {settingsView === 'history' && apiFetch && currentBranchId ? (
         <div className="xl:col-span-12">
           <PrintHistory apiFetch={apiFetch} branchId={currentBranchId} />
+        </div>
+      ) : settingsView === 'analytics' && apiFetch && currentBranchId ? (
+        <div className="xl:col-span-12">
+          <PrintAnalytics apiFetch={apiFetch} branchId={currentBranchId} />
+        </div>
+      ) : settingsView === 'templates' ? (
+        <div className="xl:col-span-12">
+          <PrintTemplateManager
+            printTemplates={printTemplates}
+            onSave={(t) => {
+              setPrintTemplates(t);
+              savePrinterSettings({ printTemplates: t });
+            }}
+          />
         </div>
       ) : (
         <>
@@ -323,6 +397,111 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                   ))}
                 </select>
               )}
+            </div>
+
+            {/* Auto-Discovery Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs uppercase text-slate-800">
+                    Auto-Discovery Printer
+                  </h4>
+                  <p className="text-[10px] text-slate-400">
+                    Scan semua printer QZ yang tersedia dan konfigurasi otomatis berdasarkan
+                    capabilities.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={runAutoDiscovery}
+                  disabled={autoDetecting}
+                  className="px-3 py-2 rounded-lg bg-violet-600 text-white text-[10px] font-bold disabled:opacity-50 flex items-center gap-1"
+                >
+                  <ScanSearch className={`w-3 h-3 ${autoDetecting ? 'animate-spin' : ''}`} />
+                  {autoDetecting ? 'Scanning...' : 'Scan Semua Printer'}
+                </button>
+              </div>
+              {discoveredPrinters.length > 0 && (
+                <div className="space-y-2">
+                  {discoveredPrinters.map(({ name, caps }) => (
+                    <div
+                      key={name}
+                      className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Printer className="w-4 h-4 text-slate-400" />
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-800">{name}</span>
+                          {caps && (
+                            <span className="text-[8px] text-slate-400 ml-2 font-mono">
+                              {caps.defaultPaperSize} {caps.supportsCut ? '| CUT' : ''}{' '}
+                              {caps.supportsDensity ? '| DENSITY' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => applyDiscoveredPrinter(name)}
+                        className="px-2.5 py-1 bg-accent text-white text-[9px] font-bold rounded-lg hover:bg-accent-hover transition-all"
+                      >
+                        <Check className="w-3 h-3 inline mr-0.5" /> Pakai
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {discoveredPrinters.length === 0 && !autoDetecting && (
+                <p className="text-[9px] text-slate-400 text-center py-2">
+                  Klik "Scan Semua Printer" untuk mendeteksi printer yang tersedia.
+                </p>
+              )}
+            </div>
+
+            {/* Multi-Printer Map */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div>
+                <h4 className="font-bold text-xs uppercase text-slate-800">Multi-Printer Map</h4>
+                <p className="text-[10px] text-slate-400">
+                  Assign printer berbeda per jenis dokumen. Jika kosong, pakai printer default.
+                </p>
+              </div>
+              <div className="space-y-2">
+                {[
+                  'pos_receipt',
+                  'service_receipt',
+                  'service_invoice',
+                  'service_label',
+                  'warranty',
+                  'rental',
+                  'inventory',
+                  'report',
+                ].map((docType) => (
+                  <div key={docType} className="flex items-center gap-2">
+                    <span className="text-[9px] font-mono text-slate-500 w-28 truncate">
+                      {docType}
+                    </span>
+                    <select
+                      value={multiPrinterMap[docType] || ''}
+                      onChange={(e) => {
+                        const next = { ...multiPrinterMap };
+                        if (e.target.value) next[docType] = e.target.value;
+                        else delete next[docType];
+                        setMultiPrinterMap(next);
+                        savePrinterSettings({ multiPrinterMap: next });
+                      }}
+                      className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[10px] font-semibold"
+                    >
+                      <option value="">Default</option>
+                      {qzPrinters.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
@@ -1048,6 +1227,8 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                       termsSalesText,
                       termsRentalText,
                       thermalCompact,
+                      multiPrinterMap,
+                      printTemplates,
                     })
                   }
                   className="px-4 py-1.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-[10px] font-bold cursor-pointer transition-all shadow-sm"
