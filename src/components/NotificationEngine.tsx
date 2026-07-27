@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion } from "motion/react";
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import {
   Bell,
   MessageSquare,
@@ -18,115 +18,113 @@ import {
   Plus,
   RefreshCw,
   Mail,
-} from "lucide-react";
+} from 'lucide-react';
 
 export const NotificationEngine: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<
-    "templates" | "webhooks" | "logs" | "channels"
-  >("channels");
+  const [activeTab, setActiveTab] = useState<'templates' | 'webhooks' | 'logs' | 'channels'>(
+    'channels'
+  );
 
   const [channels, setChannels] = useState([
     {
-      id: "wa",
-      name: "WhatsApp Meta API",
-      type: "whatsapp",
-      status: "active",
+      id: 'wa',
+      name: 'WhatsApp Meta API',
+      type: 'whatsapp',
+      status: 'active',
       icon: MessageSquare,
-      color: "emerald",
+      color: 'emerald',
     },
     {
-      id: "tg",
-      name: "Telegram Bot",
-      type: "telegram",
-      status: "active",
+      id: 'tg',
+      name: 'Telegram Bot',
+      type: 'telegram',
+      status: 'active',
       icon: Send,
-      color: "sky",
+      color: 'sky',
     },
     {
-      id: "push",
-      name: "FCM Push Mobile",
-      type: "push",
-      status: "inactive",
+      id: 'push',
+      name: 'FCM Push Mobile',
+      type: 'push',
+      status: 'inactive',
       icon: Smartphone,
-      color: "indigo",
+      color: 'indigo',
     },
     {
-      id: "ws",
-      name: "WebSocket (Realtime UI)",
-      type: "websocket",
-      status: "active",
+      id: 'ws',
+      name: 'WebSocket (Realtime UI)',
+      type: 'websocket',
+      status: 'active',
       icon: Globe,
-      color: "purple",
+      color: 'purple',
     },
   ]);
 
   const [templates, setTemplates] = useState([
     {
-      id: "tpl-1",
-      name: "Notifikasi Pembayaran Sukses",
-      channel: "whatsapp",
-      trigger: "payment.success",
+      id: 'tpl-1',
+      name: 'Notifikasi Pembayaran Sukses',
+      channel: 'whatsapp',
+      trigger: 'payment.success',
       content:
-        "Halo {{customer_name}}, pembayaran sebesar Rp{{amount}} untuk tiket #{{ticket_id}} telah berhasil. Terima kasih!",
+        'Halo {{customer_name}}, pembayaran sebesar Rp{{amount}} untuk tiket #{{ticket_id}} telah berhasil. Terima kasih!',
     },
     {
-      id: "tpl-2",
-      name: "Peringatan Stok Tipis",
-      channel: "telegram",
-      trigger: "inventory.low_stock",
+      id: 'tpl-2',
+      name: 'Peringatan Stok Tipis',
+      channel: 'telegram',
+      trigger: 'inventory.low_stock',
       content:
-        "🚨 ALERT: Stok {{item_name}} tersisa {{stock_left}} unit di cabang {{branch_name}}.",
+        '🚨 ALERT: Stok {{item_name}} tersisa {{stock_left}} unit di cabang {{branch_name}}.',
     },
     {
-      id: "tpl-3",
-      name: "Perubahan Status Servis",
-      channel: "push",
-      trigger: "service.status_changed",
-      content:
-        "Servis perangkat {{device}} Anda kini berstatus: {{new_status}}.",
+      id: 'tpl-3',
+      name: 'Perubahan Status Servis',
+      channel: 'push',
+      trigger: 'service.status_changed',
+      content: 'Servis perangkat {{device}} Anda kini berstatus: {{new_status}}.',
     },
     {
-      id: "tpl-4",
-      name: "Login Mencurigakan",
-      channel: "telegram",
-      trigger: "security.suspicious_login",
-      content:
-        "⚠️ Peringatan Keamanan: Percobaan login dari IP {{ip_address}} pada {{time}}.",
+      id: 'tpl-4',
+      name: 'Login Mencurigakan',
+      channel: 'telegram',
+      trigger: 'security.suspicious_login',
+      content: '⚠️ Peringatan Keamanan: Percobaan login dari IP {{ip_address}} pada {{time}}.',
     },
   ]);
 
   const [logs] = useState([
     {
-      id: "log-1",
-      date: "2026-07-01 14:30:22",
-      event: "payment.success",
-      channel: "WhatsApp",
-      recipient: "+6281234567890",
-      status: "delivered",
+      id: 'log-1',
+      date: '2026-07-01 14:30:22',
+      event: 'payment.success',
+      channel: 'WhatsApp',
+      recipient: '+6281234567890',
+      status: 'delivered',
     },
     {
-      id: "log-2",
-      date: "2026-07-01 14:15:05",
-      event: "service.status_changed",
-      channel: "Push Notification",
-      recipient: "User #1204",
-      status: "failed",
+      id: 'log-2',
+      date: '2026-07-01 14:15:05',
+      event: 'service.status_changed',
+      channel: 'Push Notification',
+      recipient: 'User #1204',
+      status: 'failed',
     },
     {
-      id: "log-3",
-      date: "2026-07-01 13:50:11",
-      event: "inventory.low_stock",
-      channel: "Telegram",
-      recipient: "Group Staff",
-      status: "delivered",
+      id: 'log-3',
+      date: '2026-07-01 13:50:11',
+      event: 'inventory.low_stock',
+      channel: 'Telegram',
+      recipient: 'Group Staff',
+      status: 'delivered',
     },
     {
-      id: "log-4",
-      date: "2026-07-01 11:05:40",
-      event: "security.suspicious_login",
-      channel: "Telegram",
-      recipient: "Admin IT",
-      status: "delivered",
+      id: 'log-4',
+      date: '2026-07-01 11:05:40',
+      event: 'security.suspicious_login',
+      channel: 'Telegram',
+      recipient: 'Admin IT',
+      status: 'delivered',
     },
   ]);
 
@@ -135,8 +133,8 @@ export const NotificationEngine: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Pusat kendali komunikasi multi-saluran. Atur trigger, template, dan
-            pantau log pengiriman.
+            Pusat kendali komunikasi multi-saluran. Atur trigger, template, dan pantau log
+            pengiriman.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -149,18 +147,18 @@ export const NotificationEngine: React.FC = () => {
 
       <div className="flex border-b border-slate-200 dark:border-slate-800">
         {[
-          { id: "channels", label: "Saluran (Channels)", icon: Server },
-          { id: "webhooks", label: "Events & Webhooks", icon: Activity },
-          { id: "templates", label: "Template Pesan", icon: Mail },
-          { id: "logs", label: "Log & Retry", icon: Clock },
+          { id: 'channels', label: 'Saluran', icon: Server },
+          { id: 'webhooks', label: 'Event & Webhook', icon: Activity },
+          { id: 'templates', label: 'Template Pesan', icon: Mail },
+          { id: 'logs', label: 'Log & Retry', icon: Clock },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === tab.id
-                ? "border-accent text-accent dark:border-accent/60 dark:text-accent"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                ? 'border-accent text-accent dark:border-accent/60 dark:text-accent'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
             }`}
           >
             <tab.icon className="w-4 h-4" />
@@ -170,7 +168,7 @@ export const NotificationEngine: React.FC = () => {
       </div>
 
       {/* Saluran (Channels) */}
-      {activeTab === "channels" && (
+      {activeTab === 'channels' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {channels.map((channel) => (
             <div
@@ -188,31 +186,25 @@ export const NotificationEngine: React.FC = () => {
                 </div>
                 <span
                   className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md border ${
-                    channel.status === "active"
-                      ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/50"
-                      : "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+                    channel.status === 'active'
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/50'
+                      : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
                   }`}
                 >
                   {channel.status}
                 </span>
               </div>
-              <h3 className="font-bold text-slate-800 dark:text-white mb-1">
-                {channel.name}
-              </h3>
-              <p className="text-xs text-slate-500 mb-4 font-mono">
-                {channel.type}
-              </p>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-1">{channel.name}</h3>
+              <p className="text-xs text-slate-500 mb-4 font-mono">{channel.type}</p>
 
               <button
                 className={`w-full py-2 rounded-lg text-xs font-bold transition-colors border ${
-                  channel.status === "active"
-                    ? "border-slate-200 hover:bg-slate-50 text-slate-700 dark:border-slate-700 dark:hover:bg-slate-800 dark:text-slate-300"
-                    : "border-indigo-200 bg-accent-lighter text-accent hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-accent"
+                  channel.status === 'active'
+                    ? 'border-slate-200 hover:bg-slate-50 text-slate-700 dark:border-slate-700 dark:hover:bg-slate-800 dark:text-slate-300'
+                    : 'border-indigo-200 bg-accent-lighter text-accent hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-accent'
                 }`}
               >
-                {channel.status === "active"
-                  ? "Konfigurasi API"
-                  : "Aktifkan Saluran"}
+                {channel.status === 'active' ? 'Konfigurasi API' : 'Aktifkan Saluran'}
               </button>
             </div>
           ))}
@@ -220,12 +212,12 @@ export const NotificationEngine: React.FC = () => {
       )}
 
       {/* Events & Webhooks */}
-      {activeTab === "webhooks" && (
+      {activeTab === 'webhooks' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-base font-bold text-slate-800 dark:text-white">
-                Mapping Event to Webhook
+                Pemetaan Event ke Webhook
               </h3>
               <p className="text-xs text-slate-500">
                 Tentukan event sistem apa saja yang akan men-trigger notifikasi.
@@ -259,19 +251,13 @@ export const NotificationEngine: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right hidden sm:block">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold">
-                      Saluran Aktif
-                    </p>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold">Saluran Aktif</p>
                     <p className="text-xs font-semibold flex items-center justify-end gap-1 mt-0.5">
-                      {tpl.channel === "whatsapp" && (
+                      {tpl.channel === 'whatsapp' && (
                         <MessageSquare className="w-3 h-3 text-emerald-500" />
                       )}
-                      {tpl.channel === "telegram" && (
-                        <Send className="w-3 h-3 text-sky-500" />
-                      )}
-                      {tpl.channel === "push" && (
-                        <Smartphone className="w-3 h-3 text-indigo-500" />
-                      )}
+                      {tpl.channel === 'telegram' && <Send className="w-3 h-3 text-sky-500" />}
+                      {tpl.channel === 'push' && <Smartphone className="w-3 h-3 text-indigo-500" />}
                       <span className="capitalize">{tpl.channel}</span>
                     </p>
                   </div>
@@ -286,7 +272,7 @@ export const NotificationEngine: React.FC = () => {
       )}
 
       {/* Templates */}
-      {activeTab === "templates" && (
+      {activeTab === 'templates' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {templates.map((tpl) => (
             <div
@@ -294,9 +280,7 @@ export const NotificationEngine: React.FC = () => {
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm"
             >
               <div className="flex justify-between items-start mb-3">
-                <h3 className="font-bold text-slate-800 dark:text-white">
-                  {tpl.name}
-                </h3>
+                <h3 className="font-bold text-slate-800 dark:text-white">{tpl.name}</h3>
                 <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold rounded uppercase">
                   {tpl.channel}
                 </span>
@@ -325,18 +309,16 @@ export const NotificationEngine: React.FC = () => {
             <div className="w-12 h-12 rounded-full bg-accent-lighter dark:bg-indigo-900/30 flex items-center justify-center text-accent dark:text-accent mb-3">
               <Plus className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-slate-800 dark:text-white">
-              Buat Template Baru
-            </h3>
+            <h3 className="font-bold text-slate-800 dark:text-white">Buat Template Baru</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Gunakan variabel dinamis seperti {"{{name}}"}.
+              Gunakan variabel dinamis seperti {'{{name}}'}.
             </p>
           </div>
         </div>
       )}
 
       {/* Logs & Retry */}
-      {activeTab === "logs" && (
+      {activeTab === 'logs' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -370,7 +352,7 @@ export const NotificationEngine: React.FC = () => {
                       <p className="text-xs text-slate-500">{log.recipient}</p>
                     </td>
                     <td className="px-6 py-4">
-                      {log.status === "delivered" ? (
+                      {log.status === 'delivered' ? (
                         <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-md text-xs font-semibold w-fit">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Terkirim
                         </span>
@@ -381,7 +363,7 @@ export const NotificationEngine: React.FC = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {log.status === "failed" ? (
+                      {log.status === 'failed' ? (
                         <button className="flex items-center justify-end gap-1.5 text-accent hover:text-indigo-800 font-medium text-xs ml-auto">
                           <RefreshCw className="w-3.5 h-3.5" /> Coba Lagi
                         </button>

@@ -16,8 +16,6 @@ import {
   validateBody,
   customerSchema,
   customerUpdateSchema,
-  ticketSchema,
-  ticketUpdateSchema,
   inventorySchema,
   inventoryUpdateSchema,
   createToken,
@@ -115,25 +113,14 @@ router.delete(
 // 2. Service Ticketing
 router.get('/tickets', sanctumAuthMiddleware, checkAbilities(['tickets:read']), getTickets);
 router.get('/tickets/:id', sanctumAuthMiddleware, checkAbilities(['tickets:read']), getTicketById);
-router.post(
-  '/tickets',
+router.all(
+  ['/tickets', '/tickets/:id'],
   sanctumAuthMiddleware,
   checkAbilities(['tickets:write']),
-  validateBody(ticketSchema),
-  createTicket
-);
-router.put(
-  '/tickets/:id',
-  sanctumAuthMiddleware,
-  checkAbilities(['tickets:write']),
-  validateBody(ticketUpdateSchema),
-  updateTicket
-);
-router.delete(
-  '/tickets/:id',
-  sanctumAuthMiddleware,
-  checkAbilities(['tickets:write']),
-  deleteTicket
+  (req, res, next) => {
+    if (req.method === 'GET') return next();
+    return res.status(410).json({ error: 'Mutasi tiket wajib melalui API workflow Servis.' });
+  }
 );
 
 // 3. Inventory Control

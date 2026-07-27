@@ -137,11 +137,16 @@ const qcSchema = z
     }
   });
 const handoverSchema = z.object({
-  paymentMethod: z.string().min(1),
+  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'TEMPO']),
   referenceNo: z.string().optional(),
   proofName: z.string().optional(),
   tempoDays: z.number().int().min(1).max(365).optional(),
-  taxRate: z.number().min(0).max(100).default(11),
+  idempotencyKey: z.string().trim().min(8),
+});
+const receivableSettlementSchema = z.object({
+  amount: z.number().positive(),
+  method: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET']),
+  referenceNo: z.string().trim().optional(),
   idempotencyKey: z.string().trim().min(8),
 });
 const partSchema = z.object({
@@ -186,6 +191,18 @@ function ticketSelect() {
     down_payment::float AS "downPayment", payment_method AS "paymentMethod", payment_ref AS "paymentRef",
     payment_proof_name AS "paymentProofName", tempo_days AS "tempoDays", handover_at AS "handoverAt",
     invoice_id AS "invoiceId", public_tracking_token AS "publicTrackingToken", created_at AS "createdAt"`;
+}
+
+async function requireTicketWarehouse(client: any, ticket: any, warehouseId: string) {
+  const result = await client.query(
+    'SELECT id FROM warehouses WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 LIMIT 1',
+    [warehouseId, ticket.tenantId, ticket.branchId]
+  );
+  if (!result.rows[0]) {
+    const error: any = new Error('Gudang tidak tersedia pada cabang tiket.');
+    error.status = 403;
+    throw error;
+  }
 }
 
 async function lockedTicket(client: any, req: Request) {
@@ -935,8 +952,8 @@ export async function requestServicePart(req: Request, res: Response) {
         throw error;
       }
       const product = await client.query(
-        `SELECT p.id,p.name,p.sell_price,COALESCE(ps.quantity,0)::float AS stock
-         FROM products p LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
+        `SELECT p.id,p.name,p.sell_price,p.purchase_cost,COALESCE(ps.quantity,0)::float AS stock
+          FROM products p LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
          WHERE p.id=$1 AND p.tenant_id=$3 LIMIT 1`,
         [parsed.data.productId, parsed.data.warehouseId, req.tenantId]
       );
@@ -1075,6 +1092,87 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
   }
 }
 
+export async function settleServiceReceivable(req: Request, res: Response) {
+  const parsed = receivableSettlementSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(422).json({ error: 'Data pelunasan piutang tidak valid.' });
+  try {
+    const result = await dbTransaction(async (client) => {
+      const receivable = await client.query(
+        `SELECT sr.*,st.ticket_no FROM service_receivables sr
+         JOIN service_tickets st ON st.id=sr.ticket_id AND st.tenant_id=sr.tenant_id AND st.branch_id=sr.branch_id
+         WHERE sr.id=$1 AND sr.tenant_id=$2 AND sr.branch_id=$3 FOR UPDATE`,
+        [req.params.receivableId, req.tenantId, req.branchId || req.headers['x-branch-id']]
+      );
+      if (!receivable.rows[0]) {
+        const error: any = new Error('Piutang servis tidak ditemukan.');
+        error.status = 404;
+        throw error;
+      }
+      const item = receivable.rows[0];
+      const duplicate = await client.query(
+        'SELECT id FROM service_receivable_payments WHERE tenant_id=$1 AND idempotency_key=$2',
+        [req.tenantId, parsed.data.idempotencyKey]
+      );
+      if (duplicate.rows[0]) return { receivable: item, idempotent: true };
+      const remaining = Number(item.amount) - Number(item.paid_amount);
+      if (parsed.data.amount > remaining) {
+        const error: any = new Error('Pelunasan melebihi sisa piutang.');
+        error.status = 422;
+        throw error;
+      }
+      await client.query(
+        `INSERT INTO service_receivable_payments (tenant_id,branch_id,receivable_id,idempotency_key,amount,method,reference_no,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [
+          req.tenantId,
+          item.branch_id,
+          item.id,
+          parsed.data.idempotencyKey,
+          parsed.data.amount,
+          parsed.data.method,
+          parsed.data.referenceNo || null,
+          req.authActor?.userId,
+        ]
+      );
+      const paidAmount = Number(item.paid_amount) + parsed.data.amount;
+      const status = paidAmount === Number(item.amount) ? 'PAID' : 'PARTIAL';
+      const updated = await client.query(
+        `UPDATE service_receivables SET paid_amount=$1,status=$2,paid_at=CASE WHEN $2='PAID' THEN NOW() ELSE paid_at END,updated_at=NOW()
+         WHERE id=$3 AND tenant_id=$4 AND branch_id=$5 RETURNING *`,
+        [paidAmount, status, item.id, req.tenantId, item.branch_id]
+      );
+      const debitAccountId = await ensureAccount(
+        client,
+        req.tenantId!,
+        paymentDebitAccountCode(parsed.data.method)
+      );
+      const receivableAccountId = await ensureAccount(client, req.tenantId!, '10300');
+      const journal = await client.query(
+        `INSERT INTO journal_entries (id,tenant_id,branch_id,description,reference_no,source_type,source_id,created_by)
+         VALUES (gen_random_uuid(),$1,$2,$3,$4,'SERVICE_RECEIVABLE_SETTLEMENT',$5,$6) RETURNING id`,
+        [
+          req.tenantId,
+          item.branch_id,
+          `Pelunasan piutang servis ${item.ticket_no}`,
+          item.ticket_no,
+          item.id,
+          req.authActor?.userId,
+        ]
+      );
+      await client.query(
+        `INSERT INTO journal_lines (id,journal_entry_id,account_id,debit,credit) VALUES
+         (gen_random_uuid(),$1,$2,$4,0),(gen_random_uuid(),$1,$3,0,$4)`,
+        [journal.rows[0].id, debitAccountId, receivableAccountId, parsed.data.amount]
+      );
+      return { receivable: updated.rows[0], idempotent: false };
+    });
+    res.json({ data: result });
+  } catch (error: any) {
+    sendError(res, error);
+  }
+}
+
 export async function handoverServiceTicket(req: Request, res: Response) {
   const parsed = handoverSchema.safeParse(req.body);
   if (!parsed.success)
@@ -1100,6 +1198,11 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         return { ticket: await finalTicket(client, req), idempotent: true };
       }
       const ticket = await lockedTicket(client, req);
+      if (ticket.handoverAt) {
+        const error: any = new Error('Tiket sudah diserahkan.');
+        error.status = 409;
+        throw error;
+      }
       if (!['SELESAI', 'MENUGGU_PEMBAYARAN', 'SIAP_DIAMBIL'].includes(ticket.status)) {
         const error: any = new Error(
           `Handover tidak dapat dilakukan pada status ${ticket.status}.`
@@ -1112,13 +1215,17 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
-      const invoice = calculateServiceInvoice(
-        ticket.estimatedCost,
-        ticket.downPayment,
-        parsed.data.taxRate
+      const tenantSettings = await client.query(
+        `SELECT COALESCE((settings #>> '{taxSettings,taxRate}')::numeric, 0) AS tax_rate
+         FROM tenants WHERE id=$1`,
+        [req.tenantId]
       );
+      const taxRate = Math.max(0, Math.min(100, Number(tenantSettings.rows[0]?.tax_rate) || 0));
+      const invoice = calculateServiceInvoice(ticket.estimatedCost, ticket.downPayment, taxRate);
       const parts = await client.query(
-        "SELECT * FROM service_parts WHERE tenant_id=$1 AND ticket_id=$2 AND status IN ('REQUESTED','RESERVED') FOR UPDATE",
+        `SELECT sp.*,p.purchase_cost FROM service_parts sp
+         JOIN products p ON p.id=sp.product_id AND p.tenant_id=sp.tenant_id
+         WHERE sp.tenant_id=$1 AND sp.ticket_id=$2 AND sp.status IN ('REQUESTED','RESERVED') FOR UPDATE OF sp`,
         [req.tenantId, ticket.id]
       );
       for (const part of parts.rows) {
@@ -1127,6 +1234,7 @@ export async function handoverServiceTicket(req: Request, res: Response) {
           error.status = 422;
           throw error;
         }
+        await requireTicketWarehouse(client, ticket, part.warehouse_id);
         const stock = await client.query(
           'SELECT quantity FROM product_stock WHERE product_id=$1 AND warehouse_id=$2 FOR UPDATE',
           [part.product_id, part.warehouse_id]
@@ -1164,8 +1272,8 @@ export async function handoverServiceTicket(req: Request, res: Response) {
           ? new Date(Date.now() + (parsed.data.tempoDays || 30) * 86400000)
           : null;
       const payment = await client.query(
-        `INSERT INTO service_payments (tenant_id,branch_id,ticket_id,idempotency_key,method,subtotal,tax_amount,down_payment_used,amount,reference_no,proof_name,tempo_days,due_at,status,created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+        `INSERT INTO service_payments (tenant_id,branch_id,ticket_id,idempotency_key,method,subtotal,tax_rate,tax_amount,down_payment_used,amount,reference_no,proof_name,tempo_days,due_at,status,created_by)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
         [
           req.tenantId,
           ticket.branchId,
@@ -1173,6 +1281,7 @@ export async function handoverServiceTicket(req: Request, res: Response) {
           parsed.data.idempotencyKey,
           parsed.data.paymentMethod,
           invoice.subtotal,
+          taxRate,
           invoice.taxAmount,
           invoice.downPaymentUsed,
           invoice.amountDue,
@@ -1184,13 +1293,15 @@ export async function handoverServiceTicket(req: Request, res: Response) {
           req.authActor?.userId,
         ]
       );
-      if (invoice.amountDue > 0) {
-        // Akun jurnal dibuat otomatis bila belum ada (self-heal), memakai daftar
-        // akun default standar. Mencegah handover terblokir hanya karena COA
-        // tenant belum lengkap.
-        const debitAccountCode = paymentDebitAccountCode(parsed.data.paymentMethod);
-        const debitAccountId = await ensureAccount(client, req.tenantId!, debitAccountCode);
+      if (invoice.total > 0) {
+        const debitAccountId = await ensureAccount(
+          client,
+          req.tenantId!,
+          paymentDebitAccountCode(parsed.data.paymentMethod)
+        );
+        const depositAccountId = await ensureAccount(client, req.tenantId!, '21000');
         const revenueAccountId = await ensureAccount(client, req.tenantId!, '40100');
+        const taxAccountId = await ensureAccount(client, req.tenantId!, '20100');
         const journal = await client.query(
           `INSERT INTO journal_entries (id,tenant_id,branch_id,description,reference_no,source_type,source_id,created_by) VALUES (gen_random_uuid(),$1,$2,$3,$4,'SERVICE_PAYMENT',$5,$6) RETURNING id`,
           [
@@ -1204,8 +1315,48 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         );
         await client.query(
           `INSERT INTO journal_lines (id,journal_entry_id,account_id,debit,credit) VALUES
-           (gen_random_uuid(),$1,$2,$4,0),(gen_random_uuid(),$1,$3,0,$4)`,
-          [journal.rows[0].id, debitAccountId, revenueAccountId, invoice.amountDue]
+           (gen_random_uuid(),$1,$2,$3,0),(gen_random_uuid(),$1,$4,$5,0),(gen_random_uuid(),$1,$6,0,$7),(gen_random_uuid(),$1,$8,0,$9)`,
+          [
+            journal.rows[0].id,
+            debitAccountId,
+            invoice.amountDue,
+            depositAccountId,
+            invoice.downPaymentUsed,
+            revenueAccountId,
+            invoice.subtotal,
+            taxAccountId,
+            invoice.taxAmount,
+          ]
+        );
+      }
+      if (parsed.data.paymentMethod === 'TEMPO' && invoice.amountDue > 0) {
+        await client.query(
+          `INSERT INTO service_receivables (tenant_id,branch_id,ticket_id,service_payment_id,amount,due_at)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [req.tenantId, ticket.branchId, ticket.id, payment.rows[0].id, invoice.amountDue, dueAt]
+        );
+      }
+      const partsCost = parts.rows.reduce(
+        (sum: number, part: any) => sum + Number(part.quantity) * Number(part.purchase_cost || 0),
+        0
+      );
+      if (partsCost > 0) {
+        const hppAccountId = await ensureAccount(client, req.tenantId!, '50100');
+        const inventoryAccountId = await ensureAccount(client, req.tenantId!, '10500');
+        const journal = await client.query(
+          `INSERT INTO journal_entries (id,tenant_id,branch_id,description,reference_no,source_type,source_id,created_by) VALUES (gen_random_uuid(),$1,$2,$3,$4,'SERVICE_COGS',$5,$6) RETURNING id`,
+          [
+            req.tenantId,
+            ticket.branchId,
+            `HPP part servis ${ticket.ticketNo}`,
+            ticket.ticketNo,
+            ticket.id,
+            req.authActor?.userId,
+          ]
+        );
+        await client.query(
+          `INSERT INTO journal_lines (id,journal_entry_id,account_id,debit,credit) VALUES (gen_random_uuid(),$1,$2,$3,0),(gen_random_uuid(),$1,$4,0,$3)`,
+          [journal.rows[0].id, hppAccountId, partsCost, inventoryAccountId]
         );
       }
       const warrantyEndsAt = new Date(

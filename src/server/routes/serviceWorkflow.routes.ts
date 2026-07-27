@@ -21,6 +21,7 @@ import {
   cancelServicePart,
   patchServiceWorkMetadata,
   handoverServiceTicket,
+  settleServiceReceivable,
 } from '../controllers/serviceWorkflow.controller.js';
 
 const router = express.Router();
@@ -51,6 +52,11 @@ router.post(
   approveServiceEstimate
 );
 router.post('/:id/qc', requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'), completeServiceQc);
+router.post(
+  '/receivables/:receivableId/settlements',
+  requireRoles('OWNER', 'ADMIN', 'CS', 'SUPER_ADMIN'),
+  settleServiceReceivable
+);
 router.post(
   '/:id/handover',
   requireRoles('OWNER', 'ADMIN', 'CS', 'SUPER_ADMIN'),

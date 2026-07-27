@@ -40,6 +40,7 @@ export const posSaleSchema = z.object({
     .array(
       z.object({
         productId: z.string().uuid().optional().nullable(),
+        bundleId: z.string().uuid().optional().nullable(),
         name: z.string().optional(),
         quantity: z.number().int().positive({ message: 'Quantity minimal 1.' }),
         unitPrice: z.number().nonnegative().optional(),
@@ -53,6 +54,8 @@ export const posSaleSchema = z.object({
   depositUsed: z.number().nonnegative().optional().default(0),
   paymentDetails: z.string().max(500).optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
+  clientRequestId: z.string().trim().min(1).max(100).optional(),
+  promotionCode: z.string().trim().max(100).optional(),
   // Split payment support
   splitPayments: z
     .array(
@@ -336,6 +339,27 @@ export const getShifts = async (req: any, res: any) => {
 // ──────────────────────────────────────────
 // 5. POS SERVICE DELEGATION (createSale uses processPOSTransaction from posService)
 // ──────────────────────────────────────────
+
+export const refundDecisionSchema = z
+  .object({
+    decision: z.enum(['APPROVE', 'REJECT']),
+    reason: z.string().trim().min(3).max(500).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.decision === 'REJECT' && !data.reason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reason'],
+        message: 'Alasan penolakan wajib diisi.',
+      });
+    }
+  });
+
+export const receivablePaymentSchema = z.object({
+  amount: z.number().positive(),
+  method: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET']),
+  idempotencyKey: z.string().trim().min(7),
+});
 
 export const partialRefundSchema = z.object({
   items: z

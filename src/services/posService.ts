@@ -129,7 +129,7 @@ export async function processPOSTransaction(
     parsed: CreatePOSInput;
   }
 ): Promise<POSTransactionResult> {
-  // Find active shift
+  // Cari shift aktif
   const shiftRes = await client.query(
     `SELECT id FROM pos_shifts WHERE tenant_id=$1 AND branch_id=$2 AND cashier_id=$3 AND status='OPEN' ORDER BY opened_at DESC LIMIT 1`,
     [tenantId, branchId, userId]
@@ -217,7 +217,7 @@ export async function processPOSTransaction(
     });
   }
 
-  // Apply voucher discount
+  // Terapkan diskon voucher
   let voucherDiscount = 0;
   if (parsed.paymentDetails && parsed.paymentDetails.startsWith('VOUCHER:')) {
     const voucherCode = parsed.paymentDetails.replace('VOUCHER:', '');
@@ -255,16 +255,16 @@ export async function processPOSTransaction(
     ]);
   }
 
-  // Apply global discount from POS UI
+  // Terapkan diskon global dari UI POS
   const globalDisc = Number(parsed.discountAmount) || 0;
   const totalDisc = globalDisc + voucherDiscount;
-  // Reject discounts that exceed the subtotal (prevents free/negative sales).
+  // Tolak diskon melebihi subtotal (mencegah penjualan gratis/negatif).
   if (totalDisc > subtotal) {
     throw Object.assign(new Error('Total diskon tidak boleh melebihi subtotal.'), { status: 422 });
   }
   const base = Math.max(0, subtotal - totalDisc);
 
-  // Read tax rate
+  // Baca tarif pajak
   const tenantRes = await client.query(`SELECT settings FROM tenants WHERE id=$1 LIMIT 1`, [
     tenantId,
   ]);
@@ -278,7 +278,7 @@ export async function processPOSTransaction(
   const amountPaid = Math.max(0, Number(parsed.amountPaid) || (depositUsed ? 0 : grandTotal));
   const changeAmount = Math.max(0, amountPaid - cashDue);
 
-  // Validate split payments
+  // Validasi pembayaran cicilan
   const splitPayments = Array.isArray(parsed.splitPayments) ? parsed.splitPayments : null;
   let splitTotal = 0;
   if (splitPayments && splitPayments.length > 0) {
@@ -293,12 +293,12 @@ export async function processPOSTransaction(
     }
   }
 
-  // Effective amount paid: when split payments are used, the real paid amount
+  // Jumlah efektif dibayar: saat pembayaran dicicil, jumlah yang benar-benar dibayar
   // is the sum of splits (also fixes the amountPaid stored for split sales).
   const effectivePaid = splitPayments && splitPayments.length > 0 ? splitTotal : amountPaid;
-  // Recompute change against the effective amount.
+  // Hitung ulang kembalian terhadap jumlah efektif.
   const effectiveChange = Math.max(0, effectivePaid - cashDue);
-  // Reject underpayment for non-credit sales (TEMPO may leave a receivable).
+  // Tolak pembayaran kurang pada penjualan non-kredit (TEMPO bisa menyisakan piutang).
   if (parsed.paymentMethod !== 'TEMPO' && effectivePaid < cashDue - 1) {
     throw Object.assign(new Error('Pembayaran kurang dari total yang harus dibayar.'), {
       status: 422,
@@ -446,9 +446,9 @@ export async function processPOSTransaction(
     );
   }
 
-  // Deposit usage tracking via customer_deposits audit table
+  // Pelacakan penggunaan deposit via tabel audit customer_deposits
   if (depositUsed > 0 && parsed.customerId) {
-    // Validate the customer exists and belongs to this tenant BEFORE mutating
+    // Validasi pelanggan ada dan milik tenant ini SEBELUM mengubah data
     // balances. Without this, a wrong/foreign customerId makes the UPDATE a
     // silent no-op (0 rows), so deposit is consumed but loyalty is never added.
     const custCheck = await client.query(
@@ -622,7 +622,7 @@ export async function processPartialRefund(
     const unitPrice = Number(origItem.unitPrice) || 0;
     const itemRefund = unitPrice * partial.quantity;
     refundAmount += itemRefund;
-    // Persist cumulative refunded quantity on the stored item so subsequent
+    // Simpan kumulatif jumlah refund pada item tersimpan agar selanjutnya
     // refunds cannot exceed the originally sold quantity.
     origItem.refundedQty = alreadyRefunded + partial.quantity;
     refundItems.push({
@@ -704,7 +704,7 @@ export async function processPartialRefund(
     }
   }
 
-  // Reversal journal for refund amount
+  // Jurnal reversal untuk jumlah refund
   const journalRes = await client.query(
     `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
      VALUES (gen_random_uuid(), $1, $2, $3, $4, 'POS_VOID', $5) RETURNING id`,

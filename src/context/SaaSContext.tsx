@@ -600,7 +600,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'billing:manage_plans',
     'billing:view_subscription',
     'billing:manage_invoices',
-    // Superadmin platform permissions
+    // Izin platform superadmin
     'overview:view',
     'tenants:view_all',
     'tenants:view_detail',
@@ -627,7 +627,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'permissions:manage_roles',
     'users:assign_role',
     'platform:manage_console_session',
-    // Billing config permissions
+    // Izin konfigurasi penagihan
     'billing:view_config',
     'billing:manage_config',
     'billing:view_manual_payments',
@@ -692,7 +692,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'billing:manage_plans',
     'billing:view_subscription',
     'billing:manage_invoices',
-    // Billing config permissions
+    // Izin konfigurasi penagihan
     'billing:view_config',
     'billing:manage_config',
     'billing:view_manual_payments',
@@ -764,7 +764,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'settings-fraud',
     'billing:view_plans',
     'billing:view_subscription',
-    // Billing config permissions
+    // Izin konfigurasi penagihan
     'billing:view_config',
     'billing:manage_config',
     'billing:view_manual_payments',
@@ -820,7 +820,7 @@ const SaaSContext = createContext<SaaSContextType | undefined>(undefined);
 // CONTEXT PROVIDER COMPONENT
 // ==========================================
 
-// Prevent concurrent duplicate synchronization on initial component mount/hot-reload
+// Mencegah sinkronisasi duplikat konkuren saat mount awal komponen/hot-reload
 // Menggunakan sessionStorage agar tidak di-reset oleh Vite HMR module invalidation
 const SYNC_KEY = '__saas_sync_started__';
 const isSyncStarted = () => sessionStorage.getItem(SYNC_KEY) === '1';
@@ -828,7 +828,7 @@ const markSyncStarted = () => sessionStorage.setItem(SYNC_KEY, '1');
 const resetSync = () => sessionStorage.removeItem(SYNC_KEY);
 
 export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Helper to trigger safe toast notifications through App.tsx event listener
+  // Helper untuk memicu notifikasi toast aman melalui event listener App.tsx
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     window.dispatchEvent(new CustomEvent('saas-toast', { detail: { message, type } }));
   };
@@ -868,7 +868,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // === AUTH STATE VERSIONING — must run before localStorage-backed state initializes ===
-  // Bump version to force automatic cache reset when auth/tenant mapping changes.
+  // Naikkan versi untuk memaksa reset cache otomatis saat pemetaan auth/tenant berubah.
   const AUTH_VERSION_KEY = 'saas_auth_version';
   const CURRENT_AUTH_VERSION = '5';
   try {
@@ -1145,7 +1145,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const branchesList = dbBranches ? toCamelCase<Branch[]>(dbBranches) : [];
         const warehousesList = dbWarehouses ? toCamelCase<Warehouse[]>(dbWarehouses) : [];
 
-        // Self-healing: Ensure every tenant in DB has at least one branch and warehouse
+        // Self-healing: Pastikan setiap tenant di DB punya minimal satu cabang dan gudang
         for (const t of tenantsList) {
           if (!branchesList.some((b) => b.tenantId === t.id)) {
             const branchId = generateUUID();
@@ -1243,9 +1243,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.location.reload();
   };
 
-  // Do not sign out a valid server-verified session just because local UI cache is absent.
+  // Jangan logout sesi valid yang diverifikasi server hanya karena cache UI lokal tidak ada.
 
-  // Check existing session on mount
+  // Periksa sesi yang ada pada mount
   useEffect(() => {
     (async () => {
       try {
@@ -1348,7 +1348,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Backend auth unavailable — reject login
+    // Autentikasi backend tidak tersedia — tolak login
     showToast('Autentikasi tidak tersedia. Silakan hubungi administrator.', 'error');
     return false;
   };
@@ -1756,12 +1756,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ==========================================
 
   useEffect(() => {
-    // Session state selalu disimpan di localStorage (client-only)
+    // Status sesi selalu disimpan di localStorage (client only)
     localStorage.setItem('saas_curr_tenant_id', currentTenantId);
     localStorage.setItem('saas_curr_branch_id', currentBranchId);
     localStorage.setItem('saas_curr_user', JSON.stringify(currentUser));
 
-    // If backend active, skip cache data — use DB as source of truth
+    // Jika backend aktif, lewati data cache — gunakan DB sebagai sumber kebenaran
     if (isBackendConfigured()) return;
 
     // Fallback offline: cache semua data ke localStorage
@@ -2229,7 +2229,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTenants((prev) => [...prev, newTenant]);
     await syncToApi('tenants', 'insert', newTenant);
 
-    // Bootstrap basic branches & warehouses
+    // Inisialisasi cabang dan gudang dasar
     const newBranch: Branch = {
       id: generateUUID(),
       tenantId: id,
@@ -2529,7 +2529,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const customerName = customer?.name || customerData?.name || 'Pelanggan';
     const customerPhone = customer?.phone || customerData?.phone || '';
 
-    // Dispatch live notification for new repair ticket
+    // Kirim notifikasi langsung untuk tiket perbaikan baru
     window.dispatchEvent(
       new CustomEvent('live_notification', {
         detail: {

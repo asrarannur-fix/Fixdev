@@ -124,6 +124,10 @@ export const TenantDashboard = ({
 
   const handlePOSCheckout = React.useCallback(
     async (details: string = '', paidAmount?: number) => {
+      if (!navigator.onLine) {
+        showToast('Checkout diblokir saat offline.', 'error');
+        return;
+      }
       if (posCart.length === 0) {
         showToast('Keranjang kosong!', 'error');
         return;

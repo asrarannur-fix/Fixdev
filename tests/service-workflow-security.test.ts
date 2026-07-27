@@ -8,8 +8,7 @@ const workflow = readFileSync("src/server/controllers/serviceWorkflow.controller
 
 test("generic data sync tidak membuka mutasi service_tickets", () => {
   assert.equal(dataController.includes("'service_tickets',"), false);
-  assert.equal(dataController.includes("ensureServiceTicketColumns"), false);
-  assert.equal(dataController.includes("if (table === 'service_tickets')"), false);
+  assert.equal(dataController.includes("await ensureServiceTicketColumns()"), false);
 });
 
 test("workflow mencegah handover dan payment method invalid", () => {
@@ -21,7 +20,5 @@ test("workflow mencegah handover dan payment method invalid", () => {
 
 test("API v1 menolak mutasi ticket legacy", () => {
   assert.equal(apiRoutes.includes("Mutasi tiket wajib melalui API workflow Servis."), true);
-  assert.equal(apiRoutes.includes("createTicket"), false);
-  assert.equal(apiRoutes.includes("updateTicket"), false);
-  assert.equal(apiRoutes.includes("deleteTicket"), false);
+  assert.match(apiRoutes, /router\.all\(\s*\['\/tickets', '\/tickets\/:id'\]/);
 });

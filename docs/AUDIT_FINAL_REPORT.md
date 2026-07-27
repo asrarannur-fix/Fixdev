@@ -20,6 +20,8 @@ IN PROGRESS / SERVIS P0-P1 FIX PARTIAL
 | DB-MIG-001 | INFO | Database | migrations/ | 38 migration files, all sequential, no gaps | No fix needed — schema_migrations consistent | bash ops/migrate-production.sh (dry-run) | VERIFIED |
 
 ## Implemented changes
+- 26 Juli 2026 — kontrak validasi POS dipulihkan untuk keputusan refund, pembayaran piutang, bundle UUID, idempotency checkout, dan blok checkout offline (`src/server/controllers/pos.controller.ts`, `src/components/TenantDashboard.tsx`).
+- 26 Juli 2026 — finance Servis kini menghitung pajak dari konfigurasi tenant di server, menyimpan snapshot tarif, memisahkan PPN `20100`, melepas DP `21000` tanpa pendapatan ganda, mencatat HPP part dari `purchase_cost` terhadap persediaan `10500`, serta menyediakan piutang TEMPO dan pelunasan idempoten dengan guard tenant+cabang (`src/server/controllers/serviceWorkflow.controller.ts`, `src/server/routes/serviceWorkflow.routes.ts`, `migrations/059_service_payment_tax_snapshot.sql`, `tests/service-payment-lifecycle.test.ts`).
 - 26 Juli 2026 — tracker publik Servis tidak lagi mengirim estimasi biaya, DP, operator, atau catatan timeline mentah; detail finansial hanya tersedia pada portal bertoken dan endpoint token wajib tenant host (`src/server/controllers/serviceTracker.controller.ts`).
 - 26 Juli 2026 — reservasi dan konsumsi spare part kini mewajibkan gudang tenant serta cabang yang sama dengan tiket; response workflow tidak lagi mengembalikan tiket soft-delete (`src/server/controllers/serviceWorkflow.controller.ts`).
 - 26 Juli 2026 — handover kini sekali jalan, metode pembayaran dibatasi enum, dan tiket dibatalkan mengembalikan seluruh spare part `RESERVED` ke stok (`src/server/controllers/serviceWorkflow.controller.ts`).

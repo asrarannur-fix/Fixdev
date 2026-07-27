@@ -41,11 +41,20 @@ function publicTicketRow(row: any) {
     status: row.status,
     customerApprovalStatus: row.customerApprovalStatus,
     customerNameObscured: obscureName(row.customerName),
+    estimatedCompletionDate: row.estimatedCompletionDate,
+    timeline: (row.timeline || []).map((event: any) => ({
+      status: event.status,
+      timestamp: event.timestamp,
+    })),
+    lastUpdated: row.updatedAt || row.createdAt,
+  };
+}
+
+function portalTicketRow(row: any) {
+  return {
+    ...publicTicketRow(row),
     estimatedCost: Number(row.estimatedCost || 0),
     downPayment: Number(row.downPayment || 0),
-    estimatedCompletionDate: row.estimatedCompletionDate,
-    timeline: row.timeline || [],
-    lastUpdated: row.updatedAt || row.createdAt,
   };
 }
 
@@ -86,6 +95,9 @@ export const getPublicTicketStatus = async (req: any, res: any) => {
 
 export const getPublicTicketByToken = async (req: any, res: any) => {
   const token = req.params.token;
+  const tenantId = req.hostTenant?.id;
+  if (!tenantId || !UUID_PATTERN.test(tenantId))
+    return res.status(404).json({ error: 'Service ticket not found' });
   // public_tracking_token is a UUID; reject obviously-invalid formats early
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!token || !uuidPattern.test(token)) {
@@ -99,8 +111,8 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
         s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
         s.created_at AS "createdAt",s.tenant_id AS "tenantId",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
-       WHERE s.public_tracking_token=$1 AND s.deleted_at IS NULL LIMIT 1`,
-      [token]
+       WHERE s.public_tracking_token=$1 AND s.tenant_id=$2 AND s.deleted_at IS NULL LIMIT 1`,
+      [token, tenantId]
     );
     if (!result.rows[0] || (req.hostTenant && result.rows[0].tenantId !== req.hostTenant.id))
       return res.status(404).json({ error: 'Service ticket not found' });
@@ -164,7 +176,7 @@ export const getPortalTicketDetail = async (req: any, res: any) => {
     );
     if (!result.rows[0])
       return res.status(404).json({ error: 'Tiket tidak ditemukan atau token tidak valid.' });
-    res.json(publicTicketRow(result.rows[0]));
+    res.json(portalTicketRow(result.rows[0]));
   } catch (err: any) {
     logger.error({ err: err.message }, 'Portal detail fetch failed');
     res.status(500).json({ error: 'Gagal memuat detail tiket.' });

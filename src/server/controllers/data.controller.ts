@@ -299,7 +299,6 @@ const ALLOWED_TABLES = new Set([
   'warehouses',
   'customers',
   'products',
-  'service_tickets',
   'pos_shifts',
   'pos_transactions',
   'coa_accounts',
@@ -327,10 +326,6 @@ export async function dataSyncHandler(req: Request, res: Response) {
   }
 
   try {
-    if (table === 'service_tickets') {
-      await ensureServiceTicketColumns();
-    }
-
     const allowedColumns =
       table === 'service_tickets' ? SERVICE_TICKET_ALLOWED_COLUMNS : await getTableColumns(table);
 
