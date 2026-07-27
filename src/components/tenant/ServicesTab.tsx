@@ -360,6 +360,8 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     setNewSrvWarranty,
     newSrvDownPayment,
     setNewSrvDownPayment,
+    newSrvDownPaymentMethod,
+    setNewSrvDownPaymentMethod,
     newSrvIsCheckOnly,
     setNewSrvIsCheckOnly,
     newSrvPhysicalCondition,
@@ -450,14 +452,17 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     return true;
   };
   const startCamera = async () => {
+    let stream: MediaStream | null = null;
     try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (!videoRef.current) throw new Error('Video kamera tidak tersedia');
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
       setCameraActive(true);
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch (err) {
+    } catch {
+      stream?.getTracks().forEach((track) => track.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+      setCameraActive(false);
       showToast('Gagal mengakses kamera perangkat', 'error');
     }
   };
@@ -758,6 +763,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 addServiceDiagnostic,
                 requestServicePart,
                 cancelServicePart,
+                patchServiceWork,
                 createServicePartOrder,
                 addApprovedAdditionalCost,
               }}
@@ -806,6 +812,8 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
               setNewSrvWarranty,
               newSrvDownPayment,
               setNewSrvDownPayment,
+              newSrvDownPaymentMethod,
+              setNewSrvDownPaymentMethod,
               newSrvIsCheckOnly,
               setNewSrvIsCheckOnly,
               newSrvPhysicalCondition,

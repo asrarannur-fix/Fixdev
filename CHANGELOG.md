@@ -1,6 +1,20 @@
 # Changelog
 
 ## 27 Juli 2026
+- Audit lanjutan alur servis memperbaiki tombol masuk QC agar benar-benar mentransisikan status, validasi gagal QC, approval panel untuk status `MENUGGU_APPROVAL`, penantian request approval, serta reset state QC dan handover antartiket.
+- Handover kini menyimpan part yang benar-benar dikonsumsi, mewajibkan checklist serah-terima di server, memvalidasi termin `TEMPO`, dan memakai sisa tagihan setelah DP pada UI.
+- Metadata kerja memvalidasi teknisi cabang, rentang waktu perbaikan, jumlah part integer, dan mengarahkan assignment/lokasi penyimpanan melalui endpoint workflow.
+- Migration `064_service_workflow_integrity.sql` menambah guard status, nominal/payment status, jurnal nonzero, sumber jurnal unik, dan scope payment tenant-cabang-tiket.
+- Reservasi spare part kini menghitung seluruh reservasi aktif di bawah advisory lock agar stok tidak terpesan ganda, sedangkan transaksi `TEMPO` mendebit akun piutang `10300` sebelum pelunasan.
+- File terkait: `src/components/tenant/CustomerApprovalPanel.tsx`, `src/components/tenant/ServiceDetailModal.tsx`, `src/server/controllers/serviceWorkflow.controller.ts`.
+
+## 27 Juli 2026
+- Audit penerimaan/detail servis memperbaiki seluruh caller workflow frontend ke endpoint `/api/services`, termasuk diagnosis, approval, QC, handover, part, part order, tambahan biaya, dan metadata kerja.
+- Penerimaan kini memakai idempotency key, validasi cabang aktif/teknisi/capture foto, draft terscope tenant-cabang, validasi angka finite, serta mencatat DP sebagai payment dan jurnal deposit.
+- Detail servis memperbaiki reservasi spare part melalui API, kamera gagal tidak meninggalkan status aktif, foto memakai field yang benar, dan handover/QC memakai guard backend.
+- File terkait: `src/context/SaaSContext.tsx`, `src/hooks/useServiceReception.ts`, `src/components/tenant/ServicesTab.tsx`, `src/components/tenant/ServiceReceptionWizard.tsx`, `src/components/tenant/ServiceDetailModal.tsx`, `src/server/controllers/serviceReception.controller.ts`, `src/server/controllers/serviceWorkflow.controller.ts`, `migrations/063_service_reception_idempotency.sql`.
+
+## 27 Juli 2026
 - Memperbaiki workflow servis agar tiket soft-delete tidak dapat dimutasi, garansi nol tetap tanpa tanggal garansi, dan handover tersedia pada status menunggu pembayaran.
 - Menyamakan perhitungan pajak handover dengan pengaturan tenant, menunggu bulk delete selesai sebelum sukses, serta memperbaiki pesan cooldown status.
 - Memvalidasi gudang part terhadap cabang sejak diagnosis/reservasi, membatasi konsumsi stok ke part `RESERVED`, dan menolak QC lulus bila part `REQUESTED` belum diselesaikan.

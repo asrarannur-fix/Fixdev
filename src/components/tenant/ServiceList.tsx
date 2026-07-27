@@ -219,6 +219,7 @@ export const ServiceList: React.FC<any> = (props) => {
     addServiceDiagnostic,
     requestServicePart,
     cancelServicePart,
+    patchServiceWork,
     createServicePartOrder,
     addApprovedAdditionalCost,
   } = props;

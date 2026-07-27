@@ -218,8 +218,8 @@ export const AuditRecovery: React.FC<AuditRecoveryProps> = ({
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-zinc-700 dark:bg-zinc-950"
               >
                 <option value="">Semua outcome</option>
-                <option value="SUCCESS">Success</option>
-                <option value="FAILURE">Failure</option>
+                <option value="SUCCESS">Berhasil</option>
+                <option value="FAILURE">Gagal</option>
               </select>
               <button
                 type="button"

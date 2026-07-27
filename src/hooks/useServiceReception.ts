@@ -59,6 +59,9 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
   const [newSrvSerial, setNewSrvSerial] = useState<string>('');
   const [newSrvWarranty, setNewSrvWarranty] = useState<number>(3);
   const [newSrvDownPayment, setNewSrvDownPayment] = useState<string>('0');
+  const [newSrvDownPaymentMethod, setNewSrvDownPaymentMethod] = useState<
+    'CASH' | 'BANK_TRANSFER' | 'QRIS'
+  >('CASH');
   const [newSrvIsCheckOnly, setNewSrvIsCheckOnly] = useState<boolean>(false);
   const [newSrvPhysicalCondition, setNewSrvPhysicalCondition] =
     useState<string>('Mulus / Normal Wear');
@@ -89,9 +92,10 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
   const [custQuery, setCustQuery] = useState<string>('');
 
   const receptionFormRef = useRef<HTMLFormElement | null>(null);
+  const receptionIdempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   // === AUTO-SAVE DRAFT FORM PENERIMAAN (persist saat pindah tab) ===
-  const SRV_DRAFT = 'fixdev_srv_draft_v1';
+  const SRV_DRAFT = `fixdev_srv_draft_v1_${activeTenantId || 'unknown'}_${currentBranchId || 'unknown'}`;
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SRV_DRAFT);
@@ -109,6 +113,11 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       setNewSrvSerial(d.newSrvSerial ?? '');
       setNewSrvWarranty(d.newSrvWarranty ?? 3);
       setNewSrvDownPayment(d.newSrvDownPayment ?? '0');
+      setNewSrvDownPaymentMethod(
+        ['CASH', 'BANK_TRANSFER', 'QRIS'].includes(d.newSrvDownPaymentMethod)
+          ? d.newSrvDownPaymentMethod
+          : 'CASH'
+      );
       setNewSrvIsCheckOnly(d.newSrvIsCheckOnly ?? false);
       setNewSrvPhysicalCondition(d.newSrvPhysicalCondition ?? 'Mulus / Normal Wear');
       setNewSrvScreenLock('');
@@ -145,6 +154,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       newSrvSerial,
       newSrvWarranty,
       newSrvDownPayment,
+      newSrvDownPaymentMethod,
       newSrvIsCheckOnly,
       newSrvPhysicalCondition,
       newSrvComplaint,
@@ -180,6 +190,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     newSrvSerial,
     newSrvWarranty,
     newSrvDownPayment,
+    newSrvDownPaymentMethod,
     newSrvIsCheckOnly,
     newSrvPhysicalCondition,
     newSrvScreenLock,
@@ -195,6 +206,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     newSrvOutsourcingCost,
     newSrvTechId,
     newSrvChecklist,
+    custQuery,
   ]);
 
   const handleCreateService = async (e: React.FormEvent) => {
@@ -259,8 +271,15 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       return;
     }
 
-    if (Number(newSrvDownPayment) < 0 || Number(newSrvOutsourcingCost) < 0) {
-      showToast('Nominal biaya tidak boleh negatif.', 'error');
+    const downPayment = Number(newSrvDownPayment);
+    const outsourcingCost = Number(newSrvOutsourcingCost || 0);
+    if (
+      !Number.isFinite(downPayment) ||
+      !Number.isFinite(outsourcingCost) ||
+      downPayment < 0 ||
+      outsourcingCost < 0
+    ) {
+      showToast('Nominal biaya harus berupa angka yang valid dan tidak negatif.', 'error');
       return;
     }
 
@@ -294,8 +313,9 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
         newSrvWarranty ?? Math.round((tenantObj?.settings?.moduleParams?.warrantyDays ?? 90) / 30),
       isOutsourced: newSrvIsOutsourced,
       outsourcedVendorId: newSrvOutsourcedVendor,
-      outsourcingCost: Number(newSrvOutsourcingCost) || 0,
-      downPayment: Number(newSrvDownPayment) || 0,
+      outsourcingCost,
+      downPayment,
+      downPaymentMethod: newSrvDownPaymentMethod,
       isCheckOnly: newSrvIsCheckOnly,
       deviceCategory: newSrvCategory,
       accessoriesLeft: newSrvAccessories,
@@ -307,6 +327,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       dynamicFields: Object.keys(newSrvDynamicSpecs).length > 0 ? newSrvDynamicSpecs : undefined,
       storageLocationId: newSrvStorageLocId || undefined,
       customerData,
+      receptionIdempotencyKey: receptionIdempotencyKeyRef.current,
     };
 
     try {
@@ -328,6 +349,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
         Math.round((tenantObj?.settings?.moduleParams?.warrantyDays ?? 90) / 30) || 3
       );
       setNewSrvDownPayment('0');
+      setNewSrvDownPaymentMethod('CASH');
       setNewSrvIsCheckOnly(false);
       setNewSrvPhysicalCondition('Mulus / Normal Wear');
       setNewSrvScreenLock('');
@@ -346,6 +368,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       try {
         localStorage.removeItem(SRV_DRAFT);
       } catch {}
+      receptionIdempotencyKeyRef.current = crypto.randomUUID();
       showToast('Penerimaan Unit Servis berhasil didaftarkan!', 'success');
       setActiveSubTab('list');
     } catch (error: any) {
@@ -359,6 +382,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
 
   return {
     // state
+    newSrvDownPaymentMethod,
     newSrvCustName,
     newSrvCustPhone,
     newSrvCustEmail,
@@ -399,6 +423,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     setNewSrvSerial,
     setNewSrvWarranty,
     setNewSrvDownPayment,
+    setNewSrvDownPaymentMethod,
     setNewSrvIsCheckOnly,
     setNewSrvPhysicalCondition,
     setNewSrvScreenLock,

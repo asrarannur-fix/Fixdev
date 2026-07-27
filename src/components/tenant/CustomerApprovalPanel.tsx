@@ -1,55 +1,66 @@
-import React, { useState, useMemo } from "react";
-import { useSaaS } from "../../context/SaaSContext";
-import { useToast } from "../ui/Toast";
-import { useConfirm } from "../ui/ConfirmDialog";
-import { 
-  Wrench, AlertCircle, AlertTriangle, DollarSign, Clock, Package, 
-  CheckCircle, XCircle, MessageSquare, ShieldCheck, ThumbsUp, ThumbsDown
-} from "lucide-react";
-import { ServiceStatus } from "../../types";
+import React, { useState, useMemo } from 'react';
+import { useSaaS } from '../../context/SaaSContext';
+import { useToast } from '../ui/Toast';
+import { useConfirm } from '../ui/ConfirmDialog';
+import {
+  Wrench,
+  AlertCircle,
+  AlertTriangle,
+  DollarSign,
+  Clock,
+  Package,
+  CheckCircle,
+  XCircle,
+  MessageSquare,
+  ShieldCheck,
+  ThumbsUp,
+  ThumbsDown,
+} from 'lucide-react';
+import { ServiceStatus } from '../../types';
 
 export const CustomerApprovalPanel: React.FC = () => {
   const { services, approveServiceEstimate, currentTenantId } = useSaaS();
   const { showToast: toast } = useToast();
   const { confirm: showConfirm } = useConfirm();
 
-  const [selectedEstimateId, setSelectedEstimateId] = useState("");
+  const [selectedEstimateId, setSelectedEstimateId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pendingEstimates = useMemo(() => {
-    return services.filter((ticket) =>
-      ticket.tenantId === currentTenantId &&
-      ticket.status === ServiceStatus.ESTIMATE_PENDING &&
-      ticket.customerApprovalStatus === "PENDING"
+    return services.filter(
+      (ticket) =>
+        ticket.tenantId === currentTenantId &&
+        [ServiceStatus.MENUGGU_APPROVAL, ServiceStatus.ESTIMATE_PENDING].includes(ticket.status) &&
+        ticket.customerApprovalStatus === 'PENDING'
     );
   }, [services, currentTenantId]);
 
   const handleApproveEstimate = async () => {
     if (!selectedEstimateId) {
-      toast("Pilih estimasi yang akan disetujui", "warning");
+      toast('Pilih estimasi yang akan disetujui', 'warning');
       return;
     }
 
     const confirmed = await showConfirm({
-      title: "Konfirmasi Persetujuan",
-      message: "Setujui estimasi biaya ini?",
+      title: 'Konfirmasi Persetujuan',
+      message: 'Setujui estimasi biaya ini?',
     });
 
     if (!confirmed) return;
 
     const estimate = pendingEstimates.find((ticket) => ticket.id === selectedEstimateId);
     if (!estimate) {
-      toast("Estimasi tidak valid untuk tenant ini", "error");
+      toast('Estimasi tidak valid untuk tenant ini', 'error');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      approveServiceEstimate(selectedEstimateId, true);
-      toast("Estimasi biaya disetujui! Melanjutkan ke proses penandatanganan digital", "success");
-      setSelectedEstimateId("");
+      await approveServiceEstimate(selectedEstimateId, true);
+      toast('Estimasi biaya disetujui! Melanjutkan ke proses penandatanganan digital', 'success');
+      setSelectedEstimateId('');
     } catch (err) {
-      toast("Gagal menyetujui estimasi", "error");
+      toast('Gagal menyetujui estimasi', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -57,30 +68,30 @@ export const CustomerApprovalPanel: React.FC = () => {
 
   const handleRejectEstimate = async () => {
     if (!selectedEstimateId) {
-      toast("Pilih estimasi yang akan ditolak", "warning");
+      toast('Pilih estimasi yang akan ditolak', 'warning');
       return;
     }
 
     const confirmed = await showConfirm({
-      title: "Konfirmasi Penolakan",
-      message: "Tolak estimasi biaya ini?",
+      title: 'Konfirmasi Penolakan',
+      message: 'Tolak estimasi biaya ini?',
     });
 
     if (!confirmed) return;
 
     const estimate = pendingEstimates.find((ticket) => ticket.id === selectedEstimateId);
     if (!estimate) {
-      toast("Estimasi tidak valid untuk tenant ini", "error");
+      toast('Estimasi tidak valid untuk tenant ini', 'error');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      approveServiceEstimate(selectedEstimateId, false);
-      toast("Estimasi biaya ditolak. Dikembalikan ke teknisi untuk revisi.", "warning");
-      setSelectedEstimateId("");
+      await approveServiceEstimate(selectedEstimateId, false);
+      toast('Estimasi biaya ditolak. Dikembalikan ke teknisi untuk revisi.', 'warning');
+      setSelectedEstimateId('');
     } catch (err) {
-      toast("Gagal menolak estimasi", "error");
+      toast('Gagal menolak estimasi', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -109,7 +120,8 @@ export const CustomerApprovalPanel: React.FC = () => {
           <option value="">-- Pilih Tiket --</option>
           {pendingEstimates.map((ticket) => (
             <option key={ticket.id} value={ticket.id}>
-              #{ticket.ticketNo} - {ticket.deviceName} ({ticket.estimatedCost?.toLocaleString("id-ID") || "0"})
+              #{ticket.ticketNo} - {ticket.deviceName} (
+              {ticket.estimatedCost?.toLocaleString('id-ID') || '0'})
             </option>
           ))}
         </select>
@@ -129,7 +141,9 @@ export const CustomerApprovalPanel: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600 dark:text-zinc-400">Customer Acknowledged:</span>
+              <span className="text-sm text-slate-600 dark:text-zinc-400">
+                Customer Acknowledged:
+              </span>
               <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-black rounded-full">
                 BELUM
               </span>
@@ -142,14 +156,14 @@ export const CustomerApprovalPanel: React.FC = () => {
               disabled={isSubmitting}
               className="flex-1 px-6 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-black rounded-xl transition-all cursor-pointer"
             >
-              {isSubmitting ? "Memproses..." : "Tolak & Kembalikan"}
+              {isSubmitting ? 'Memproses...' : 'Tolak & Kembalikan'}
             </button>
             <button
               onClick={handleApproveEstimate}
               disabled={isSubmitting}
               className="flex-1 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black rounded-xl transition-all cursor-pointer"
             >
-              {isSubmitting ? "Memproses..." : "Setujui & Kirim ke Pelanggan"}
+              {isSubmitting ? 'Memproses...' : 'Setujui & Kirim ke Pelanggan'}
             </button>
           </div>
         </div>

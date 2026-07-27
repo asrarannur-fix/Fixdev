@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from 'react';
 import {
   AlertTriangle,
   PlusCircle,
@@ -8,97 +8,93 @@ import {
   Paperclip,
   Clock,
   Users,
-} from "lucide-react";
-import { useSaaS } from "../../../context/SaaSContext";
-import { useToast } from "../../ui/Toast";
-import { DisciplinaryAction } from "../../../types";
+} from 'lucide-react';
+import { useSaaS } from '../../../context/SaaSContext';
+import { useToast } from '../../ui/Toast';
+import { DisciplinaryAction } from '../../../types';
 
 interface DisciplinaryPanelProps {
   activeSubTab: string;
 }
 
 const LEVEL_META: Record<
-  DisciplinaryAction["level"],
+  DisciplinaryAction['level'],
   { label: string; color: string; bg: string; darkBg: string; darkText: string }
 > = {
   WARNING: {
-    label: "WARNING",
-    color: "bg-blue-100 text-blue-700 border-blue-200",
-    bg: "bg-blue-50",
-    darkBg: "dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800",
-    darkText: "dark:text-blue-400",
+    label: 'Peringatan',
+    color: 'bg-blue-100 text-blue-700 border-blue-200',
+    bg: 'bg-blue-50',
+    darkBg: 'dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800',
+    darkText: 'dark:text-blue-400',
   },
   SP1: {
-    label: "SP-1",
-    color: "bg-amber-100 text-amber-700 border-amber-200",
-    bg: "bg-amber-50",
-    darkBg: "dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
-    darkText: "dark:text-amber-400",
+    label: 'SP-1',
+    color: 'bg-amber-100 text-amber-700 border-amber-200',
+    bg: 'bg-amber-50',
+    darkBg: 'dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800',
+    darkText: 'dark:text-amber-400',
   },
   SP2: {
-    label: "SP-2",
-    color: "bg-orange-100 text-orange-700 border-orange-200",
-    bg: "bg-orange-50",
-    darkBg: "dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800",
-    darkText: "dark:text-orange-400",
+    label: 'SP-2',
+    color: 'bg-orange-100 text-orange-700 border-orange-200',
+    bg: 'bg-orange-50',
+    darkBg: 'dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800',
+    darkText: 'dark:text-orange-400',
   },
   SP3: {
-    label: "SP-3",
-    color: "bg-red-100 text-red-700 border-red-200",
-    bg: "bg-red-50",
-    darkBg: "dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
-    darkText: "dark:text-red-400",
+    label: 'SP-3',
+    color: 'bg-red-100 text-red-700 border-red-200',
+    bg: 'bg-red-50',
+    darkBg: 'dark:bg-red-950/30 dark:text-red-400 dark:border-red-800',
+    darkText: 'dark:text-red-400',
   },
   TERMINATION: {
-    label: "TERMINATION",
-    color: "bg-red-200 text-red-900 border-red-300",
-    bg: "bg-red-50",
-    darkBg: "dark:bg-red-950/50 dark:text-red-300 dark:border-red-800",
-    darkText: "dark:text-red-300",
+    label: 'Pemutusan Hubungan Kerja',
+    color: 'bg-red-200 text-red-900 border-red-300',
+    bg: 'bg-red-50',
+    darkBg: 'dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
+    darkText: 'dark:text-red-300',
   },
 };
 
-const DOT_COLORS: Record<DisciplinaryAction["level"], string> = {
-  WARNING: "bg-blue-500",
-  SP1: "bg-amber-500",
-  SP2: "bg-orange-500",
-  SP3: "bg-red-500",
-  TERMINATION: "bg-red-800",
+const DOT_COLORS: Record<DisciplinaryAction['level'], string> = {
+  WARNING: 'bg-blue-500',
+  SP1: 'bg-amber-500',
+  SP2: 'bg-orange-500',
+  SP3: 'bg-red-500',
+  TERMINATION: 'bg-red-800',
 };
 
-const LINE_COLORS: Record<DisciplinaryAction["level"], string> = {
-  WARNING: "border-blue-400",
-  SP1: "border-amber-400",
-  SP2: "border-orange-400",
-  SP3: "border-red-400",
-  TERMINATION: "border-red-700",
+const LINE_COLORS: Record<DisciplinaryAction['level'], string> = {
+  WARNING: 'border-blue-400',
+  SP1: 'border-amber-400',
+  SP2: 'border-orange-400',
+  SP3: 'border-red-400',
+  TERMINATION: 'border-red-700',
 };
 
-export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
-  activeSubTab,
-}) => {
+export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({ activeSubTab }) => {
   const { employees, updateEmployee, currentUser } = useSaaS();
   const { showToast } = useToast();
 
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
-  const [filterLevel, setFilterLevel] = useState<string>("");
-  const [filterEmployee, setFilterEmployee] = useState<string>("");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [filterLevel, setFilterLevel] = useState<string>('');
+  const [filterEmployee, setFilterEmployee] = useState<string>('');
   const [showForm, setShowForm] = useState(false);
   const [formDate, setFormDate] = useState(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   });
-  const [formLevel, setFormLevel] = useState<DisciplinaryAction["level"]>("WARNING");
-  const [formReason, setFormReason] = useState("");
-  const [formDescription, setFormDescription] = useState("");
+  const [formLevel, setFormLevel] = useState<DisciplinaryAction['level']>('WARNING');
+  const [formReason, setFormReason] = useState('');
+  const [formDescription, setFormDescription] = useState('');
 
-  if (activeSubTab !== "disciplinary") return null;
+  if (activeSubTab !== 'disciplinary') return null;
 
   const tenantEmployees = employees.filter(
     (e) =>
-      e.tenantId === currentUser?.tenantId &&
-      e.status !== "RESIGNED" &&
-      e.status !== "TERMINATED",
+      e.tenantId === currentUser?.tenantId && e.status !== 'RESIGNED' && e.status !== 'TERMINATED'
   );
 
   const allActions = useMemo(() => {
@@ -109,9 +105,7 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
         actions.push({ ...da, employeeName: emp.name, employeeId: emp.id });
       }
     }
-    return actions.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
+    return actions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [tenantEmployees]);
 
   const filteredGlobal = useMemo(() => {
@@ -122,40 +116,38 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
     });
   }, [allActions, filterLevel, filterEmployee]);
 
-  const selectedEmployee = tenantEmployees.find(
-    (e) => e.id === selectedEmployeeId,
-  );
+  const selectedEmployee = tenantEmployees.find((e) => e.id === selectedEmployeeId);
 
   const employeeHistory = useMemo(() => {
     if (!selectedEmployee) return [];
     return (selectedEmployee.disciplinaryActions || []).sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   }, [selectedEmployee]);
 
   const employeeStats = useMemo(() => {
-    if (!selectedEmployee) return { total: 0, latestDate: "-" };
+    if (!selectedEmployee) return { total: 0, latestDate: '-' };
     const acts = selectedEmployee.disciplinaryActions || [];
-    if (acts.length === 0) return { total: 0, latestDate: "-" };
+    if (acts.length === 0) return { total: 0, latestDate: '-' };
     const sorted = [...acts].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     return {
       total: acts.length,
-      latestDate: new Date(sorted[0].date).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
+      latestDate: new Date(sorted[0].date).toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
       }),
     };
   }, [selectedEmployee]);
 
   const globalStats = useMemo(() => {
-    const sp1 = allActions.filter((a) => a.level === "SP1").length;
-    const sp2 = allActions.filter((a) => a.level === "SP2").length;
-    const sp3 = allActions.filter((a) => a.level === "SP3").length;
-    const warnings = allActions.filter((a) => a.level === "WARNING").length;
-    const terminations = allActions.filter((a) => a.level === "TERMINATION").length;
+    const sp1 = allActions.filter((a) => a.level === 'SP1').length;
+    const sp2 = allActions.filter((a) => a.level === 'SP2').length;
+    const sp3 = allActions.filter((a) => a.level === 'SP3').length;
+    const warnings = allActions.filter((a) => a.level === 'WARNING').length;
+    const terminations = allActions.filter((a) => a.level === 'TERMINATION').length;
     return { total: allActions.length, sp1, sp2, sp3, warnings, terminations };
   }, [allActions]);
 
@@ -163,7 +155,7 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
 
   const handleSubmit = () => {
     if (!selectedEmployeeId || !formReason || !formDescription) {
-      showToast("Lengkapi semua field yang diperlukan", "error");
+      showToast('Lengkapi semua field yang diperlukan', 'error');
       return;
     }
 
@@ -176,7 +168,7 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
       level: formLevel,
       reason: formReason,
       description: formDescription,
-      issuedBy: currentUser?.name || "Admin",
+      issuedBy: currentUser?.name || 'Admin',
     };
 
     const existing = emp.disciplinaryActions || [];
@@ -184,16 +176,16 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
       disciplinaryActions: [...existing, newAction],
     });
 
-    showToast("Surat peringatan berhasil dibuat", "success");
+    showToast('Surat peringatan berhasil dibuat', 'success');
     setFormDate(
       (() => {
         const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      })(),
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      })()
     );
-    setFormLevel("WARNING");
-    setFormReason("");
-    setFormDescription("");
+    setFormLevel('WARNING');
+    setFormReason('');
+    setFormDescription('');
     setShowForm(false);
   };
 
@@ -237,7 +229,7 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm dark:bg-blue-950/20 dark:border-blue-900">
           <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500 dark:text-blue-400 mb-1">
-            WARNING
+            Peringatan
           </p>
           <p className="text-xl font-extrabold font-mono text-blue-700 dark:text-blue-400">
             {globalStats.warnings}
@@ -261,7 +253,7 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
         </div>
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm dark:bg-red-950/20 dark:border-red-900">
           <p className="text-[10px] font-bold uppercase tracking-wider text-red-500 dark:text-red-400 mb-1">
-            SP-3 / TERMINATE
+            SP-3 / Pemutusan
           </p>
           <p className="text-xl font-extrabold font-mono text-red-700 dark:text-red-400">
             {globalStats.sp3 + globalStats.terminations}
@@ -318,16 +310,14 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
               </label>
               <select
                 value={formLevel}
-                onChange={(e) =>
-                  setFormLevel(e.target.value as DisciplinaryAction["level"])
-                }
+                onChange={(e) => setFormLevel(e.target.value as DisciplinaryAction['level'])}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100"
               >
-                <option value="WARNING">WARNING</option>
+                <option value="WARNING">Peringatan</option>
                 <option value="SP1">SP-1 (Surat Peringatan 1)</option>
                 <option value="SP2">SP-2 (Surat Peringatan 2)</option>
                 <option value="SP3">SP-3 (Surat Peringatan 3)</option>
-                <option value="TERMINATION">TERMINATION (Pemutusan Hubungan Kerja)</option>
+                <option value="TERMINATION">Pemutusan Hubungan Kerja</option>
               </select>
             </div>
             <div>
@@ -336,7 +326,7 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
               </label>
               <input
                 type="text"
-                value={currentUser?.name || "Admin"}
+                value={currentUser?.name || 'Admin'}
                 readOnly
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-500"
               />
@@ -441,7 +431,7 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
                 className={`absolute left-2.5 top-2 bottom-2 w-0.5 border-l-2 ${
                   employeeHistory.length > 0
                     ? LINE_COLORS[employeeHistory[0].level]
-                    : "border-slate-200 dark:border-zinc-700"
+                    : 'border-slate-200 dark:border-zinc-700'
                 }`}
               />
               <div className="space-y-6">
@@ -470,10 +460,10 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
                           </div>
                           <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {new Date(action.date).toLocaleDateString("id-ID", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
+                            {new Date(action.date).toLocaleDateString('id-ID', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
                             })}
                           </span>
                         </div>
@@ -482,14 +472,14 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
                         </p>
                         <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 dark:text-zinc-500">
                           <span>
-                            Dikeluarkan oleh:{" "}
+                            Dikeluarkan oleh:{' '}
                             <strong className="text-slate-700 dark:text-zinc-300">
                               {action.issuedBy}
                             </strong>
                           </span>
                           {action.acknowledgedBy && (
                             <span>
-                              Ditandatangani:{" "}
+                              Ditandatangani:{' '}
                               <strong className="text-slate-700 dark:text-zinc-300">
                                 {action.acknowledgedBy}
                               </strong>
@@ -560,8 +550,8 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
           {(filterLevel || filterEmployee) && (
             <button
               onClick={() => {
-                setFilterLevel("");
-                setFilterEmployee("");
+                setFilterLevel('');
+                setFilterEmployee('');
               }}
               className="text-[10px] font-bold text-rose-500 hover:text-rose-600 cursor-pointer"
             >
@@ -603,10 +593,10 @@ export const DisciplinaryPanel: React.FC<DisciplinaryPanelProps> = ({
                       className="hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors"
                     >
                       <td className="px-4 py-3 font-mono text-slate-500 dark:text-zinc-400 whitespace-nowrap">
-                        {new Date(action.date).toLocaleDateString("id-ID", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
+                        {new Date(action.date).toLocaleDateString('id-ID', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
                         })}
                       </td>
                       <td className="px-4 py-3 font-semibold text-slate-700 dark:text-zinc-200">

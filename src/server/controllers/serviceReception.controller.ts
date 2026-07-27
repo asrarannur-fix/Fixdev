@@ -1,16 +1,18 @@
-import type { Request, Response } from "express";
-import { z } from "zod";
-import { dbTransaction } from "../../lib/db.js";
-import { encryptScreenLockPin, redactScreenLockPin } from "../lib/screenLockPin.js";
+import type { Request, Response } from 'express';
+import { z } from 'zod';
+import { dbTransaction } from '../../lib/db.js';
+import { encryptScreenLockPin, redactScreenLockPin } from '../lib/screenLockPin.js';
+import { ensureAccount, paymentDebitAccountCode } from '../lib/coa.js';
 
-const optionalText = z.string().trim().optional().default("");
+const optionalText = z.string().trim().optional().default('');
 
 export const serviceReceptionSchema = z.object({
+  idempotencyKey: z.string().uuid(),
   branchId: z.string().uuid(),
-  customer: z.discriminatedUnion("mode", [
-    z.object({ mode: z.literal("existing"), id: z.string().uuid() }),
+  customer: z.discriminatedUnion('mode', [
+    z.object({ mode: z.literal('existing'), id: z.string().uuid() }),
     z.object({
-      mode: z.literal("new"),
+      mode: z.literal('new'),
       name: z.string().trim().min(2),
       phone: z.string().trim().min(8),
       email: optionalText,
@@ -31,28 +33,41 @@ export const serviceReceptionSchema = z.object({
     checklist: z.array(z.object({ name: z.string(), checked: z.boolean() })).default([]),
     accessories: z.array(z.string()).default([]),
     customAccessories: optionalText,
-    capturedConditions: z.array(z.any()).default([]),
+    capturedConditions: z
+      .array(
+        z.object({
+          id: z.string().trim().min(1).max(100),
+          category: z.string().trim().min(1).max(100),
+          url: z.string().trim().min(1).max(2_000_000),
+          timestamp: z.string().trim().max(100),
+        })
+      )
+      .max(10)
+      .default([]),
     storageLocationId: optionalText,
   }),
   service: z.object({
     assignedTechId: z.string().uuid().optional().nullable(),
     estimatedCompletionDate: optionalText,
     warrantyMonths: z.number().int().min(0).max(120).default(0),
-    downPayment: z.number().min(0).default(0),
+    downPayment: z.number().min(0).max(1_000_000_000).default(0),
+    downPaymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS']).default('CASH'),
     isCheckOnly: z.boolean().default(false),
   }),
-  outsourcing: z.object({
-    enabled: z.boolean().default(false),
-    vendorId: optionalText,
-    cost: z.number().min(0).default(0),
-  }).default({ enabled: false, vendorId: "", cost: 0 }),
+  outsourcing: z
+    .object({
+      enabled: z.boolean().default(false),
+      vendorId: optionalText,
+      cost: z.number().min(0).default(0),
+    })
+    .default({ enabled: false, vendorId: '', cost: 0 }),
 });
 
 export function normalizeReceptionPhone(value: string): string {
-  const digits = value.replace(/\D/g, "");
-  if (digits.startsWith("62")) return digits;
-  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
-  if (digits.startsWith("8")) return `62${digits}`;
+  const digits = value.replace(/\D/g, '');
+  if (digits.startsWith('62')) return digits;
+  if (digits.startsWith('0')) return `62${digits.slice(1)}`;
+  if (digits.startsWith('8')) return `62${digits}`;
   return digits;
 }
 
@@ -60,7 +75,7 @@ export async function createServiceReception(req: Request, res: Response) {
   const parsed = serviceReceptionSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(422).json({
-      error: "Data penerimaan tidak valid.",
+      error: 'Data penerimaan tidak valid.',
       details: parsed.error.flatten(),
     });
   }
@@ -68,47 +83,77 @@ export async function createServiceReception(req: Request, res: Response) {
   const tenantId = req.tenantId!;
   const actor = req.authActor!;
   const input = parsed.data;
+  if (input.branchId !== req.branchId) {
+    return res.status(403).json({ error: 'Cabang penerimaan harus sesuai cabang aktif.' });
+  }
 
   if (input.outsourcing.enabled && (!input.outsourcing.vendorId || input.outsourcing.cost <= 0)) {
-    return res.status(422).json({ error: "Vendor dan biaya outsourcing wajib diisi." });
+    return res.status(422).json({ error: 'Vendor dan biaya outsourcing wajib diisi.' });
   }
 
   try {
     const result = await dbTransaction(async (client) => {
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+        `${tenantId}:${input.idempotencyKey}`,
+      ]);
+      const replay = await client.query(
+        `SELECT st.id, st.tenant_id AS "tenantId", st.branch_id AS "branchId", st.ticket_no AS "ticketNo", st.customer_id AS "customerId", st.device_name AS "deviceName", st.status, st.created_at AS "createdAt",
+                c.id AS "customerId", c.tenant_id AS "customerTenantId", c.name AS "customerName", c.phone AS "customerPhone", c.email AS "customerEmail", c.address AS "customerAddress"
+         FROM service_tickets st LEFT JOIN customers c ON c.id = st.customer_id AND c.tenant_id = st.tenant_id
+         WHERE st.tenant_id=$1 AND st.reception_idempotency_key=$2 LIMIT 1`,
+        [tenantId, input.idempotencyKey]
+      );
+      if (replay.rows[0]) {
+        const row = replay.rows[0];
+        return {
+          customer: row.customerName
+            ? {
+                id: row.customerId,
+                tenantId: row.customerTenantId,
+                name: row.customerName,
+                phone: row.customerPhone,
+                email: row.customerEmail,
+                address: row.customerAddress,
+              }
+            : null,
+          ticket: row,
+          idempotent: true,
+        };
+      }
       const branch = await client.query(
-        "SELECT id FROM branches WHERE id = $1 AND tenant_id = $2 LIMIT 1",
-        [input.branchId, tenantId],
+        'SELECT id FROM branches WHERE id = $1 AND tenant_id = $2 LIMIT 1',
+        [input.branchId, tenantId]
       );
       if (!branch.rows[0]) {
-        const error: any = new Error("Cabang tidak ditemukan pada tenant aktif.");
+        const error: any = new Error('Cabang tidak ditemukan pada tenant aktif.');
         error.status = 403;
         throw error;
       }
 
       let customer: any;
-      if (input.customer.mode === "existing") {
+      if (input.customer.mode === 'existing') {
         const found = await client.query(
           `SELECT id, tenant_id AS "tenantId", name, phone, email, address
            FROM customers WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
-          [input.customer.id, tenantId],
+          [input.customer.id, tenantId]
         );
         customer = found.rows[0];
         if (!customer) {
-          const error: any = new Error("Pelanggan tidak ditemukan pada tenant aktif.");
+          const error: any = new Error('Pelanggan tidak ditemukan pada tenant aktif.');
           error.status = 404;
           throw error;
         }
       } else {
         const normalizedPhone = normalizeReceptionPhone(input.customer.phone);
         if (!/^628\d{7,12}$/.test(normalizedPhone)) {
-          const error: any = new Error("Nomor WhatsApp pelanggan tidak valid.");
+          const error: any = new Error('Nomor WhatsApp pelanggan tidak valid.');
           error.status = 422;
           throw error;
         }
         const existing = await client.query(
           `SELECT id, tenant_id AS "tenantId", name, phone, email, address
            FROM customers WHERE tenant_id = $1 AND normalized_phone = $2 LIMIT 1`,
-          [tenantId, normalizedPhone],
+          [tenantId, normalizedPhone]
         );
         customer = existing.rows[0];
         if (!customer) {
@@ -119,28 +164,47 @@ export async function createServiceReception(req: Request, res: Response) {
              WHERE normalized_phone IS NOT NULL AND normalized_phone <> ''
              DO UPDATE SET name = COALESCE(NULLIF(customers.name, ''), EXCLUDED.name)
              RETURNING id, tenant_id AS "tenantId", name, phone, email, address`,
-            [tenantId, input.customer.name, normalizedPhone, input.customer.email || null, input.customer.address || null],
+            [
+              tenantId,
+              input.customer.name,
+              normalizedPhone,
+              input.customer.email || null,
+              input.customer.address || null,
+            ]
           );
           customer = inserted.rows[0];
         }
       }
 
+      if (input.service.assignedTechId) {
+        const technician = await client.query(
+          `SELECT u.id FROM users u JOIN user_branches ub ON ub.user_id=u.id WHERE u.id=$1 AND u.tenant_id=$2 AND u.role='TEKNISI' AND ub.branch_id=$3 LIMIT 1`,
+          [input.service.assignedTechId, tenantId, input.branchId]
+        );
+        if (!technician.rows[0]) {
+          const error: any = new Error('Teknisi tidak aktif atau tidak berada pada tenant aktif.');
+          error.status = 422;
+          throw error;
+        }
+      }
       const encryptedScreenLockPin = input.device.screenLockPin
         ? encryptScreenLockPin(input.device.screenLockPin)
         : null;
       const sequence = await client.query("SELECT nextval('service_ticket_number_seq') AS value");
       const sequenceValue = Number(sequence.rows[0].value);
       const now = new Date();
-      const prefix = `TKT/${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const ticketNo = `${prefix}/${String(sequenceValue).padStart(6, "0")}`;
-      const timeline = [{
-        status: "DITERIMA",
-        note: input.service.isCheckOnly
-          ? "Unit diterima untuk pengecekan dan diagnosis."
-          : `Unit diterima${input.service.downPayment > 0 ? ` dengan DP Rp ${input.service.downPayment.toLocaleString("id-ID")}` : ""}.`,
-        timestamp: now.toISOString(),
-        operator: actor.email || actor.userId,
-      }];
+      const prefix = `TKT/${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const ticketNo = `${prefix}/${String(sequenceValue).padStart(6, '0')}`;
+      const timeline = [
+        {
+          status: 'DITERIMA',
+          note: input.service.isCheckOnly
+            ? 'Unit diterima untuk pengecekan dan diagnosis.'
+            : `Unit diterima${input.service.downPayment > 0 ? ` dengan DP Rp ${input.service.downPayment.toLocaleString('id-ID')}` : ''}.`,
+          timestamp: now.toISOString(),
+          operator: actor.email || actor.userId,
+        },
+      ];
 
       const insertedTicket = await client.query(
         `INSERT INTO service_tickets (
@@ -149,46 +213,109 @@ export async function createServiceReception(req: Request, res: Response) {
           customer_approval_status, assigned_tech_id, warranty_months, is_outsourced,
           outsourced_vendor_id, outsourcing_cost, down_payment, is_check_only, device_category,
           accessories_left, custom_accessories, physical_condition, screen_lock_pin,
-          estimated_completion_date, captured_conditions, dynamic_fields, storage_location_id, timeline
-        ) VALUES (
-          gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'DITERIMA', $9::jsonb, $10::jsonb,
+           estimated_completion_date, captured_conditions, dynamic_fields, storage_location_id, timeline,
+           reception_idempotency_key
+         ) VALUES (
+           gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'DITERIMA', $9::jsonb, $10::jsonb,
           'PENDING', $11, $12, $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21, $22,
-          $23, $24::jsonb, $25::jsonb, $26, $27::jsonb
-        )
+           $23, $24::jsonb, $25::jsonb, $26, $27::jsonb, $28
+         )
         RETURNING *, tenant_id AS "tenantId", branch_id AS "branchId", ticket_no AS "ticketNo",
           customer_id AS "customerId", device_name AS "deviceName", device_serial AS "deviceSerial",
           device_brand_model AS "deviceBrandModel", customer_complaints AS "customerComplaints",
           created_at AS "createdAt"`,
-        [tenantId, input.branchId, ticketNo, customer.id, input.device.name, input.device.serial || null,
-          input.device.brandModel || input.device.name, input.reception.complaint,
-          JSON.stringify(input.reception.checklist), JSON.stringify(input.reception.capturedConditions),
-          input.service.assignedTechId || null, input.service.warrantyMonths, input.outsourcing.enabled,
-          input.outsourcing.vendorId || null, input.outsourcing.cost, input.service.downPayment,
-          input.service.isCheckOnly, input.device.category || null, JSON.stringify(input.reception.accessories),
-          input.reception.customAccessories || null, input.reception.physicalCondition || null,
-          encryptedScreenLockPin, input.service.estimatedCompletionDate || null,
-          JSON.stringify(input.reception.capturedConditions), JSON.stringify(input.device.dynamicFields),
-          input.reception.storageLocationId || null, JSON.stringify(timeline)],
+        [
+          tenantId,
+          input.branchId,
+          ticketNo,
+          customer.id,
+          input.device.name,
+          input.device.serial || null,
+          input.device.brandModel || input.device.name,
+          input.reception.complaint,
+          JSON.stringify(input.reception.checklist),
+          JSON.stringify(input.reception.capturedConditions),
+          input.service.assignedTechId || null,
+          input.service.warrantyMonths,
+          input.outsourcing.enabled,
+          input.outsourcing.vendorId || null,
+          input.outsourcing.cost,
+          input.service.downPayment,
+          input.service.isCheckOnly,
+          input.device.category || null,
+          JSON.stringify(input.reception.accessories),
+          input.reception.customAccessories || null,
+          input.reception.physicalCondition || null,
+          encryptedScreenLockPin,
+          input.service.estimatedCompletionDate || null,
+          JSON.stringify(input.reception.capturedConditions),
+          JSON.stringify(input.device.dynamicFields),
+          input.reception.storageLocationId || null,
+          JSON.stringify(timeline),
+          input.idempotencyKey,
+        ]
       );
+
+      if (input.service.downPayment > 0) {
+        const payment = await client.query(
+          `INSERT INTO service_payments (tenant_id, branch_id, ticket_id, idempotency_key, method, subtotal, tax_rate, tax_amount, down_payment_used, amount, status, created_by)
+           VALUES ($1,$2,$3,$4,$5,0,0,0,$6,$6,'PAID',$7) RETURNING id`,
+          [
+            tenantId,
+            input.branchId,
+            insertedTicket.rows[0].id,
+            `${input.idempotencyKey}:deposit`,
+            input.service.downPaymentMethod,
+            input.service.downPayment,
+            actor.userId,
+          ]
+        );
+        const debitAccountId = await ensureAccount(
+          client,
+          tenantId,
+          paymentDebitAccountCode(input.service.downPaymentMethod)
+        );
+        const depositAccountId = await ensureAccount(client, tenantId, '21000');
+        const journal = await client.query(
+          `INSERT INTO journal_entries (id,tenant_id,branch_id,description,reference_no,source_type,source_id,created_by)
+           VALUES (gen_random_uuid(),$1,$2,$3,$4,'SERVICE_DEPOSIT',$5,$6) RETURNING id`,
+          [
+            tenantId,
+            input.branchId,
+            `DP penerimaan servis ${ticketNo}`,
+            ticketNo,
+            payment.rows[0].id,
+            actor.userId,
+          ]
+        );
+        await client.query(
+          `INSERT INTO journal_lines (id,journal_entry_id,account_id,debit,credit) VALUES (gen_random_uuid(),$1,$2,$3,0),(gen_random_uuid(),$1,$4,0,$3)`,
+          [journal.rows[0].id, debitAccountId, input.service.downPayment, depositAccountId]
+        );
+      }
 
       await client.query(
         `INSERT INTO service_status_events (tenant_id, ticket_id, from_status, to_status, note, actor_user_id, metadata)
          VALUES ($1, $2, NULL, 'DITERIMA', $3, $4, '{}'::jsonb)`,
-        [tenantId, insertedTicket.rows[0].id, timeline[0].note, actor.userId],
+        [tenantId, insertedTicket.rows[0].id, timeline[0].note, actor.userId]
       );
 
       await client.query(
         `INSERT INTO audit_logs (id, tenant_id, user_id, action, details)
          VALUES (gen_random_uuid(), $1, $2, 'CREATE_SERVICE_RECEPTION', $3)`,
-        [tenantId, actor.userId, `Membuat penerimaan ${ticketNo} untuk ${input.device.name}`],
+        [tenantId, actor.userId, `Membuat penerimaan ${ticketNo} untuk ${input.device.name}`]
       );
 
       return { customer, ticket: redactScreenLockPin(insertedTicket.rows[0]) };
     });
 
-    return res.status(201).json({ data: result, message: "Penerimaan unit berhasil disimpan." });
+    return res
+      .status(result.idempotent ? 200 : 201)
+      .json({ data: result, message: 'Penerimaan unit berhasil disimpan.' });
   } catch (error: any) {
-    const msg = error.status ? (error.message || "Gagal menyimpan penerimaan unit.") : "Gagal menyimpan penerimaan unit.";
+    const msg = error.status
+      ? error.message || 'Gagal menyimpan penerimaan unit.'
+      : 'Gagal menyimpan penerimaan unit.';
     return res.status(error.status || 500).json({ error: msg });
   }
 }

@@ -7,6 +7,7 @@ import {
 } from "../src/server/controllers/serviceReception.controller.ts";
 
 const validPayload = {
+  idempotencyKey: "f2d3f6f1-1a7f-4b1d-9c16-7f63f0a2e881",
   branchId: "bd7725f3-02cf-4944-bdc9-80ba642a2c55",
   customer: {
     mode: "new" as const,
@@ -54,6 +55,19 @@ test("service reception contract rejects missing complaint", () => {
     reception: { ...validPayload.reception, complaint: "" },
   });
   assert.equal(result.success, false);
+});
+
+test("service reception contract requires idempotency key and bounded photo metadata", () => {
+  const missingKey = serviceReceptionSchema.safeParse({
+    ...validPayload,
+    idempotencyKey: undefined,
+  });
+  assert.equal(missingKey.success, false);
+  const invalidPhoto = serviceReceptionSchema.safeParse({
+    ...validPayload,
+    reception: { ...validPayload.reception, capturedConditions: [{ id: "1", category: "Unit" }] },
+  });
+  assert.equal(invalidPhoto.success, false);
 });
 
 test("service reception contract accepts existing customer", () => {

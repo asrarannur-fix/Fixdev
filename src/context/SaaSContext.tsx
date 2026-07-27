@@ -2433,6 +2433,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await apiFetch('/api/service-receptions', {
         method: 'POST',
         body: JSON.stringify({
+          idempotencyKey: (ticket as any).receptionIdempotencyKey || crypto.randomUUID(),
           tenantId,
           branchId,
           customer: customerData
@@ -2460,6 +2461,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             estimatedCompletionDate: ticket.estimatedCompletionDate || '',
             warrantyMonths: ticket.warrantyMonths || 0,
             downPayment: ticket.downPayment || 0,
+            downPaymentMethod: (ticket as any).downPaymentMethod || 'CASH',
             isCheckOnly: ticket.isCheckOnly || false,
           },
           outsourcing: {
@@ -2472,13 +2474,15 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Gagal menyimpan penerimaan unit.');
 
-      const serverCustomer = payload.data.customer as Customer;
+      const serverCustomer = payload.data.customer as Customer | null;
       newTicket = { ...ticketData, ...payload.data.ticket } as ServiceTicket;
-      setCustomers((prev) =>
-        prev.some((customer) => customer.id === serverCustomer.id)
-          ? prev
-          : [...prev, serverCustomer]
-      );
+      if (serverCustomer) {
+        setCustomers((prev) =>
+          prev.some((customer) => customer.id === serverCustomer.id)
+            ? prev
+            : [...prev, serverCustomer]
+        );
+      }
     } else {
       if (customerData) {
         const localCustomerId = generateUUID();
@@ -2899,7 +2903,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const runServiceWorkflow = async (id: string, action: string, body: any) => {
-    const response = await apiFetch(`/api/service-receptions/${id}/${action}`, {
+    const response = await apiFetch(`/api/services/${id}/${action}`, {
       method: 'POST',
       body: JSON.stringify(body),
     });
@@ -2915,7 +2919,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     part: { productId: string; warehouseId: string; quantity: number; serialNumber?: string }
   ) => {
     if (!isBackendConfigured()) return;
-    const response = await apiFetch(`/api/service-receptions/${id}/parts`, {
+    const response = await apiFetch(`/api/services/${id}/parts`, {
       method: 'POST',
       body: JSON.stringify(part),
     });
@@ -2926,7 +2930,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const cancelServicePart = async (id: string, partId: string) => {
     if (!isBackendConfigured()) return;
-    const response = await apiFetch(`/api/service-receptions/${id}/parts/${partId}`, {
+    const response = await apiFetch(`/api/services/${id}/parts/${partId}`, {
       method: 'DELETE',
     });
     const payload = await response.json();
@@ -2939,7 +2943,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateServiceTicket(id, updates);
       return;
     }
-    const response = await apiFetch(`/api/service-receptions/${id}/work`, {
+    const response = await apiFetch(`/api/services/${id}/work-metadata`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
     });
@@ -2977,7 +2981,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       return;
     }
-    const response = await apiFetch(`/api/service-receptions/${id}/additional-costs`, {
+    const response = await apiFetch(`/api/services/${id}/additional-costs`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -2988,7 +2992,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const servicePartOrderRequest = async (id: string, path: string, method: string, data?: any) => {
     if (!isBackendConfigured()) throw new Error('Permintaan spare part memerlukan backend aktif.');
-    const response = await apiFetch(`/api/service-receptions/${id}/part-orders${path}`, {
+    const response = await apiFetch(`/api/services/${id}/part-orders${path}`, {
       method,
       body: data ? JSON.stringify(data) : undefined,
     });
@@ -3000,9 +3004,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const createServicePartOrder = (id: string, data: Record<string, any>) =>
     servicePartOrderRequest(id, '', 'POST', data);
   const updateServicePartOrder = (id: string, orderId: string, data: Record<string, any>) =>
-    servicePartOrderRequest(id, `/${orderId}`, 'PATCH', data);
+    servicePartOrderRequest(id, `/${orderId}`, 'PUT', data);
   const receiveServicePartOrder = (id: string, orderId: string, data: Record<string, any>) =>
-    servicePartOrderRequest(id, `/${orderId}/arrive`, 'POST', data);
+    servicePartOrderRequest(id, `/${orderId}/receive`, 'POST', data);
   const cancelServicePartOrder = (id: string, orderId: string) =>
     servicePartOrderRequest(id, `/${orderId}/cancel`, 'POST');
 
@@ -3207,7 +3211,17 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handoverServiceDevice = async (
     id: string,
     paymentMethod: PaymentMethod,
-    details?: { refNo?: string; proofName?: string; tempoDays?: number }
+    details?: {
+      refNo?: string;
+      proofName?: string;
+      tempoDays?: number;
+      checklist?: {
+        accessoriesReturned: boolean;
+        customerChecked: boolean;
+        invoiceReady: boolean;
+        warrantyReady: boolean;
+      };
+    }
   ) => {
     if (isBackendConfigured()) {
       await runServiceWorkflow(id, 'handover', {
@@ -3215,6 +3229,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         referenceNo: details?.refNo,
         proofName: details?.proofName,
         tempoDays: details?.tempoDays,
+        checklist: details?.checklist,
         idempotencyKey: `handover-${id}`,
       });
       return;

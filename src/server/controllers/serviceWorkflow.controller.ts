@@ -108,7 +108,7 @@ const diagnosisSchema = z.object({
         productId: z.string().uuid(),
         warehouseId: z.string().uuid().optional().nullable(),
         name: z.string().trim().min(1),
-        quantity: z.number().positive(),
+        quantity: z.number().int().positive(),
         unitPrice: z.number().min(0).default(0),
         serialNumber: z.string().optional(),
       })
@@ -146,13 +146,43 @@ const qcSchema = z
       });
     }
   });
-const handoverSchema = z.object({
-  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'TEMPO']),
-  referenceNo: z.string().optional(),
-  proofName: z.string().optional(),
-  tempoDays: z.number().int().min(1).max(365).optional(),
-  idempotencyKey: z.string().trim().min(8),
-});
+const handoverSchema = z
+  .object({
+    paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'TEMPO']),
+    referenceNo: z.string().trim().max(200).optional(),
+    proofName: z.string().trim().max(255).optional(),
+    tempoDays: z.number().int().min(1).max(365).optional(),
+    checklist: z.object({
+      accessoriesReturned: z.literal(true),
+      customerChecked: z.literal(true),
+      invoiceReady: z.literal(true),
+      warrantyReady: z.literal(true),
+    }),
+    idempotencyKey: z.string().trim().min(8),
+  })
+  .superRefine((value, ctx) => {
+    if (value.paymentMethod === 'TEMPO' && !value.tempoDays) {
+      ctx.addIssue({ code: 'custom', path: ['tempoDays'], message: 'Termin tempo wajib diisi.' });
+    }
+    if (value.paymentMethod !== 'TEMPO' && value.tempoDays) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['tempoDays'],
+        message: 'Termin hanya berlaku untuk pembayaran tempo.',
+      });
+    }
+    if (
+      !['CASH', 'TEMPO'].includes(value.paymentMethod) &&
+      !value.referenceNo &&
+      !value.proofName
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['referenceNo'],
+        message: 'Referensi atau bukti pembayaran wajib diisi.',
+      });
+    }
+  });
 const receivableSettlementSchema = z.object({
   amount: z.number().positive(),
   method: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET']),
@@ -162,7 +192,7 @@ const receivableSettlementSchema = z.object({
 const partSchema = z.object({
   productId: z.string().uuid(),
   warehouseId: z.string().uuid(),
-  quantity: z.number().positive(),
+  quantity: z.number().int().positive(),
   serialNumber: z.string().trim().optional(),
 });
 const workMetadataSchema = z.object({
@@ -176,10 +206,11 @@ const workMetadataSchema = z.object({
       timestamp: z.string(),
     })
     .optional(),
-  techPreChecklist: z.array(z.any()).optional(),
-  techPostChecklist: z.array(z.any()).optional(),
-  repairStartTime: z.string().nullable().optional(),
-  repairEndTime: z.string().nullable().optional(),
+  techPreChecklist: z.array(z.any()).max(100).optional(),
+  techPostChecklist: z.array(z.any()).max(100).optional(),
+  repairStartTime: z.string().datetime().nullable().optional(),
+  repairEndTime: z.string().datetime().nullable().optional(),
+  storageLocationId: z.string().uuid().nullable().optional(),
 });
 
 function ticketSelect() {
@@ -402,7 +433,7 @@ export async function listServiceTickets(req: Request, res: Response) {
 export async function getServiceTicket(req: Request, res: Response) {
   try {
     const result = await dbQuery(
-      `SELECT ${ticketSelect()} FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 LIMIT 1`,
+      `SELECT ${ticketSelect()} FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 AND deleted_at IS NULL LIMIT 1`,
       [req.params.id, req.tenantId, req.branchId || req.headers['x-branch-id']]
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Tiket servis tidak ditemukan.' });
@@ -418,11 +449,9 @@ export async function transitionServiceTicket(req: Request, res: Response) {
   const ticketId = req.params.id;
   const cooldown = checkTransitionCooldown(ticketId);
   if (!cooldown.ok) {
-    return res
-      .status(429)
-      .json({
-        error: `Tunggu ${Math.ceil(cooldown.remainingMs / 1000)} detik sebelum ubah status lagi.`,
-      });
+    return res.status(429).json({
+      error: `Tunggu ${Math.ceil(cooldown.remainingMs / 1000)} detik sebelum ubah status lagi.`,
+    });
   }
   try {
     const ticket = await dbTransaction(async (client) => {
@@ -980,8 +1009,8 @@ export async function requestServicePart(req: Request, res: Response) {
       await requireTicketWarehouse(client, ticket, parsed.data.warehouseId);
       const product = await client.query(
         `SELECT p.id,p.name,p.sell_price,p.purchase_cost,COALESCE(ps.quantity,0)::float AS stock
-          FROM products p LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
-         WHERE p.id=$1 AND p.tenant_id=$3 LIMIT 1`,
+           FROM products p LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
+          WHERE p.id=$1 AND p.tenant_id=$3 LIMIT 1`,
         [parsed.data.productId, parsed.data.warehouseId, req.tenantId]
       );
       if (!product.rows[0]) {
@@ -989,8 +1018,20 @@ export async function requestServicePart(req: Request, res: Response) {
         error.status = 404;
         throw error;
       }
-      if (Number(product.rows[0].stock) < parsed.data.quantity) {
-        const error: any = new Error('Stok spare part tidak mencukupi.');
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+        `${parsed.data.productId}:${parsed.data.warehouseId}`,
+      ]);
+      const reserved = await client.query(
+        `SELECT COALESCE(SUM(quantity),0)::float AS quantity
+           FROM service_parts
+          WHERE tenant_id=$1 AND product_id=$2 AND warehouse_id=$3 AND status='RESERVED'`,
+        [req.tenantId, parsed.data.productId, parsed.data.warehouseId]
+      );
+      const availableStock = Number(product.rows[0].stock) - Number(reserved.rows[0].quantity);
+      if (availableStock < parsed.data.quantity) {
+        const error: any = new Error(
+          'Stok spare part tersedia tidak mencukupi setelah reservasi aktif.'
+        );
         error.status = 409;
         throw error;
       }
@@ -1091,22 +1132,52 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
+      if (parsed.data.assignedTechId) {
+        const technician = await client.query(
+          `SELECT u.id FROM users u JOIN user_branches ub ON ub.user_id=u.id
+           WHERE u.id=$1 AND u.tenant_id=$2 AND u.role='TEKNISI' AND ub.branch_id=$3 LIMIT 1`,
+          [parsed.data.assignedTechId, req.tenantId, current.branchId]
+        );
+        if (!technician.rows[0]) {
+          const error: any = new Error('Teknisi tidak berada pada tenant dan cabang tiket.');
+          error.status = 422;
+          throw error;
+        }
+      }
+      const repairStartTime = parsed.data.repairStartTime
+        ? new Date(parsed.data.repairStartTime)
+        : null;
+      const repairEndTime = parsed.data.repairEndTime ? new Date(parsed.data.repairEndTime) : null;
+      if (repairEndTime && repairStartTime && repairEndTime < repairStartTime) {
+        const error: any = new Error('Waktu selesai perbaikan tidak boleh sebelum waktu mulai.');
+        error.status = 422;
+        throw error;
+      }
       const discussions = parsed.data.internalDiscussion
-        ? [...(current.internalDiscussions || []), parsed.data.internalDiscussion]
+        ? [
+            ...(current.internalDiscussions || []),
+            {
+              ...parsed.data.internalDiscussion,
+              operator: req.authActor?.email || req.authActor?.userId,
+              timestamp: new Date().toISOString(),
+            },
+          ]
         : current.internalDiscussions || [];
       await client.query(
         `UPDATE service_tickets SET assigned_tech_id=COALESCE($1,assigned_tech_id),technician_notes=COALESCE($2,technician_notes),
          internal_discussions=$3::jsonb,tech_pre_checklist=COALESCE($4::jsonb,tech_pre_checklist),
          tech_post_checklist=COALESCE($5::jsonb,tech_post_checklist),repair_start_time=COALESCE($6::timestamp,repair_start_time),
-         repair_end_time=COALESCE($7::timestamp,repair_end_time),updated_at=NOW() WHERE id=$8 AND tenant_id=$9`,
+         repair_end_time=COALESCE($7::timestamp,repair_end_time),storage_location_id=COALESCE($8,storage_location_id),
+         updated_at=NOW() WHERE id=$9 AND tenant_id=$10`,
         [
           parsed.data.assignedTechId ?? null,
           parsed.data.technicianNotes ?? null,
           JSON.stringify(discussions),
           parsed.data.techPreChecklist ? JSON.stringify(parsed.data.techPreChecklist) : null,
           parsed.data.techPostChecklist ? JSON.stringify(parsed.data.techPostChecklist) : null,
-          parsed.data.repairStartTime ?? null,
-          parsed.data.repairEndTime ?? null,
+          repairStartTime,
+          repairEndTime,
+          parsed.data.storageLocationId ?? null,
           current.id,
           req.tenantId,
         ]
@@ -1333,7 +1404,9 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         const debitAccountId = await ensureAccount(
           client,
           req.tenantId!,
-          paymentDebitAccountCode(parsed.data.paymentMethod)
+          parsed.data.paymentMethod === 'TEMPO'
+            ? '10300'
+            : paymentDebitAccountCode(parsed.data.paymentMethod)
         );
         const depositAccountId = await ensureAccount(client, req.tenantId!, '21000');
         const revenueAccountId = await ensureAccount(client, req.tenantId!, '40100');
@@ -1349,21 +1422,19 @@ export async function handoverServiceTicket(req: Request, res: Response) {
             req.authActor?.userId,
           ]
         );
-        await client.query(
-          `INSERT INTO journal_lines (id,journal_entry_id,account_id,debit,credit) VALUES
-           (gen_random_uuid(),$1,$2,$3,0),(gen_random_uuid(),$1,$4,$5,0),(gen_random_uuid(),$1,$6,0,$7),(gen_random_uuid(),$1,$8,0,$9)`,
-          [
-            journal.rows[0].id,
-            debitAccountId,
-            invoice.amountDue,
-            depositAccountId,
-            invoice.downPaymentUsed,
-            revenueAccountId,
-            invoice.subtotal,
-            taxAccountId,
-            invoice.taxAmount,
-          ]
-        );
+        const journalLines = [
+          [debitAccountId, invoice.amountDue, 0],
+          [depositAccountId, invoice.downPaymentUsed, 0],
+          [revenueAccountId, 0, invoice.subtotal],
+          [taxAccountId, 0, invoice.taxAmount],
+        ].filter(([, debit, credit]) => Number(debit) > 0 || Number(credit) > 0);
+        for (const [accountId, debit, credit] of journalLines) {
+          await client.query(
+            `INSERT INTO journal_lines (id,journal_entry_id,account_id,debit,credit)
+             VALUES (gen_random_uuid(),$1,$2,$3,$4)`,
+            [journal.rows[0].id, accountId, debit, credit]
+          );
+        }
       }
       if (parsed.data.paymentMethod === 'TEMPO' && invoice.amountDue > 0) {
         await client.query(
@@ -1395,21 +1466,34 @@ export async function handoverServiceTicket(req: Request, res: Response) {
           [journal.rows[0].id, hppAccountId, partsCost, inventoryAccountId]
         );
       }
-      const warrantyEndsAt = new Date(
-        Date.now() + Number(ticket.warrantyMonths || 0) * 30 * 86400000
-      );
+      const warrantyMonths = Number(ticket.warrantyMonths || 0);
+      const warrantyEndsAt =
+        warrantyMonths > 0 ? new Date(Date.now() + warrantyMonths * 30 * 86400000) : null;
+      const consumedParts = parts.rows.map((part: any) => ({
+        id: part.id,
+        productId: part.product_id,
+        warehouseId: part.warehouse_id,
+        name: part.name,
+        quantity: Number(part.quantity),
+        unitPrice: Number(part.unit_price),
+        totalPrice: Number(part.quantity) * Number(part.unit_price),
+        serialNumber: part.serial_number || undefined,
+        status: 'USED',
+      }));
       await client.query(
         `UPDATE service_tickets SET payment_method=$1,payment_ref=$2,payment_proof_name=$3,tempo_days=$4,
-          handover_at=NOW(),warranty_ends_at=$5,warranty_card_sent=TRUE,warranty_card_url=$6,invoice_id=$7,
-          parts_used=parts_requested,updated_at=NOW() WHERE id=$8 AND tenant_id=$9`,
+          handover_at=NOW(),warranty_ends_at=$5,warranty_card_sent=$6,warranty_card_url=$7,invoice_id=$8,
+          parts_used=$9::jsonb,updated_at=NOW() WHERE id=$10 AND tenant_id=$11`,
         [
           parsed.data.paymentMethod,
           parsed.data.referenceNo || null,
           parsed.data.proofName || null,
           parsed.data.tempoDays || 0,
           warrantyEndsAt,
-          `/warranty/${encodeURIComponent(ticket.ticketNo)}`,
+          warrantyMonths > 0,
+          warrantyMonths > 0 ? `/warranty/${encodeURIComponent(ticket.ticketNo)}` : null,
           payment.rows[0].id,
+          JSON.stringify(consumedParts),
           ticket.id,
           req.tenantId,
         ]

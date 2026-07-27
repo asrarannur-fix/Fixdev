@@ -291,6 +291,13 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
             setInternalCommentText('');
             setManualDiagNotes('');
             setManualDiagCost('');
+            setQcScore(0);
+            setQcNotes('');
+            setHandoverChecklist([]);
+            setHandoverPaymentMethod(PaymentMethod.CASH);
+            setHandoverProofName('');
+            setHandoverRefNo('');
+            setHandoverTempoDays(30);
             setSelectedSparepartId('');
             setSparepartSN('');
           }}
@@ -452,19 +459,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       const selectedId = e.target.value;
                       const techName =
                         employees.find((emp) => emp.id === selectedId)?.name || 'Antrian Bebas';
-                      const currentTimeline = ticket.timeline || [];
-                      const updatedTimeline = [
-                        ...currentTimeline,
-                        {
-                          status: ticket.status,
-                          note: `Teknisi penanggung jawab diubah ke: ${techName}`,
+
+                      void props.patchServiceWork(ticket.id, {
+                        assignedTechId: selectedId || null,
+                        internalDiscussion: {
+                          id: crypto.randomUUID(),
+                          text: `Teknisi penanggung jawab diubah ke: ${techName}`,
+                          operator: '',
                           timestamp: new Date().toISOString(),
-                          operator: currentUser?.name || 'Sistem',
                         },
-                      ];
-                      updateServiceTicket(ticket.id, {
-                        assignedTechId: selectedId ? selectedId : undefined,
-                        timeline: updatedTimeline,
                       });
                     }}
                     className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-semibold cursor-pointer text-slate-700"
@@ -508,11 +511,18 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             ? 'Lokasi penyimpanan dikunci setelah tiket selesai atau diserahkan'
                             : undefined
                         }
-                        onChange={(e) => {
-                          updateServiceTicket(ticket.id, {
-                            storageLocationId: e.target.value || undefined,
-                          });
-                          showToast('Lokasi penyimpanan diperbarui.', 'success');
+                        onChange={async (e) => {
+                          try {
+                            await props.patchServiceWork(ticket.id, {
+                              storageLocationId: e.target.value || null,
+                            });
+                            showToast('Lokasi penyimpanan diperbarui.', 'success');
+                          } catch (error: any) {
+                            showToast(
+                              error?.message || 'Gagal memperbarui lokasi penyimpanan.',
+                              'error'
+                            );
+                          }
                         }}
                         className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-semibold cursor-pointer text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -933,26 +943,32 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               className="w-20 text-xs p-2 rounded-lg border border-slate-200"
                             />
                             <button
-                              onClick={() => {
-                                if (requestedPartId && requestedPartQty > 0) {
-                                  const currentReqs = ticket.partsRequested || [];
-                                  updateServiceTicket(ticket.id, {
-                                    partsRequested: [
-                                      ...currentReqs,
-                                      {
-                                        id: 'req-' + Date.now().toString(36),
-                                        sparepartId: requestedPartId,
-                                        qty: requestedPartQty,
-                                        status: 'PENDING',
-                                        requestedAt: new Date().toISOString(),
-                                      },
-                                    ],
+                              onClick={async () => {
+                                const part = sparepartsList.find(
+                                  (item) => item.id === requestedPartId
+                                );
+                                const warehouseId =
+                                  part?.warehouseId || Object.keys(part?.warehouseStock || {})[0];
+                                if (!part || !warehouseId || requestedPartQty <= 0) {
+                                  showToast('Pilih spare part dan gudang yang valid.', 'error');
+                                  return;
+                                }
+                                try {
+                                  await requestServicePart(ticket.id, {
+                                    productId: part.id,
+                                    warehouseId,
+                                    quantity: requestedPartQty,
                                   });
                                   setRequestedPartId('');
                                   setRequestPartMode(false);
                                   showToast(
-                                    'Permintaan berhasil dikirim ke admin gudang!',
+                                    'Spare part berhasil direservasi dari gudang.',
                                     'success'
+                                  );
+                                } catch (error: any) {
+                                  showToast(
+                                    error?.message || 'Gagal mereservasi spare part.',
+                                    'error'
                                   );
                                 }
                               }}
@@ -1440,7 +1456,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => completeServiceQC(ticket.id, qcScore, qcNotes, false)}
-                      className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs py-2 rounded-lg cursor-pointer border border-rose-200"
+                      disabled={qcNotes.trim().length < 2 || !ticket.qcChecklist?.length}
+                      className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs py-2 rounded-lg cursor-pointer border border-rose-200"
                     >
                       Rework (Gagal QC)
                     </button>
@@ -1818,8 +1835,12 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                   {ticket.status === ServiceStatus.SEDANG_DIKERJAKAN && (
                     <button
-                      onClick={() => {
-                        setViewingServiceTicketId(ticket.id);
+                      onClick={async () => {
+                        await updateServiceStatus(
+                          ticket.id,
+                          ServiceStatus.QC,
+                          'Unit masuk pemeriksaan quality control.'
+                        );
                         setQcScore(ticket.qcScore ?? 0);
                         setQcNotes(ticket.qcNotes ?? '');
                       }}
@@ -1834,10 +1855,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       const isRefOrProofRequired =
                         handoverPaymentMethod !== PaymentMethod.CASH &&
                         handoverPaymentMethod !== PaymentMethod.TEMPO;
-                      const isHandoverValid =
-                        !isRefOrProofRequired ||
-                        handoverRefNo.trim() !== '' ||
-                        handoverProofName.trim() !== '';
+                      const isHandoverValid = !isRefOrProofRequired || handoverRefNo.trim() !== '';
 
                       const estCost = Number(ticket.estimatedCost) || 0;
                       const taxSettings = tenantObj?.settings?.taxSettings;
@@ -1870,10 +1888,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         <div className="space-y-3.5 border border-slate-200/85 p-4 rounded-xl bg-slate-50/70 w-full text-left shadow-sm">
                           <div className="flex justify-between items-center bg-accent-lighter/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
                             <span className="text-slate-600">
-                              Total Tagihan Pelunasan (PPN {tenantTaxRate}%):
+                              Sisa Pelunasan setelah DP (PPN {tenantTaxRate}%):
                             </span>
                             <span className="text-accent font-mono text-sm font-bold">
-                              Rp {totalAmt.toLocaleString()}
+                              Rp {amountDue.toLocaleString()}
                             </span>
                           </div>
 
@@ -1952,54 +1970,6 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   onChange={(e) => setHandoverRefNo(e.target.value)}
                                   className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
                                 />
-                              </div>
-
-                              <div className="space-y-1">
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                  Bukti Transfer (Upload / Seret File){' '}
-                                  <span className="text-rose-500 font-bold">*</span>
-                                </label>
-                                {handoverProofName ? (
-                                  <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
-                                    <div className="flex items-center gap-1.5 font-medium truncate">
-                                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                                      <span className="truncate">{handoverProofName}</span>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setHandoverProofName('')}
-                                      className="text-red-500 hover:text-red-700 font-bold ml-2 cursor-pointer text-xs"
-                                    >
-                                      Hapus
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div
-                                    onClick={() => {
-                                      document.getElementById(`proof-upload-${ticket.id}`)?.click();
-                                    }}
-                                    className="border-2 border-dashed border-slate-200 hover:border-accent/60 hover:bg-accent-lighter/30 p-4 rounded-lg text-center cursor-pointer transition-all duration-200"
-                                  >
-                                    <input
-                                      type="file"
-                                      id={`proof-upload-${ticket.id}`}
-                                      accept="image/*,application/pdf"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          setHandoverProofName(file.name);
-                                        }
-                                      }}
-                                    />
-                                    <p className="text-[11px] text-slate-500 font-medium">
-                                      Klik untuk memilih atau seret file bukti transfer
-                                    </p>
-                                    <p className="text-[9px] text-slate-400 mt-0.5 font-mono">
-                                      Maks. File: 5MB (PNG, JPG, PDF)
-                                    </p>
-                                  </div>
-                                )}
                               </div>
 
                               {!isHandoverValid && (
@@ -2126,7 +2096,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             onClick={async () => {
                               if (isRefOrProofRequired && !isHandoverValid) {
                                 showToast(
-                                  'Gagal memproses: Nomor referensi atau unggah bukti transfer diperlukan!',
+                                  'Gagal memproses: Nomor referensi transaksi diperlukan!',
                                   'error'
                                 );
                                 return;
@@ -2138,6 +2108,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   handoverPaymentMethod === PaymentMethod.TEMPO
                                     ? parseInt(handoverTempoDays, 10)
                                     : undefined,
+                                checklist: handoverChecklist,
                                 taxRate: tenantTaxRate,
                               };
 
