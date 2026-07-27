@@ -1,18 +1,15 @@
 import * as React from 'react';
-import { createPortal } from 'react-dom';
-import { X, Printer, Barcode, ShieldCheck, CheckCircle2, Zap, Share2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { ServiceTicket, Customer, Employee, User, TenantSettings } from '../../../types';
 import {
-  escapeHtml,
   getPrintBaseCss,
-  getPaperWidthStyle,
   getSafePrintImageUrl,
 } from '../../../utils/print';
-import { useSaaS } from '../../../context/SaaSContext';
-import { printJob, printJobAsync } from '../../../utils/printJob';
+import { printJob } from '../../../utils/printJob';
 import { SPKPrintout } from './printouts/SPKPrintout';
 import { InvoicePrintout } from './printouts/InvoicePrintout';
 import { WarrantyPrintout } from './printouts/WarrantyPrintout';
+import { useSaaS } from '../../../context/SaaSContext';
 
 type PrintConfig = NonNullable<TenantSettings['printConfig']>;
 
@@ -43,7 +40,7 @@ interface DocumentPrintoutsProps {
   setShowWarrantyPrintout: (id: string | null) => void;
   tenantServices: ServiceTicket[];
   customers: Customer[];
-  employees: Employee[];
+  _employees?: Employee[];
   currentUser: User | null;
   showToast: (message: string, type?: any) => void;
   printConfig?: PrintConfig;
@@ -60,12 +57,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   setShowWarrantyPrintout,
   tenantServices,
   customers,
-  employees,
+  _employees,
   currentUser,
   showToast,
   printConfig,
 }) => {
-  const { currentTenantId, currentBranchId, tenants, publicBaseUrl } = useSaaS();
+  const { currentTenantId, tenants, publicBaseUrl } = useSaaS();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
   const businessName = activeTenant?.name || 'Layanan Servis';
   const taxSettings = activeTenant?.settings?.taxSettings;
