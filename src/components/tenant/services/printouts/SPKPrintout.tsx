@@ -93,7 +93,7 @@ export const SPKPrintout: React.FC<SPKPrintoutProps> = ({
               )}
             </div>
             <div className="flex flex-col items-center justify-center py-2.5 border-t border-b border-dashed border-slate-200">
-              <span className="p-1 bg-white border border-slate-200 rounded"><Barcode className="w-36 h-8 text-slate-800" /></span>
+              <span className="p-1 bg-white border border-slate-200 rounded"><Barcode value={ticket.id} className="w-36 h-8 text-slate-800" /></span>
               <span className="font-mono text-[9px] text-slate-400 mt-1">{ticket.id}</span>
             </div>
             {printConfig?.printQrCode && (

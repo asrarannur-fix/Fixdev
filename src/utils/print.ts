@@ -130,7 +130,9 @@ export const getSafePrintImageUrl = (value?: string): string => {
     if ((url.protocol === 'http:' || url.protocol === 'https:') && !url.username && !url.password) {
       return url.href.replace(/"/g, '&quot;');
     }
-  } catch {}
+  } catch {
+    // Invalid URL, return empty string
+  }
   return '';
 };
 

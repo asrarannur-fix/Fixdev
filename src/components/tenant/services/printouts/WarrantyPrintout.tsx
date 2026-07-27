@@ -3,7 +3,7 @@ import { X, Printer, ShieldCheck, CheckCircle2, Zap, Share2 } from 'lucide-react
 import { createPortal } from 'react-dom';
 import { ServiceTicket, Customer, User } from '../../../../types';
 import { getPrintBaseCss, escapeHtml, getSafePrintImageUrl } from '../../../../utils/print';
-import { printJobAsync } from '../../../../utils/printJob';
+import { printJob } from '../../../../utils/printJob';
 import { useSaaS } from '../../../../context/SaaSContext';
 
 type PrintConfig = NonNullable<NonNullable<import('../../../../types').TenantSettings['printConfig']>>;
@@ -11,7 +11,7 @@ type PrintConfig = NonNullable<NonNullable<import('../../../../types').TenantSet
 interface WarrantyPrintoutProps {
   ticket: ServiceTicket;
   customer: Customer;
-  currentUser: User | null;
+  _currentUser: User | null;
   printConfig?: PrintConfig;
   businessName: string;
   onClose: () => void;
@@ -25,7 +25,7 @@ const getPrintCss = (printConfig?: PrintConfig) => `${getPrintBaseCss(printConfi
 export const WarrantyPrintout: React.FC<WarrantyPrintoutProps> = ({
   ticket,
   customer,
-  currentUser,
+  _currentUser,
   printConfig,
   businessName,
   onClose,
@@ -134,7 +134,7 @@ export const WarrantyPrintout: React.FC<WarrantyPrintoutProps> = ({
       </html>
     `;
     window.setTimeout(async () => {
-      const result = await printJobAsync({
+      const result = await printJob({
         title: 'Warranty Card',
         html: printDoc.innerHTML || '',
         printConfig,

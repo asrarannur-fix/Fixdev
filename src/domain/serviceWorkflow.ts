@@ -67,7 +67,7 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
 
 export const SERVICE_STATUS_META: Record<
   ServiceStatus,
-  { label: string; tone: string; terminal: boolean }
+  { label: string; tone: string; terminal: boolean; hint?: string }
 > = {
   [ServiceStatus.DRAFT]: { label: 'Draft', tone: 'slate', terminal: false },
   [ServiceStatus.BOOKING]: { label: 'Booking', tone: 'sky', terminal: false },
@@ -98,28 +98,12 @@ export const SERVICE_STATUS_META: Record<
   },
   [ServiceStatus.SIAP_DIAMBIL]: { label: 'Siap Diambil', tone: 'emerald', terminal: false },
   [ServiceStatus.DIAMBIL]: { label: 'Diambil', tone: 'teal', terminal: true },
-  [ServiceStatus.DIBATALKAN]: { label: 'Dibatalkan', tone: 'rose', terminal: true },
-  [ServiceStatus.KLAIM_GARANSI]: { label: 'Klaim Garansi', tone: 'violet', terminal: false },
-  [ServiceStatus.TIDAK_BISA_DIPERBAIKI]: {
-    label: 'Tidak Bisa Diperbaiki',
-    tone: 'rose',
-    terminal: true,
-  },
-  [ServiceStatus.CUSTOMER_TIDAK_MERESPON]: {
-    label: 'Pelanggan Tidak Merespon',
-    tone: 'orange',
-    terminal: true,
-  },
-  [ServiceStatus.BARANG_TIDAK_DIAMBIL]: {
-    label: 'Barang Tidak Diambil',
-    tone: 'orange',
-    terminal: true,
-  },
-  [ServiceStatus.DIBATALKAN]: {
-    label: 'Dibatalkan',
-    hint: 'Tiket dibatalkan oleh pelanggan atau admin.',
-  },
-  [ServiceStatus.RUSAK]: { label: 'Rusak', tone: 'rose', terminal: true },
+  [ServiceStatus.DIBATALKAN]: { label: 'Dibatalkan', tone: 'rose', terminal: true, hint: 'Tiket dibatalkan oleh pelanggan atau admin.' },
+  [ServiceStatus.KLAIM_GARANSI]: { label: 'Klaim Garansi', tone: 'violet', terminal: false, hint: 'Unit masih dalam masa garansi. Ikuti prosedur klaim.' },
+  [ServiceStatus.TIDAK_BISA_DIPERBAIKI]: { label: 'Tidak Bisa Diperbaiki', tone: 'rose', terminal: true, hint: 'Unit tidak dapat diperbaiki. Pilih opsi lain.' },
+  [ServiceStatus.CUSTOMER_TIDAK_MERESPON]: { label: 'Pelanggan Tidak Merespon', tone: 'orange', terminal: true, hint: 'Belum ada respon dari pelanggan. Kirim follow-up.' },
+  [ServiceStatus.BARANG_TIDAK_DIAMBIL]: { label: 'Barang Tidak Diambil', tone: 'orange', terminal: true, hint: 'Unit tidak diambil dalam 7 hari. Hubungi customer.' },
+  [ServiceStatus.RUSAK]: { label: 'Rusak', tone: 'rose', terminal: true, hint: 'Unit tidak dapat diperbaiki. Proses Claim Garansi.' },
 };
 
 export const SERVICE_TERMINAL_STATUSES = new Set(

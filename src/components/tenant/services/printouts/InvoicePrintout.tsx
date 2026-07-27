@@ -1,10 +1,10 @@
 import React from 'react';
-import { X, Printer, Share2 } from 'lucide-react';
+import { X, Printer } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { ServiceTicket, Customer, User, TenantSettings } from '../../../../types';
-import { getPrintBaseCss, escapeHtml, getSafePrintImageUrl } from '../../../../utils/print';
-import { printJobAsync } from '../../../../utils/printJob';
+import { getPrintBaseCss, escapeHtml } from '../../../../utils/print';
+import { printJob } from '../../../../utils/printJob';
 import { useSaaS } from '../../../../context/SaaSContext';
+import { TenantSettings } from '../../../../types';
 
 type PrintConfig = NonNullable<TenantSettings['printConfig']>;
 
@@ -43,13 +43,12 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
     (usage: any) => usage.chargeable
   );
   const grandTotal = ticket.estimatedCost || 0;
-  const taxRate = 0;
   const totalTax = 0;
   const finalTotal = grandTotal + totalTax;
 
   const handlePrint = () => {
     const printDoc = document.createElement('div');
-    printDoc.innerHTML = `
+    printDoc.innerHTML = `\
       <html>
         <head>
           <title>Invoice - ${ticket.ticketNo}</title>
@@ -110,7 +109,7 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
                 ${ticket.partsUsed
                   ? ticket.partsUsed
                       .map(
-                        (part: any) => `
+                        (part: any) => `\
                           <tr>
                             <td style="color: #64748b; padding-left: 8px;">- ${part.name} (x${part.quantity})</td>
                             <td style="text-align: right; font-family: monospace; color: #64748b;">Rp ${part.totalPrice.toLocaleString()}</td>
@@ -121,7 +120,7 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
                   : ''}
                 ${chargeableMicroUsages
                   .map(
-                    (usage: any) => `
+                    (usage: any) => `\
                       <tr>
                         <td style="color: #2563eb; padding-left: 8px;">- ${usage.name} (x${usage.quantity})</td>
                         <td style="text-align: right; font-family: monospace; color: #2563eb;">Rp ${usage.chargeTotal.toLocaleString()}</td>
@@ -159,7 +158,7 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
             </div>
           </div>
           ${printConfig?.printQrCode
-            ? `
+            ? `\
           <div style="text-align: center; margin-top: 15px;">
              <div class="qr-placeholder">Lacak status dengan nomor tiket: ${escapeHtml(ticket.ticketNo)}</div>
           </div>
@@ -172,7 +171,7 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
       </html>
     `;
     window.setTimeout(async () => {
-      const result = await printJobAsync({
+      const result = await printJob({
         title: 'Service Document',
         html: printDoc.innerHTML || '',
         printConfig,

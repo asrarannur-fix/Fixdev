@@ -1,10 +1,7 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 import { ServiceTicket, Customer, Employee, User, TenantSettings } from '../../../types';
-import {
-  getPrintBaseCss,
-  getSafePrintImageUrl,
-} from '../../../utils/print';
+import { getSafePrintImageUrl } from '../../../utils/print';
 import { printJob } from '../../../utils/printJob';
 import { SPKPrintout } from './printouts/SPKPrintout';
 import { InvoicePrintout } from './printouts/InvoicePrintout';
@@ -24,10 +21,6 @@ const fmtPrintDate = (value?: string | number | Date): string => {
     year: 'numeric',
   });
 };
-
-const getPrintCss = (printConfig?: PrintConfig) => `${getPrintBaseCss(printConfig)}
-  .print-footer { border-top: 1px dashed #cbd5e1; margin-top: 12px; padding-top: 8px; color: #64748b; text-align: center; }
-`;
 
 interface DocumentPrintoutsProps {
   showSpkPrintout: string | null;
@@ -65,22 +58,10 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   const { currentTenantId, tenants, publicBaseUrl } = useSaaS();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
   const businessName = activeTenant?.name || 'Layanan Servis';
-  const taxSettings = activeTenant?.settings?.taxSettings;
-  const taxRate = taxSettings?.taxEnabled ? Math.max(0, Number(taxSettings.taxRate) || 0) : 0;
-  const shouldPrintTax = Boolean(printConfig?.printTax && taxRate > 0);
-  const calculateTax = (subtotal: number) =>
-    shouldPrintTax
-      ? taxSettings?.taxInclusive
-        ? subtotal - subtotal / (1 + taxRate / 100)
-        : subtotal * (taxRate / 100)
-      : 0;
-  const calculateFinalTotal = (subtotal: number, tax: number) =>
-    taxSettings?.taxInclusive ? subtotal : subtotal + tax;
+  // const taxSettings = activeTenant?.settings?.taxSettings;
+  // const taxRate = taxSettings?.taxEnabled ? Math.max(0, Number(taxSettings.taxRate) || 0) : 0;
+  // const shouldPrintTax = Boolean(printConfig?.printTax && taxRate > 0);
   const logoUrl = getSafePrintImageUrl(activeTenant?.branding?.logoUrl);
-  const logoHtml =
-    printConfig?.printHeaderLogo && logoUrl
-      ? `<img src="${logoUrl}" alt="logo" style="height: 40px; max-width: 160px; object-fit: contain; margin-bottom: 10px;"/>`
-      : '';
 
   const printReceptionTicket = (ticketId: string) => {
     const source = document.getElementById(`reception-print-${ticketId}`);
@@ -149,7 +130,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
             customer={customer}
             printConfig={printConfig}
             businessName={businessName}
-            currentUser={currentUser}
+            _currentUser={currentUser}
             onClose={() => setShowWarrantyPrintout(null)}
             showToast={showToast}
           />

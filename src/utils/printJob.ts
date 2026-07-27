@@ -268,7 +268,9 @@ export const listQzPrinters = async (): Promise<string[]> => {
     throw new Error('QZ Tray belum terpasang atau belum berjalan');
   try {
     if (qz.signingConfigured !== false) await configureQzSigning();
-  } catch {}
+  } catch {
+    // Signing configuration optional, continue
+  }
   if (!qz.websocket.isActive?.()) await qz.websocket.connect();
   return qz.printers.find();
 };
@@ -344,7 +346,9 @@ export const detectPrinterCapabilities = async (
         }
         if (capabilities?.cutAtEnd !== undefined) supportsCut = Boolean(capabilities.cutAtEnd);
       }
-    } catch {}
+    } catch {
+    // Signing configuration optional, continue
+  }
     return {
       name: printerName,
       supportedMedia: media,
