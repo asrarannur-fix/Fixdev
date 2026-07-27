@@ -68,9 +68,11 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
       case ServiceStatus.REWORK:
         return 3;
       case ServiceStatus.SELESAI:
-      case ServiceStatus.SIAP_DIAMBIL:
-      case ServiceStatus.DIAMBIL:
         return 4;
+      case ServiceStatus.SIAP_DIAMBIL:
+        return 5;
+      case ServiceStatus.DIAMBIL:
+        return 6;
       default:
         return 0;
     }

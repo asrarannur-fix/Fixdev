@@ -603,7 +603,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
             )}
 
             {/* Section: Timeline Logs */}
-            <div className="hidden bg-white p-3.5 border border-slate-100 rounded-xl space-y-3 shadow-xs">
+            <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-3 shadow-xs">
               <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
                 Log Riwayat Perjalanan
               </h4>

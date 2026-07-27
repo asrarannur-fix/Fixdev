@@ -251,6 +251,9 @@ export const ServiceList: React.FC<any> = (props) => {
         const siapDiambil = tenantServices.filter(
           (s) => s.status === ServiceStatus.SIAP_DIAMBIL
         ).length;
+        const diambil = tenantServices.filter(
+          (s) => s.status === ServiceStatus.DIAMBIL
+        ).length;
         const terlambat = tenantServices.filter((s) => {
           const est = s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate) : null;
           return est && est < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
@@ -284,6 +287,7 @@ export const ServiceList: React.FC<any> = (props) => {
           { label: 'QC', value: qc, color: 'text-purple-600 dark:text-purple-400' },
           { label: 'Selesai', value: selesai, color: 'text-emerald-600 dark:text-emerald-400' },
           { label: 'Siap Diambil', value: siapDiambil, color: 'text-accent dark:text-accent' },
+          { label: 'Diambil', value: diambil, color: 'text-teal-600 dark:text-teal-400' },
           { label: 'Terlambat', value: terlambat, color: 'text-rose-600 dark:text-rose-400' },
           {
             label: 'Estimasi (Bln Ini)',

@@ -64,6 +64,8 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
 }) => {
   if (!["SELESAI", "SIAP_DIAMBIL", "DIAMBIL"].includes(ticket.status)) return null;
 
+  const isFormLocked = ticket.status === "DIAMBIL";
+
   const isRefOrProofRequired =
     handoverPaymentMethod !== PaymentMethod.CASH &&
     handoverPaymentMethod !== PaymentMethod.TEMPO;
@@ -109,6 +111,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
             setHandoverRefNo("");
             setHandoverProofName("");
           }}
+          disabled={isFormLocked}
           className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
         >
           <option value={PaymentMethod.CASH}>💵 CASH / TUNAI (Kas Utama)</option>
@@ -135,6 +138,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
             <select
               value={handoverTempoDays}
               onChange={(e) => setHandoverTempoDays(e.target.value)}
+              disabled={isFormLocked}
               className="block w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
             >
               <option value="15">15 Hari</option>
@@ -165,6 +169,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
               placeholder="Contoh: TRX-1029302 atau No. Rek / Slip"
               value={handoverRefNo}
               onChange={(e) => setHandoverRefNo(e.target.value)}
+              disabled={isFormLocked}
               className="block w-full text-xs px-2.5 py-2 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-medium text-slate-700 shadow-xs"
             />
           </div>
@@ -248,6 +253,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
                   [key]: e.target.checked,
                 }))
               }
+              disabled={isFormLocked}
               className="mt-0.5 w-3.5 h-3.5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
             />
             <span className="text-[10px] font-medium text-slate-600 group-hover:text-amber-800 transition-colors leading-tight">
@@ -367,7 +373,9 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
           );
         }}
         disabled={
-          (isRefOrProofRequired && !isHandoverValid) || !isChecklistComplete
+          isFormLocked ||
+          (isRefOrProofRequired && !isHandoverValid) ||
+          !isChecklistComplete
         }
         className={`w-full font-bold text-xs py-2.5 rounded-lg text-center transition-all duration-150 ${
           (isRefOrProofRequired && !isHandoverValid) || !isChecklistComplete
