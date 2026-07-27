@@ -65,6 +65,17 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   const { currentTenantId, currentBranchId, tenants, publicBaseUrl } = useSaaS();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
   const businessName = activeTenant?.name || 'Layanan Servis';
+  const taxSettings = activeTenant?.settings?.taxSettings;
+  const taxRate = taxSettings?.taxEnabled ? Math.max(0, Number(taxSettings.taxRate) || 0) : 0;
+  const shouldPrintTax = Boolean(printConfig?.printTax && taxRate > 0);
+  const calculateTax = (subtotal: number) =>
+    shouldPrintTax
+      ? taxSettings?.taxInclusive
+        ? subtotal - subtotal / (1 + taxRate / 100)
+        : subtotal * (taxRate / 100)
+      : 0;
+  const calculateFinalTotal = (subtotal: number, tax: number) =>
+    taxSettings?.taxInclusive ? subtotal : subtotal + tax;
   const logoUrl = getSafePrintImageUrl(activeTenant?.branding?.logoUrl);
   const logoHtml =
     printConfig?.printHeaderLogo && logoUrl
@@ -331,7 +342,8 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
             (usage) => usage.chargeable
           );
           const grandTotal = ticket.estimatedCost || 0;
-          const totalTax = (printConfig as any)?.printTax ? grandTotal * 0.11 : 0;
+          const totalTax = calculateTax(grandTotal);
+          const finalTotal = calculateFinalTotal(grandTotal, totalTax);
           return createPortal(
             <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-55 p-4 overflow-y-auto">
               <div className="bg-white p-6 max-w-md w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 font-sans text-slate-800 space-y-4">
@@ -457,12 +469,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                               <span>Rp ${(ticket.estimatedCost || 0).toLocaleString()}</span>
                             </div>
                             <div class="totals-row">
-                              <span>PPN (11%):</span>
+                              <span>PPN (${taxRate}%):</span>
                               <span>Rp ${totalTax.toLocaleString()}</span>
                             </div>
                             <div class="totals-row grand-total">
                               <span>TOTAL AKHIR (LUNAS):</span>
-                              <span>Rp ${grandTotal.toLocaleString()}</span>
+                              <span>Rp ${finalTotal.toLocaleString()}</span>
                             </div>
                           </div>
                           <div class="signatures">
@@ -533,7 +545,8 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
             ? ticket.partsUsed.reduce((sum: number, p: any) => sum + (p.totalPrice || 0), 0)
             : 0;
           const grandTotal = laborCost + partsCost;
-          const totalTax = (printConfig as any)?.printTax ? grandTotal * 0.11 : 0;
+          const totalTax = calculateTax(grandTotal);
+          const finalTotal = calculateFinalTotal(grandTotal, totalTax);
           const technician = employees.find((e) => e.id === ticket.assignedTechId);
           return createPortal(
             <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-55 p-4 overflow-y-auto">
@@ -592,13 +605,13 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-500">
-                      <span>ESTIMASI PPN (11%):</span>
+                      <span>ESTIMASI PPN (${taxRate}%):</span>
                       <span>Rp {totalTax.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs border-t border-slate-200 pt-1.5 font-bold">
                       <span className="text-amber-800 font-extrabold">GRAND TOTAL ESTIMASI:</span>
                       <span className="text-amber-800 font-extrabold">
-                        Rp {grandTotal.toLocaleString()}
+                        Rp {finalTotal.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -734,15 +747,15 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                           <div class="totals">
                             <div class="totals-row">
                               <span>SUBTOTAL ESTIMASI:</span>
-                              <span>Rp ${(ticket.estimatedCost || 0).toLocaleString()}</span>
+                              <span>Rp ${grandTotal.toLocaleString()}</span>
                             </div>
                             <div class="totals-row">
-                              <span>ESTIMASI PPN (11%):</span>
+<span>ESTIMASI PPN ({taxRate}%):</span>
                               <span>Rp ${totalTax.toLocaleString()}</span>
                             </div>
                             <div class="totals-row grand-total">
                               <span>GRAND TOTAL ESTIMASI:</span>
-                              <span>Rp ${grandTotal.toLocaleString()}</span>
+                              <span>Rp ${finalTotal.toLocaleString()}</span>
                             </div>
                           </div>
                           <div class="signatures">

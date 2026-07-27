@@ -1,6 +1,15 @@
 # Changelog
 
 ## 27 Juli 2026
+- Memperbaiki alur printer: fallback QZ hanya menyelesaikan job sekali, tombol hentikan batch print memakai ref, queue offline dimulai dari bootstrap aplikasi, serta toast hasil print kini ter-mount global.
+- Memperbaiki total invoice/quote agar memakai pengaturan pajak tenant dan memasukkan PPN ke grand total saat pajak eksklusif.
+- Memperketat renderer HTML print dengan DOMParser, menolak node/URL executable, namun mempertahankan gambar base64 yang valid; validasi backend kini menerima seluruh konfigurasi printer UI.
+- Menambah pagination riwayat print tervalidasi dan index tenant-cabang-status; tidak ada penghapusan audit otomatis.
+- Mengaktifkan batch print melalui alur print utama, antrean offline otomatis saat browser offline, template HTML dengan placeholder terdokumentasi, serta audit biaya cetak dari event hasil print.
+- Cetak ulang kini divalidasi atomik dengan advisory lock, menghitung jumlah salinan, dan hanya menyediakan kebijakan alasan wajib atau ditolak agar sesuai audit database.
+- File terkait: `src/main.tsx`, `src/App.tsx`, `src/utils/printJob.ts`, `src/components/BatchPrint.tsx`, `src/components/PrintNotifications.tsx`, `src/components/PrintQueueVisualization.tsx`, `src/components/PrintCostTracker.tsx`, `src/components/PrintTemplateManager.tsx`, `src/components/tenant/services/DocumentPrintouts.tsx`, `src/server/controllers/settings.controller.ts`, `src/server/controllers/printJob.controller.ts`, `migrations/061_print_jobs_index_cleanup.sql`.
+
+## 27 Juli 2026
 - Menambah UI profil operasional printer per cabang aktif dan jenis dokumen, mencakup mode, printer, media, dimensi mm, orientasi, densitas, salinan, feed, potong, serta kebijakan cetak ulang.
 - Pratinjau memakai profil ter-resolve; snapshot tersimpan di `branches[currentBranchId].documentProfiles` tanpa mengubah default tenant.
 - File terkait: `src/components/tenant/SettingsTab.tsx`, `src/components/tenant/SettingsPrinterTerms.tsx`, `src/server/controllers/settings.controller.ts`, `src/types/index.ts`.

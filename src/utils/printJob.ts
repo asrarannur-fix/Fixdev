@@ -1,7 +1,6 @@
 import type { PrintConfig } from './print';
 import { escapeHtml, getPrintBaseCss, getPaperWidthStyle } from './print';
 import { generateQrSvg } from './qrSvg';
-import { generateBarcodeSvg } from './barcode1d';
 import { applyWatermarkToHtml, getWatermarkConfig } from './watermark';
 import {
   enqueuePrintJob,
@@ -27,13 +26,40 @@ export type PrintJob = {
 };
 
 const sanitizePrintHtml = (html: string, qrPayload?: string): string => {
-  let safe = html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(
-      /<img\b[^>]*src=["'](?:https?:)?\/\/[^"']*["'][^>]*>/gi,
-      '<div class="image-placeholder">Gambar eksternal dihapus dari dokumen print</div>'
+  const document = new DOMParser().parseFromString(html, 'text/html');
+  document
+    .querySelectorAll('script,iframe,object,embed,link[rel="import"]')
+    .forEach((node) => node.remove());
+  document.querySelectorAll<HTMLElement>('*').forEach((node) => {
+    for (const attribute of Array.from(node.attributes)) {
+      const name = attribute.name.toLowerCase();
+      const value = attribute.value.trim();
+      if (
+        name.startsWith('on') ||
+        (['href', 'src', 'action', 'formaction'].includes(name) && /^javascript:/i.test(value))
+      ) {
+        node.removeAttribute(attribute.name);
+      }
+    }
+  });
+  document.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+    const source = image.getAttribute('src')?.trim() || '';
+    const allowedDataImage = /^data:image\/(?:png|jpe?g|gif|webp|bmp);base64,[a-z0-9+/=\s]+$/i.test(
+      source
     );
+    if (/^(?:https?:)?\/\//i.test(source) || (source.startsWith('data:') && !allowedDataImage)) {
+      image.replaceWith(
+        Object.assign(document.createElement('div'), {
+          className: 'image-placeholder',
+          textContent: 'Gambar tidak aman dihapus dari dokumen print',
+        })
+      );
+    }
+  });
+  const headStyles = Array.from(document.head.querySelectorAll('style'))
+    .map((style) => style.outerHTML)
+    .join('');
+  let safe = headStyles + document.body.innerHTML;
   if (qrPayload) {
     const svg = generateQrSvg(qrPayload, 3, 2);
     safe = safe.replace(
@@ -120,7 +146,10 @@ const configureQzSigning = async (): Promise<void> => {
           const body = await r.json();
           resolve(body.signature);
         })
-        .catch(reject);
+        .catch((err) => {
+          qzSigningConfigured = false;
+          reject(err);
+        });
     }
   );
 
@@ -447,6 +476,41 @@ const browserPrint = async (
 /** QZ Tray when configured; browser dialog remains safe fallback. Retries once on QZ failure. */
 export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
   const { title, printConfig, qrPayload } = job;
+  if (!navigator.onLine) {
+    if (job.reprint)
+      return {
+        ok: false,
+        state: 'failed',
+        transport: printConfig?.printMode === 'qz' ? 'qz' : 'browser',
+        errorCode: 'REPRINT_REQUIRES_ONLINE',
+        error: 'Cetak ulang memerlukan koneksi untuk validasi kebijakan.',
+      };
+    await enqueuePrintJob({
+      title: job.title,
+      html: job.html,
+      printConfig: job.printConfig,
+      qrPayload: job.qrPayload,
+      documentType: job.documentType,
+      documentId: job.documentId,
+      branchId: job.branchId,
+      tenantId: job.tenantId,
+      userId: job.userId,
+    });
+    emitPrintNotification({
+      type: 'warning',
+      title: 'Cetak Diantrikan',
+      message: `${title} akan dicetak saat koneksi kembali.`,
+      documentType: job.documentType,
+      documentId: job.documentId,
+      transport: printConfig?.printMode === 'qz' ? 'qz' : 'browser',
+      printer: printConfig?.printerName,
+    });
+    return {
+      ok: true,
+      state: 'submitted',
+      transport: printConfig?.printMode === 'qz' ? 'qz' : 'browser',
+    };
+  }
   if (job.reprint && !job.reprintReason?.trim())
     return {
       ok: false,
@@ -455,12 +519,27 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
       errorCode: 'REPRINT_REASON_REQUIRED',
       error: 'Alasan cetak ulang wajib diisi.',
     };
+  if (job.reprint && printConfig?.reprintPolicy === 'deny')
+    return {
+      ok: false,
+      state: 'failed',
+      transport: printConfig?.printMode === 'qz' ? 'qz' : 'browser',
+      errorCode: 'REPRINT_DENIED',
+      error: 'Cetak ulang ditolak oleh kebijakan tenant.',
+    };
   const reprintWatermark = job.reprint
     ? '<div style="position:fixed;inset:40% 0 auto;text-align:center;font-size:42px;font-weight:bold;opacity:.16;transform:rotate(-25deg);z-index:9999">SALINAN / REPRINT</div>'
     : '';
+  const template = job.documentType ? printConfig?.printTemplates?.[job.documentType] : undefined;
+  const templateHtml = template
+    ? template
+        .replaceAll('{{content}}', job.html)
+        .replaceAll('{{title}}', escapeHtml(title))
+        .replaceAll('{{documentId}}', escapeHtml(job.documentId || ''))
+    : job.html;
   const wmConfig = getWatermarkConfig(printConfig);
   const customWm = wmConfig.enabled && wmConfig.text && !job.reprint ? wmConfig : undefined;
-  let html = reprintWatermark + job.html;
+  let html = reprintWatermark + templateHtml;
   if (customWm) html = applyWatermarkToHtml(html, customWm);
   const idempotencyKey = crypto.randomUUID();
   const transport = printConfig?.printMode === 'qz' ? 'qz' : 'browser';
@@ -489,8 +568,28 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
         reprintReason: job.reprintReason,
       }),
     });
-    if (response.ok) serverJobId = (await response.json()).id;
-  } catch {}
+    if (response.ok) {
+      serverJobId = (await response.json()).id;
+    } else if (job.reprint) {
+      const body = await response.json().catch(() => ({}));
+      return {
+        ok: false,
+        state: 'failed',
+        transport,
+        errorCode: 'REPRINT_REJECTED',
+        error: body.error || 'Cetak ulang ditolak server.',
+      };
+    }
+  } catch (error) {
+    if (job.reprint)
+      return {
+        ok: false,
+        state: 'failed',
+        transport,
+        errorCode: 'REPRINT_VALIDATION_UNAVAILABLE',
+        error: error instanceof Error ? error.message : 'Validasi cetak ulang tidak tersedia.',
+      };
+  }
   const finish = async (result: PrintResult) => {
     if (serverJobId)
       void fetch(`/api/print-jobs/${encodeURIComponent(serverJobId)}/result`, {
@@ -508,6 +607,16 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
       }).catch(() => undefined);
     const finalResult = { ...result, jobId: serverJobId };
     if (result.ok) {
+      window.dispatchEvent(
+        new CustomEvent('fixdev:print-completed', {
+          detail: {
+            documentType: job.documentType || 'general',
+            pages: printConfig?.copies || 1,
+            paperSize: printConfig?.paperSize || 'thermal_80',
+            transport: result.transport,
+          },
+        })
+      );
       emitPrintNotification({
         type: 'success',
         title: 'Cetak Berhasil',
@@ -540,12 +649,13 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
       lastQzError = qzResult;
     }
     const fallbackResult = await browserPrint(title, html, printConfig, qrPayload);
-    void finish({ ...fallbackResult, transport: 'browser' });
-    if (lastQzError) {
-      lastQzError.error = `QZ gagal (${MAX_QZ_RETRIES + 1}x). Fallback browser: ${lastQzError.error}`;
-      return finish(lastQzError);
+    if (fallbackResult.ok) {
+      return finish({ ...fallbackResult, transport: 'browser' });
     }
-    return finish(fallbackResult);
+    return finish({
+      ...fallbackResult,
+      error: `QZ gagal (${MAX_QZ_RETRIES + 1}x): ${lastQzError?.error || 'tidak diketahui'}. Fallback browser gagal: ${fallbackResult.error || 'tidak diketahui'}`,
+    });
   }
 
   return browserPrint(title, html, printConfig, qrPayload).then(finish);
@@ -579,6 +689,7 @@ const processOfflineQueue = async () => {
 let offlineQueueTimer = 0;
 export const startOfflineQueueListener = () => {
   if (offlineQueueTimer) return;
+  if (navigator.onLine) void processOfflineQueue();
   window.addEventListener('online', () => {
     window.setTimeout(processOfflineQueue, 1000);
   });

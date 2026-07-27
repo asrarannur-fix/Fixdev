@@ -123,12 +123,12 @@ export const getSafePrintImageUrl = (value?: string): string => {
   const source = value?.trim();
   if (!source) return '';
   if (/^data:image\/(?:png|jpe?g|gif|webp|bmp);base64,[a-z0-9+/=\s]+$/i.test(source)) {
-    return escapeHtml(source);
+    return source.replace(/"/g, '&quot;');
   }
   try {
     const url = new URL(source, window.location.origin);
     if ((url.protocol === 'http:' || url.protocol === 'https:') && !url.username && !url.password) {
-      return escapeHtml(url.href);
+      return url.href.replace(/"/g, '&quot;');
     }
   } catch {}
   return '';

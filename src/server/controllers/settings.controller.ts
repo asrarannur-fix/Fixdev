@@ -183,7 +183,7 @@ const schemas = {
       copies: z.number().int().min(1).max(20).optional(),
       feed: z.number().int().min(0).max(100).optional(),
       cut: bool.optional(),
-      reprintPolicy: z.enum(['allow', 'reason_required', 'deny']).optional(),
+      reprintPolicy: z.enum(['reason_required', 'deny']).optional(),
       reprintCopyCap: z.number().int().min(1).max(20).optional(),
       printQrCode: bool.optional(),
       printHeaderLogo: bool.optional(),
@@ -203,6 +203,30 @@ const schemas = {
       labelCustomText: text(1000).optional(),
       termsSalesText: z.string().max(20_000).optional(),
       termsRentalText: z.string().max(20_000).optional(),
+      thermalCompact: bool.optional(),
+      multiPrinterMap: z.record(z.string().max(100), text(250)).optional(),
+      printTemplates: z.record(z.string().max(100), z.string().max(100_000)).optional(),
+      watermark: z
+        .object({
+          enabled: bool.optional(),
+          text: text(100).optional(),
+          fontSize: z.number().int().min(8).max(120).optional(),
+          color: z
+            .string()
+            .regex(/^#[0-9a-f]{6}$/i)
+            .optional(),
+          opacity: z.number().min(0).max(1).optional(),
+          rotation: z.number().min(-180).max(180).optional(),
+          position: z
+            .enum(['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'])
+            .optional(),
+        })
+        .strict()
+        .optional(),
+      printBarcode: bool.optional(),
+      barcodeHeight: z.number().int().min(10).max(200).optional(),
+      barcodeShowText: bool.optional(),
+      printTax: bool.optional(),
       documentProfiles: z
         .record(
           z.string().max(100),
@@ -221,7 +245,7 @@ const schemas = {
               feed: z.number().int().min(0).max(100).optional(),
               cut: bool.optional(),
               printableHeightMm: z.number().min(20).max(500).optional(),
-              reprintPolicy: z.enum(['allow', 'reason_required', 'deny']).optional(),
+              reprintPolicy: z.enum(['reason_required', 'deny']).optional(),
               reprintCopyCap: z.number().int().min(1).max(20).optional(),
             })
             .strict()

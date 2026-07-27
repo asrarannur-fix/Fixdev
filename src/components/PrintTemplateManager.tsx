@@ -64,8 +64,8 @@ export const PrintTemplateManager: React.FC<PrintTemplateManagerProps> = ({
               Template Cetak
             </h4>
             <p className="text-[10px] text-slate-400">
-              Simpan & muat template HTML per jenis dokumen. Gunakan {'{{variable}}'} untuk
-              placeholder dinamis.
+              Simpan template HTML per jenis dokumen. Gunakan {'{{content}}'}, {'{{title}}'}, atau{' '}
+              {'{{documentId}}'}.
             </p>
           </div>
         </div>
@@ -161,14 +161,13 @@ export const PrintTemplateManager: React.FC<PrintTemplateManagerProps> = ({
                 setTemplates((prev) => ({ ...prev, [activeType]: editing }));
               }
             }}
-            placeholder={`<div class="receipt">\n  <h1>{{businessName}}</h1>\n  <p>Tiket: {{ticketNo}}</p>\n  <p>Pelanggan: {{customerName}}</p>\n</div>`}
+            placeholder={`<div class="receipt">\n  <h1>{{title}}</h1>\n  <div>{{content}}</div>\n  <small>ID: {{documentId}}</small>\n</div>`}
             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[10px] font-mono leading-relaxed focus:border-accent focus:ring-1 focus:ring-accent/30 outline-none"
             spellCheck={false}
           />
           <div className="text-[8px] text-slate-400">
-            <strong>Available variables:</strong> {'{{businessName}}'} {'{{ticketNo}}'}{' '}
-            {'{{customerName}}'} {'{{deviceName}}'} {'{{status}}'} {'{{estimatedCost}}'}{' '}
-            {'{{qrCode}}'} {'{{footer}}'} {'{{date}}'}
+            <strong>Placeholder:</strong> {'{{content}}'} isi dokumen, {'{{title}}'} judul,{' '}
+            {'{{documentId}}'} ID dokumen.
           </div>
         </div>
       )}

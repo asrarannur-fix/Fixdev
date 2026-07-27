@@ -17,7 +17,6 @@ export interface PrintNotification {
 const MAX_NOTIFICATIONS = 5;
 const AUTO_DISMISS_MS = 6000;
 
-const _listener: ((n: PrintNotification) => void) | null = null;
 const _listeners = new Set<(n: PrintNotification) => void>();
 
 export const emitPrintNotification = (n: Omit<PrintNotification, 'id' | 'timestamp'>) => {
@@ -33,18 +32,24 @@ export const usePrintNotifications = () => {
   }, []);
 
   useEffect(() => {
+    const timers = new Map<string, ReturnType<typeof setTimeout>>();
     const handler = (n: PrintNotification) => {
       setNotifications((prev) => {
         const next = [n, ...prev].slice(0, MAX_NOTIFICATIONS);
         return next;
       });
-      setTimeout(() => {
-        setNotifications((prev) => prev.filter((x) => x.id !== n.id));
-      }, AUTO_DISMISS_MS);
+      timers.set(
+        n.id,
+        setTimeout(() => {
+          timers.delete(n.id);
+          setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+        }, AUTO_DISMISS_MS)
+      );
     };
     _listeners.add(handler);
     return () => {
       _listeners.delete(handler);
+      timers.forEach((t) => clearTimeout(t));
     };
   }, []);
 

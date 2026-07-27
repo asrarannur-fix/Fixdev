@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { useState, useCallback } from 'react';
-import { DollarSign, TrendingUp, Printer, FileText, RefreshCw, BarChart3 } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { DollarSign, FileText, BarChart3 } from 'lucide-react';
 
 interface CostEntry {
   documentType: string;
   pages: number;
   transport: 'qz' | 'browser';
+  paperSize?: string;
   timestamp: number;
 }
 
@@ -40,17 +41,35 @@ export const PrintCostTracker: React.FC<PrintCostTrackerProps> = () => {
   const [paperSize, setPaperSize] = useState('thermal_80');
   const [pagesInput, setPagesInput] = useState('1');
 
-  const logPrint = useCallback((docType: string, pages: number, transport: 'qz' | 'browser') => {
-    const entry: CostEntry = { documentType: docType, pages, transport, timestamp: Date.now() };
-    setEntries((prev) => {
-      const next = [entry, ...prev].slice(0, 500);
-      try {
-        localStorage.setItem('fixdev_print_cost_log', JSON.stringify(next));
-      } catch {
-        /* noop */
-      }
-      return next;
-    });
+  useEffect(() => {
+    const handleCompleted = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          documentType?: string;
+          pages?: number;
+          paperSize?: string;
+          transport?: 'qz' | 'browser';
+        }>
+      ).detail;
+      const entry: CostEntry = {
+        documentType: detail.documentType || 'general',
+        pages: detail.pages || 1,
+        transport: detail.transport || 'browser',
+        paperSize: detail.paperSize || 'thermal_80',
+        timestamp: Date.now(),
+      };
+      setEntries((prev) => {
+        const next = [entry, ...prev].slice(0, 500);
+        try {
+          localStorage.setItem('fixdev_print_cost_log', JSON.stringify(next));
+        } catch {
+          /* noop */
+        }
+        return next;
+      });
+    };
+    window.addEventListener('fixdev:print-completed', handleCompleted);
+    return () => window.removeEventListener('fixdev:print-completed', handleCompleted);
   }, []);
 
   const clearHistory = useCallback(() => {
@@ -68,13 +87,13 @@ export const PrintCostTracker: React.FC<PrintCostTrackerProps> = () => {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
   const totalPages = thisMonth.reduce((s, e) => s + e.pages, 0);
-  const totalCost = thisMonth.reduce((s, e) => s + getEstimate(e.pages), 0);
+  const totalCost = thisMonth.reduce((s, e) => s + getEstimate(e.pages, e.paperSize), 0);
 
   const byType = new Map<string, { pages: number; cost: number; count: number }>();
   for (const e of thisMonth) {
     const prev = byType.get(e.documentType) || { pages: 0, cost: 0, count: 0 };
     prev.pages += e.pages;
-    prev.cost += getEstimate(e.pages);
+    prev.cost += getEstimate(e.pages, e.paperSize);
     prev.count += 1;
     byType.set(e.documentType, prev);
   }

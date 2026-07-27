@@ -614,7 +614,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                           'Kertas',
                           'paperSize',
                           'select',
-                          ['thermal_58', 'thermal_80', 'hvs_a4', 'hvs_letter'],
+                          ['thermal_58', 'thermal_80', 'a4', 'hvs_a4', 'hvs_letter'],
                         ],
                         ['Margin mm', 'printMargin', 'number'],
                         ['Lebar mm', 'printableWidthMm', 'number'],
@@ -623,13 +623,8 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                         ['Densitas', 'density', 'number'],
                         ['Salinan', 'copies', 'number'],
                         ['Feed', 'feed', 'number'],
-                        [
-                          'Cetak Ulang',
-                          'reprintPolicy',
-                          'select',
-                          ['allow', 'reason_required', 'deny'],
-                        ],
-                        ['Batas Ulang', 'reprintCopyCap', 'number'],
+                        ['Cetak Ulang', 'reprintPolicy', 'select', ['reason_required', 'deny']],
+                        ['Batas Salinan Ulang', 'reprintCopyCap', 'number'],
                       ].map(([label, key, kind, values]: any) => (
                         <label
                           key={key}
@@ -706,6 +701,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                       >
                         <option value="thermal_58">Thermal 58 mm</option>
                         <option value="thermal_80">Thermal 80 mm</option>
+                        <option value="a4">A4</option>
                         <option value="hvs_a4">HVS A4</option>
                         <option value="hvs_letter">HVS Letter</option>
                       </select>

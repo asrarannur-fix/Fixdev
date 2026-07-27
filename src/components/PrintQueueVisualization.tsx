@@ -1,10 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Clock, CheckCircle2, XCircle, AlertTriangle, Trash2 } from 'lucide-react';
-
-const DB_NAME = 'fixdev_print_queue';
-const DB_VERSION = 1;
-const STORE_NAME = 'pending_jobs';
+import { RefreshCw, Clock, XCircle, AlertTriangle, Trash2 } from 'lucide-react';
+import { getAllJobs, clearFailedJobs } from '../utils/offlinePrintQueue';
 
 interface QueueJob {
   id: string;
@@ -28,74 +25,7 @@ const STATUS_META: Record<
   pending: { bg: 'bg-amber-100', text: 'text-amber-700', icon: Clock, label: 'Menunggu' },
   processing: { bg: 'bg-blue-100', text: 'text-blue-700', icon: AlertTriangle, label: 'Diproses' },
   failed: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle, label: 'Gagal' },
-  completed: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-700',
-    icon: CheckCircle2,
-    label: 'Selesai',
-  },
 };
-
-const getAllJobs = (): Promise<QueueJob[]> =>
-  new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onsuccess = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        resolve([]);
-        return;
-      }
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const getAll = store.getAll();
-      getAll.onsuccess = () => resolve(getAll.result || []);
-      getAll.onerror = () => reject(getAll.error);
-    };
-    req.onerror = () => reject(req.error);
-  });
-
-const deleteJob = (id: string): Promise<void> =>
-  new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onsuccess = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        resolve();
-        return;
-      }
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).delete(id);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    };
-    req.onerror = () => reject(req.error);
-  });
-
-const clearAllFailed = (): Promise<void> =>
-  new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onsuccess = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        resolve();
-        return;
-      }
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const idx = store.index('status');
-      const cursor = idx.openCursor('failed');
-      cursor.onsuccess = () => {
-        const c = cursor.result;
-        if (c) {
-          c.delete();
-          c.continue();
-        }
-      };
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    };
-    req.onerror = () => reject(req.error);
-  });
 
 const formatTime = (iso: string) => {
   try {
@@ -113,7 +43,7 @@ const formatTime = (iso: string) => {
 export const PrintQueueVisualization: React.FC<PrintQueueProps> = ({ onRefresh }) => {
   const [jobs, setJobs] = useState<QueueJob[]>([]);
   const [loading, setLoading] = useState(true);
-  const [clearing, setClearing] = useState(false);
+  const [clearing, setClearing] = React.useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -128,22 +58,22 @@ export const PrintQueueVisualization: React.FC<PrintQueueProps> = ({ onRefresh }
     onRefresh?.();
   }, [onRefresh]);
 
-  useEffect(() => {
-    refresh();
-    const iv = setInterval(refresh, 3000);
-    return () => clearInterval(iv);
-  }, [refresh]);
+  const hasActive = jobs.some((j) => j.status === 'pending' || j.status === 'processing');
 
-  const handleDelete = async (id: string) => {
-    await deleteJob(id);
-    setJobs((prev) => prev.filter((j) => j.id !== id));
-  };
+  useEffect(() => {
+    void refresh();
+    const iv = setInterval(refresh, hasActive ? 3000 : 15000);
+    return () => clearInterval(iv);
+  }, [refresh, hasActive]);
 
   const handleClearFailed = async () => {
     setClearing(true);
-    await clearAllFailed();
-    setJobs((prev) => prev.filter((j) => j.status !== 'failed'));
-    setClearing(false);
+    try {
+      await clearFailedJobs();
+      setJobs((prev) => prev.filter((j) => j.status !== 'failed'));
+    } finally {
+      setClearing(false);
+    }
   };
 
   const pending = jobs.filter((j) => j.status === 'pending');
@@ -190,7 +120,7 @@ export const PrintQueueVisualization: React.FC<PrintQueueProps> = ({ onRefresh }
           </h5>
           <div className="space-y-1">
             {pending.map((j) => (
-              <QueueRow key={j.id} job={j} onDelete={handleDelete} />
+              <QueueRow key={j.id} job={j} />
             ))}
           </div>
         </div>
@@ -203,7 +133,7 @@ export const PrintQueueVisualization: React.FC<PrintQueueProps> = ({ onRefresh }
           </h5>
           <div className="space-y-1">
             {processing.map((j) => (
-              <QueueRow key={j.id} job={j} onDelete={handleDelete} />
+              <QueueRow key={j.id} job={j} />
             ))}
           </div>
         </div>
@@ -216,7 +146,7 @@ export const PrintQueueVisualization: React.FC<PrintQueueProps> = ({ onRefresh }
           </h5>
           <div className="space-y-1">
             {failed.map((j) => (
-              <QueueRow key={j.id} job={j} onDelete={handleDelete} />
+              <QueueRow key={j.id} job={j} />
             ))}
           </div>
         </div>
@@ -225,10 +155,7 @@ export const PrintQueueVisualization: React.FC<PrintQueueProps> = ({ onRefresh }
   );
 };
 
-const QueueRow: React.FC<{ job: QueueJob; onDelete: (id: string) => void }> = ({
-  job,
-  onDelete,
-}) => {
+const QueueRow: React.FC<{ job: QueueJob }> = ({ job }) => {
   const meta = STATUS_META[job.status] || STATUS_META.pending;
   const Icon = meta.icon;
   return (
@@ -245,9 +172,6 @@ const QueueRow: React.FC<{ job: QueueJob; onDelete: (id: string) => void }> = ({
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-gray-400">{formatTime(job.createdAt)}</span>
         {job.retries > 0 && <span className="text-red-400">x{job.retries}</span>}
-        <button onClick={() => onDelete(job.id)} className="text-gray-400 hover:text-red-500">
-          <Trash2 className="w-3 h-3" />
-        </button>
       </div>
     </div>
   );

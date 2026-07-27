@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { CheckSquare, Square, Printer, Play, Pause, X, Loader2 } from 'lucide-react';
-import { createPrintDocument } from '../utils/printJob';
+import { printJobAsync } from '../utils/printJob';
 import type { PrintConfig } from '../utils/print';
 
 interface BatchDocument {
@@ -28,7 +28,7 @@ export const BatchPrint: React.FC<BatchPrintProps> = ({
   const [printing, setPrinting] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(-1);
   const [results, setResults] = useState<Array<{ id: string; ok: boolean; error?: string }>>([]);
-  const [stopped, setStopped] = useState(false);
+  const stoppedRef = useRef(false);
 
   const toggleSelect = useCallback((id: string) => {
     setDocs((prev) => prev.map((d) => (d.id === id ? { ...d, selected: !d.selected } : d)));
@@ -45,50 +45,32 @@ export const BatchPrint: React.FC<BatchPrintProps> = ({
   const allSelected = docs.length > 0 && docs.every((d) => d.selected);
 
   const runBatchPrint = useCallback(async () => {
+    stoppedRef.current = false;
     setPrinting(true);
-    setStopped(false);
     setResults([]);
     const toPrint = docs.filter((d) => d.selected);
     const batchResults: Array<{ id: string; ok: boolean; error?: string }> = [];
 
     for (let i = 0; i < toPrint.length; i++) {
-      if (stopped) break;
+      if (stoppedRef.current) break;
       setCurrentIdx(i);
       const doc = toPrint[i];
       try {
-        const fullHtml = createPrintDocument(doc.title, doc.html, printConfig, doc.qrPayload);
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:none';
-        document.body.appendChild(iframe);
-        const doc_ = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc_) throw new Error('Tidak bisa membuat document');
-        doc_.open();
-        doc_.write(fullHtml);
-        doc_.close();
-        await new Promise<void>((resolve, reject) => {
-          const timer = setTimeout(() => {
-            document.body.removeChild(iframe);
-            reject(new Error('Timeout print'));
-          }, 10000);
-          iframe.onload = () => {
-            try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-              setTimeout(() => {
-                clearTimeout(timer);
-                document.body.removeChild(iframe);
-                resolve();
-              }, 1500);
-            } catch (err) {
-              clearTimeout(timer);
-              document.body.removeChild(iframe);
-              reject(err);
-            }
-          };
+        const result = await printJobAsync({
+          title: doc.title,
+          html: doc.html,
+          printConfig,
+          qrPayload: doc.qrPayload,
+          documentType: doc.documentType,
+          documentId: doc.id,
         });
-        batchResults.push({ id: doc.id, ok: true });
-      } catch (err: any) {
-        batchResults.push({ id: doc.id, ok: false, error: err.message || 'Print gagal' });
+        batchResults.push({ id: doc.id, ok: result.ok, error: result.error });
+      } catch (err) {
+        batchResults.push({
+          id: doc.id,
+          ok: false,
+          error: err instanceof Error ? err.message : 'Print gagal',
+        });
       }
       await new Promise((r) => setTimeout(r, 500));
     }
@@ -97,10 +79,10 @@ export const BatchPrint: React.FC<BatchPrintProps> = ({
     setCurrentIdx(-1);
     setPrinting(false);
     onComplete?.(batchResults);
-  }, [docs, printConfig, stopped, onComplete]);
+  }, [docs, printConfig, onComplete]);
 
   const stop = useCallback(() => {
-    setStopped(true);
+    stoppedRef.current = true;
   }, []);
 
   const successCount = results.filter((r) => r.ok).length;

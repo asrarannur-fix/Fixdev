@@ -116,6 +116,7 @@ export interface TenantSettings {
     printBarcode?: boolean;
     barcodeHeight?: number;
     barcodeShowText?: boolean;
+    printTax?: boolean;
   };
   waConfig?: {
     gateway?: string;

@@ -13,6 +13,7 @@ import { UserRole } from './types';
 import { OfflineSyncModal } from './components/OfflineSyncModal';
 import { LandingPage } from './components/LandingPage';
 import { InvitationAcceptance } from './components/InvitationAcceptance';
+import { PrintNotificationToast, usePrintNotifications } from './components/PrintNotifications';
 
 import { isTrialActive } from './lib/featureUtils';
 import { ShieldCheck, Menu } from 'lucide-react';
@@ -111,6 +112,7 @@ const MainAppContent: React.FC = () => {
     apiFetch,
   } = useSaaS();
   const { showToast } = useToast();
+  const printNotifications = usePrintNotifications();
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem('saas_active_tab');
     if (saved) return saved;
@@ -653,6 +655,8 @@ const MainAppContent: React.FC = () => {
             </div>
           </main>
         </div>
+
+        <PrintNotificationToast {...printNotifications} />
 
         {/* Offline Sync Modal Overlay */}
         <OfflineSyncModal isOpen={showSyncModal} onClose={() => setShowSyncModal(false)} />

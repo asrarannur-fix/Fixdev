@@ -8,8 +8,8 @@ const server = readFileSync('server.ts', 'utf8');
 const ui = readFileSync('src/components/tenant/SettingsPrinterTerms.tsx', 'utf8');
 
 test('renderer membersihkan script, event handler, dan QR eksternal', () => {
-  assert.match(printJob, /sanitizePrintHtml\(html\)/);
-  assert.match(printJob, /<script/);
+  assert.match(printJob, /const sanitizePrintHtml = \(html: string/);
+  assert.match(printJob, /querySelectorAll\('script,iframe,object,embed/);
   assert.match(printJob, /qr-placeholder/);
 });
 
@@ -21,12 +21,22 @@ test('QZ retry hanya terjadi sebelum qz.print', () => {
   assert.equal(qzPrint.indexOf('await qz.websocket.connect();', submission), -1);
 });
 
-test('konfigurasi print backend memakai enum ketat dan margin UI mm', () => {
+test('konfigurasi print backend memakai enum ketat dan menerima fitur UI', () => {
   assert.match(settings, /paperSize: z\.enum/);
   assert.match(settings, /printFontSize: z\.enum/);
   assert.match(settings, /labelFontSize: z\.enum/);
+  for (const key of ['thermalCompact', 'multiPrinterMap', 'printTemplates', 'watermark', 'printBarcode', 'printTax']) {
+    assert.match(settings, new RegExp(`${key}:`));
+  }
   assert.match(ui, /\{printMargin\} mm/);
   assert.doesNotMatch(ui, /printMargin\} px/);
+});
+
+test('renderer memakai DOM parser dan mempertahankan gambar base64 aman', () => {
+  assert.match(printJob, /new DOMParser\(\)/);
+  assert.match(printJob, /querySelectorAll\('script,iframe,object,embed/);
+  assert.match(printJob, /allowedDataImage/);
+  assert.match(printJob, /data:image/);
 });
 
 test('endpoint signing memiliki limiter khusus', () => {
