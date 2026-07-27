@@ -59,7 +59,7 @@ const configureQzSigning = async (): Promise<void> => {
   qzSigningConfigured = true;
 };
 
-const createPrintDocument = (title: string, html: string, printConfig?: PrintConfig) =>
+export const createPrintDocument = (title: string, html: string, printConfig?: PrintConfig) =>
   `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title || 'Print Job')}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}button{display:none!important}</style></head><body><main class="print-root">${html}</main></body></html>`;
 
 const qzPrint = async (title: string, html: string, printConfig: PrintConfig): Promise<boolean> => {

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useToast } from '../ui/Toast';
-import { getPaperWidthStyle } from '../../utils/print';
+import { escapeHtml } from '../../utils/print';
+import { createPrintDocument } from '../../utils/printJob';
 import {
   Building2,
   Sliders,
@@ -94,6 +95,49 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
     termsRentalText,
     termsSalesText,
   } = props;
+  const previewPrintConfig = {
+    paperSize,
+    printMode,
+    printerName,
+    printFontSize,
+    printMargin,
+    printQrCode,
+    printHeaderLogo,
+    printCustomerNotes,
+    printTermsAndConditions,
+    customHeaderTitle,
+    customFooterText,
+    termsAndConditionsText,
+  };
+  const previewBody = `
+    <section>
+      <header style="text-align:center;border-bottom:1px solid #000;padding-bottom:8px;margin-bottom:10px">
+        <h1 style="font-size:16px;margin:0">${escapeHtml(customHeaderTitle.trim() || activeTenant?.name || 'NAMA TOKO')}</h1>
+        <div style="font-size:9px;margin-top:3px">BUKTI PENERIMAAN UNIT SERVIS</div>
+        <strong style="display:block;margin-top:6px">TIKET: #SVC-2026-0099</strong>
+      </header>
+      <table style="width:100%;border-collapse:collapse">
+        <tbody>
+          <tr><td>Pelanggan</td><td style="text-align:right;font-weight:bold">Ahmad Dahlan (0812-4455-xxxx)</td></tr>
+          <tr><td>Tanggal Diterima</td><td style="text-align:right">01 Juli 2026</td></tr>
+          <tr><td>Nama Perangkat</td><td style="text-align:right;font-weight:bold">PlayStation 5 Slim</td></tr>
+          <tr><td>Brand & Model</td><td style="text-align:right">Sony - CFI-2016</td></tr>
+          ${printCustomerNotes ? '<tr><td>Keluhan Utama</td><td style="text-align:right">Overheating & mati mendadak saat game 4K</td></tr>' : ''}
+          <tr><td style="padding-top:8px">Jenis Layanan</td><td style="padding-top:8px;text-align:right;font-weight:bold">Reparasi Penuh & Cleaning</td></tr>
+          <tr><td>Estimasi Biaya</td><td style="text-align:right;font-weight:bold">Rp 350.000</td></tr>
+          <tr><td>Status Awal</td><td style="text-align:right;font-weight:bold">DITERIMA</td></tr>
+        </tbody>
+      </table>
+      ${printQrCode ? `<div style="border:1px solid #000;margin-top:12px;padding:8px;text-align:center;font-weight:bold">PINDAI QR UNTUK LACAK STATUS<br><small>${escapeHtml(publicBaseUrl || '')}/?ticket=SVC-2026-0099</small></div>` : ''}
+      ${printTermsAndConditions && termsAndConditionsText.trim() ? `<div style="border-top:1px dashed #000;margin-top:12px;padding-top:8px;white-space:pre-wrap"><strong>SYARAT & KETENTUAN LAYANAN (SERVIS):</strong><br>${escapeHtml(termsAndConditionsText.trim())}</div>` : ''}
+      <footer style="border-top:1px dashed #000;margin-top:12px;padding-top:8px;text-align:center;white-space:pre-wrap">${escapeHtml(customFooterText || '')}</footer>
+    </section>`;
+  const previewDocument = createPrintDocument(
+    'Pratinjau Nota Penerimaan',
+    previewBody,
+    previewPrintConfig
+  );
+  const previewWidth = paperSize === 'thermal_58' ? 204 : paperSize === 'thermal_80' ? 287 : 794;
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fadeIn dark:text-zinc-300 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-50]:bg-zinc-900 dark:[&_.border-slate-100]:border-zinc-800 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_input]:bg-zinc-950 dark:[&_input]:text-zinc-100 dark:[&_textarea]:bg-zinc-950 dark:[&_textarea]:text-zinc-100 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_.hover\:bg-slate-50:hover]:bg-zinc-900">
       {/* Left Configuration Column */}
@@ -804,147 +848,18 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
           </div>
 
           {printPreviewType === 'nota' ? (
-            /* Simulated Receipt paper strip */
-            <div
-              className="bg-white text-slate-800 rounded-lg p-5 shadow-2xl border-t-[8px] border-accent flex flex-col justify-between relative overflow-hidden transition-all duration-300 w-full animate-fadeIn"
-              style={{
-                maxWidth: getPaperWidthStyle({ paperSize } as any),
-                padding: `${printMargin}mm`,
-                fontFamily: "'Courier New', Courier, monospace",
-              }}
-            >
-              {/* Jagged edges simulation */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-slate-50 border-b border-dashed border-slate-300" />
-
-              {/* Logo */}
-              {printHeaderLogo && (
-                <div className="flex justify-center mb-3">
-                  <div className="w-10 h-10 bg-accent-lighter border border-indigo-100 rounded-full flex items-center justify-center text-accent">
-                    <Printer className="w-5 h-5" />
-                  </div>
-                </div>
-              )}
-
-              {/* Header */}
-              <div className="text-center mb-4">
-                <h1 className="font-extrabold tracking-tight text-slate-900 text-sm uppercase leading-tight">
-                  {customHeaderTitle.trim() || activeTenant?.name || 'NAMA TOKO'}
-                </h1>
-                <p className="text-[9px] text-slate-400 font-mono mt-0.5 uppercase tracking-wide">
-                  BUKTI PENERIMAAN UNIT SERVIS
-                </p>
-                <div className="inline-block bg-slate-100 border border-slate-200 font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-md mt-2 text-slate-800">
-                  TIKET: #SVC-2026-0099
-                </div>
-              </div>
-
-              {/* Meta rows */}
-              <div
-                className="space-y-1.5 text-slate-700"
+            <div className="w-full overflow-auto rounded-lg bg-slate-700 p-3 shadow-2xl animate-fadeIn">
+              <iframe
+                title="Pratinjau Nota Penerimaan"
+                srcDoc={previewDocument}
+                className="block origin-top-left border-0 bg-white"
                 style={{
-                  fontSize:
-                    printFontSize === 'sm' ? '10px' : printFontSize === 'lg' ? '13px' : '11px',
+                  width: `${previewWidth}px`,
+                  height: '620px',
+                  transform: 'scale(0.9)',
+                  marginBottom: '-62px',
                 }}
-              >
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Pelanggan:</span>
-                  <span className="font-bold text-slate-800 text-right">
-                    Ahmad Dahlan (0812-4455-xxxx)
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Tanggal Diterima:</span>
-                  <span className="font-semibold text-slate-800 text-right">01 Juli 2026</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Nama Perangkat:</span>
-                  <span className="font-bold text-slate-800 text-right">PlayStation 5 Slim</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Brand & Model:</span>
-                  <span className="font-semibold text-slate-800 text-right">Sony - CFI-2016</span>
-                </div>
-
-                {printCustomerNotes && (
-                  <div className="flex justify-between pt-0.5">
-                    <span className="text-slate-400 font-medium">Keluhan Utama:</span>
-                    <span className="font-semibold text-slate-800 text-right italic">
-                      Overheating & mati mendadak saat game 4K
-                    </span>
-                  </div>
-                )}
-
-                <div className="h-px border-t border-dashed border-slate-200 my-2" />
-
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Jenis Layanan:</span>
-                  <span className="font-bold text-accent text-right">
-                    Reparasi Penuh & Cleaning
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Estimasi Biaya:</span>
-                  <span className="font-bold text-slate-900 text-right text-xs">Rp 350,000</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-medium">Status Awal:</span>
-                  <span className="font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded text-[9px] uppercase">
-                    Diterima
-                  </span>
-                </div>
-              </div>
-
-              {/* QR Code section */}
-              {printQrCode && (
-                <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
-                  <div className="w-24 h-24 bg-white border border-slate-200 p-1.5 mx-auto mb-2 rounded flex items-center justify-center">
-                    {/* Simulated QR block art for realistic feel */}
-                    <div className="grid grid-cols-4 gap-0.5 w-full h-full opacity-80">
-                      {[...Array(16)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`rounded-sm ${i % 3 === 0 || i % 7 === 1 ? 'bg-slate-950' : 'bg-transparent'}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-extrabold text-slate-700 block uppercase tracking-wider">
-                    PINDAI QR UNTUK LACAK STATUS
-                  </span>
-                  <span className="text-[8px] text-slate-400 block font-mono mt-0.5 truncate max-w-full">
-                    {publicBaseUrl}/?ticket=SVC-2026-0099
-                  </span>
-                </div>
-              )}
-
-              {/* Terms and Conditions Section */}
-              {printTermsAndConditions && termsAndConditionsText.trim() && (
-                <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
-                  <span className="text-[9px] font-bold text-slate-900 block uppercase mb-1 tracking-wide">
-                    Syarat & Ketentuan Layanan (Servis):
-                  </span>
-                  <ul className="text-[8px] text-slate-500 pl-3 list-decimal space-y-0.5 leading-relaxed">
-                    {termsAndConditionsText
-                      .split('\n')
-                      .filter((l) => l.trim())
-                      .map((line, idx) => (
-                        <li key={idx} className="font-medium text-slate-600">
-                          {line.replace(/^\d+[\.\s]*/, '')}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Footer notes */}
-              <div className="mt-4 pt-3 border-t border-slate-100 text-center text-[9px] text-slate-400 font-medium leading-relaxed">
-                {customFooterText.split('\n').map((line, idx) => (
-                  <div key={idx}>{line}</div>
-                ))}
-              </div>
-
-              {/* Bottom Jagged strip */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-50 border-t border-dashed border-slate-300" />
+              />
             </div>
           ) : (
             /* Simulated Label sticker */

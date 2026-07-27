@@ -1,6 +1,11 @@
 # Changelog
 
 ## 2026-07-26
+### Paritas pratinjau dan hasil cetak nota
+- Pratinjau nota pengaturan printer kini memakai `createPrintDocument` yang sama dengan cetak QZ Tray dan browser; skala tampilan hanya diterapkan pada elemen iframe di luar dokumen cetak.
+- Renderer nota simulasi lama dihapus, sedangkan pratinjau label tetap memakai tampilan sebelumnya.
+- File terkait: `src/utils/printJob.ts`, `src/components/tenant/SettingsPrinterTerms.tsx`, `tests/print-config.test.ts`.
+
 ### Seed akun SUPER_ADMIN development
 - Menambahkan `npm run db:seed:test-superadmin` untuk membuat atau memperbarui akun lokal dari `TEST_SUPERADMIN_EMAIL` dan `TEST_SUPERADMIN_PASSWORD`, dengan hash bcrypt, role `SUPER_ADMIN`, dan `ROOT_ADMIN`.
 - Script menolak `NODE_ENV=production` dan database selain `fixdev_dev`; kredensial tidak dicetak. Konfigurasi `.env` diperbaiki agar password test tidak menyatu dengan variabel lain.

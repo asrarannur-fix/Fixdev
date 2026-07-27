@@ -7,9 +7,9 @@ const preview = readFileSync("src/components/tenant/SettingsPrinterTerms.tsx", "
 const documents = readFileSync("src/components/tenant/services/DocumentPrintouts.tsx", "utf8");
 
 test("preview dan dokumen cetak berbagi ukuran dan unit margin", () => {
-  assert.match(print, /hvs_letter.*return "100%"/s);
-  assert.match(preview, /getPaperWidthStyle/);
-  assert.match(preview, /printMargin\}mm/);
+  assert.match(print, /hvs_letter'\) return '100%'/);
+  assert.match(preview, /createPrintDocument/);
+  assert.match(preview, /printMargin,/);
   assert.match(documents, /getPrintBaseCss\(printConfig\)/);
   assert.doesNotMatch(documents, /hvs_letter.*A4/s);
 });
