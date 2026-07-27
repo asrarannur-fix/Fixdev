@@ -191,7 +191,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
         )}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,1fr)] gap-6 items-start">
           {/* Left Column: Device & Customer Info */}
-          <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div className="space-y-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <div className="rounded-2xl border border-indigo-100 bg-accent-lighter/40 p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
@@ -327,7 +327,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   {showNewSrvCustForm && !newSrvCustomer && (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-indigo-100 bg-white p-3">
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                           Nama Pelanggan Baru *
                         </label>
                         <input
@@ -339,7 +339,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                           Nomor WhatsApp *
                         </label>
                         <input
@@ -354,7 +354,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                           Email
                         </label>
                         <input
@@ -366,7 +366,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                           Alamat
                         </label>
                         <input
@@ -398,7 +398,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Kategori Perangkat
                 </label>
                 <select
@@ -417,7 +417,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Estimasi Selesai
                 </label>
                 <input
@@ -431,7 +431,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Nama Perangkat
                 </label>
                 <input
@@ -444,7 +444,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Brand / Model
                 </label>
                 <input
@@ -472,7 +472,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 <div className="px-4 pb-4 pt-2 space-y-3 border-t border-slate-200">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Serial Number (SN)
                       </label>
                       <input
@@ -484,7 +484,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Masa Garansi Bawaan
                       </label>
                       <select
@@ -553,7 +553,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Kondisi Fisik Perangkat
                 </label>
                 <select
@@ -569,7 +569,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   PIN / Pola / Password Kunci Layar
                 </label>
                 <input
@@ -590,7 +590,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                 Keluhan Kerusakan / Kendala Perangkat
               </label>
               <textarea
@@ -793,42 +793,42 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   {autoAssignReason}
                 </div>
               )}
-            </div>
 
-            <div className="space-y-2 bg-amber-50/50 p-3.5 rounded-xl border border-amber-100">
-              <label className="block text-[10px] font-mono text-amber-800 uppercase">
-                Lokasi Rak Unit
-              </label>
-              <select
-                value={newSrvStorageLocId}
-                onChange={(e) => setNewSrvStorageLocId(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-amber-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
-              >
-                <option value="">-- Tentukan setelah penerimaan --</option>
-                {getStorageLocations(activeTenantId || '')
-                  .filter(
-                    (loc) =>
-                      loc.type === 'UNIT_SERVICE' &&
-                      (!currentBranchId || loc.branchId === currentBranchId)
-                  )
-                  .map((loc) => (
-                    <option key={loc.id} value={loc.id}>
-                      📍 {loc.code} — {loc.name}
-                    </option>
-                  ))}
-              </select>
-              <p className="text-[9.5px] text-amber-700">
-                Pilih rak/locker untuk unit fisik. Bisa diubah dari detail tiket.
-              </p>
+              <div className="mt-3 pt-3 border-t border-indigo-100">
+                <label className="block text-[10px] font-mono text-amber-800 uppercase mb-1">
+                  Lokasi Rak Unit
+                </label>
+                <select
+                  value={newSrvStorageLocId}
+                  onChange={(e) => setNewSrvStorageLocId(e.target.value)}
+                  className="w-full text-xs px-3 py-2 border border-amber-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
+                >
+                  <option value="">-- Tentukan setelah penerimaan --</option>
+                  {getStorageLocations(activeTenantId || '')
+                    .filter(
+                      (loc) =>
+                        loc.type === 'UNIT_SERVICE' &&
+                        (!currentBranchId || loc.branchId === currentBranchId)
+                    )
+                    .map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        📍 {loc.code} — {loc.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-[9.5px] text-amber-700 mt-1">
+                  Pilih rak/locker untuk unit fisik. Bisa diubah dari detail tiket.
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Right Column: Checklist, Photos, and Outsourcing */}
-          <div className="space-y-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm xl:sticky xl:top-28">
+          <div className="space-y-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm xl:sticky xl:top-28">
             {/* Checklist */}
-            <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm space-y-3">
+            <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-sm space-y-2.5">
               <div className="flex items-center justify-between">
-                <p className="font-bold text-[10px] text-slate-500 uppercase tracking-wider font-mono">
+                <p className="font-semibold text-[11px] text-slate-600">
                   Checklist Uji Fungsi & Kondisi Masuk:
                 </p>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-accent-lighter text-accent border border-indigo-100">
@@ -895,8 +895,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Accessories Left Selection */}
-            <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm space-y-3">
-              <p className="font-bold text-[10px] text-slate-500 uppercase tracking-wider font-mono">
+            <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-sm space-y-2.5">
+              <p className="font-semibold text-[11px] text-slate-600">
                 Aksesoris Titipan / Bawaan:
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
