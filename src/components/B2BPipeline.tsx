@@ -79,7 +79,7 @@ export const B2BPipeline: React.FC = () => {
     const deal = tenantDeals.find((d) => d.id === dealId);
     if (!deal) return;
 
-    let curIdx = stagesOrder.indexOf(deal.stage);
+    const curIdx = stagesOrder.indexOf(deal.stage);
     let nextStage = deal.stage;
 
     if (direction === "next" && curIdx < stagesOrder.length - 2) {

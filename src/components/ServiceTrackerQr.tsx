@@ -162,7 +162,9 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
     setScanResult(null);
 
     if (scannerRef.current) {
-      try { await scannerRef.current.stop(); } catch {}
+      try { await scannerRef.current.stop(); } catch {
+        // scanner already stopped
+      }
     }
 
     try {

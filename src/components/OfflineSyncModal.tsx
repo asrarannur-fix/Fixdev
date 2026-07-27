@@ -667,7 +667,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
             </div>
           </div>
         );
-      case "ASSIGN_CUSTODIAN":
+      case "ASSIGN_CUSTODIAN": {
         const empName =
           employees.find((e: any) => e.id === p.employeeId)?.name ||
           p.employeeId;
@@ -690,6 +690,7 @@ export const OfflineSyncModal: React.FC<OfflineSyncModalProps> = ({
             </div>
           </div>
         );
+      }
       default:
         return (
           <pre className="text-[9px] text-slate-400 font-mono mt-1.5 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg overflow-x-auto">

@@ -384,7 +384,9 @@ export const CustomerActivityFeed: React.FC<CustomerActivityFeedProps> = ({
     if (savedLogs) {
       try {
         logsArray = JSON.parse(savedLogs);
-      } catch (err) {}
+      } catch (err) {
+        // parse failed, keep empty logs
+      }
     }
 
     const updated = [newLog, ...logsArray];

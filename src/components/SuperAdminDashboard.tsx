@@ -119,7 +119,9 @@ export const SuperAdminDashboard: React.FC<{
               setConsoleSession(data.session);
             }
           }
-        } catch {}
+        } catch {
+          // ignore console session errors
+        }
       }
     }, 600000);
     return () => clearInterval(interval);
@@ -150,7 +152,9 @@ export const SuperAdminDashboard: React.FC<{
           plansMap[plan.tier] = { priceMonthly: plan.priceMonthly };
         });
         setBillingPlans(plansMap);
-      } catch {}
+      } catch {
+        // ignore billing plans fetch errors
+      }
     };
     fetchPlans();
   }, [apiFetch]);

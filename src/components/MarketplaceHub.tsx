@@ -372,7 +372,7 @@ export const MarketplaceHub: React.FC = () => {
     const prodName = products[0]?.name || "LCD IPS Panel Asus TUF";
     const prodPrice = products[0]?.sellPrice || 1100000;
 
-    let payloadObj = {};
+    let payloadObj: Record<string, unknown>;
 
     if (webhookEvent === "ORDER_CREATED") {
       payloadObj = {

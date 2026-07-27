@@ -751,3 +751,27 @@ export async function deleteBranch(req: Request, res: Response) {
     res.status(500).json({ error: 'Cabang gagal dinonaktifkan.' });
   }
 }
+
+/**
+ * Get available settings tabs for Super Admin.
+ * Returns all tabs with their domains and metadata.
+ */
+export async function getSettingsTabs(req: Request, res: Response) {
+  const tabs = [
+    { id: 'branding', label: 'Branding Toko', desc: 'Atur logo, warna, dan slogan toko Anda.', group: 'perusahaan' },
+    { id: 'branches', label: 'Multi-Cabang & Lokasi', desc: 'Kelola jaringan ekspansi fisik bisnis.', group: 'perusahaan' },
+    { id: 'rbac', label: 'Hak Akses & Staff', desc: 'Kelola konfigurasi staff/pegawai, peran, dan matriks izin akses.', group: 'perusahaan' },
+    { id: 'modules-config', label: 'Parameter & Modul', desc: 'Kustomisasi parameter fungsional per modul.', group: 'operasional' },
+    { id: 'printer-terms', label: 'Printer & Ketentuan Nota', desc: 'Konfigurasi printer dan cetakan.', group: 'operasional' },
+    { id: 'workflows', label: 'Workflow Automation', desc: 'Rancang aturan otomatisasi alur kerja.', group: 'operasional' },
+    { id: 'maintenance-contract', label: 'Kontrak Maintenance', desc: 'Kelola kontrak pemeliharaan device.', group: 'operasional' },
+    { id: 'subscription', label: 'SaaS Subscription Billing', desc: 'Kelola langganan, riwayat tagihan, invoice.', group: 'keuangan' },
+    { id: 'security', label: 'Keamanan', desc: 'Kelola keamanan akun, password, MFA.', group: 'keamanan' },
+    { id: 'backup', label: 'Peladangan', desc: 'Kelola snapshot dan restore data.', group: 'infrastruktur' },
+    { id: 'api', label: 'Developer API', desc: 'Kelola API key dan whitelist IP.', group: 'pengembang' },
+    { id: 'notification', label: 'Notifikasi', desc: 'Atur WhatsApp, Telegram, Email.', group: 'komunikasi' },
+    { id: 'tax', label: 'Pajak', desc: 'Konfigurasi tarif pajak.', group: 'keuangan' },
+    { id: 'document', label: 'Dokumen', desc: 'Template nomor dokumen.', group: 'operasional' },
+  ];
+  res.json({ tabs });
+}

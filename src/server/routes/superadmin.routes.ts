@@ -44,11 +44,13 @@ import {
   endConsoleSession,
   getAggregatedOperationalSummary,
 } from '../controllers/superadmin.controller.js';
+import { getSettingsTabs } from '../controllers/settings.controller.js';
 
 const router = express.Router();
 router.use(requireJwt, requireSuperAdmin);
 
 // GET routes are read-only and safe; console-session guard auto-skips them.
+router.get('/settings/tabs', getSettingsTabs);
 router.get('/overview', requireSuperAdminPermission('overview:view'), getOverview);
 router.get('/tenants', requireSuperAdminPermission('tenants:view_all'), listTenants);
 router.get('/tenants/:id', requireSuperAdminPermission('tenants:view_detail'), getTenantDetail);
