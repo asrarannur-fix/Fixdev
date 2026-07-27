@@ -280,5 +280,26 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
     return res.data.data;
   };
 
-  return { openShift, closeShift, createPOSTransaction, refundTransaction, holdCart, recallHold };
+  const getHeldCarts = async () => {
+    verifyScope(currentTenantId);
+    const res = await api.get('/pos/sales/holds', { headers: getHeaders() });
+    return res.data.data || [];
+  };
+
+  const deleteHold = async (holdId: string) => {
+    verifyScope(currentTenantId);
+    const res = await api.delete(`/pos/sales/${holdId}/hold`, { headers: getHeaders() });
+    return res.data;
+  };
+
+  return {
+    openShift,
+    closeShift,
+    createPOSTransaction,
+    refundTransaction,
+    holdCart,
+    recallHold,
+    getHeldCarts,
+    deleteHold,
+  };
 }

@@ -16,6 +16,7 @@ import {
   saveHoldCart,
   recallHoldCart,
   deleteHoldCart,
+  getHeldCarts,
   validateVoucher,
   getReceiptData,
   getPOSAnalytics,
@@ -802,6 +803,24 @@ export const deleteHold = async (req: any, res: any) => {
       return deleteHoldCart(client, tenantId, branchId, id);
     });
     res.json({ message: 'Hold berhasil dihapus.' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Operasi POS gagal diproses.' });
+  }
+};
+
+// ──────────────────────────────────────────
+// 12b. LIST HELD CARTS
+// ──────────────────────────────────────────
+
+export const listHeldCarts = async (req: any, res: any) => {
+  const tenantId = req.tenantId;
+  const branchId = req.branchId;
+
+  try {
+    const result = await dbTransaction(async (client) => {
+      return getHeldCarts(client, tenantId, branchId);
+    });
+    res.json({ data: result });
   } catch (err: any) {
     res.status(500).json({ error: 'Operasi POS gagal diproses.' });
   }

@@ -171,16 +171,14 @@ export const POSTab: React.FC<POSTabProps> = ({
   const activePOS = tenants.find((t: any) => t.id === (currentTenantId || contextTenantId));
   const taxRatePct = activePOS?.settings?.taxSettings?.taxRate ?? 11;
   const [heldCarts, setHeldCarts] = useState<any[]>([]);
+  // Load held carts from the backend (single source of truth: pos_holds).
   React.useEffect(() => {
     let cancelled = false;
-    apiFetch('/api/module-records?module=pos_held_carts')
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`Held carts HTTP ${r.status}`);
-        const body = await r.json();
+    apiFetch('/pos/sales/holds')
+      .then((r) => r.json())
+      .then((body: any) => {
         const rows = Array.isArray(body) ? body : body.data || body.items || [];
-        const loaded = rows
-          .map((row: any) => row.payload || row)
-          .filter((x: any) => x.tenantId === contextTenantId);
+        const loaded = rows.filter((x: any) => x.tenantId === contextTenantId);
         if (!cancelled) setHeldCarts(loaded);
       })
       .catch((e: any) => showToast(e.message || 'Held cart gagal dimuat.', 'error'));
@@ -188,14 +186,6 @@ export const POSTab: React.FC<POSTabProps> = ({
       cancelled = true;
     };
   }, [apiFetch, contextTenantId, showToast]);
-
-  const persistHeldCart = async (cart: any, action: 'insert' | 'update' | 'delete') => {
-    const r = await apiFetch('/api/module-records', {
-      method: 'POST',
-      body: JSON.stringify({ module: 'pos_held_carts', recordId: cart.id, payload: cart, action }),
-    });
-    if (!r.ok) throw new Error(`Held cart sync HTTP ${r.status}`);
-  };
 
   const taxAmount = Math.max(0, (subtotal - discountAmount) * (taxRatePct / 100));
   const grandTotal = Math.max(0, subtotal - discountAmount + taxAmount - effectiveDeposit);
@@ -206,45 +196,36 @@ export const POSTab: React.FC<POSTabProps> = ({
       return;
     }
     try {
-      // Sync to backend API if shift is active
-      if (activeShift?.id) {
-        const payload = {
-          customerId: selectedPosCust || null,
-          items: effectiveCart.map((c) => ({
-            productId: c.product.id,
-            name: c.product.name,
-            quantity: c.qty,
-            unitPrice: c.product.sellPrice,
-            discount: c.discount,
-          })),
-          paymentMethod: posPaymentMethod,
-          amountPaid: posAmountPaid ? Number(posAmountPaid) : undefined,
-          discountAmount: effectiveCart.reduce((acc, c) => acc + (c.discount ?? 0), 0),
-          depositUsed: effectiveDeposit,
-          paymentDetails: '',
-        };
-        await apiFetch(`/pos/sales/${activeShift.id}/hold`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-      const newHeld = {
-        id: Date.now().toString(),
-        cart: effectiveCart,
-        deposit: effectiveDeposit,
-        timestamp: new Date().toISOString(),
+      // Persist to the backend (pos_holds). No local module-records mirror.
+      const payload = {
+        customerId: selectedPosCust || null,
+        items: effectiveCart.map((c) => ({
+          productId: c.product.id,
+          name: c.product.name,
+          quantity: c.qty,
+          unitPrice: c.product.sellPrice,
+          discount: c.discount,
+        })),
+        paymentMethod: posPaymentMethod,
+        amountPaid: posAmountPaid ? Number(posAmountPaid) : undefined,
+        discountAmount: effectiveCart.reduce((acc, c) => acc + (c.discount ?? 0), 0),
+        depositUsed: effectiveDeposit,
+        paymentDetails: '',
       };
-      await persistHeldCart(newHeld, 'insert');
-      const updated = [...heldCarts, newHeld];
-      setHeldCarts(updated);
-      if (posCart) {
-        setInternalCart([]);
-        setInternalDeposit(0);
-      } else {
-        setInternalCart([]);
-        setInternalDeposit(0);
-      }
+      const res = await apiFetch(`/pos/sales/${activeShift?.id ?? 'nosync'}/hold`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Hold sale HTTP ${res.status}`);
+      const saved = await res.json();
+      const savedId = (saved?.data?.id || saved?.id || Date.now().toString()) as string;
+      // Reload from backend to keep single source of truth.
+      const reload = await apiFetch('/pos/sales/holds').then((r) => r.json());
+      const rows = Array.isArray(reload) ? reload : reload.data || reload.items || [];
+      setHeldCarts(rows.filter((x: any) => x.tenantId === contextTenantId));
+      setInternalCart([]);
+      setInternalDeposit(0);
       showToast('Pesanan ditahan (hold). Bisa dilanjutkan nanti.', 'success');
     } catch {
       showToast('Gagal menyimpan hold sale.', 'error');
@@ -252,22 +233,41 @@ export const POSTab: React.FC<POSTabProps> = ({
   };
 
   const handleRecallSale = async (heldId: string) => {
-    const target = heldCarts.find((h) => h.id === heldId);
-    if (!target) return;
-    setInternalCart(target.cart);
-    setInternalDeposit(target.deposit);
-    await persistHeldCart(target, 'delete');
-    const updated = heldCarts.filter((h) => h.id !== heldId);
-    setHeldCarts(updated);
-    showToast('Pesanan berhasil dipulihkan ke keranjang!', 'success');
+    try {
+      const res = await apiFetch(`/pos/sales/${heldId}/recall`, { method: 'POST' });
+      if (!res.ok) throw new Error(`Recall HTTP ${res.status}`);
+      const body = await res.json();
+      const data = body?.data || body;
+      // Map backend items -> internal cart shape.
+      const cart = (data.items || []).map((it: any) => ({
+        product: {
+          id: it.productId,
+          name: it.name,
+          sellPrice: it.unitPrice,
+        } as any,
+        qty: it.quantity,
+        discount: it.discount ?? 0,
+      }));
+      setInternalCart(cart);
+      setInternalDeposit(Number(data.depositUsed) || 0);
+      // Reload from backend (recall deletes the hold).
+      const reload = await apiFetch('/pos/sales/holds').then((r) => r.json());
+      const rows = Array.isArray(reload) ? reload : reload.data || reload.items || [];
+      setHeldCarts(rows.filter((x: any) => x.tenantId === contextTenantId));
+      showToast('Pesanan berhasil dipulihkan ke keranjang!', 'success');
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal memulihkan hold sale.', 'error');
+    }
   };
 
   const handleRemoveHeldSale = async (heldId: string) => {
-    const target = heldCarts.find((h) => h.id === heldId);
-    if (!target) return;
     try {
-      await persistHeldCart(target, 'delete');
-      setHeldCarts(heldCarts.filter((h) => h.id !== heldId));
+      const res = await apiFetch(`/pos/sales/${heldId}/hold`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Delete hold HTTP ${res.status}`);
+      // Reload from backend.
+      const reload = await apiFetch('/pos/sales/holds').then((r) => r.json());
+      const rows = Array.isArray(reload) ? reload : reload.data || reload.items || [];
+      setHeldCarts(rows.filter((x: any) => x.tenantId === contextTenantId));
       showToast('Pesanan ditahan berhasil dihapus.', 'success');
     } catch (error: any) {
       showToast(error?.message || 'Held cart gagal dihapus.', 'error');

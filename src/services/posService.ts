@@ -559,6 +559,23 @@ export async function deleteHoldCart(
   ]);
 }
 
+export async function getHeldCarts(
+  client: PoolClient,
+  tenantId: string,
+  branchId: string
+): Promise<HoldCartData[]> {
+  const res = await client.query(
+    `SELECT id, tenant_id, branch_id, shift_id, customer_id, items,
+            discount_amount, deposit_used, payment_method, payment_details,
+            notes, recalled_at, created_at
+     FROM pos_holds
+     WHERE tenant_id=$1 AND branch_id=$2 AND recalled_at IS NULL
+     ORDER BY created_at DESC`,
+    [tenantId, branchId]
+  );
+  return res.rows;
+}
+
 // ── Partial Refund ───────────────────────────────────────────────────────────
 
 export interface PartialRefundInput {
