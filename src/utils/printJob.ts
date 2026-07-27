@@ -62,10 +62,22 @@ const configureQzSigning = async (): Promise<void> => {
 export const createPrintDocument = (title: string, html: string, printConfig?: PrintConfig) =>
   `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title || 'Print Job')}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}button{display:none!important}</style></head><body><main class="print-root">${html}</main></body></html>`;
 
-const qzPrint = async (title: string, html: string, printConfig: PrintConfig): Promise<boolean> => {
+const qzPrint = async (
+  title: string,
+  html: string,
+  printConfig: PrintConfig
+): Promise<PrintResult> => {
   const qz = window.qz;
   const printerName = printConfig.printerName?.trim();
-  if (!qz?.websocket || !qz?.printers || !qz?.configs || !printerName) return false;
+  if (!printerName)
+    return { ok: false, transport: 'failed', error: 'Nama printer QZ belum dikonfigurasi.' };
+  if (!qz?.websocket || !qz?.printers || !qz?.configs) {
+    return {
+      ok: false,
+      transport: 'failed',
+      error: 'QZ Tray belum terpasang atau belum berjalan.',
+    };
+  }
   try {
     if (qz.signingConfigured !== false) await configureQzSigning();
     if (!qz.websocket.isActive?.()) await qz.websocket.connect();
@@ -79,10 +91,13 @@ const qzPrint = async (title: string, html: string, printConfig: PrintConfig): P
         data: createPrintDocument(title, html, printConfig),
       },
     ]);
-    return true;
+    return { ok: true, transport: 'qz' };
   } catch (error) {
-    console.warn('QZ Tray print gagal; fallback browser aktif', error);
-    return false;
+    return {
+      ok: false,
+      transport: 'failed',
+      error: error instanceof Error ? error.message : 'QZ Tray gagal mencetak.',
+    };
   }
 };
 
