@@ -41,9 +41,10 @@ git pull --ff-only origin main
 # Install dependencies
 echo "📥 Installing dependencies..."
 if [ -f package-lock.json ]; then
-    npm ci --include=dev
-else
-    npm install
+    HUSKY=0 npm ci --include=dev
+  else
+    HUSKY=0 npm install
+
 fi
 
 # Build production bundles

@@ -31,6 +31,7 @@ Jalankan di server: `bash ops/deploy.sh`
 - Validasi `ALLOWED_ORIGINS` kini menerima host root `TENANT_ROOT_DOMAIN` dan subdomain tenant tanpa menolak `APP_URL` produksi.
 - Environment development berada di `/home/ubuntu/fixdev` dengan `.env`, sedangkan production berada di `/home/ubuntu/fixdev` dengan `/etc/fixdev/fixdev.production.env` dan PM2. Build development tidak lagi menimpa artefak production.
 - Variabel Supabase lama dihapus dari environment development dan production karena aplikasi memakai PostgreSQL langsung melalui `DATABASE_URL`.
+- Instalasi dependency production menonaktifkan hook Husky dengan `HUSKY=0` agar `npm ci` tidak gagal karena hook Git tidak diperlukan saat deploy.
 - File terkait: `server.ts`, `ops/deploy.sh`, `ecosystem.config.cjs`, `.env`, `/etc/fixdev/fixdev.production.env`, `DEPLOYMENT_PRODUCTION_CHECKLIST.md`.
 
 ## Post-Deploy
