@@ -185,7 +185,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </span>
         </div>
       </div>
-      <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-6 space-y-5">
+      <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-5 space-y-4">
         {Object.keys(receptionErrors).length > 0 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">
@@ -198,10 +198,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </ul>
           </div>
         )}
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,1fr)] gap-6 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_minmax(340px,400px)] gap-4 items-start">
           {/* Left Column: Device & Customer Info */}
-          <div className="space-y-4 glass-card p-4">
-            <div className="glass-sub p-4">
+          <div className="space-y-3 glass-card p-3.5">
+            <div className="glass-sub p-3">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
@@ -773,7 +773,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               )}
             </div>
 
-            <div className="space-y-2 glass-sub p-3.5">
+            <div className="space-y-2 glass-sub p-3">
               <div className="flex items-center justify-between">
                 <label className="block text-[11px] font-semibold text-accent">
                   Tugaskan Teknisi
@@ -837,7 +837,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
 
           {/* Right Column: Checklist, Photos, and Outsourcing */}
-          <div className="space-y-4 glass-card p-4 xl:sticky xl:top-28">
+          <div className="space-y-3 glass-card p-3.5 xl:sticky xl:top-28">
             {/* Checklist */}
             <div className="glass-sub p-3 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -1095,7 +1095,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Outsourcing Section */}
-            <div className="glass-sub p-4 space-y-3">
+            <div className="glass-sub p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
