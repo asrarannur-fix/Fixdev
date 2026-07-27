@@ -163,7 +163,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
   const fieldError = (k: string): string | undefined => receptionErrors?.[k];
   const fieldBorder = (k: string) =>
-    fieldError(k) ? 'glass-input border-red-400' : 'glass-input';
+    fieldError(k) ? 'figma-input border-red-400' : 'figma-input';
   const FieldError = ({ name }: { name: string }) =>
     fieldError(name) ? (
       <p className="text-[10px] font-medium text-rose-600 mt-1">{fieldError(name)}</p>
@@ -204,8 +204,11 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
         )}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_minmax(340px,400px)] gap-4 items-start">
           {/* Left Column: Device & Customer Info */}
-          <div className="space-y-3 glass-card p-3.5">
-            <div className="glass-sub p-3">
+          <div className="space-y-3 figma-card p-3.5">
+            <div className="figma-sub p-3">
+              <div className="figma-head">
+                <span className="figma-chip"><User /></span>
+              </div>
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
@@ -782,7 +785,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               )}
             </div>
 
-            <div className="space-y-2 glass-sub p-3">
+            <div className="space-y-2 figma-sub p-3">
+              <div className="figma-head">
+                <span className="figma-chip"><Wrench /></span>
+              </div>
               <div className="flex items-center justify-between">
                 <label className="block text-[11px] font-semibold text-accent">
                   Tugaskan Teknisi
@@ -846,9 +852,12 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
 
           {/* Right Column: Checklist, Photos, and Outsourcing */}
-          <div className="space-y-3 glass-card p-3.5 xl:sticky xl:top-28">
+          <div className="space-y-3 figma-card p-3.5 xl:sticky xl:top-28">
+            <div className="figma-head">
+              <span className="figma-chip"><ListChecks /></span>
+            </div>
             {/* Checklist */}
-            <div className="glass-sub p-3 space-y-2.5">
+            <div className="figma-sub p-3 space-y-2.5">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-[11px] text-slate-600">
                   Checklist Uji Fungsi & Kondisi Masuk:
@@ -917,7 +926,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Accessories Left Selection */}
-            <div className="glass-sub p-3 space-y-2.5">
+            <div className="figma-sub p-3 space-y-2.5">
               <p className="font-semibold text-[11px] text-slate-600">
                 Aksesoris Titipan / Bawaan:
               </p>
@@ -1104,7 +1113,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Outsourcing Section */}
-            <div className="glass-sub p-3 space-y-3">
+            <div className="figma-sub p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
