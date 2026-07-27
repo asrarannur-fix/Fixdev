@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useToast } from '../ui/Toast';
+import { getPaperWidthStyle } from '../../utils/print';
 import {
   Building2,
   Sliders,
@@ -807,13 +808,9 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
             <div
               className="bg-white text-slate-800 rounded-lg p-5 shadow-2xl border-t-[8px] border-accent flex flex-col justify-between relative overflow-hidden transition-all duration-300 w-full animate-fadeIn"
               style={{
-                maxWidth:
-                  paperSize === 'thermal_58'
-                    ? '260px'
-                    : paperSize === 'thermal_80'
-                      ? '340px'
-                      : '100%',
-                padding: `${Math.max(10, printMargin)}px`,
+                maxWidth: getPaperWidthStyle({ paperSize } as any),
+                padding: `${printMargin}mm`,
+                fontFamily: "'Courier New', Courier, monospace",
               }}
             >
               {/* Jagged edges simulation */}

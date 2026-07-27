@@ -1,57 +1,33 @@
-import * as React from "react";
-import { createPortal } from "react-dom";
+import * as React from 'react';
+import { createPortal } from 'react-dom';
+import { X, Printer, Barcode, ShieldCheck, CheckCircle2, Zap, Share2 } from 'lucide-react';
+import { ServiceTicket, Customer, Employee, User, TenantSettings } from '../../../types';
 import {
-  X,
-  Printer,
-  Barcode,
-  ShieldCheck,
-  CheckCircle2,
-  Zap,
-  Share2,
-} from "lucide-react";
-import { ServiceTicket, Customer, Employee, User, TenantSettings } from "../../../types";
-import { escapeHtml, getPaperWidthStyle, getSafePrintImageUrl } from "../../../utils/print";
-import { useSaaS } from "../../../context/SaaSContext";
-import { printJob, printJobAsync } from "../../../utils/printJob";
+  escapeHtml,
+  getPrintBaseCss,
+  getPaperWidthStyle,
+  getSafePrintImageUrl,
+} from '../../../utils/print';
+import { useSaaS } from '../../../context/SaaSContext';
+import { printJob, printJobAsync } from '../../../utils/printJob';
 
-type PrintConfig = NonNullable<TenantSettings["printConfig"]>;
+type PrintConfig = NonNullable<TenantSettings['printConfig']>;
 
 // Format tanggal aman untuk dokumen cetak (hindari "Invalid Date")
 const fmtPrintDate = (value?: string | number | Date): string => {
-  if (!value) return "-";
+  if (!value) return '-';
   const d = new Date(value);
-  if (isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
 };
 
-const getPrintCss = (printConfig?: PrintConfig) => {
-  const fontSize =
-    printConfig?.printFontSize === "small" || printConfig?.printFontSize === "sm"
-      ? 10
-      : printConfig?.printFontSize === "large" || printConfig?.printFontSize === "lg"
-        ? 12
-        : 11;
-  const margin = Number.isFinite(printConfig?.printMargin)
-    ? printConfig?.printMargin
-    : 20;
-  const pageSize =
-    printConfig?.paperSize === "a4" || printConfig?.paperSize === "hvs_a4" || printConfig?.paperSize === "hvs_letter"
-      ? "A4"
-      : printConfig?.paperSize === "thermal_58"
-        ? "58mm auto"
-        : "80mm auto";
-
-  return `
-                            @page { size: ${pageSize}; margin: ${margin}mm; }
-                            body { font-family: system-ui, sans-serif; color: #1e293b; padding: 0; font-size: ${fontSize}px; line-height: 1.4; }
-                            .print-footer { border-top: 1px dashed #cbd5e1; margin-top: 12px; padding-top: 8px; font-size: ${Math.max(fontSize - 2, 8)}px; color: #64748b; text-align: center; }
-                            @media print { body { padding: 0; } }
-  `;
-};
+const getPrintCss = (printConfig?: PrintConfig) => `${getPrintBaseCss(printConfig)}
+  .print-footer { border-top: 1px dashed #cbd5e1; margin-top: 12px; padding-top: 8px; color: #64748b; text-align: center; }
+`;
 
 interface DocumentPrintoutsProps {
   showSpkPrintout: string | null;
@@ -88,21 +64,24 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
 }) => {
   const { currentTenantId, tenants, publicBaseUrl } = useSaaS();
   const activeTenant = tenants.find((tenant) => tenant.id === currentTenantId);
-  const businessName = activeTenant?.name || "Layanan Servis";
+  const businessName = activeTenant?.name || 'Layanan Servis';
   const logoUrl = getSafePrintImageUrl(activeTenant?.branding?.logoUrl);
-  const logoHtml = printConfig?.printHeaderLogo && logoUrl
-    ? `<img src="${logoUrl}" alt="logo" style="height: 40px; max-width: 160px; object-fit: contain; margin-bottom: 10px;"/>`
-    : "";
+  const logoHtml =
+    printConfig?.printHeaderLogo && logoUrl
+      ? `<img src="${logoUrl}" alt="logo" style="height: 40px; max-width: 160px; object-fit: contain; margin-bottom: 10px;"/>`
+      : '';
 
   const printReceptionTicket = (ticketId: string) => {
     const source = document.getElementById(`reception-print-${ticketId}`);
     if (!source) {
-      showToast("Nota penerimaan belum siap dicetak.", "error");
+      showToast('Nota penerimaan belum siap dicetak.', 'error');
       return;
     }
-    void printJob({ title: "Nota Penerimaan", html: source.innerHTML, printConfig }).then((result) => {
-      if (!result.ok) showToast(result.error || "Gagal menyiapkan dokumen cetak.", "error");
-    });
+    void printJob({ title: 'Nota Penerimaan', html: source.innerHTML, printConfig }).then(
+      (result) => {
+        if (!result.ok) showToast(result.error || 'Gagal menyiapkan dokumen cetak.', 'error');
+      }
+    );
   };
 
   return (
@@ -118,251 +97,233 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
               <div
                 className="bg-white dark:bg-zinc-950 p-6 w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 dark:border-zinc-800 font-sans text-slate-800 dark:text-zinc-100 space-y-4 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-100]:bg-zinc-900 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200"
                 style={{
-                  maxWidth: printConfig?.paperSize === "thermal_58" ? "300px" : printConfig?.paperSize === "thermal_80" ? "390px" : "760px",
-                  fontSize: `${printConfig?.printFontSize === "sm" ? 10 : printConfig?.printFontSize === "lg" ? 13 : 11}px`,
+                  maxWidth:
+                    printConfig?.paperSize === 'thermal_58'
+                      ? '300px'
+                      : printConfig?.paperSize === 'thermal_80'
+                        ? '390px'
+                        : '760px',
+                  fontSize: `${printConfig?.printFontSize === 'sm' ? 10 : printConfig?.printFontSize === 'lg' ? 13 : 11}px`,
                 }}
               >
-                  <div id={`reception-print-${ticket.id}`} className="relative">
-                    {/* Close button */}
-                    <button
-                      onClick={() => setShowSpkPrintout(null)}
-                      className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer no-print"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                <div id={`reception-print-${ticket.id}`} className="relative">
+                  {/* Close button */}
+                  <button
+                    onClick={() => setShowSpkPrintout(null)}
+                    className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer no-print"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
 
-                    {/* Print button */}
-                    <button
-                      onClick={() => printReceptionTicket(ticket.id)}
-                      className="absolute top-4 right-12 p-2 bg-accent hover:bg-accent-hover text-white rounded-full cursor-pointer no-print"
-                    >
-                      <Printer className="w-5 h-5" />
-                    </button>
+                  {/* Print button */}
+                  <button
+                    onClick={() => printReceptionTicket(ticket.id)}
+                    className="absolute top-4 right-12 p-2 bg-accent hover:bg-accent-hover text-white rounded-full cursor-pointer no-print"
+                  >
+                    <Printer className="w-5 h-5" />
+                  </button>
 
-                    {/* Receipt Layout */}
-                    <div className="border border-dashed border-slate-300 p-4 rounded-xl space-y-3.5 bg-white">
-                  <div className="text-center space-y-0.5">
-                    {printConfig?.printHeaderLogo && logoUrl && (
-                      <img src={logoUrl} alt="Logo usaha" className="h-9 max-w-40 mx-auto mb-2 object-contain" />
-                    )}
-                    <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">
-                      {printConfig?.customHeaderTitle || "SURAT PERINTAH KERJA (SPK)"}
-                    </h4>
-                    <p className="text-[10px] text-slate-500 font-mono uppercase">
-                      TANDA TERIMA UNIT MASUK
-                    </p>
-                  </div>
-
-                  <div className="border-t border-dashed border-slate-200 pt-2 grid grid-cols-2 gap-2 text-[10px] font-mono">
-                    <div>
-                      <p className="text-slate-400 uppercase">TANGGAL MASUK:</p>
-                      <p className="font-bold text-slate-700">
-                        {fmtPrintDate(ticket.createdAt)}
+                  {/* Receipt Layout */}
+                  <div className="border border-dashed border-slate-300 p-4 rounded-xl space-y-3.5 bg-white">
+                    <div className="text-center space-y-0.5">
+                      {printConfig?.printHeaderLogo && logoUrl && (
+                        <img
+                          src={logoUrl}
+                          alt="Logo usaha"
+                          className="h-9 max-w-40 mx-auto mb-2 object-contain"
+                        />
+                      )}
+                      <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">
+                        {printConfig?.customHeaderTitle || 'SURAT PERINTAH KERJA (SPK)'}
+                      </h4>
+                      <p className="text-[10px] text-slate-500 font-mono uppercase">
+                        TANDA TERIMA UNIT MASUK
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-slate-400 uppercase">
-                        NOMOR SPK / TIKET:
-                      </p>
-                      <p className="font-bold text-accent">
-                        {ticket.ticketNo}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="border-t border-slate-200/60 pt-2 space-y-1.5 text-[10px]">
-                    <p>
-                      <strong className="font-semibold text-slate-500">
-                        Nama Pelanggan:
-                      </strong>{" "}
-                      <span className="font-bold text-slate-700">
-                        {customer?.name || "Umum"}
+                    <div className="border-t border-dashed border-slate-200 pt-2 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                      <div>
+                        <p className="text-slate-400 uppercase">TANGGAL MASUK:</p>
+                        <p className="font-bold text-slate-700">{fmtPrintDate(ticket.createdAt)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-slate-400 uppercase">NOMOR SPK / TIKET:</p>
+                        <p className="font-bold text-accent">{ticket.ticketNo}</p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-200/60 pt-2 space-y-1.5 text-[10px]">
+                      <p>
+                        <strong className="font-semibold text-slate-500">Nama Pelanggan:</strong>{' '}
+                        <span className="font-bold text-slate-700">{customer?.name || 'Umum'}</span>
+                      </p>
+                      <p>
+                        <strong className="font-semibold text-slate-500">No Handphone:</strong>{' '}
+                        <span className="font-mono text-slate-700">{customer?.phone || '-'}</span>
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 bg-slate-100 p-2 rounded-lg my-1 border border-slate-200 text-[9.5px]">
+                        <p>
+                          <strong className="font-semibold text-slate-500">Kategori:</strong>{' '}
+                          <span className="font-bold text-slate-800">
+                            {ticket.deviceCategory || 'Smartphone'}
+                          </span>
+                        </p>
+                        <p>
+                          <strong className="font-semibold text-slate-500">Fisik:</strong>{' '}
+                          <span className="font-bold text-slate-800">
+                            {ticket.physicalCondition || 'Mulus'}
+                          </span>
+                        </p>
+                        <p>
+                          <strong className="font-semibold text-slate-500">Kunci Layar:</strong>{' '}
+                          <span className="font-mono font-bold text-accent">
+                            {ticket.screenLockPin ? '••••••' : 'Tidak Ada'}
+                          </span>
+                        </p>
+                        <p>
+                          <strong className="font-semibold text-slate-500">Est. Selesai:</strong>{' '}
+                          <span className="font-bold text-emerald-700">
+                            {ticket.estimatedCompletionDate
+                              ? new Date(ticket.estimatedCompletionDate).toLocaleDateString(
+                                  'id-ID',
+                                  {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  }
+                                )
+                              : '3 Hari'}
+                          </span>
+                        </p>
+                      </div>
+
+                      <p>
+                        <strong className="font-semibold text-slate-500">Tipe Perangkat:</strong>{' '}
+                        <span className="font-bold text-accent">{ticket.deviceName}</span>
+                      </p>
+                      {ticket.deviceBrandModel && (
+                        <p>
+                          <strong className="font-semibold text-slate-500">Brand / Model:</strong>{' '}
+                          <span className="text-slate-700">{ticket.deviceBrandModel}</span>
+                        </p>
+                      )}
+                      <p>
+                        <strong className="font-semibold text-slate-500">Serial Number:</strong>{' '}
+                        <span className="font-mono text-slate-700">
+                          {ticket.deviceSerial || 'N/A'}
+                        </span>
+                      </p>
+
+                      {((ticket.accessoriesLeft && ticket.accessoriesLeft.length > 0) ||
+                        ticket.customAccessories) && (
+                        <p>
+                          <strong className="font-semibold text-slate-500">
+                            Aksesoris Titipan:
+                          </strong>{' '}
+                          <span className="font-semibold text-slate-700 text-[9.5px]">
+                            {ticket.accessoriesLeft
+                              ? ticket.accessoriesLeft
+                                  .map((acc) => {
+                                    const labels: Record<string, string> = {
+                                      charger: 'Charger',
+                                      cable: 'Kabel',
+                                      sim: 'SIM',
+                                      sd: 'SD Card',
+                                      case: 'Case',
+                                      box: 'Box',
+                                    };
+                                    return labels[acc] || acc;
+                                  })
+                                  .join(', ')
+                              : ''}
+                            {ticket.customAccessories
+                              ? ticket.accessoriesLeft && ticket.accessoriesLeft.length > 0
+                                ? `, ${ticket.customAccessories}`
+                                : ticket.customAccessories
+                              : ''}
+                          </span>
+                        </p>
+                      )}
+
+                      {printConfig?.printCustomerNotes !== false && (
+                        <p>
+                          <strong className="font-semibold text-slate-500">
+                            Keluhan / Kerusakan:
+                          </strong>{' '}
+                          <span className="text-slate-700 italic border border-slate-200 bg-slate-50 px-2 py-1 rounded font-medium block mt-1 leading-relaxed">
+                            {ticket.customerComplaints || '-'}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Barcode Block */}
+                    <div className="flex flex-col items-center justify-center py-2.5 border-t border-b border-dashed border-slate-200">
+                      <span className="p-1 bg-white border border-slate-200 rounded">
+                        <Barcode className="w-36 h-8 text-slate-800" />
                       </span>
-                    </p>
-                    <p>
-                      <strong className="font-semibold text-slate-500">
-                        No Handphone:
-                      </strong>{" "}
-                      <span className="font-mono text-slate-700">
-                        {customer?.phone || "-"}
-                      </span>
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-2 bg-slate-100 p-2 rounded-lg my-1 border border-slate-200 text-[9.5px]">
-                      <p>
-                        <strong className="font-semibold text-slate-500">
-                          Kategori:
-                        </strong>{" "}
-                        <span className="font-bold text-slate-800">
-                          {ticket.deviceCategory || "Smartphone"}
-                        </span>
-                      </p>
-                      <p>
-                        <strong className="font-semibold text-slate-500">
-                          Fisik:
-                        </strong>{" "}
-                        <span className="font-bold text-slate-800">
-                          {ticket.physicalCondition || "Mulus"}
-                        </span>
-                      </p>
-                      <p>
-                        <strong className="font-semibold text-slate-500">
-                          Kunci Layar:
-                        </strong>{" "}
-                        <span className="font-mono font-bold text-accent">
-                          {ticket.screenLockPin ? "••••••" : "Tidak Ada"}
-                        </span>
-                      </p>
-                      <p>
-                        <strong className="font-semibold text-slate-500">
-                          Est. Selesai:
-                        </strong>{" "}
-                        <span className="font-bold text-emerald-700">
-                          {ticket.estimatedCompletionDate
-                            ? new Date(
-                                ticket.estimatedCompletionDate,
-                              ).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })
-                            : "3 Hari"}
-                        </span>
-                      </p>
+                      <span className="font-mono text-[9px] text-slate-400 mt-1">{ticket.id}</span>
                     </div>
 
-                    <p>
-                      <strong className="font-semibold text-slate-500">
-                        Tipe Perangkat:
-                      </strong>{" "}
-                      <span className="font-bold text-accent">
-                        {ticket.deviceName}
-                      </span>
-                    </p>
-                    {ticket.deviceBrandModel && (
-                      <p>
-                        <strong className="font-semibold text-slate-500">
-                          Brand / Model:
-                        </strong>{" "}
-                        <span className="text-slate-700">
-                          {ticket.deviceBrandModel}
+                    {printConfig?.printQrCode && (
+                      <div className="flex flex-col items-center justify-center py-2 border-t border-dashed border-slate-200">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${publicBaseUrl}/?ticket=${ticket.ticketNo}`)}`}
+                          alt={`QR tracking ${ticket.ticketNo}`}
+                          className="w-20 h-20"
+                        />
+                        <span className="text-[8px] text-slate-500 mt-1">
+                          Scan untuk lacak status servis
                         </span>
-                      </p>
-                    )}
-                    <p>
-                      <strong className="font-semibold text-slate-500">
-                        Serial Number:
-                      </strong>{" "}
-                      <span className="font-mono text-slate-700">
-                        {ticket.deviceSerial || "N/A"}
-                      </span>
-                    </p>
-
-                    {((ticket.accessoriesLeft &&
-                      ticket.accessoriesLeft.length > 0) ||
-                      ticket.customAccessories) && (
-                      <p>
-                        <strong className="font-semibold text-slate-500">
-                          Aksesoris Titipan:
-                        </strong>{" "}
-                        <span className="font-semibold text-slate-700 text-[9.5px]">
-                          {ticket.accessoriesLeft
-                            ? ticket.accessoriesLeft
-                                .map((acc) => {
-                                  const labels: Record<string, string> = {
-                                    charger: "Charger",
-                                    cable: "Kabel",
-                                    sim: "SIM",
-                                    sd: "SD Card",
-                                    case: "Case",
-                                    box: "Box",
-                                  };
-                                  return labels[acc] || acc;
-                                })
-                                .join(", ")
-                            : ""}
-                          {ticket.customAccessories
-                            ? ticket.accessoriesLeft &&
-                              ticket.accessoriesLeft.length > 0
-                              ? `, ${ticket.customAccessories}`
-                              : ticket.customAccessories
-                            : ""}
-                        </span>
-                      </p>
+                      </div>
                     )}
 
-                    {printConfig?.printCustomerNotes !== false && (
-                      <p>
-                        <strong className="font-semibold text-slate-500">
-                          Keluhan / Kerusakan:
-                        </strong>{" "}
-                        <span className="text-slate-700 italic border border-slate-200 bg-slate-50 px-2 py-1 rounded font-medium block mt-1 leading-relaxed">
-                          {ticket.customerComplaints || "-"}
-                        </span>
-                      </p>
-                    )}
-                  </div>
+                    {/* Agreement terms */}
+                    {printConfig?.printTermsAndConditions ? (
+                      <div className="text-[7.5px] text-slate-400 leading-normal space-y-1">
+                        <p>
+                          <strong>SYARAT & KETENTUAN SERVICE:</strong>
+                        </p>
+                        {(printConfig.termsAndConditionsText || '')
+                          .split('\n')
+                          .filter(Boolean)
+                          .map((line, i) => (
+                            <p key={i}>{line}</p>
+                          ))}
+                      </div>
+                    ) : null}
 
-                  {/* Barcode Block */}
-                  <div className="flex flex-col items-center justify-center py-2.5 border-t border-b border-dashed border-slate-200">
-                    <span className="p-1 bg-white border border-slate-200 rounded">
-                      <Barcode className="w-36 h-8 text-slate-800" />
-                    </span>
-                    <span className="font-mono text-[9px] text-slate-400 mt-1">
-                      {ticket.id}
-                    </span>
-                  </div>
-
-                  {printConfig?.printQrCode && (
-                    <div className="flex flex-col items-center justify-center py-2 border-t border-dashed border-slate-200">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${publicBaseUrl}/?ticket=${ticket.ticketNo}`)}`}
-                        alt={`QR tracking ${ticket.ticketNo}`}
-                        className="w-20 h-20"
-                      />
-                      <span className="text-[8px] text-slate-500 mt-1">Scan untuk lacak status servis</span>
-                    </div>
-                  )}
-
-                  {/* Agreement terms */}
-                  {printConfig?.printTermsAndConditions ? (
-                    <div className="text-[7.5px] text-slate-400 leading-normal space-y-1">
-                      <p><strong>SYARAT & KETENTUAN SERVICE:</strong></p>
-                      {(printConfig.termsAndConditionsText || "")
-                        .split("\n")
-                        .filter(Boolean)
-                        .map((line, i) => <p key={i}>{line}</p>)}
-                    </div>
-                  ) : null}
-
-                  {/* Signature area */}
-                  <div className="border-t border-dashed border-slate-200 pt-3.5 grid grid-cols-2 gap-4 text-center text-[9px] font-mono">
-                    <div>
-                      <p className="text-slate-400 uppercase">PELANGGAN</p>
-                      <div className="h-9"></div>
-                      <p className="border-t-2 border-slate-400 pt-1 font-bold">
-                        {customer?.name || "Customer"}
-                      </p>
-                      <p className="text-slate-400 mt-0.5">( Tanggal: ......../......../........ )</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 uppercase">
-                        KASIR / TEKNISI
-                      </p>
-                      <div className="h-9"></div>
-                      <p className="border-t-2 border-slate-400 pt-1 font-bold">
-                        {currentUser?.name || "Staff"}
-                      </p>
-                      <p className="text-slate-400 mt-0.5">( Tanggal: ......../......../........ )</p>
+                    {/* Signature area */}
+                    <div className="border-t border-dashed border-slate-200 pt-3.5 grid grid-cols-2 gap-4 text-center text-[9px] font-mono">
+                      <div>
+                        <p className="text-slate-400 uppercase">PELANGGAN</p>
+                        <div className="h-9"></div>
+                        <p className="border-t-2 border-slate-400 pt-1 font-bold">
+                          {customer?.name || 'Customer'}
+                        </p>
+                        <p className="text-slate-400 mt-0.5">
+                          ( Tanggal: ......../......../........ )
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 uppercase">KASIR / TEKNISI</p>
+                        <div className="h-9"></div>
+                        <p className="border-t-2 border-slate-400 pt-1 font-bold">
+                          {currentUser?.name || 'Staff'}
+                        </p>
+                        <p className="text-slate-400 mt-0.5">
+                          ( Tanggal: ......../......../........ )
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
             </div>,
             document.body
           );
-})()}
+        })()}
 
       {showInvoicePrintout &&
         (() => {
@@ -370,7 +331,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
           if (!ticket) return null;
           const customer = customers.find((c) => c.id === ticket.customerId);
           const laborCost = (ticket as any).laborCost || 0;
-          const chargeableMicroUsages = (ticket.microComponentUsages || []).filter((usage) => usage.chargeable);
+          const chargeableMicroUsages = (ticket.microComponentUsages || []).filter(
+            (usage) => usage.chargeable
+          );
           const grandTotal = ticket.estimatedCost || 0;
           const totalTax = (printConfig as any)?.printTax ? grandTotal * 0.11 : 0;
           return createPortal(
@@ -388,19 +351,14 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                 <div className="border border-dashed border-slate-300 p-4 rounded-xl space-y-3.5 bg-slate-50/50">
                   {/* Warranty Period details */}
                   <div className="bg-accent-lighter border border-indigo-100 p-2.5 rounded-lg text-[8.5px] text-accent text-center">
-                    <p className="font-bold">
-                      GARANSI PROTEKSI {businessName.toUpperCase()}
-                    </p>
+                    <p className="font-bold">GARANSI PROTEKSI {businessName.toUpperCase()}</p>
                     <p className="mt-0.5">
-                      Masa garansi komponen selama{" "}
-                      <strong>{ticket.warrantyMonths} Bulan</strong> berlaku
-                      hingga:{" "}
+                      Masa garansi komponen selama <strong>{ticket.warrantyMonths} Bulan</strong>{' '}
+                      berlaku hingga:{' '}
                       <strong>
                         {(() => {
                           const expDate = new Date();
-                          expDate.setMonth(
-                            expDate.getMonth() + (ticket.warrantyMonths || 3),
-                          );
+                          expDate.setMonth(expDate.getMonth() + (ticket.warrantyMonths || 3));
                           return expDate.toLocaleDateString();
                         })()}
                       </strong>
@@ -412,26 +370,22 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   <button
                     onClick={() => {
                       let printIframe = document.getElementById(
-                        "hidden-print-iframe",
+                        'hidden-print-iframe'
                       ) as HTMLIFrameElement;
                       if (!printIframe) {
-                        printIframe = document.createElement("iframe");
-                        printIframe.id = "hidden-print-iframe";
-                        printIframe.style.position = "fixed";
-                        printIframe.style.width = "0";
-                        printIframe.style.height = "0";
-                        printIframe.style.border = "none";
-                        printIframe.style.opacity = "0";
+                        printIframe = document.createElement('iframe');
+                        printIframe.id = 'hidden-print-iframe';
+                        printIframe.style.position = 'fixed';
+                        printIframe.style.width = '0';
+                        printIframe.style.height = '0';
+                        printIframe.style.border = 'none';
+                        printIframe.style.opacity = '0';
                         document.body.appendChild(printIframe);
                       }
                       const printDoc =
-                        printIframe.contentWindow?.document ||
-                        printIframe.contentDocument;
+                        printIframe.contentWindow?.document || printIframe.contentDocument;
                       if (!printDoc) {
-                        showToast(
-                          "Gagal menginisialisasi modul pencetakan.",
-                          "error",
-                        );
+                        showToast('Gagal menginisialisasi modul pencetakan.', 'error');
                         return;
                       }
                       printDoc.open();
@@ -462,7 +416,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         <body>
                           <div class="header">
                              ${logoHtml}
-                            <h4>${escapeHtml(printConfig?.customHeaderTitle || "NOTA PELUNASAN / INVOICE SERVIS")}</h4>
+                            <h4>${escapeHtml(printConfig?.customHeaderTitle || 'NOTA PELUNASAN / INVOICE SERVIS')}</h4>
                             <p>${escapeHtml(businessName)} - COMPLETED WORK ORDER</p>
                           </div>
                           <div class="meta">
@@ -470,7 +424,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                               <strong>NO INVOICE:</strong><br/>
                               INV-${ticket.ticketNo}<br/><br/>
                               <strong>NAMA PELANGGAN:</strong><br/>
-                              ${customer?.name || "Umum"}
+                              ${customer?.name || 'Umum'}
                             </div>
                             <div class="right">
                               <strong>TANGGAL CETAK:</strong><br/>
@@ -502,17 +456,21 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                     <td style="color: #64748b; padding-left: 8px;">- ${part.name} (x${part.quantity})</td>
                                     <td style="text-align: right; font-family: monospace; color: #64748b;">Rp ${part.totalPrice.toLocaleString()}</td>
                                   </tr>
-                                `,
+                                `
                                         )
-                                        .join("")
-                                    : ""
+                                        .join('')
+                                    : ''
                                 }
-                                ${chargeableMicroUsages.map((usage) => `
+                                ${chargeableMicroUsages
+                                  .map(
+                                    (usage) => `
                                   <tr>
                                     <td style="color: var(--accent); padding-left: 8px;">- ${usage.name} (x${usage.quantity})</td>
                                     <td style="text-align: right; font-family: monospace; color: var(--accent);">Rp ${usage.chargeTotal.toLocaleString()}</td>
                                   </tr>
-                                `).join("")}
+                                `
+                                  )
+                                  .join('')}
                               </tbody>
                             </table>
                           </div>
@@ -534,25 +492,25 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                             <div>
                               <p style="color: #64748b; margin-bottom: 2px;">PELANGGAN</p>
                               <div class="signature-space"></div>
-                              <p class="border-t">${customer?.name || "Customer"}</p>
+                              <p class="border-t">${customer?.name || 'Customer'}</p>
                             </div>
                             <div>
                               <p style="color: #64748b; margin-bottom: 2px;">PETUGAS KASIR</p>
                               <div class="signature-space"></div>
-                              <p class="border-t">${currentUser?.name || "Staff"}</p>
+                              <p class="border-t">${currentUser?.name || 'Staff'}</p>
                             </div>
                           </div>
                           ${
                             printConfig?.printQrCode
                               ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + "/?ticket=" + ticket.ticketNo)}" alt="QR Code" />
+                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + '/?ticket=' + ticket.ticketNo)}" alt="QR Code" />
                           </div>
                           `
-                              : ""
+                              : ''
                           }
                           <div class="print-footer">
-                            ${printConfig?.customFooterText || "Terima kasih atas kepercayaan Anda."}
+                            ${printConfig?.customFooterText || 'Terima kasih atas kepercayaan Anda.'}
                           </div>
                         </body>
                       </html>
@@ -560,11 +518,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       printDoc.close();
                       window.setTimeout(async () => {
                         const result = await printJobAsync({
-                          title: "Service Document",
-                          html: printDoc.body?.innerHTML || "",
+                          title: 'Service Document',
+                          html: printDoc.body?.innerHTML || '',
                           printConfig,
                         });
-                        if (!result.ok) showToast(result.error || "Gagal mencetak dokumen.", "error");
+                        if (!result.ok)
+                          showToast(result.error || 'Gagal mencetak dokumen.', 'error');
                       }, 100);
                     }}
                     className="flex-1 bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-xl cursor-pointer text-center shadow-md shadow-accent/10 flex items-center justify-center gap-1"
@@ -577,13 +536,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   >
                     Tutup
                   </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      );
-        })()
-      }
+                </div>
+              </div>
+            </div>,
+            document.body
+          );
+        })()}
 
       {showProvisionalQuote &&
         (() => {
@@ -591,7 +549,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
           if (!ticket) return null;
           const customer = customers.find((c) => c.id === ticket.customerId);
           const laborCost = (ticket as any).laborCost || 0;
-          const partsCost = ticket.partsUsed ? ticket.partsUsed.reduce((sum: number, p: any) => sum + (p.totalPrice || 0), 0) : 0;
+          const partsCost = ticket.partsUsed
+            ? ticket.partsUsed.reduce((sum: number, p: any) => sum + (p.totalPrice || 0), 0)
+            : 0;
           const grandTotal = laborCost + partsCost;
           const totalTax = (printConfig as any)?.printTax ? grandTotal * 0.11 : 0;
           const technician = employees.find((e) => e.id === ticket.assignedTechId);
@@ -617,9 +577,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     <div className="space-y-1.5 text-[10px]">
                       {/* Jasa Repair */}
                       <div className="flex justify-between">
-                        <span className="text-slate-600">
-                          Estimasi Jasa Teknis & Servis
-                        </span>
+                        <span className="text-slate-600">Estimasi Jasa Teknis & Servis</span>
                         <span className="font-mono text-slate-700">
                           Rp {laborCost.toLocaleString()}
                         </span>
@@ -628,10 +586,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       {/* Parts Used */}
                       {ticket.partsUsed && ticket.partsUsed.length > 0 ? (
                         ticket.partsUsed.map((part, pIdx) => (
-                          <div
-                            key={pIdx}
-                            className="flex justify-between text-slate-500 pl-2"
-                          >
+                          <div key={pIdx} className="flex justify-between text-slate-500 pl-2">
                             <span>
                               - {part.name} (x{part.quantity})
                             </span>
@@ -651,9 +606,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   {/* Cost Totals */}
                   <div className="border-t border-dashed border-slate-200 pt-2 text-[10px] font-mono space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-slate-400 uppercase">
-                        SUBTOTAL ESTIMASI:
-                      </span>
+                      <span className="text-slate-400 uppercase">SUBTOTAL ESTIMASI:</span>
                       <span className="font-bold text-slate-700">
                         Rp {(ticket.estimatedCost || 0).toLocaleString()}
                       </span>
@@ -663,9 +616,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       <span>Rp {totalTax.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs border-t border-slate-200 pt-1.5 font-bold">
-                      <span className="text-amber-800 font-extrabold">
-                        GRAND TOTAL ESTIMASI:
-                      </span>
+                      <span className="text-amber-800 font-extrabold">GRAND TOTAL ESTIMASI:</span>
                       <span className="text-amber-800 font-extrabold">
                         Rp {grandTotal.toLocaleString()}
                       </span>
@@ -673,21 +624,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   </div>
 
                   <div className="text-[7.5px] text-slate-400 leading-normal space-y-1 bg-amber-50/50 p-2 rounded-lg border border-amber-150/40">
-                    <p className="font-bold text-amber-950">
-                      CATATAN & PERSETUJUAN DIGITAL:
-                    </p>
+                    <p className="font-bold text-amber-950">CATATAN & PERSETUJUAN DIGITAL:</p>
+                    <p>1. Penawaran ini berlaku selama 7 hari sejak tanggal diterbitkan.</p>
                     <p>
-                      1. Penawaran ini berlaku selama 7 hari sejak tanggal
-                      diterbitkan.
+                      2. Perbaikan tidak akan dikerjakan sebelum disetujui digital oleh pelanggan.
                     </p>
-                    <p>
-                      2. Perbaikan tidak akan dikerjakan sebelum disetujui
-                      digital oleh pelanggan.
-                    </p>
-                    <p>
-                      3. Jika ditolak, unit akan dirakit kembali tanpa biaya
-                      tambahan diagnosa.
-                    </p>
+                    <p>3. Jika ditolak, unit akan dirakit kembali tanpa biaya tambahan diagnosa.</p>
                   </div>
 
                   {/* Signature block with digital signature if approved */}
@@ -714,17 +656,13 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         </div>
                       )}
                       <p className="border-t border-slate-300 pt-1 text-slate-600 font-bold">
-                        {ticket.provisionalSignatureName ||
-                          customer?.name ||
-                          "Customer"}
+                        {ticket.provisionalSignatureName || customer?.name || 'Customer'}
                       </p>
                     </div>
                     <div className="space-y-4">
-                      <p className="text-slate-400">
-                        TEKNISI / PENANGGUNG JAWAB
-                      </p>
+                      <p className="text-slate-400">TEKNISI / PENANGGUNG JAWAB</p>
                       <div className="h-10 flex items-center justify-center text-slate-500 font-bold font-mono">
-                        {technician?.name || currentUser?.name || "Teknisi"}
+                        {technician?.name || currentUser?.name || 'Teknisi'}
                       </div>
                       <p className="border-t border-slate-300 pt-1 text-slate-600 font-bold">
                         {technician?.name || currentUser?.name}
@@ -737,26 +675,22 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   <button
                     onClick={() => {
                       let printIframe = document.getElementById(
-                        "hidden-print-iframe",
+                        'hidden-print-iframe'
                       ) as HTMLIFrameElement;
                       if (!printIframe) {
-                        printIframe = document.createElement("iframe");
-                        printIframe.id = "hidden-print-iframe";
-                        printIframe.style.position = "fixed";
-                        printIframe.style.width = "0";
-                        printIframe.style.height = "0";
-                        printIframe.style.border = "none";
-                        printIframe.style.opacity = "0";
+                        printIframe = document.createElement('iframe');
+                        printIframe.id = 'hidden-print-iframe';
+                        printIframe.style.position = 'fixed';
+                        printIframe.style.width = '0';
+                        printIframe.style.height = '0';
+                        printIframe.style.border = 'none';
+                        printIframe.style.opacity = '0';
                         document.body.appendChild(printIframe);
                       }
                       const printDoc =
-                        printIframe.contentWindow?.document ||
-                        printIframe.contentDocument;
+                        printIframe.contentWindow?.document || printIframe.contentDocument;
                       if (!printDoc) {
-                        showToast(
-                          "Gagal menginisialisasi modul pencetakan.",
-                          "error",
-                        );
+                        showToast('Gagal menginisialisasi modul pencetakan.', 'error');
                         return;
                       }
                       printDoc.open();
@@ -788,7 +722,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         <body>
                           <div class="header">
                             ${logoHtml}
-                            <h4>${escapeHtml(printConfig?.customHeaderTitle || "SURAT PENAWARAN BIAYA REPARASI")}</h4>
+                            <h4>${escapeHtml(printConfig?.customHeaderTitle || 'SURAT PENAWARAN BIAYA REPARASI')}</h4>
                             <p>${escapeHtml(businessName)} - ESTIMASI BIAYA SEMENTARA / QUOTE REQUEST</p>
                           </div>
                           <div class="meta">
@@ -796,13 +730,13 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                               <strong>NO PENAWARAN:</strong><br/>
                               QO-${ticket.ticketNo}<br/><br/>
                               <strong>NAMA PELANGGAN:</strong><br/>
-                              ${customer?.name || "Umum"}
+                              ${customer?.name || 'Umum'}
                             </div>
                             <div class="right">
                               <strong>REF TIKET:</strong><br/>
                               ${ticket.ticketNo}<br/><br/>
                               <strong>STATUS PERSETUJUAN:</strong><br/>
-                              <span class="quote-badge">${ticket.customerApprovalStatus === "APPROVED" ? "DISETUJUI" : ticket.customerApprovalStatus === "REJECTED" ? "DITOLAK" : "MENUNGGU APPROVAL"}</span>
+                              <span class="quote-badge">${ticket.customerApprovalStatus === 'APPROVED' ? 'DISETUJUI' : ticket.customerApprovalStatus === 'REJECTED' ? 'DITOLAK' : 'MENUNGGU APPROVAL'}</span>
                             </div>
                           </div>
                           <div class="section">
@@ -820,8 +754,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                   <td style="text-align: right; font-family: monospace;">Rp ${laborCost.toLocaleString()}</td>
                                 </tr>
                                 ${
-                                  ticket.partsUsed &&
-                                  ticket.partsUsed.length > 0
+                                  ticket.partsUsed && ticket.partsUsed.length > 0
                                     ? ticket.partsUsed
                                         .map(
                                           (part) => `
@@ -829,9 +762,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                     <td style="color: #64748b; padding-left: 8px;">- ${part.name} (x${part.quantity})</td>
                                     <td style="text-align: right; font-family: monospace; color: #64748b;">Rp ${(part.totalPrice ?? 0).toLocaleString()}</td>
                                   </tr>
-                                `,
+                                `
                                         )
-                                        .join("")
+                                        .join('')
                                     : `<tr><td colspan="2" style="color: #94a3b8; font-style: italic; padding-left: 8px;">Belum ada suku cadang tambahan yang ditambahkan.</td></tr>`
                                 }
                               </tbody>
@@ -864,12 +797,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                               `
                                   : `<div class="signature-space"></div>`
                               }
-                              <p class="border-t">${ticket.provisionalSignatureName || customer?.name || "Customer"}</p>
+                              <p class="border-t">${ticket.provisionalSignatureName || customer?.name || 'Customer'}</p>
                             </div>
                             <div>
                               <p style="color: #64748b; margin-bottom: 2px;">TEKNISI / PENANGGUNG JAWAB</p>
                               <div class="signature-space" style="display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: monospace; font-size: 10px;">
-                                ${technician?.name || currentUser?.name || "Teknisi"}
+                                ${technician?.name || currentUser?.name || 'Teknisi'}
                               </div>
                               <p class="border-t">${technician?.name || currentUser?.name}</p>
                             </div>
@@ -878,13 +811,13 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                              printConfig?.printQrCode
                                ? `
                           <div style="text-align: center; margin-top: 15px;">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + "/?tab=service&sub=approve-quote&ticket=" + ticket.ticketNo)}" alt="QR Code" />
+                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(publicBaseUrl + '/?tab=service&sub=approve-quote&ticket=' + ticket.ticketNo)}" alt="QR Code" />
                           </div>
                           `
-                               : ""
+                               : ''
                            }
                           <div class="print-footer">
-                            ${printConfig?.customFooterText || "Penawaran ini valid selama 7 hari."}
+                            ${printConfig?.customFooterText || 'Penawaran ini valid selama 7 hari.'}
                           </div>
                         </body>
                       </html>
@@ -892,11 +825,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                       printDoc.close();
                       window.setTimeout(async () => {
                         const result = await printJobAsync({
-                          title: "Service Document",
-                          html: printDoc.body?.innerHTML || "",
+                          title: 'Service Document',
+                          html: printDoc.body?.innerHTML || '',
                           printConfig,
                         });
-                        if (!result.ok) showToast(result.error || "Gagal mencetak dokumen.", "error");
+                        if (!result.ok)
+                          showToast(result.error || 'Gagal mencetak dokumen.', 'error');
                       }, 100);
                     }}
                     className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded-xl cursor-pointer text-center shadow-md flex items-center justify-center gap-1"
@@ -907,10 +841,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     onClick={() => {
                       const link = `${publicBaseUrl}/?tab=service&sub=approve-quote&ticket=${ticket.ticketNo}`;
                       navigator.clipboard.writeText(link);
-                      showToast(
-                        "Link Persetujuan Digital disalin ke clipboard!",
-                        "success",
-                      );
+                      showToast('Link Persetujuan Digital disalin ke clipboard!', 'success');
                     }}
                     className="flex-1 border border-indigo-200 bg-accent-lighter hover:bg-indigo-100 text-accent font-bold text-xs py-2 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1"
                   >
@@ -921,23 +852,20 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
             </div>,
             document.body
           );
-        })()
-      }
+        })()}
 
       {/* Warranty Card Certificate Printout */}
       {showWarrantyPrintout &&
         (() => {
-          const ticket = tenantServices.find(
-            (s) => s.id === showWarrantyPrintout,
-          );
+          const ticket = tenantServices.find((s) => s.id === showWarrantyPrintout);
           if (!ticket) return null;
           const customer = customers.find((c) => c.id === ticket.customerId);
           const expDate = new Date();
           expDate.setMonth(expDate.getMonth() + (ticket.warrantyMonths || 3));
-          const expString = expDate.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
+          const expString = expDate.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
           });
           const claimUrl = `${publicBaseUrl}/?tab=service&sub=warranty-claim&ticket=${ticket.ticketNo}`;
 
@@ -961,7 +889,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     KARTU GARANSI DIGITAL
                   </h4>
                   <p className="text-[9px] text-accent font-mono font-bold uppercase tracking-widest bg-accent-lighter px-2 py-0.5 rounded-full inline-block">
-{businessName.toUpperCase()} VERIFIED
+                    {businessName.toUpperCase()} VERIFIED
                   </p>
                 </div>
 
@@ -991,22 +919,18 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         <p className="text-[8px] text-indigo-300 uppercase font-mono tracking-wider">
                           Perangkat
                         </p>
-                        <p className="text-xs font-bold truncate">
-                          {ticket.deviceName}
-                        </p>
+                        <p className="text-xs font-bold truncate">{ticket.deviceName}</p>
                         <p className="text-[9px] text-indigo-200 truncate">
-                          {ticket.deviceBrandModel || "Suku Cadang"}
+                          {ticket.deviceBrandModel || 'Suku Cadang'}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-[8px] text-indigo-300 uppercase font-mono tracking-wider">
                           Pelanggan
                         </p>
-                        <p className="text-xs font-bold truncate">
-                          {customer?.name || "Umum"}
-                        </p>
+                        <p className="text-xs font-bold truncate">{customer?.name || 'Umum'}</p>
                         <p className="text-[9px] text-indigo-200 truncate">
-                          {customer?.phone || ""}
+                          {customer?.phone || ''}
                         </p>
                       </div>
                     </div>
@@ -1024,9 +948,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         <p className="text-[8px] text-indigo-300 uppercase font-mono tracking-wider">
                           Berlaku Hingga
                         </p>
-                        <p className="text-xs font-extrabold text-emerald-300">
-                          {expString}
-                        </p>
+                        <p className="text-xs font-extrabold text-emerald-300">{expString}</p>
                       </div>
                     </div>
                   </div>
@@ -1039,25 +961,16 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                   </p>
                   <ul className="list-disc pl-4 space-y-1 text-slate-500 text-[9.5px]">
                     <li>
-                      Segel garansi fisik pada perangkat{" "}
-                      <strong>wajib utuh</strong> (tidak rusak/robek).
+                      Segel garansi fisik pada perangkat <strong>wajib utuh</strong> (tidak
+                      rusak/robek).
                     </li>
+                    <li>Garansi hanya mencakup suku cadang yang diganti pada pengerjaan ini.</li>
                     <li>
-                      Garansi hanya mencakup suku cadang yang diganti pada
-                      pengerjaan ini.
-                    </li>
-                    <li>
-                      Tidak berlaku jika terjadi kerusakan akibat{" "}
-                      <strong>
-                        cairan, benturan keras (retak/pecah), atau kelalaian
-                        pengguna
-                      </strong>
+                      Tidak berlaku jika terjadi kerusakan akibat{' '}
+                      <strong>cairan, benturan keras (retak/pecah), atau kelalaian pengguna</strong>
                       .
                     </li>
-                    <li>
-                      Tunjukkan kartu garansi digital ini kepada kasir saat
-                      mengajukan klaim.
-                    </li>
+                    <li>Tunjukkan kartu garansi digital ini kepada kasir saat mengajukan klaim.</li>
                   </ul>
                 </div>
 
@@ -1067,7 +980,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     onClick={() => {
                       showToast(
                         `Klaim Garansi Terverifikasi! Sistem telah memvalidasi tiket ${ticket.ticketNo}. Status Garansi: AKTIF.`,
-                        "success",
+                        'success'
                       );
                     }}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all"
@@ -1079,26 +992,22 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     <button
                       onClick={() => {
                         let printIframe = document.getElementById(
-                          "hidden-print-iframe",
+                          'hidden-print-iframe'
                         ) as HTMLIFrameElement;
                         if (!printIframe) {
-                          printIframe = document.createElement("iframe");
-                          printIframe.id = "hidden-print-iframe";
-                          printIframe.style.position = "fixed";
-                          printIframe.style.width = "0";
-                          printIframe.style.height = "0";
-                          printIframe.style.border = "none";
-                          printIframe.style.opacity = "0";
+                          printIframe = document.createElement('iframe');
+                          printIframe.id = 'hidden-print-iframe';
+                          printIframe.style.position = 'fixed';
+                          printIframe.style.width = '0';
+                          printIframe.style.height = '0';
+                          printIframe.style.border = 'none';
+                          printIframe.style.opacity = '0';
                           document.body.appendChild(printIframe);
                         }
                         const printDoc =
-                          printIframe.contentWindow?.document ||
-                          printIframe.contentDocument;
+                          printIframe.contentWindow?.document || printIframe.contentDocument;
                         if (!printDoc) {
-                          showToast(
-                            "Gagal menginisialisasi modul pencetakan.",
-                            "error",
-                          );
+                          showToast('Gagal menginisialisasi modul pencetakan.', 'error');
                           return;
                         }
                         printDoc.open();
@@ -1125,7 +1034,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                           <body>
                             <div class="header">
                               ${logoHtml}
-                              <h4>${escapeHtml(printConfig?.customHeaderTitle || "KARTU GARANSI DIGITAL")}</h4>
+                              <h4>${escapeHtml(printConfig?.customHeaderTitle || 'KARTU GARANSI DIGITAL')}</h4>
                               <p>${escapeHtml(businessName.toUpperCase())} VERIFIED WARRANTY</p>
                             </div>
                              <div class="card">
@@ -1138,12 +1047,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                 <div>
                                   <div class="label">Perangkat</div>
                                   <div class="val">${ticket.deviceName}</div>
-                                  <div style="font-size: 9px; color: #cbd5e1;">${ticket.deviceBrandModel || "Suku Cadang"}</div>
+                                  <div style="font-size: 9px; color: #cbd5e1;">${ticket.deviceBrandModel || 'Suku Cadang'}</div>
                                 </div>
                                 <div style="text-align: right;">
                                   <div class="label">Pelanggan</div>
-                                  <div class="val">${customer?.name || "Umum"}</div>
-                                  <div style="font-size: 9px; color: #cbd5e1;">${customer?.phone || ""}</div>
+                                  <div class="val">${customer?.name || 'Umum'}</div>
+                                  <div style="font-size: 9px; color: #cbd5e1;">${customer?.phone || ''}</div>
                                 </div>
                               </div>
                               <div class="card-grid">
@@ -1164,9 +1073,9 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                                   printConfig?.printTermsAndConditions &&
                                   printConfig.termsAndConditionsText
                                     ? printConfig.termsAndConditionsText
-                                        .split("\n")
+                                        .split('\n')
                                         .map((line: string) => `<li>${escapeHtml(line)}</li>`)
-                                        .join("")
+                                        .join('')
                                     : `<li>Segel garansi fisik pada perangkat <strong>wajib utuh</strong> (tidak rusak/robek).</li>
                                 <li>Garansi hanya mencakup suku cadang yang diganti pada pengerjaan ini.</li>
                                 <li>Tidak berlaku jika terjadi kerusakan akibat <strong>cairan, benturan keras (retak/pecah), atau kelalaian pengguna</strong>.</li>
@@ -1181,10 +1090,10 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(claimUrl)}" alt="QR Code" />
                           </div>
                           `
-                                 : ""
+                                 : ''
                              }
                             <div class="print-footer">
-                                ${printConfig?.customFooterText || "Simpan kartu garansi ini untuk klaim di masa mendatang."}
+                                ${printConfig?.customFooterText || 'Simpan kartu garansi ini untuk klaim di masa mendatang.'}
                             </div>
                           </body>
                         </html>
@@ -1192,11 +1101,12 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                         printDoc.close();
                         window.setTimeout(async () => {
                           const result = await printJobAsync({
-                            title: "Warranty Card",
-                            html: printDoc.body?.innerHTML || "",
+                            title: 'Warranty Card',
+                            html: printDoc.body?.innerHTML || '',
                             printConfig,
                           });
-                          if (!result.ok) showToast(result.error || "Gagal mencetak kartu garansi.", "error");
+                          if (!result.ok)
+                            showToast(result.error || 'Gagal mencetak kartu garansi.', 'error');
                         }, 100);
                       }}
                       className="bg-accent hover:bg-accent-hover text-white font-semibold text-xs py-2 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1 flex-1"
@@ -1206,25 +1116,19 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(claimUrl);
-                        showToast(
-                          "Link klaim disalin ke clipboard!",
-                          "success",
-                        );
+                        showToast('Link klaim disalin ke clipboard!', 'success');
                       }}
                       className="border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs py-2 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1"
                     >
-                       <Share2 className="w-3.5 h-3.5 text-slate-400" /> Salin
-                       Link Klaim
-                      </button>
-                    </div>
+                      <Share2 className="w-3.5 h-3.5 text-slate-400" /> Salin Link Klaim
+                    </button>
                   </div>
                 </div>
-              </div>,
-              document.body
-            );
-          })()
-        }
-
+              </div>
+            </div>,
+            document.body
+          );
+        })()}
     </>
   );
 };

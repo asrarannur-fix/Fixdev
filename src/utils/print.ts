@@ -1,18 +1,18 @@
-import type { TenantSettings } from "../types";
+import type { TenantSettings } from '../types';
 
-export type PrintConfig = NonNullable<TenantSettings["printConfig"]>;
+export type PrintConfig = NonNullable<TenantSettings['printConfig']>;
 
 export const getPrintPageSize = (pc?: PrintConfig): string => {
-  const size = pc?.paperSize || "thermal_80";
-  if (size === "a4" || size === "hvs_a4") return "A4";
-  if (size === "hvs_letter") return "Letter";
-  if (size === "thermal_58") return "58mm auto";
-  return "80mm auto";
+  const size = pc?.paperSize || 'thermal_80';
+  if (size === 'a4' || size === 'hvs_a4') return 'A4';
+  if (size === 'hvs_letter') return 'Letter';
+  if (size === 'thermal_58') return '58mm auto';
+  return '80mm auto';
 };
 
 export const getPrintFontSizePx = (pc?: PrintConfig): number => {
-  if (pc?.printFontSize === "small" || pc?.printFontSize === "sm") return 10;
-  if (pc?.printFontSize === "large" || pc?.printFontSize === "lg") return 13;
+  if (pc?.printFontSize === 'small' || pc?.printFontSize === 'sm') return 10;
+  if (pc?.printFontSize === 'large' || pc?.printFontSize === 'lg') return 13;
   return 11;
 };
 
@@ -22,20 +22,19 @@ export const getPrintMargin = (pc?: PrintConfig): number => {
 };
 
 export const getPaperWidthStyle = (pc?: PrintConfig): string => {
-  const size = pc?.paperSize || "thermal_80";
-  if (size === "a4" || size === "hvs_a4") return "180mm";
-  if (size === "hvs_letter") return "216mm";
-  if (size === "thermal_58") return "54mm";
-  return "76mm";
+  const size = pc?.paperSize || 'thermal_80';
+  if (size === 'a4' || size === 'hvs_a4' || size === 'hvs_letter') return '100%';
+  if (size === 'thermal_58') return '54mm';
+  return '76mm';
 };
 
-export const escapeHtml = (value: string = ""): string =>
+export const escapeHtml = (value: string = ''): string =>
   value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 
 export const getPrintBaseCss = (pc?: PrintConfig): string => {
   const fontSize = getPrintFontSizePx(pc);
@@ -50,34 +49,34 @@ export const getPrintBaseCss = (pc?: PrintConfig): string => {
 
 export const getSafePrintImageUrl = (value?: string): string => {
   const source = value?.trim();
-  if (!source) return "";
+  if (!source) return '';
   if (/^data:image\/(?:png|jpe?g|gif|webp|bmp);base64,[a-z0-9+/=\s]+$/i.test(source)) {
     return escapeHtml(source);
   }
   try {
     const url = new URL(source, window.location.origin);
-    if ((url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password) {
+    if ((url.protocol === 'http:' || url.protocol === 'https:') && !url.username && !url.password) {
       return escapeHtml(url.href);
     }
   } catch {}
-  return "";
+  return '';
 };
 
 export const getPrintHeaderHtml = (
   pc: PrintConfig | undefined,
-  opts: { businessName: string; subtitle?: string; logoUrl?: string },
+  opts: { businessName: string; subtitle?: string; logoUrl?: string }
 ): string => {
   const title = escapeHtml(
-    (pc?.customHeaderTitle || "").trim() ||
-    (opts.businessName || "").toUpperCase()
+    (pc?.customHeaderTitle || '').trim() || (opts.businessName || '').toUpperCase()
   );
   const logoUrl = getSafePrintImageUrl(opts.logoUrl);
-  const logo = pc?.printHeaderLogo && logoUrl
-    ? `<div style="text-align:center;margin-bottom:6px;"><img src="${logoUrl}" alt="logo" style="height:34px;max-width:160px;object-fit:contain;"/></div>`
-    : "";
+  const logo =
+    pc?.printHeaderLogo && logoUrl
+      ? `<div style="text-align:center;margin-bottom:6px;"><img src="${logoUrl}" alt="logo" style="height:34px;max-width:160px;object-fit:contain;"/></div>`
+      : '';
   const subtitle = opts.subtitle
     ? `<div style="font-size:9px;color:#64748b;margin-top:2px;font-family:'JetBrains Mono',monospace;">${escapeHtml(opts.subtitle)}</div>`
-    : "";
+    : '';
   return `
     <div style="text-align:center;border-bottom:1px solid #e2e8f0;padding-bottom:10px;margin-bottom:12px;">
       ${logo}
@@ -87,34 +86,31 @@ export const getPrintHeaderHtml = (
   `;
 };
 
-export const getPrintFooterHtml = (
-  pc: PrintConfig | undefined,
-  fallback: string,
-): string => {
-  const text = (pc?.customFooterText || "").trim() || fallback;
+export const getPrintFooterHtml = (pc: PrintConfig | undefined, fallback: string): string => {
+  const text = (pc?.customFooterText || '').trim() || fallback;
   return `
     <div style="border-top:1px dashed #cbd5e1;margin-top:12px;padding-top:8px;font-size:9px;color:#64748b;text-align:center;line-height:1.4;">
-      ${escapeHtml(text).replace(/\n/g, "<br/>")}
+      ${escapeHtml(text).replace(/\n/g, '<br/>')}
     </div>
   `;
 };
 
 export const getPrintTermsHtml = (
   pc: PrintConfig | undefined,
-  type: "sales" | "rental" | "general" = "general",
+  type: 'sales' | 'rental' | 'general' = 'general'
 ): string => {
-  if (!pc?.printTermsAndConditions) return "";
+  if (!pc?.printTermsAndConditions) return '';
   const raw =
-    type === "sales"
+    type === 'sales'
       ? pc.termsSalesText
-      : type === "rental"
+      : type === 'rental'
         ? pc.termsRentalText
         : pc.termsAndConditionsText;
-  const text = (raw || "").trim();
-  if (!text) return "";
+  const text = (raw || '').trim();
+  if (!text) return '';
   return `
     <div style="border-top:1px dashed #cbd5e1;margin-top:12px;padding-top:8px;font-size:9px;color:#475569;text-align:left;line-height:1.4;white-space:pre-wrap;">
-      ${escapeHtml(text).replace(/\n/g, "<br/>")}
+      ${escapeHtml(text).replace(/\n/g, '<br/>')}
     </div>
   `;
 };
