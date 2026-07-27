@@ -1503,3 +1503,6 @@ export async function handoverServiceTicket(req: Request, res: Response) {
     sendError(res, error);
   }
 }
+
+// Re-export for route registration
+export { dataSyncHandler } from './data.controller.js';

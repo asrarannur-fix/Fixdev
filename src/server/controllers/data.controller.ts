@@ -299,6 +299,7 @@ const ALLOWED_TABLES = new Set([
   'warehouses',
   'customers',
   'products',
+  'service_tickets',
   'pos_shifts',
   'pos_transactions',
   'coa_accounts',
