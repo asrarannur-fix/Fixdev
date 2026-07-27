@@ -59,6 +59,11 @@ import {
   Barcode,
   PackagePlus,
   ListChecks,
+  ClipboardList,
+  User,
+  Phone,
+  Mail,
+  Tag,
 } from 'lucide-react';
 
 export const ServiceReceptionWizard: React.FC<any> = (props) => {
@@ -167,6 +172,24 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
   return (
     <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-indigo-100/50 via-violet-50/40 to-sky-100/50 rounded-3xl ring-1 ring-white/40 overflow-hidden">
       <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30">
+            <ClipboardList className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-slate-800 leading-tight">Penerimaan Servis</h2>
+            <p className="text-[11px] text-slate-500">Daftarkan unit pelanggan & buat tiket servis</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5">
+            {['Pelanggan', 'Kondisi', 'Penugasan'].map((step, i) => (
+              <div key={step} className="flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-indigo-500' : 'bg-slate-300'}`} />
+                <span className={`text-[10px] font-semibold ${i === 0 ? 'text-indigo-600' : 'text-slate-400'}`}>{step}</span>
+                {i < 2 && <div className="w-4 h-px bg-slate-200" />}
+              </div>
+            ))}
+          </div>
+        </div>
         {Object.keys(receptionErrors).length > 0 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">
@@ -316,7 +339,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
                   {showNewSrvCustForm && !newSrvCustomer && (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-indigo-100 bg-white p-3">
-                      <div>
+                      <div className="relative">
                         <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                           Nama Pelanggan Baru *
                         </label>
@@ -325,11 +348,12 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                           value={newSrvCustName}
                           onChange={(e) => setNewSrvCustName(e.target.value)}
                           placeholder="Nama lengkap"
-                          className={`w-full text-xs px-3 py-2 ${fieldBorder('customerName')} rounded-lg outline-none focus:border-accent`}
+                          className={`w-full text-xs pl-9 pr-3 py-2 ${fieldBorder('customerName')} rounded-lg outline-none focus:border-accent`}
                         />
+                        <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <FieldError name="customerName" />
                       </div>
-                      <div>
+                      <div className="relative">
                         <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                           Nomor WhatsApp *
                         </label>
@@ -341,11 +365,12 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                             setNewSrvCustPhone(normalizeIndonesianPhone(newSrvCustPhone))
                           }
                           placeholder="081234567890"
-                          className={`w-full text-xs px-3 py-2 ${fieldBorder('customerPhone')} rounded-lg outline-none focus:border-accent font-mono`}
+                          className={`w-full text-xs pl-9 pr-3 py-2 ${fieldBorder('customerPhone')} rounded-lg outline-none focus:border-accent font-mono`}
                         />
+                        <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <FieldError name="customerPhone" />
                       </div>
-                      <div>
+                      <div className="relative">
                         <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                           Email
                         </label>
@@ -354,8 +379,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                           value={newSrvCustEmail}
                           onChange={(e) => setNewSrvCustEmail(e.target.value)}
                           placeholder="pelanggan@email.com"
-                          className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
+                          className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent"
                         />
+                        <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       </div>
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -422,7 +448,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="relative">
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Nama Perangkat
                 </label>
@@ -431,12 +457,13 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   placeholder="Asus ROG GL503"
                   value={newSrvDevice}
                   onChange={(e) => setNewSrvDevice(e.target.value)}
-                  className={`w-full text-xs px-3 py-2 ${fieldBorder('deviceName')} rounded-lg outline-none focus:border-accent transition-all`}
+                  className={`w-full text-xs pl-9 pr-3 py-2 ${fieldBorder('deviceName')} rounded-lg outline-none focus:border-accent transition-all`}
                   required
                 />
+                <Cpu className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <FieldError name="deviceName" />
               </div>
-              <div>
+              <div className="relative">
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   Brand / Model
                 </label>
@@ -445,8 +472,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   placeholder="ASUS ROG GA401"
                   value={newSrvBrand}
                   onChange={(e) => setNewSrvBrand(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
+                  className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all"
                 />
+                <Tag className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
             </div>
 
