@@ -152,9 +152,7 @@ export const printJobAsync = async ({
   html,
   printConfig,
 }: PrintJob): Promise<PrintResult> => {
-  if (printConfig?.printMode === 'qz' && printConfig.printerName?.trim()) {
-    if (await qzPrint(title, html, printConfig)) return { ok: true, transport: 'qz' };
-  }
+  if (printConfig?.printMode === 'qz') return qzPrint(title, html, printConfig);
   const frame = document.createElement('iframe');
   frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none';
   frame.setAttribute('aria-hidden', 'true');

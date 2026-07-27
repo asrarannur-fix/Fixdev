@@ -10,6 +10,8 @@ test("browser dan QZ memakai dokumen print berbasis konfigurasi yang sama", () =
   assert.match(source, /getPaperWidthStyle\(printConfig\)/);
   assert.match(source, /data: createPrintDocument\(title, html, printConfig\)/);
   assert.match(source, /doc\.write\(createPrintDocument\(title, html, printConfig\)\)/);
+  assert.match(source, /if \(printConfig\?\.printMode === 'qz'\) return qzPrint/);
+  assert.doesNotMatch(source, /fallback browser aktif/);
 });
 
 test("pratinjau Settings memakai renderer dokumen print yang sama", () => {
