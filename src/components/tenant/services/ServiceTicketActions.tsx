@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { ServiceStatus } from '../../../types';
-import { SERVICE_TRANSITIONS, canServiceTransition } from '../../../domain/serviceWorkflow';
+import { SERVICE_TRANSITIONS, canServiceTransition, WORKFLOW_STEPS } from '../../../domain/serviceWorkflow';
 import {
   Activity,
   Check,
@@ -31,7 +31,6 @@ const canTransition = (from: ServiceStatus, to: ServiceStatus): boolean =>
 export { SERVICE_TRANSITIONS, canTransition };
 
 // Workflow steps imported from domain layer
-const { WORKFLOW_STEPS } = require('../../../domain/serviceWorkflow');
 
 export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
   ticket,
