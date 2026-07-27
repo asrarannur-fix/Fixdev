@@ -270,14 +270,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
       onClick={() => setViewingServiceTicketId(null)}
       role="dialog"
       aria-modal="true"
       aria-labelledby="service-detail-title"
     >
       <div
-        className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
+        className="flex h-[100dvh] w-full max-w-5xl flex-col bg-white shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -306,9 +306,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
           }}
         />
 
-        <div className="flex-1 flex flex-col xl:flex-row overflow-hidden">
+        <div className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden">
           {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
-          <div className="xl:w-[30%] 2xl:w-[28%] border-r border-slate-100 bg-slate-50/50 p-2 lg:p-3 overflow-y-auto space-y-2">
+          <div className="order-2 xl:order-1 xl:w-[30%] 2xl:w-[28%] border-r border-slate-100 bg-slate-50/50 p-2 lg:p-3 overflow-y-auto space-y-2">
             {/* Section: Customer & Device */}
             <div className="bg-white p-3 border border-slate-100 rounded-2xl space-y-2 shadow-xs">
               <div className="space-y-1.5 text-xs text-slate-600">
@@ -705,7 +705,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
           </div>
 
           {/* RIGHT PANEL: Interactive Workstation */}
-          <div className="xl:w-[70%] 2xl:w-[72%] p-3 lg:p-5 overflow-y-auto space-y-4 lg:space-y-5 flex flex-col justify-between">
+          <div className="order-1 xl:order-2 xl:w-[70%] 2xl:w-[72%] p-3 lg:p-5 overflow-y-auto space-y-4 lg:space-y-5 flex flex-col justify-between">
             <div className="space-y-6">
               {/* Visual Repair Workflow Stepper */}
               <ServiceTicketActions

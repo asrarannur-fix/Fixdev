@@ -74,59 +74,60 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Visual Workflow Tracker */}
-      <div className="flex items-center justify-between">
-        <h4 className="font-bold text-[10px] text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-indigo-500" /> Visual Repair Workflow
-        </h4>
-        <div className="flex items-center gap-1.5 bg-accent-lighter border border-indigo-100 px-2 py-0.5 rounded-lg">
-          <div className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
-          <span className="text-[9px] font-mono font-bold text-accent">Live Tracker & Control</span>
+      {/* Workflow: compact on mobile, labels stay readable */}
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+            <Activity className="h-4 w-4 text-accent" /> Alur servis
+          </h4>
+          <span className="text-[10px] font-medium text-slate-500">Pilih tahap aktif</span>
         </div>
-      </div>
+        <div className="relative flex items-start justify-between px-1">
+          <div className="absolute left-6 right-6 top-4 z-0 h-1 rounded bg-slate-200" />
 
-      <div className="flex items-center justify-between relative mt-4 px-2">
-        <div className="absolute top-4 left-6 right-6 h-1 bg-slate-200 z-0 rounded" />
+          {WORKFLOW_STEPS.map((step, idx) => {
+            const isCompleted = idx < activeStep;
+            const isActive = idx === activeStep;
 
-        {WORKFLOW_STEPS.map((step, idx) => {
-          const isCompleted = idx < activeStep;
-          const isActive = idx === activeStep;
-
-          return (
-            <div key={idx} className="flex flex-col items-center flex-1 relative z-10">
-              <button
-                type="button"
-                disabled={!canTransition(ticket.status, step.status)}
-                onClick={() => {
-                  if (!canTransition(ticket.status, step.status)) return;
-                  const note = `Status diperbarui via Visual Workflow ke: ${step.label}`;
-                  onStatusChange(step.status, note);
-                }}
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all border-2 outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-                  isCompleted
-                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                    : isActive
-                      ? 'bg-accent border-accent text-white ring-4 ring-indigo-100 shadow-md shadow-accent/20'
-                      : 'bg-white border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600'
-                }`}
-                title={`Ubah status ke ${step.label}`}
-              >
-                {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
-              </button>
-              <span
-                className={`text-[9px] font-bold mt-1.5 text-center transition-colors ${
-                  isActive
-                    ? 'text-accent font-extrabold'
-                    : isCompleted
-                      ? 'text-emerald-600'
-                      : 'text-slate-500'
-                }`}
-              >
-                {step.label}
-              </span>
-            </div>
-          );
-        })}
+            return (
+              <div key={idx} className="relative z-10 flex flex-1 flex-col items-center">
+                <button
+                  type="button"
+                  disabled={!canTransition(ticket.status, step.status)}
+                  onClick={() => {
+                    if (!canTransition(ticket.status, step.status)) return;
+                    const note = `Status diperbarui via Visual Workflow ke: ${step.label}`;
+                    onStatusChange(step.status, note);
+                  }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all border-2 outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isCompleted
+                      ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                      : isActive
+                        ? 'bg-accent border-accent text-white ring-4 ring-indigo-100 shadow-md shadow-accent/20'
+                        : 'bg-white border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600'
+                  }`}
+                  title={`Ubah status ke ${step.label}`}
+                >
+                  {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
+                </button>
+                <span
+                  className={`mt-1.5 hidden max-w-[70px] text-center text-[8px] font-bold leading-tight transition-colors sm:block sm:max-w-none sm:text-[9px] ${
+                    isActive
+                      ? 'text-accent font-extrabold'
+                      : isCompleted
+                        ? 'text-emerald-600'
+                        : 'text-slate-500'
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-center text-[10px] font-semibold text-slate-700 sm:hidden">
+          {WORKFLOW_STEPS[activeStep]?.label}
+        </p>
       </div>
 
       {/* Tech Control Center */}

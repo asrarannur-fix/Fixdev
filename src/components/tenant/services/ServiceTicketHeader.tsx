@@ -26,23 +26,23 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
   onClose,
 }) => {
   return (
-    <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-2">
-      <div className="flex items-center gap-3">
-        <span className="p-2 bg-accent-lighter rounded-lg text-accent">
+    <div className="sticky top-0 z-20 p-3 sm:p-4 border-b border-slate-200 bg-white/95 backdrop-blur flex flex-wrap items-center justify-between gap-3">
+      <div className="min-w-0 flex items-center gap-3">
+        <span className="shrink-0 p-2 bg-accent-lighter rounded-xl text-accent">
           <Wrench className="w-5 h-5" />
         </span>
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3 id="service-detail-title" className="font-bold text-sm text-slate-800">
-              Manajemen Perbaikan & Servis
+              Tiket servis
             </h3>
             <span className="font-mono text-xs font-bold text-accent">#{ticket.ticketNo}</span>
-          </div>
-          <p className="text-[10px] text-slate-400">
-            Status Aktif:{' '}
-            <strong className="text-accent">
+            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
               {SERVICE_STATUS_META[ticket.status as ServiceStatus]?.label || ticket.status}
-            </strong>
+            </span>
+          </div>
+          <p className="truncate text-[11px] text-slate-500">
+            {customer?.name || 'Pelanggan umum'} · {ticket.deviceName || 'Unit belum diisi'}
           </p>
         </div>
       </div>
