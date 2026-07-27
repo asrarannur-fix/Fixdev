@@ -1034,3 +1034,33 @@ div.fixed.inset-0 > div[class*="dialog"] {
     box-shadow: 0 0 60px 0px var(--glow-color);
   }
 }
+
+/* ===== Stripe-inspired utilities (reception wizard polish) ===== */
+.stripe-card {
+  background: #ffffff;
+  border: 1px solid #e5edf5;
+  border-radius: 8px;
+  box-shadow: rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px;
+}
+.stripe-input {
+  border: 1px solid #e5edf5;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.stripe-input:focus {
+  border-color: #533afd;
+  box-shadow: 0 0 0 3px rgba(83,58,253,0.15);
+  outline: none;
+}
+.stripe-btn {
+  background: linear-gradient(135deg, #533afd, #4434d4);
+  color: #ffffff;
+  border-radius: 6px;
+  box-shadow: rgba(50,50,93,0.25) 0px 13px 27px -5px, rgba(0,0,0,0.1) 0px 8px 16px -8px;
+  transition: all 0.15s ease;
+}
+.stripe-btn:hover {
+  background: linear-gradient(135deg, #4434d4, #2e2b8c);
+  box-shadow: rgba(50,50,93,0.3) 0px 18px 32px -6px, rgba(0,0,0,0.12) 0px 10px 20px -8px;
+}
+.stripe-heading { color: #061b31; }

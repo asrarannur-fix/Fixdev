@@ -158,14 +158,14 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
   const fieldError = (k: string): string | undefined => receptionErrors?.[k];
   const fieldBorder = (k: string) =>
-    fieldError(k) ? 'border-red-400 focus:ring-red-300' : 'border-slate-200 focus:ring-accent/30';
+    fieldError(k) ? 'stripe-input border-red-400' : 'stripe-input';
   const FieldError = ({ name }: { name: string }) =>
     fieldError(name) ? (
       <p className="text-[10px] font-medium text-rose-600 mt-1">{fieldError(name)}</p>
     ) : null;
 
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 rounded-3xl shadow-sm ring-1 ring-slate-100 overflow-hidden">
+    <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-[#f5f3ff] via-white to-[#eef2ff] rounded-3xl shadow-sm ring-1 ring-slate-100 overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
           <Save className="w-3 h-3" /> Draft otomatis
@@ -200,7 +200,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
         )}
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,1fr)] gap-6 items-start">
           {/* Left Column: Device & Customer Info */}
-          <div className="space-y-4 bg-slate-50/60 rounded-2xl p-4 shadow-sm">
+          <div className="space-y-4 stripe-card p-4">
             <div className="rounded-2xl bg-white p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
@@ -837,9 +837,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </div>
 
           {/* Right Column: Checklist, Photos, and Outsourcing */}
-          <div className="space-y-4 bg-slate-50/60 rounded-2xl p-4 shadow-sm xl:sticky xl:top-28">
+          <div className="space-y-4 stripe-card p-4 xl:sticky xl:top-28">
             {/* Checklist */}
-            <div className="bg-white p-3 rounded-xl ring-1 ring-slate-100 space-y-2.5">
+            <div className="bg-white p-3 rounded-xl border border-[#e5edf5] space-y-2.5">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-[11px] text-slate-600">
                   Checklist Uji Fungsi & Kondisi Masuk:
@@ -908,7 +908,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Accessories Left Selection */}
-            <div className="bg-white p-3 rounded-xl ring-1 ring-slate-100 space-y-2.5">
+            <div className="bg-white p-3 rounded-xl border border-[#e5edf5] space-y-2.5">
               <p className="font-semibold text-[11px] text-slate-600">
                 Aksesoris Titipan / Bawaan:
               </p>
@@ -1163,7 +1163,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             <button
               type="submit"
               disabled={isSubmittingReception}
-              className="bg-gradient-to-r from-accent to-accent hover:from-accent-hover hover:to-accent-hover text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer transition-all shadow-lg shadow-accent/25 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="stripe-btn font-bold text-xs px-6 py-2.5 cursor-pointer flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmittingReception ? (
                 <>
