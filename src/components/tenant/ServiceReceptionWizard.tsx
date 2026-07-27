@@ -166,25 +166,6 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
   return (
     <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-indigo-100/50 via-violet-50/40 to-sky-100/50 rounded-3xl ring-1 ring-white/40 overflow-hidden">
-      <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
-          <Save className="w-3 h-3" /> Draft otomatis
-        </span>
-        <div className="flex items-center gap-2 min-w-[160px]">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">
-            Kelengkapan form
-          </span>
-          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300"
-              style={{ width: `${(receptionProgress / 4) * 100}%` }}
-            />
-          </div>
-          <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">
-            {receptionProgress}/4
-          </span>
-        </div>
-      </div>
       <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-5 space-y-4">
         {Object.keys(receptionErrors).length > 0 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
