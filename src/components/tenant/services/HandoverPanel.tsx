@@ -62,7 +62,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
   setShowInvoicePrintout,
   setShowWarrantyPrintout,
 }) => {
-  if (!["SELESAI", "SIAP_DIAMBIL"].includes(ticket.status)) return null;
+  if (!["SELESAI", "SIAP_DIAMBIL", "DIAMBIL"].includes(ticket.status)) return null;
 
   const isRefOrProofRequired =
     handoverPaymentMethod !== PaymentMethod.CASH &&
