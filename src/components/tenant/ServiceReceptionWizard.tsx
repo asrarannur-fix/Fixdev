@@ -166,7 +166,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
   return (
     <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 rounded-3xl shadow-sm ring-1 ring-slate-100 overflow-hidden">
-      <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/70 backdrop-blur">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
           <Save className="w-3 h-3" /> Draft otomatis
         </span>
@@ -185,15 +185,15 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           </span>
         </div>
       </div>
-      <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-4 sm:p-6 space-y-6">
+      <form ref={receptionFormRef} onSubmit={handleCreateService} className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
         {Object.keys(receptionErrors).length > 0 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">
               Data wajib belum lengkap
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-[11px] text-rose-700">
-              {receptionErrors.map((error) => (
-                <li key={error}>{error}</li>
+              {Object.values(receptionErrors).map((error) => (
+                <li key={String(error)}>{String(error)}</li>
               ))}
             </ul>
           </div>
