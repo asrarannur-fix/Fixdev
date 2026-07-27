@@ -306,6 +306,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
           }}
         />
 
+        {/* Next-step guidance so the workflow is never "missed" */}
+        <NextStepBanner ticket={ticket} />
+
         <div className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden">
           {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
           <div className="order-2 xl:order-1 xl:w-[30%] 2xl:w-[28%] border-r border-slate-100 bg-slate-50/50 p-2 lg:p-3 overflow-y-auto space-y-2">
@@ -2321,5 +2324,34 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
       </div>
     </div>,
     document.body
+  );
+};
+
+// Guidance banner that always shows the user the next workflow step,
+// so no stage (diagnosis -> approval -> repair -> QC -> handover) is missed.
+const NEXT_STEP: Record<string, { label: string; hint: string }> = {
+  [ServiceStatus.DITERIMA]: { label: 'Isi Diagnosa & Estimasi', hint: 'Buka bagian "Diagnosa Teknis", tulis hasil & estimasi biaya, lalu simpan.' },
+  [ServiceStatus.ANTRIAN]: { label: 'Isi Diagnosa & Estimasi', hint: 'Buka bagian "Diagnosa Teknis", tulis hasil & estimasi biaya, lalu simpan.' },
+  [ServiceStatus.DIAGNOSA]: { label: 'Kirim Estimasi ke Pelanggan', hint: 'Gunakan "Kirim Estimasi via WhatsApp" agar pelanggan bisa menyetujui.' },
+  [ServiceStatus.ESTIMATE_PENDING]: { label: 'Persetujuan Pelanggan', hint: 'Tunggu pelanggan menyetujui estimasi (link WhatsApp) lalu klik "Setujui Digital".' },
+  [ServiceStatus.MENUGGU_APPROVAL]: { label: 'Persetujuan Pelanggan', hint: 'Tunggu pelanggan menyetujui estimasi (link WhatsApp) lalu klik "Setujui Digital".' },
+  [ServiceStatus.SEDANG_DIKERJAKAN]: { label: 'Proses Perbaikan', hint: 'Gunakan "Pusat Kendali Teknisi" untuk spare part / biaya tambahan.' },
+  [ServiceStatus.REWORK]: { label: 'Proses Perbaikan (Rework)', hint: 'Lanjutkan perbaikan pada unit yang dikembalikan.' },
+  [ServiceStatus.MENUGGU_SPAREPART]: { label: 'Terima Sparepart', hint: 'Setelah spare part tiba, lanjutkan ke proses perbaikan.' },
+  [ServiceStatus.QC]: { label: 'Lakukan QC / Testing', hint: 'Klik "Selesaikan QC" dan isi checklist pengujian.' },
+  [ServiceStatus.SELESAI]: { label: 'Serah Terima (Handover)', hint: 'Klik "Serah Terima Unit" untuk menyelesaikan servis.' },
+};
+
+const NextStepBanner: React.FC<{ ticket: any }> = ({ ticket }) => {
+  const step = NEXT_STEP[ticket?.status];
+  if (!step) return null;
+  return (
+    <div className="mx-3 mt-3 flex items-start gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-3 py-2">
+      <ArrowRight className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+      <div className="text-xs">
+        <p className="font-bold text-blue-800">Langkah Selanjutnya: {step.label}</p>
+        <p className="text-blue-600/80">{step.hint}</p>
+      </div>
+    </div>
   );
 };

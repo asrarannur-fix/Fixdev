@@ -334,6 +334,19 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   useEffect(() => {
     setLocalSubTab(activeSubTab);
   }, [activeSubTab]);
+
+  // Auto-open the detail/workflow modal right after a reception is created,
+  // so the user is taken straight to the next step (diagnosis) instead of
+  // being dropped back on the list.
+  useEffect(() => {
+    if (justCreatedTicket && justCreatedTicket.id) {
+      setViewingServiceTicketId(justCreatedTicket.id);
+      if (activeSubTab !== 'list') setActiveSubTab('list');
+      setJustCreatedTicket(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justCreatedTicket]);
+
   const setActiveSubTab = (sub: string) => {
     setLocalSubTab(sub);
     try {
