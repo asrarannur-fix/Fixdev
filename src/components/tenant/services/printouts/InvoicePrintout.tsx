@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Printer } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { getPrintBaseCss, escapeHtml } from '../../../../utils/print';
-import { printJob } from '../../../../utils/printJob';
+import { printJobAsync } from '../../../../utils/printJob';
 import { useSaaS } from '../../../../context/SaaSContext';
 import { TenantSettings } from '../../../../types';
 
@@ -171,7 +171,7 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
       </html>
     `;
     window.setTimeout(async () => {
-      const result = await printJob({
+      const result = await printJobAsync({
         title: 'Service Document',
         html: printDoc.innerHTML || '',
         printConfig,

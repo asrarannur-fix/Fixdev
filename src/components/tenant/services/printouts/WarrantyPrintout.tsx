@@ -3,7 +3,7 @@ import { X, Printer, ShieldCheck, CheckCircle2, Zap, Share2 } from 'lucide-react
 import { createPortal } from 'react-dom';
 import { ServiceTicket, Customer, User } from '../../../../types';
 import { getPrintBaseCss, escapeHtml, getSafePrintImageUrl } from '../../../../utils/print';
-import { printJob } from '../../../../utils/printJob';
+import { printJobAsync } from '../../../../utils/printJob';
 import { useSaaS } from '../../../../context/SaaSContext';
 
 type PrintConfig = NonNullable<NonNullable<import('../../../../types').TenantSettings['printConfig']>>;
@@ -134,7 +134,7 @@ export const WarrantyPrintout: React.FC<WarrantyPrintoutProps> = ({
       </html>
     `;
     window.setTimeout(async () => {
-      const result = await printJob({
+      const result = await printJobAsync({
         title: 'Warranty Card',
         html: printDoc.innerHTML || '',
         printConfig,
