@@ -25,10 +25,10 @@ export const resolvePrintConfig = (
     branches: config.branches,
     documentProfiles: config.documentProfiles,
   };
-  if (!resolved.printerName && resolved.multiPrinterMap) {
+  if (resolved.multiPrinterMap) {
     const map = resolved.multiPrinterMap as Record<string, string>;
     if (documentType && map[documentType]) resolved.printerName = map[documentType];
-    else if (map._default) resolved.printerName = map._default;
+    else if (map._default && !branchConfig?.printerName) resolved.printerName = map._default;
   }
   return resolved;
 };
