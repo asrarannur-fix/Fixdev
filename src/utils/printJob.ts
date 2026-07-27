@@ -59,6 +59,9 @@ const configureQzSigning = async (): Promise<void> => {
   qzSigningConfigured = true;
 };
 
+const createPrintDocument = (title: string, html: string, printConfig?: PrintConfig) =>
+  `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title || 'Print Job')}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}button{display:none!important}</style></head><body><main class="print-root">${html}</main></body></html>`;
+
 const qzPrint = async (title: string, html: string, printConfig: PrintConfig): Promise<boolean> => {
   const qz = window.qz;
   const printerName = printConfig.printerName?.trim();
@@ -69,7 +72,12 @@ const qzPrint = async (title: string, html: string, printConfig: PrintConfig): P
     const printer = await qz.printers.find(printerName);
     if (!printer) throw new Error(`Printer tidak ditemukan: ${printConfig.printerName}`);
     await qz.print(qz.configs.create(printer, { jobName: title }), [
-      { type: 'pixel', format: 'html', flavor: 'plain', data: html },
+      {
+        type: 'pixel',
+        format: 'html',
+        flavor: 'plain',
+        data: createPrintDocument(title, html, printConfig),
+      },
     ]);
     return true;
   } catch (error) {
@@ -129,7 +137,6 @@ export const printJobAsync = async ({
   html,
   printConfig,
 }: PrintJob): Promise<PrintResult> => {
-  const safeTitle = escapeHtml(title || 'Print Job');
   if (printConfig?.printMode === 'qz' && printConfig.printerName?.trim()) {
     if (await qzPrint(title, html, printConfig)) return { ok: true, transport: 'qz' };
   }
@@ -144,9 +151,7 @@ export const printJobAsync = async ({
   }
   try {
     doc.open();
-    doc.write(
-      `<!doctype html><html><head><title>${safeTitle}</title><style>${getPrintBaseCss(printConfig)}.print-root{width:${getPaperWidthStyle(printConfig)};max-width:100%;margin:0 auto}button{display:none!important}</style></head><body><main class="print-root">${html}</main></body></html>`
-    );
+    doc.write(createPrintDocument(title, html, printConfig));
     doc.close();
     await new Promise<void>((resolve) => {
       const imgs = Array.from(doc.querySelectorAll('img'));
