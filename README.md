@@ -4,75 +4,82 @@ SaaS ERP multi-tenant untuk operasional servis laptop, inventory, POS, accountin
 
 ## Source dan runtime
 
-- Source canonical: `/home/ubuntu/fixdev`
-- Production: PM2 `fixdev-erp`, loopback port `3000`
-- Development: PM2 `fixdev-dev`, loopback port `3001`, Vite HMR aktif
-- Production URL: <https://fixdev.web.id>
-- Development URL: <https://dev.fixdev.web.id>
+- Source canonical: `/data/fixdev`
+- Production: PM2 `fixdev-erp`, port `3000`
+- Development: PM2 `fixdev-dev`, port `3001`, Vite HMR aktif
+- Production URL: https://fixdev.web.id
+- Development URL: https://dev.fixdev.web.id
 
-## Quick validation
+## Struktur folder (bersih)
+
+```
+/data/fixdev
+├── src/              # source code frontend + backend
+├── server.ts         # entry point server (backend)
+├── dist/             # hasil build (frontend + dist/server.cjs) — runtime wajib
+├── node_modules/     # dependency — runtime wajib
+├── migrations/       # SQL migrasi database
+├── public/           # static assets (terms.html, privacy.html)
+├── certs/            # QZ print certificate
+├── logs/             # log runtime (auto-regen)
+├── .env              # secret development
+└── .env.production   # secret production
+```
+
+File di luar daftar di atas (docs, tests, ops, tools, scripts, plans, CI, Docker)
+sudah dibuang agar folder ringkas. Server prod & dev tetap berjalan normal.
+
+## Build & jalankan
 
 ```bash
-npm run lint
-npm test
+# install dependency (kalau node_modules dihapus)
+npm ci
+
+# build backend (dist/server.cjs) + frontend (dist/)
+npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs
 npm run build
-npm run preflight:production
-npm audit --audit-level=high
-git diff --check
+
+# jalankan produksi via pm2
+pm2 start ecosystem.config.cjs --env production
+
+# jalankan development (Vite HMR, port 3001)
+pm2 start dist/server.cjs --name fixdev-dev
 ```
 
 ## Operasional
 
 ```bash
 pm2 list
+pm2 logs fixdev-erp
+pm2 restart fixdev-erp
 pm2 save
-systemctl is-active pm2-ubuntu
 sudo nginx -t
 curl -fsSk https://fixdev.web.id/api/health
 curl -fsSk https://dev.fixdev.web.id/api/health
 ```
 
+Environment production dibaca dari `.env.production` (via `DOTENV_CONFIG_PATH`
+di `ecosystem.config.cjs`). Jangan edit `.env` untuk production.
+
 ## Aturan penting
 
-- Jangan menjalankan production dari `/var/www/fixdev`.
+- Jangan menjalankan production dari folder selain `/data/fixdev`.
 - Jangan memasukkan secret/token/password ke source, docs, test, atau log.
 - Semua API tenant wajib memvalidasi `tenant_id`; operasi branch wajib memvalidasi `branch_id`.
 - Public tracking memakai tenant dari hostname tervalidasi, bukan `tenantId` bebas dari client.
 - Error internal harus dicatat server-side dan response client harus generik.
 - Jangan commit atau mengubah secret tanpa review pemilik.
 
-## Operasional sederhana
+## Database
 
-Semua workflow push/deploy/database/rollback ada di [ops/README.md](ops/README.md).
+Skema dikelola via SQL di `migrations/`. Untuk menjalankan migrasi manual ke
+database production, gunakan `psql` dengan credential dari `.env.production`:
 
 ```bash
-bash ops/push.sh "type: ringkasan perubahan"
-bash ops/deploy.sh
-bash ops/health.sh
-bash ops/migrate-production.sh
+psql "$DATABASE_URL" -f migrations/<nama>.sql
 ```
 
-## Dokumentasi agent
+## Referensi skema
 
-- [Module Catalog & Integration Map](docs/MODULE_CATALOG_INTEGRATION_MAP.md)
-- [Agent Audit & Execution Prompt](docs/AGENT_AUDIT_AND_EXECUTION_PROMPT.md)
-- [Agent Execution Master Plan](docs/AGENT_EXECUTION_MASTER_PLAN.md)
-
-## Dokumentasi kanonik
-
-Baca [FIXDEV Stabilization Master](docs/FIXDEV_STABILIZATION_MASTER.md) untuk:
-
-- arsitektur runtime
-- boundary authentication dan tenant
-- aturan upload/error handling
-- deployment dan recovery
-- quality gate
-- backlog residual dan definition of done
-
-Dokumen domain yang tetap berlaku:
-
-- [AGENTS.md](AGENTS.md)
-- [Database Schema Guardrail](DATABASE_SCHEMA_GUARDRAIL.md)
-- [Role/Menu Matrix](ROLE_MENU_MATRIX.md)
-- [Deployment Checklist](DEPLOYMENT_PRODUCTION_CHECKLIST.md)
-- [Rollback Plan](INCIDENT_ROLLBACK_PLAN.md)
+Lihat [DATABASE_SCHEMA_GUARDRAIL.md](DATABASE_SCHEMA_GUARDRAIL.md) untuk aturan
+pembuatan/perubahan tabel (UUID default, tenant isolation, no phantom columns).
