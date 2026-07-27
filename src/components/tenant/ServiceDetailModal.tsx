@@ -10,7 +10,7 @@ import {
   canTransition,
 } from './services/ServiceTicketActions';
 import { getStorageLocations } from './StorageLocationManager';
-import { buildServiceReceptionPreview } from '../../utils/serviceReceptionUtils';
+import { buildServiceReceptionPreview, normalizeIndonesianPhone } from '../../utils/serviceReceptionUtils';
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from '../../types';
 import { useSaaS } from '../../context/SaaSContext';
 import {
@@ -40,6 +40,7 @@ import {
   CheckSquare,
   Activity,
   Maximize,
+  MessageCircle,
   Check,
   Calendar,
   ArrowRight,
@@ -1801,6 +1802,25 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   {(ticket.status === ServiceStatus.ESTIMATE_PENDING ||
                     ticket.status === ServiceStatus.MENUGGU_APPROVAL) && (
                     <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          const phone = normalizeIndonesianPhone(customer?.phone || '');
+                          const est = Number(ticket.estimatedCost) || 0;
+                          const msg =
+                            `Halo *${customer?.name || 'Pelanggan'}*, unit *${ticket.deviceName}* ` +
+                            `(Tiket *${ticket.ticketNo}*) memerlukan perbaikan ` +
+                            `dengan estimasi biaya *Rp ${est.toLocaleString('id-ID')}*. ` +
+                            `Silakan setujui estimasi melalui portal resmi kami. ` +
+                            `Terima kasih.`;
+                          window.open(
+                            `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,
+                            '_blank',
+                          );
+                        }}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Kirim Estimasi via WhatsApp
+                      </button>
                       <button
                         onClick={() => setShowProvisionalQuote(ticket.id)}
                         className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs py-2.5 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-sm"
