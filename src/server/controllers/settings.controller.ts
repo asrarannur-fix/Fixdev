@@ -583,7 +583,7 @@ export async function getBranches(req: Request, res: Response) {
   try {
     const result = await dbQuery(
       `SELECT b.* FROM branches b LEFT JOIN user_branches ub ON ub.branch_id=b.id AND ub.user_id=$2
-       WHERE b.tenant_id=$1 AND b.deleted_at IS NULL AND ($3 OR ub.user_id IS NOT NULL) ORDER BY b.created_at ASC`,
+       WHERE b.tenant_id=$1 AND ($3 OR ub.user_id IS NOT NULL) ORDER BY b.created_at ASC`,
       [
         req.tenantId,
         req.authActor?.userId,
