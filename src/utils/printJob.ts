@@ -1,6 +1,8 @@
 import type { PrintConfig } from './print';
 import { escapeHtml, getPrintBaseCss, getPaperWidthStyle } from './print';
 import { generateQrSvg } from './qrSvg';
+import { generateBarcodeSvg } from './barcode1d';
+import { applyWatermarkToHtml, getWatermarkConfig } from './watermark';
 import {
   enqueuePrintJob,
   getPendingPrintJobs,
@@ -8,6 +10,7 @@ import {
   markJobDone,
   markJobFailed,
 } from './offlinePrintQueue';
+import { emitPrintNotification } from '../components/PrintNotifications';
 
 export type PrintJob = {
   title: string;
@@ -452,10 +455,13 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
       errorCode: 'REPRINT_REASON_REQUIRED',
       error: 'Alasan cetak ulang wajib diisi.',
     };
-  const watermark = job.reprint
+  const reprintWatermark = job.reprint
     ? '<div style="position:fixed;inset:40% 0 auto;text-align:center;font-size:42px;font-weight:bold;opacity:.16;transform:rotate(-25deg);z-index:9999">SALINAN / REPRINT</div>'
     : '';
-  const html = watermark + job.html;
+  const wmConfig = getWatermarkConfig(printConfig);
+  const customWm = wmConfig.enabled && wmConfig.text && !job.reprint ? wmConfig : undefined;
+  let html = reprintWatermark + job.html;
+  if (customWm) html = applyWatermarkToHtml(html, customWm);
   const idempotencyKey = crypto.randomUUID();
   const transport = printConfig?.printMode === 'qz' ? 'qz' : 'browser';
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(html));
@@ -500,7 +506,29 @@ export const printJobAsync = async (job: PrintJob): Promise<PrintResult> => {
           errorMessage: result.error,
         }),
       }).catch(() => undefined);
-    return { ...result, jobId: serverJobId };
+    const finalResult = { ...result, jobId: serverJobId };
+    if (result.ok) {
+      emitPrintNotification({
+        type: 'success',
+        title: 'Cetak Berhasil',
+        message: `${title} dicetak via ${result.transport === 'qz' ? 'QZ Tray' : 'Browser'}`,
+        documentType: job.documentType,
+        documentId: job.documentId,
+        transport: result.transport,
+        printer: printConfig?.printerName,
+      });
+    } else {
+      emitPrintNotification({
+        type: 'error',
+        title: 'Cetak Gagal',
+        message: result.error || 'Terjadi kesalahan saat mencetak',
+        documentType: job.documentType,
+        documentId: job.documentId,
+        transport: result.transport,
+        printer: printConfig?.printerName,
+      });
+    }
+    return finalResult;
   };
 
   if (printConfig?.printMode === 'qz') {

@@ -63,12 +63,17 @@ import {
   FileCode,
   BarChart3,
   ScanSearch,
+  Clock,
+  DollarSign,
 } from 'lucide-react';
 import { Tenant, Branch, WorkflowRule, UserRole, TenantBranding } from '../../types';
 import { PrintHistory } from '../PrintHistory';
 import { PrintAnalytics } from '../PrintAnalytics';
 import { PrintTemplateManager } from '../PrintTemplateManager';
+import { PrintQueueVisualization } from '../PrintQueueVisualization';
+import { PrintCostTracker } from '../PrintCostTracker';
 import { checkQzTray } from '../../utils/printJob';
+import { DEFAULT_WATERMARK } from '../../utils/watermark';
 
 export const SettingsPrinterTerms: React.FC<any> = (props) => {
   const {
@@ -115,7 +120,7 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
     apiFetch,
   } = props;
   const [settingsView, setSettingsView] = React.useState<
-    'config' | 'history' | 'analytics' | 'templates'
+    'config' | 'history' | 'analytics' | 'templates' | 'queue' | 'cost'
   >('config');
   const [thermalCompact, setThermalCompact] = React.useState(
     activeTenant?.settings?.printConfig?.thermalCompact ?? false
@@ -250,6 +255,8 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
           { key: 'history' as const, icon: History, label: 'Riwayat' },
           { key: 'analytics' as const, icon: BarChart3, label: 'Analitik' },
           { key: 'templates' as const, icon: FileCode, label: 'Template' },
+          { key: 'queue' as const, icon: Clock, label: 'Antrian' },
+          { key: 'cost' as const, icon: DollarSign, label: 'Biaya' },
         ].map(({ key, icon: Icon, label }) => (
           <button
             key={key}
@@ -282,6 +289,14 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
               savePrinterSettings({ printTemplates: t });
             }}
           />
+        </div>
+      ) : settingsView === 'queue' ? (
+        <div className="xl:col-span-12 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <PrintQueueVisualization />
+        </div>
+      ) : settingsView === 'cost' ? (
+        <div className="xl:col-span-12 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <PrintCostTracker />
         </div>
       ) : (
         <>
@@ -796,6 +811,148 @@ export const SettingsPrinterTerms: React.FC<any> = (props) => {
                     }}
                     className="w-4.5 h-4.5 rounded text-accent focus:ring-accent border-slate-300 cursor-pointer"
                   />
+                </div>
+
+                <div className="border border-slate-100 bg-slate-50/50 rounded-xl p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-slate-700 block">
+                        Watermark Kustom
+                      </span>
+                      <span className="text-[9px] text-slate-400 block">
+                        Tambahkan watermark otomatis pada dokumen cetak
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!(activeTenant?.settings?.printConfig as any)?.watermark?.enabled}
+                      onChange={(e) => {
+                        const current =
+                          (activeTenant?.settings?.printConfig as any)?.watermark || {};
+                        savePrinterSettings({
+                          watermark: { ...current, enabled: e.target.checked },
+                        } as any);
+                      }}
+                      className="w-4.5 h-4.5 rounded text-accent focus:ring-accent border-slate-300 cursor-pointer"
+                    />
+                  </div>
+                  {(activeTenant?.settings?.printConfig as any)?.watermark?.enabled && (
+                    <div className="space-y-2 pl-1">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Teks watermark"
+                          defaultValue={
+                            (activeTenant?.settings?.printConfig as any)?.watermark?.text || 'COPY'
+                          }
+                          onBlur={(e) => {
+                            const current =
+                              (activeTenant?.settings?.printConfig as any)?.watermark || {};
+                            savePrinterSettings({
+                              watermark: { ...current, text: e.target.value || 'COPY' },
+                            } as any);
+                          }}
+                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 flex-1"
+                        />
+                        <input
+                          type="number"
+                          min="8"
+                          max="120"
+                          defaultValue={
+                            (activeTenant?.settings?.printConfig as any)?.watermark?.fontSize || 48
+                          }
+                          onBlur={(e) => {
+                            const current =
+                              (activeTenant?.settings?.printConfig as any)?.watermark || {};
+                            savePrinterSettings({
+                              watermark: { ...current, fontSize: parseInt(e.target.value) || 48 },
+                            } as any);
+                          }}
+                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 w-16"
+                          title="Ukuran font"
+                        />
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          defaultValue={Math.round(
+                            ((activeTenant?.settings?.printConfig as any)?.watermark?.opacity ||
+                              0.15) * 100
+                          )}
+                          onBlur={(e) => {
+                            const current =
+                              (activeTenant?.settings?.printConfig as any)?.watermark || {};
+                            savePrinterSettings({
+                              watermark: {
+                                ...current,
+                                opacity: Math.min(
+                                  1,
+                                  Math.max(0.01, (parseInt(e.target.value) || 15) / 100)
+                                ),
+                              },
+                            } as any);
+                          }}
+                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 w-16"
+                          title="Opacity %"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          defaultValue={
+                            (activeTenant?.settings?.printConfig as any)?.watermark?.color ||
+                            '#d1d5db'
+                          }
+                          onChange={(e) => {
+                            const current =
+                              (activeTenant?.settings?.printConfig as any)?.watermark || {};
+                            savePrinterSettings({
+                              watermark: { ...current, color: e.target.value },
+                            } as any);
+                          }}
+                          className="w-8 h-8 rounded border border-slate-200 cursor-pointer"
+                          title="Warna watermark"
+                        />
+                        <input
+                          type="number"
+                          min="-180"
+                          max="180"
+                          defaultValue={
+                            (activeTenant?.settings?.printConfig as any)?.watermark?.rotation || -45
+                          }
+                          onBlur={(e) => {
+                            const current =
+                              (activeTenant?.settings?.printConfig as any)?.watermark || {};
+                            savePrinterSettings({
+                              watermark: { ...current, rotation: parseInt(e.target.value) || -45 },
+                            } as any);
+                          }}
+                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 w-16"
+                          title="Rotasi (derajat)"
+                        />
+                        <select
+                          defaultValue={
+                            (activeTenant?.settings?.printConfig as any)?.watermark?.position ||
+                            'center'
+                          }
+                          onChange={(e) => {
+                            const current =
+                              (activeTenant?.settings?.printConfig as any)?.watermark || {};
+                            savePrinterSettings({
+                              watermark: { ...current, position: e.target.value },
+                            } as any);
+                          }}
+                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 flex-1"
+                        >
+                          <option value="center">Tengah</option>
+                          <option value="top-left">Kiri Atas</option>
+                          <option value="top-right">Kanan Atas</option>
+                          <option value="bottom-left">Kiri Bawah</option>
+                          <option value="bottom-right">Kanan Bawah</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 rounded-xl">

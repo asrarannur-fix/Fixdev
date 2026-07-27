@@ -145,3 +145,52 @@ export const getPendingCount = async (): Promise<number> => {
     req.onerror = () => reject(req.error);
   });
 };
+
+export const getAllJobs = async (): Promise<OfflinePrintJob[]> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+};
+
+export const getJobCountByStatus = async (): Promise<{
+  pending: number;
+  processing: number;
+  failed: number;
+}> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const idx = store.index('status');
+    let pending = 0,
+      processing = 0,
+      failed = 0;
+    let done = 0;
+    const finish = () => {
+      if (++done === 3) resolve({ pending, processing, failed });
+    };
+    const countP = idx.count('pending');
+    countP.onsuccess = () => {
+      pending = countP.result;
+      finish();
+    };
+    countP.onerror = () => finish();
+    const countPr = idx.count('processing');
+    countPr.onsuccess = () => {
+      processing = countPr.result;
+      finish();
+    };
+    countPr.onerror = () => finish();
+    const countF = idx.count('failed');
+    countF.onsuccess = () => {
+      failed = countF.result;
+      finish();
+    };
+    countF.onerror = () => finish();
+  });
+};

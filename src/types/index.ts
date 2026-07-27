@@ -104,6 +104,18 @@ export interface TenantSettings {
     multiPrinterMap?: Record<string, string>;
     printTemplates?: Record<string, string>;
     branches?: Record<string, Record<string, unknown>>;
+    watermark?: {
+      enabled?: boolean;
+      text?: string;
+      fontSize?: number;
+      color?: string;
+      opacity?: number;
+      rotation?: number;
+      position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    };
+    printBarcode?: boolean;
+    barcodeHeight?: number;
+    barcodeShowText?: boolean;
   };
   waConfig?: {
     gateway?: string;
