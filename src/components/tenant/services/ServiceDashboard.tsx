@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart3,
   Clock,
@@ -8,7 +8,49 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
+  Bell,
 } from 'lucide-react';
+
+// Notification system
+interface ServiceNotification {
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: number;
+}
+
+const useServiceNotifications = (tickets: any[]) => {
+  const [notifications, setNotifications] = useState<ServiceNotification[]>([]);
+
+  useEffect(() => {
+    if (!tickets || tickets.length === 0) return;
+
+    // Check for new completed tickets
+    const completedTickets = tickets.filter(t => t.status === 'SELESAI');
+    const newCompleted = completedTickets.filter(t => !t._notified);
+
+    newCompleted.forEach(ticket => {
+      setNotifications(prev => [
+        ...prev,
+        {
+          id: ticket.id,
+          message: `Tiket #${ticket.id} telah selesai`,
+          type: 'success',
+          timestamp: Date.now(),
+        },
+      ]);
+    });
+
+    // Auto-remove notifications after 5s
+    notifications.forEach(n => {
+      if (Date.now() - n.timestamp > 5000) {
+        setNotifications(prev => prev.filter(x => x.id !== n.id));
+      }
+    });
+  }, [tickets]);
+
+  return notifications;
+};
 
 const STATUS_COLORS: Record<string, string> = {
   DITERIMA: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
