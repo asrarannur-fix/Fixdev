@@ -9,7 +9,7 @@ import {
   listServiceTickets,
   getServiceTicket,
   transitionServiceTicket,
-  diagnoseServiceTicket,
+  diagnoseService,
   approveServiceEstimate,
   completeServiceQc,
   createServicePartOrder,
@@ -49,7 +49,7 @@ router.post(
   '/:id/diagnosis',
   requireServiceTicketTenant,
   requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'),
-  diagnoseServiceTicket
+  diagnoseService
 );
 
 // Approval & QC

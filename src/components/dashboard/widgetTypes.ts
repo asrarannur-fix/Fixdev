@@ -25,6 +25,9 @@ export interface DashboardMetrics {
   totalBillingUnpaid: number;
   transactions: any[];
   services: any[];
+  shifts?: any[];
+  fieldVisits?: any[];
+  totalLoyaltyPoints?: number;
   dateLabel: string;
   revenueDelta: string | null;
   serviceDelta: string | null;

@@ -5,7 +5,7 @@ interface KPICardProps {
   label: string;
   value: string | number;
   trend?: string;
-  trendPositive?: boolean;
+  trendPositive?: boolean | null;
 }
 
 export const KPICard: React.FC<KPICardProps> = ({ icon, label, value, trend, trendPositive }) => (
@@ -21,7 +21,9 @@ export const KPICard: React.FC<KPICardProps> = ({ icon, label, value, trend, tre
       {trend && (
         <div className="text-right">
           <span className={`text-xs font-bold ${
-            trendPositive === true ? 'text-green-600' : trendPositive === false ? 'text-red-600' : 'text-slate-500'
+            trendPositive === true ? 'text-green-600' :
+            trendPositive === false ? 'text-red-600' :
+            'text-slate-400'
           }`}>
             {trend}
           </span>

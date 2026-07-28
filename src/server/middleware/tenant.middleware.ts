@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { dbQuery } from '../lib/db.js';
+import { dbQuery } from '../../lib/db.js';
 
 /**
  * Middleware untuk memastikan tenantId valid dan aktif

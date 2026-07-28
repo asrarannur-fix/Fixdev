@@ -369,7 +369,6 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       try {
         localStorage.removeItem(SRV_DRAFT);
       } catch {}
-      receptionIdempotencyKeyRef.current = crypto.randomUUID();
       showToast('Penerimaan Unit Servis berhasil didaftarkan!', 'success');
       setActiveSubTab('list');
     } catch (error: any) {
@@ -378,6 +377,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       showToast(message, 'error');
     } finally {
       setIsSubmittingReception(false);
+      receptionIdempotencyKeyRef.current = crypto.randomUUID();
     }
   };
 

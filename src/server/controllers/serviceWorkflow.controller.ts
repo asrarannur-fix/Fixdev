@@ -537,6 +537,8 @@ export async function getStatusEvents(req: Request, res: Response) {
     sendError(res, error);
   }
 }
+
+export async function diagnoseService(req: Request, res: Response) {
   const parsed = diagnosisSchema.safeParse(req.body);
   if (!parsed.success)
     return res

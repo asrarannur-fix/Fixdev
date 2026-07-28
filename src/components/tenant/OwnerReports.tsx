@@ -85,18 +85,18 @@ const SortableWidget: React.FC<{
     <div
       ref={setNodeRef}
       id={`widget-${id}`}
-      style={style}
-      className="animate-fadeIn relative group"
+      style={{ ...style, touchAction: 'none' }}
+      className="animate-fadeIn relative group cursor-grab active:cursor-grabbing"
       {...attributes}
       {...listeners}
     >
-      <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+      <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
         <div className="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-lg px-2 py-1 text-[9px] font-bold text-slate-500 dark:text-zinc-400 shadow-sm border border-slate-200 dark:border-zinc-700 flex items-center gap-1">
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
           Geser
         </div>
       </div>
-      <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden pointer-events-none">
         <WidgetComponent data={metrics} accentColor={accentColor} onSetTab={onSetTab} />
       </div>
     </div>
@@ -114,6 +114,8 @@ export const OwnerReports: React.FC<{
     scopedCustomers: customers,
     scopedEmployees: employees,
     scopedCashTransactions: cashTransactions,
+    scopedShifts: shifts,
+    scopedFieldVisits: fieldVisits,
     currentBranchId,
     currentTenantId,
     warehouses,
@@ -132,7 +134,7 @@ export const OwnerReports: React.FC<{
   const [searchQuery, setSearchQuery] = useState('');
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const handleWidgetDragEnd = useCallback((event: DragEndEvent) => {
@@ -205,6 +207,13 @@ export const OwnerReports: React.FC<{
     const pSer = pSv
       .filter((s: any) => s.status === ServiceStatus.SELESAI || s.status === ServiceStatus.DIAMBIL)
       .reduce((s: number, t: any) => s + (Number(t.estimatedCost) || 0), 0);
+    const productCostMap = new Map(pr.map((p: any) => [p.id, Number(p.purchaseCost) || 0]));
+    const posCOGS = tx.reduce((s: number, t: any) => {
+      return s + (t.items || []).reduce((is2: number, item: any) => {
+        const cost = productCostMap.get(item.productId) || 0;
+        return is2 + cost * (Number(item.quantity) || 0);
+      }, 0);
+    }, 0);
     const completed = sv.filter(
       (s: any) => s.status === ServiceStatus.SELESAI || s.status === ServiceStatus.DIAMBIL
     ).length;
@@ -237,14 +246,17 @@ export const OwnerReports: React.FC<{
       return ids.reduce((s: number, i: string) => s + (Number(p.warehouseStock[i]) || 0), 0);
     };
     const lSt = pr.filter((p: any) => p.category !== 'JASA' && gBS(p) <= (p.minStock ?? 5));
+    const totalLoyaltyPoints = cu.reduce((s: number, c: any) => s + (Number(c.loyaltyPoints) || 0), 0);
+    const fShifts = (shifts || []).filter((s: any) => s.tenantId === currentTenantId);
+    const fFieldVisits = (fieldVisits || []).filter((v: any) => v.tenantId === currentTenantId);
     return {
       posRevenue: posRev,
       serviceRevenue: servRev,
       totalRevenue: posRev + servRev,
-      grossProfit: posRev + servRev - posRev * 0.65,
+      grossProfit: posRev + servRev - posCOGS,
       profitMargin:
         posRev + servRev > 0
-          ? (((posRev + servRev - posRev * 0.65) / (posRev + servRev)) * 100).toFixed(1)
+          ? (((posRev + servRev - posCOGS) / (posRev + servRev)) * 100).toFixed(1)
           : '0',
       completedServices: completed,
       activeTickets: active,
@@ -261,10 +273,11 @@ export const OwnerReports: React.FC<{
       lowStockItems: lSt,
       totalBillingPaid: bPaid,
       totalBillingUnpaid: bUnpaid,
-      activeSubscription: activeTenant?.status === 'ACTIVE',
-      subscriptionTier: activeTenant?.tier || 'BASIC',
       transactions: tx,
       services: sv,
+      shifts: fShifts,
+      fieldVisits: fFieldVisits,
+      totalLoyaltyPoints,
       dateLabel: DATE_LABELS[dateRange],
       revenueDelta: pRev > 0 ? (((posRev - pRev) / pRev) * 100).toFixed(1) : null,
       serviceDelta: pSer > 0 ? (((servRev - pSer) / pSer) * 100).toFixed(1) : null,
@@ -276,6 +289,8 @@ export const OwnerReports: React.FC<{
     products,
     customers,
     employees,
+    shifts,
+    fieldVisits,
     warehouses,
     currentTenantId,
     currentBranchId,

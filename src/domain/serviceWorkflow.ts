@@ -1,5 +1,8 @@
 import { ServiceStatus } from '../types';
 
+export { ServiceStatus };
+export type SERVICE_STATUS = ServiceStatus;
+
 export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
   [ServiceStatus.DRAFT]: [ServiceStatus.BOOKING, ServiceStatus.DITERIMA, ServiceStatus.DIBATALKAN],
   [ServiceStatus.BOOKING]: [ServiceStatus.DITERIMA, ServiceStatus.DIBATALKAN],
