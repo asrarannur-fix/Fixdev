@@ -9,6 +9,8 @@ import {
   ArrowDownRight,
   TrendingUp,
   Bell,
+  Wrench,
+  Package,
 } from 'lucide-react';
 
 // Notification system
@@ -18,6 +20,20 @@ interface ServiceNotification {
   type: 'info' | 'success' | 'warning' | 'error';
   timestamp: number;
 }
+
+const ServiceKPIItem: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  icon: React.ElementType;
+  color: string;
+  bg: string;
+}> = ({ label, value, icon: Icon, color, bg }) => (
+  <div className={`flex items-center gap-3 rounded-lg border border-black/[0.06] dark:border-white/[0.06] ${bg} p-3`}>
+    <Icon className={`w-4 h-4 ${color}`} />
+    <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{label}</span>
+    <span className={`ml-auto text-sm font-black ${color}`}>{value}</span>
+  </div>
+);
 
 const useServiceNotifications = (tickets: any[]) => {
   const [notifications, setNotifications] = useState<ServiceNotification[]>([]);
@@ -160,6 +176,25 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
             <div className={`text-lg font-black ${color}`}>{value}</div>
           </div>
         ))}
+      </div>
+
+      {/* Daftar KPI Servis */}
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl border border-black/[0.08] dark:border-white/10 shadow-sm p-5">
+        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+          Daftar KPI Servis
+        </h3>
+        <div className="space-y-3">
+          <ServiceKPIItem label="Total Tiket" value={total} icon={BarChart3} color="text-slate-700" bg="bg-slate-100" />
+          <ServiceKPIItem label="Tiket Terbuka" value={open} icon={Clock} color="text-amber-700" bg="bg-amber-100" />
+          <ServiceKPIItem label="Tiket Selesai" value={completed} icon={CheckCircle2} color="text-emerald-700" bg="bg-emerald-100" />
+          <ServiceKPIItem label="Tiket Dibatalkan" value={cancelled} icon={AlertTriangle} color="text-rose-700" bg="bg-rose-100" />
+          <ServiceKPIItem label="Klaim Garansi" value={warrantyClaims} icon={Wallet} color="text-violet-700" bg="bg-violet-100" />
+          <ServiceKPIItem label="Rata-rata Biaya" value={`Rp ${avgCost.toLocaleString('id-ID')}`} icon={TrendingUp} color="text-accent" bg="bg-accent/10" />
+          <ServiceKPIItem label="Tingkat Penyelesaian" value={`${total > 0 ? Math.round((completed / total) * 100) : 0}%`} icon={CheckCircle2} color="text-emerald-700" bg="bg-emerald-100" />
+          <ServiceKPIItem label="Tiket Menunggu Approval" value={tickets.filter(t => t.status === 'MENUGGU_APPROVAL').length} icon={Clock} color="text-orange-700" bg="bg-orange-100" />
+          <ServiceKPIItem label="Tiket Sedang Dikerjakan" value={tickets.filter(t => t.status === 'SEDANG_DIKERJAKAN').length} icon={Wrench} color="text-blue-700" bg="bg-blue-100" />
+          <ServiceKPIItem label="Tiket Menunggu Sparepart" value={tickets.filter(t => t.status === 'MENUGGU_SPAREPART' || t.status === 'MENUGGU_PART_ORDER').length} icon={Package} color="text-purple-700" bg="bg-purple-100" />
+        </div>
       </div>
 
       {/* Status Distribution + Priority */}

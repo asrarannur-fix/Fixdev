@@ -20,7 +20,9 @@ export const KPICard: React.FC<KPICardProps> = ({ icon, label, value, trend, tre
       </div>
       {trend && (
         <div className="text-right">
-          <span className={`text-xs font-bold ${trendPositive ? 'text-green-600' : 'text-red-600'}`}>
+          <span className={`text-xs font-bold ${
+            trendPositive === true ? 'text-green-600' : trendPositive === false ? 'text-red-600' : 'text-slate-500'
+          }`}>
             {trend}
           </span>
         </div>

@@ -13,9 +13,9 @@ export const KPIOperationsWidget: React.FC<WidgetProps> = ({ data }) => (
           <div className="w-7 h-7 rounded-xl bg-pink-500 flex items-center justify-center shadow-sm shadow-pink-200 dark:shadow-pink-900/30">
             <BarChart3 className="w-3.5 h-3.5 text-white" />
           </div>
-          {data.svcDelta !== null && data.svcDelta !== 0 && (
-            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${Number(data.svcDelta) > 0 ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400"}`}>
-              {Number(data.svcDelta) > 0 ? "+" : ""}{data.svcDelta}%
+          {data.serviceDelta !== null && data.serviceDelta !== 0 && (
+            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${Number(data.serviceDelta) > 0 ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400"}`}>
+              {Number(data.serviceDelta) > 0 ? "+" : ""}{data.serviceDelta}%
             </span>
           )}
         </div>

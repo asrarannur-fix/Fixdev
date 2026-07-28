@@ -5,6 +5,7 @@ import { KPIBillingWidget } from "./widgets/KPIBillingWidget";
 import { StockAlertsWidget } from "./widgets/StockAlertsWidget";
 import { CashFlowWidget } from "./widgets/CashFlowWidget";
 import { AnalyticsWidget } from "./widgets/AnalyticsWidget";
+import { OperationsOverviewWidget } from "./widgets/OperationsOverviewWidget";
 
 export const WIDGET_REGISTRY: WidgetConfig[] = [
   {
@@ -48,11 +49,19 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     component: CashFlowWidget,
   },
   {
+    id: "ops-overview",
+    label: "Operasional Hari Ini",
+    icon: "Clock",
+    defaultVisible: true,
+    defaultOrder: 6,
+    component: OperationsOverviewWidget,
+  },
+  {
     id: "analytics",
     label: "Analitik Transaksi",
     icon: "Activity",
     defaultVisible: true,
-    defaultOrder: 6,
+    defaultOrder: 7,
     component: AnalyticsWidget,
   },
 ];

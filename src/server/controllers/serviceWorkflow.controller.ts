@@ -496,7 +496,47 @@ export async function transitionServiceTicket(req: Request, res: Response) {
   }
 }
 
-export async function diagnoseServiceTicket(req: Request, res: Response) {
+export async function addStatusEvent(req: Request, res: Response) {
+  const { status, note } = req.body;
+  if (!status || !note) {
+    return res.status(422).json({ error: 'Status dan catatan wajib diisi.' });
+  }
+
+  try {
+    const ticket = await dbTransaction(async (client) => {
+      const current = await lockedTicket(client, req);
+      if (!canTransition(current.status, status)) {
+        const error: any = new Error(`Transisi ${current.status} ke ${status} tidak diizinkan.`);
+        error.status = 409;
+        throw error;
+      }
+      await appendEvent(client, req, current, status, note);
+      return finalTicket(client, req);
+    });
+    res.json({ data: ticket });
+  } catch (error: any) {
+    sendError(res, error);
+  }
+}
+
+/**
+ * Get status events for a service ticket
+ */
+export async function getStatusEvents(req: Request, res: Response) {
+  try {
+    const result = await dbQuery(
+      `SELECT id, ticket_id AS "ticketId", from_status AS "fromStatus", to_status AS "toStatus", 
+             note, actor_user_id AS "actorUserId", metadata, created_at AS "createdAt"
+       FROM service_status_events
+       WHERE ticket_id=$1 AND tenant_id=$2
+       ORDER BY created_at ASC`,
+      [req.params.id, req.tenantId]
+    );
+    res.json({ data: result.rows });
+  } catch (error: any) {
+    sendError(res, error);
+  }
+}
   const parsed = diagnosisSchema.safeParse(req.body);
   if (!parsed.success)
     return res

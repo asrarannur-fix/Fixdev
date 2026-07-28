@@ -1,5 +1,5 @@
 import React from "react";
-import { TrendingUp, Banknote, Wrench, ShoppingBag, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { TrendingUp, Banknote, Wrench, ShoppingBag, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { WidgetProps } from "../widgetTypes";
 
 const fmtRupiah = (n: number) => `Rp ${Math.round(n || 0).toLocaleString("id-ID")}`;

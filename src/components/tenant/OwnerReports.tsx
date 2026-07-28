@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
-import { Settings, Calendar, ChevronDown, Printer, Search } from 'lucide-react';
+import { Settings, Calendar, Printer, Search } from 'lucide-react';
 import { ServiceStatus } from '../../types';
 import { WidgetLayout, loadWidgetLayout } from '../dashboard/widgetTypes';
 import { WIDGET_REGISTRY } from '../dashboard/widgetRegistry';
@@ -166,7 +166,7 @@ export const OwnerReports: React.FC<{
     const cOut = ca
       .filter((c: any) => c.type === 'CASH_OUT')
       .reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0);
-    const payroll = em.reduce((s: number, e: any) => s + (Number(e.salary) || 0), 0);
+    const payroll = em.reduce((s: number, e: any) => s + (Number(e.basicSalary) || 0), 0);
     const billHist = (activeTenant as any)?.billingHistory || [];
     const bPaid = billHist
       .filter((i: any) => i.status === 'PAID')
@@ -308,7 +308,7 @@ export const OwnerReports: React.FC<{
             key={r}
             onClick={() => setDateRange(r)}
             className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
-              dateRange === r ? DATE_TAILWINDS[r] : DATE_TAILWINDS[r]
+              dateRange === r ? DATE_TAILWINDS[r] : 'bg-white dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'
             }`}
           >
             {DATE_LABELS[r]}
@@ -348,7 +348,7 @@ export const OwnerReports: React.FC<{
           icon="📋"
           label="Transaksi"
           value={fTx.length.toString()}
-          trend={`-${(metrics.avgTicketValue ? ((metrics.avgTicketValue / (metrics.avgTicketValue || 1)) * 100).toFixed(0) : '0')}%`}
+          trend={metrics.revenueDelta ? `${metrics.revenueDelta}%` : '-'}
         />
         <KPICard
           icon="🔧"
@@ -358,7 +358,7 @@ export const OwnerReports: React.FC<{
         />
         <KPICard
           icon="⚠️"
-          label="Stok Menipau"
+          label="Stok Menipis"
           value={metrics.lowStockCount.toString()}
           trend={metrics.lowStockCount > 0 ? 'Perlu restock' : 'OK'}
         />

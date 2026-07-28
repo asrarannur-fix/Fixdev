@@ -11,12 +11,44 @@ export interface WidgetConfig {
   component: React.FC<WidgetProps>;
 }
 
+export interface DashboardMetrics {
+  posRevenue: number;
+  serviceRevenue: number;
+  totalRevenue: number;
+  grossProfit: number;
+  profitMargin: string;
+  completedServices: number;
+  activeTickets: number;
+  totalTickets: number;
+  avgTicketValue: number;
+  deadStock: number;
+  totalProducts: number;
+  totalCustomers: number;
+  totalCashIn: number;
+  totalCashOut: number;
+  cashFlow: number;
+  totalPayroll: number;
+  lowStockCount: number;
+  lowStockItems: any[];
+  totalBillingPaid: number;
+  totalBillingUnpaid: number;
+  activeSubscription: boolean;
+  subscriptionTier: string;
+  transactions: any[];
+  services: any[];
+  dateLabel: string;
+  revenueDelta: string | null;
+  serviceDelta: string | null;
+  totalLoyaltyPoints: number;
+  activeShifts: number;
+  todayShifts: number;
+  fieldVisitsToday: number;
+  stockMovementsToday: number;
+}
+
 export interface WidgetProps {
-  /** All data passed from OwnerReports — widgets are pure renderers */
-  data: any;
-  /** Tenant accent color */
+  data: DashboardMetrics;
   accentColor: string;
-  /** Callback to navigate to a module */
   onSetTab?: (tab: string, subTab?: string) => void;
 }
 
@@ -29,21 +61,21 @@ export interface WidgetLayout {
 
 export const DEFAULT_LAYOUT: WidgetLayout = {
   order: [
-    "quick-actions",
     "kpi-revenue",
     "kpi-operations",
     "kpi-billing",
     "stock-alerts",
     "cash-flow",
+    "ops-overview",
     "analytics",
   ],
   visible: {
-    "quick-actions": true,
     "kpi-revenue": true,
     "kpi-operations": true,
     "kpi-billing": true,
     "stock-alerts": true,
     "cash-flow": true,
+    "ops-overview": true,
     "analytics": true,
   },
 };
