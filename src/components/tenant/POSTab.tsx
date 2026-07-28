@@ -17,6 +17,7 @@ import {
 import { MarketplaceHub } from '../MarketplaceHub';
 import { useToast } from '../ui/Toast';
 import { useSaaS } from '../../context/SaaSContext';
+import { readJsonResponse } from '../../utils/apiResponse';
 
 interface POSTabProps {
   activeSubTab: string;
@@ -89,6 +90,31 @@ export const POSTab: React.FC<POSTabProps> = ({
   const [voidLoading, setVoidLoading] = useState(false);
   const [voucherCode, setVoucherCode] = useState('');
   const { showToast } = useToast();
+
+// Split payment validation
+const validateSplitPayment = (grandTotal: number): boolean => {
+  if (!splitEnabled) return true;
+  const splitAmt = parseFloat(splitAmount) || 0;
+  if (splitAmt <= 0 || splitAmt >= grandTotal) {
+    showToast('Jumlah split harus antara 0 dan total belanja', 'error');
+    return false;
+  }
+  return true;
+};
+
+// Shift validation helpers
+const isShiftOpen = (): boolean => {
+  return activeShift !== null && activeShift.status === 'OPEN';
+};
+
+const requireOpenShift = (action: string): boolean => {
+  if (!isShiftOpen()) {
+    showToast(`Buka shift dulu sebelum ${action}`, 'error');
+    return false;
+  }
+  return true;
+};
+
   const {
     currentTenantId: contextTenantId,
     currentUser: contextCurrentUser,
@@ -139,6 +165,22 @@ export const POSTab: React.FC<POSTabProps> = ({
     // Total amount actually paid = primary method + optional split portion,
     // so the backend's underpayment guard sees the full payment.
     const totalPaid = (Number(posAmountPaid) || 0) + (splitEnabled ? Number(splitAmount) || 0 : 0);
+
+    // Voucher validation - validate format before submitting
+    const validateVoucher = (code: string): boolean => {
+      if (!code.trim()) return true;
+      const voucherRegex = /^[A-Z0-9]{4,20}$/i;
+      if (!voucherRegex.test(code.trim())) {
+        showToast('Kode voucher tidak valid. Gunakan huruf & angka (4-20 karakter).', 'error');
+        return false;
+      }
+      return true;
+    };
+
+    if (voucherCode.trim() && !validateVoucher(voucherCode)) {
+      return;
+    }
+
     if (voucherCode.trim()) {
       details = `VOUCHER:${voucherCode.trim()}`;
     }
@@ -175,10 +217,12 @@ export const POSTab: React.FC<POSTabProps> = ({
   React.useEffect(() => {
     let cancelled = false;
     apiFetch('/pos/sales/holds')
-      .then((r) => r.json())
+      .then((r) => readJsonResponse<any>(r))
       .then((body: any) => {
         const rows = Array.isArray(body) ? body : body.data || body.items || [];
-        const loaded = rows.filter((x: any) => x.tenantId === contextTenantId);
+        const loaded = rows
+          .filter((x: any) => x.tenantId === contextTenantId)
+          .sort((a: any, b: any) => new Date(b.created_at || b.createdAt || b.id).getTime() - new Date(a.created_at || a.createdAt || a.id).getTime());
         if (!cancelled) setHeldCarts(loaded);
       })
       .catch((e: any) => showToast(e.message || 'Held cart gagal dimuat.', 'error'));
@@ -186,6 +230,16 @@ export const POSTab: React.FC<POSTabProps> = ({
       cancelled = true;
     };
   }, [apiFetch, contextTenantId, showToast]);
+
+  // Auto-expiry check for held carts (older than 24 hours)
+  const getExpiredHeldCarts = () => {
+    const now = new Date();
+    return heldCarts.filter((cart: any) => {
+      const created = new Date(cart.created_at || cart.createdAt || cart.id);
+      const hours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+      return hours > 24;
+    });
+  };
 
   const taxAmount = Math.max(0, (subtotal - discountAmount) * (taxRatePct / 100));
   const grandTotal = Math.max(0, subtotal - discountAmount + taxAmount - effectiveDeposit);
@@ -218,10 +272,10 @@ export const POSTab: React.FC<POSTabProps> = ({
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Hold sale HTTP ${res.status}`);
-      const saved = await res.json();
+      const saved = await readJsonResponse<any>(res);
       const savedId = (saved?.data?.id || saved?.id || Date.now().toString()) as string;
       // Reload from backend to keep single source of truth.
-      const reload = await apiFetch('/pos/sales/holds').then((r) => r.json());
+      const reload = await apiFetch('/pos/sales/holds').then((r) => readJsonResponse<any>(r));
       const rows = Array.isArray(reload) ? reload : reload.data || reload.items || [];
       setHeldCarts(rows.filter((x: any) => x.tenantId === contextTenantId));
       setInternalCart([]);
@@ -236,7 +290,7 @@ export const POSTab: React.FC<POSTabProps> = ({
     try {
       const res = await apiFetch(`/pos/sales/${heldId}/recall`, { method: 'POST' });
       if (!res.ok) throw new Error(`Recall HTTP ${res.status}`);
-      const body = await res.json();
+      const body = await readJsonResponse<any>(res);
       const data = body?.data || body;
       // Map backend items -> internal cart shape.
       const cart = (data.items || []).map((it: any) => ({
@@ -251,7 +305,7 @@ export const POSTab: React.FC<POSTabProps> = ({
       setInternalCart(cart);
       setInternalDeposit(Number(data.depositUsed) || 0);
       // Reload from backend (recall deletes the hold).
-      const reload = await apiFetch('/pos/sales/holds').then((r) => r.json());
+      const reload = await apiFetch('/pos/sales/holds').then((r) => readJsonResponse<any>(r));
       const rows = Array.isArray(reload) ? reload : reload.data || reload.items || [];
       setHeldCarts(rows.filter((x: any) => x.tenantId === contextTenantId));
       showToast('Pesanan berhasil dipulihkan ke keranjang!', 'success');
@@ -265,7 +319,7 @@ export const POSTab: React.FC<POSTabProps> = ({
       const res = await apiFetch(`/pos/sales/${heldId}/hold`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`Delete hold HTTP ${res.status}`);
       // Reload from backend.
-      const reload = await apiFetch('/pos/sales/holds').then((r) => r.json());
+      const reload = await apiFetch('/pos/sales/holds').then((r) => readJsonResponse<any>(r));
       const rows = Array.isArray(reload) ? reload : reload.data || reload.items || [];
       setHeldCarts(rows.filter((x: any) => x.tenantId === contextTenantId));
       showToast('Pesanan ditahan berhasil dihapus.', 'success');
