@@ -1,5 +1,4 @@
 import { WidgetConfig } from "./widgetTypes";
-import { QuickActionsWidget } from "./widgets/QuickActionsWidget";
 import { KPIRevenueWidget } from "./widgets/KPIRevenueWidget";
 import { KPIOperationsWidget } from "./widgets/KPIOperationsWidget";
 import { KPIBillingWidget } from "./widgets/KPIBillingWidget";
@@ -8,14 +7,6 @@ import { CashFlowWidget } from "./widgets/CashFlowWidget";
 import { AnalyticsWidget } from "./widgets/AnalyticsWidget";
 
 export const WIDGET_REGISTRY: WidgetConfig[] = [
-  {
-    id: "quick-actions",
-    label: "Aksi Cepat",
-    icon: "Zap",
-    defaultVisible: true,
-    defaultOrder: 0,
-    component: QuickActionsWidget,
-  },
   {
     id: "kpi-revenue",
     label: "Revenue & Profit",
