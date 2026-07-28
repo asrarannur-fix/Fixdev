@@ -10,6 +10,7 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
   ],
   [ServiceStatus.ANTRIAN]: [ServiceStatus.DIAGNOSA, ServiceStatus.DIBATALKAN],
   [ServiceStatus.DIAGNOSA]: [
+    ServiceStatus.ESTIMATE_PENDING,
     ServiceStatus.MENUGGU_APPROVAL,
     ServiceStatus.TIDAK_BISA_DIPERBAIKI,
     ServiceStatus.DIBATALKAN,
@@ -17,6 +18,7 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
   [ServiceStatus.ESTIMATE_PENDING]: [
     ServiceStatus.SEDANG_DIKERJAKAN,
     ServiceStatus.APPROVAL_DITOLAK,
+    ServiceStatus.DIBATALKAN,
   ],
   [ServiceStatus.MENUGGU_APPROVAL]: [
     ServiceStatus.SEDANG_DIKERJAKAN,
@@ -26,6 +28,11 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
   ],
   [ServiceStatus.APPROVAL_DITOLAK]: [ServiceStatus.DIAGNOSA, ServiceStatus.DIBATALKAN],
   [ServiceStatus.MENUGGU_SPAREPART]: [
+    ServiceStatus.SEDANG_DIKERJAKAN,
+    ServiceStatus.DIKIRIM_KE_VENDOR,
+    ServiceStatus.DIBATALKAN,
+  ],
+  [ServiceStatus.MENUGGU_PART_ORDER]: [
     ServiceStatus.SEDANG_DIKERJAKAN,
     ServiceStatus.DIKIRIM_KE_VENDOR,
     ServiceStatus.DIBATALKAN,
@@ -74,7 +81,7 @@ export const SERVICE_STATUS_META: Record<
   [ServiceStatus.DITERIMA]: { label: 'Diterima', tone: 'blue', terminal: false },
   [ServiceStatus.ANTRIAN]: { label: 'Antrian', tone: 'slate', terminal: false },
   [ServiceStatus.DIAGNOSA]: { label: 'Diagnosa', tone: 'amber', terminal: false },
-  [ServiceStatus.ESTIMATE_PENDING]: { label: 'Estimasi Legacy', tone: 'amber', terminal: false },
+  [ServiceStatus.ESTIMATE_PENDING]: { label: 'Estimasi', tone: 'amber', terminal: false },
   [ServiceStatus.MENUGGU_APPROVAL]: {
     label: 'Menunggu Persetujuan',
     tone: 'amber',
@@ -82,7 +89,12 @@ export const SERVICE_STATUS_META: Record<
   },
   [ServiceStatus.APPROVAL_DITOLAK]: { label: 'Persetujuan Ditolak', tone: 'rose', terminal: false },
   [ServiceStatus.MENUGGU_SPAREPART]: {
-    label: 'Menunggu Spare Part',
+    label: 'Menunggu Sparepart',
+    tone: 'violet',
+    terminal: false,
+  },
+  [ServiceStatus.MENUGGU_PART_ORDER]: {
+    label: 'Part Order',
     tone: 'violet',
     terminal: false,
   },
@@ -119,6 +131,7 @@ export const canServiceTransition = (from: string, to: string) =>
 // Workflow steps for ServiceTicketActions component
 export const WORKFLOW_STEPS = [
   { status: ServiceStatus.DIAGNOSA, label: 'Diagnosa' },
+  { status: ServiceStatus.ESTIMATE_PENDING, label: 'Estimasi' },
   { status: ServiceStatus.MENUGGU_APPROVAL, label: 'Menunggu Persetujuan' },
   { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan' },
   { status: ServiceStatus.QC, label: 'QC/Testing' },
@@ -163,6 +176,10 @@ export const NEXT_STEP: Record<
   [ServiceStatus.MENUGGU_SPAREPART]: {
     label: 'Terima Sparepart',
     hint: 'Setelah spare part tiba, lanjutkan ke proses perbaikan.',
+  },
+  [ServiceStatus.MENUGGU_PART_ORDER]: {
+    label: 'Part Order',
+    hint: 'Buat part order untuk membeli sparepart yang diperlukan.',
   },
   [ServiceStatus.QC]: {
     label: 'Lakukan QC / Testing',
@@ -222,6 +239,6 @@ export const NEXT_STEP: Record<
   },
   [ServiceStatus.RUSAK]: {
     label: 'Unit Rusak Parah',
-    hint: 'Unit tidak dapat diperbaiki. Proses CLaim Garansi.',
+    hint: 'Unit tidak dapat diperbaiki. Proses Claim Garansi.',
   },
 };
