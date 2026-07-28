@@ -1,13 +1,28 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useSaaS } from '../../context/SaaSContext';
 import { Settings, Calendar, Printer, Search } from 'lucide-react';
 import { ServiceStatus } from '../../types';
-import { WidgetLayout, loadWidgetLayout } from '../dashboard/widgetTypes';
+import { WidgetLayout, loadWidgetLayout, saveWidgetLayout } from '../dashboard/widgetTypes';
 import { WIDGET_REGISTRY } from '../dashboard/widgetRegistry';
 import { WidgetSettingsPanel } from '../dashboard/WidgetSettingsPanel';
 import { KPICard } from './KPICard';
 import { printJobAsync } from '../../utils/printJob';
 import { usePrintConfig } from '../../hooks/usePrintConfig';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type DateRange = 'today' | 'week' | 'month' | 'custom';
 
@@ -52,16 +67,46 @@ function inRange(d: string | number | null | undefined, from: Date, to: Date): b
   return v >= from && v <= to;
 }
 
-const Skeleton: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div
-    className={`animate-pulse bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 rounded-xl ${className}`}
-  />
-);
+const SortableWidget: React.FC<{
+  id: string;
+  widgetComponent: React.FC<any>;
+  metrics: any;
+  accentColor: string;
+  onSetTab?: (tab: string, subTab?: string) => void;
+}> = ({ id, widgetComponent: WidgetComponent, metrics, accentColor, onSetTab }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : 0,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      id={`widget-${id}`}
+      style={style}
+      className="animate-fadeIn relative group"
+      {...attributes}
+      {...listeners}
+    >
+      <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+        <div className="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-lg px-2 py-1 text-[9px] font-bold text-slate-500 dark:text-zinc-400 shadow-sm border border-slate-200 dark:border-zinc-700 flex items-center gap-1">
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+          Geser
+        </div>
+      </div>
+      <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+        <WidgetComponent data={metrics} accentColor={accentColor} onSetTab={onSetTab} />
+      </div>
+    </div>
+  );
+};
 
 export const OwnerReports: React.FC<{
   activeSubTab?: string;
   onSetTab?: (tab: string, subTab?: string) => void;
-}> = ({ activeSubTab, onSetTab }) => {
+}> = ({ activeSubTab: _activeSubTab, onSetTab }) => {
   const {
     scopedServices: services,
     scopedTransactions: transactions,
@@ -85,12 +130,22 @@ export const OwnerReports: React.FC<{
   const [customTo, setCustomTo] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleWidgetDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = layout.order.indexOf(active.id as string);
+    const newIndex = layout.order.indexOf(over.id as string);
+    const newOrder = arrayMove(layout.order, oldIndex, newIndex);
+    const next = { ...layout, order: newOrder };
+    setLayout(next);
+    saveWidgetLayout(next);
+  }, [layout]);
+
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -412,40 +467,26 @@ export const OwnerReports: React.FC<{
       )}
 
       {/* Widget Grid */}
-      {isLoading ? (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-20" />
-            ))}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWidgetDragEnd}>
+        <SortableContext items={visibleWidgets} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3">
+            {visibleWidgets.map((id: string) => {
+              const widget = widgetMap.get(id);
+              if (!widget) return null;
+              return (
+                <SortableWidget
+                  key={id}
+                  id={id}
+                  widgetComponent={widget.component}
+                  metrics={metrics}
+                  accentColor={accentColor}
+                  onSetTab={onSetTab}
+                />
+              );
+            })}
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-28" />
-            ))}
-          </div>
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-        </div>
-      ) : (
-        visibleWidgets.map((id: string, idx: number) => {
-          const widget = widgetMap.get(id);
-          if (!widget) return null;
-          const WidgetComponent = widget.component;
-          return (
-            <div
-              key={id}
-              id={`widget-${id}`}
-              className="animate-fadeIn"
-              style={{ animationDelay: `${idx * 50}ms` }}
-            >
-              <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                <WidgetComponent data={metrics} accentColor={accentColor} onSetTab={onSetTab} />
-              </div>
-            </div>
-          );
-        })
-      )}
+        </SortableContext>
+      </DndContext>
 
       <WidgetSettingsPanel
         widgets={WIDGET_REGISTRY}

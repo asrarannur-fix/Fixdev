@@ -10,7 +10,6 @@ router.use(requireJwt, requireTenantScope, requireValidTenant);
 
 router.get('/', listServiceTickets);
 router.get('/tickets', listServiceTickets);
-router.get('/list', listServiceTickets);
 router.post(
   '/',
   requireRoles('OWNER', 'ADMIN', 'CS', 'TEKNISI', 'SUPER_ADMIN'),
