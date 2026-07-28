@@ -5,6 +5,7 @@ import { ServiceStatus } from '../../types';
 import { WidgetLayout, loadWidgetLayout } from '../dashboard/widgetTypes';
 import { WIDGET_REGISTRY } from '../dashboard/widgetRegistry';
 import { WidgetSettingsPanel } from '../dashboard/WidgetSettingsPanel';
+import { KPICard } from './KPICard';
 import { printJobAsync } from '../../utils/printJob';
 import { usePrintConfig } from '../../hooks/usePrintConfig';
 
@@ -333,6 +334,34 @@ export const OwnerReports: React.FC<{
         <span className="text-[10px] text-slate-400 dark:text-zinc-500 ml-1">
           📊 {metrics.dateLabel}
         </span>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <KPICard
+          icon="💰"
+          label="Omzet Hari Ini"
+          value={`Rp ${(metrics.posRevenue + metrics.serviceRevenue).toLocaleString()}`}
+          trend={metrics.revenueDelta ? `${metrics.revenueDelta}%` : '-'}
+        />
+        <KPICard
+          icon="📋"
+          label="Transaksi"
+          value={fTx.length.toString()}
+          trend={`-${(metrics.avgTicketValue ? ((metrics.avgTicketValue / (metrics.avgTicketValue || 1)) * 100).toFixed(0) : '0')}%`}
+        />
+        <KPICard
+          icon="🔧"
+          label="Tiket Service"
+          value={`${metrics.completedServices} selesai, ${metrics.activeTickets} aktif`}
+          trend={`${metrics.totalTickets > 0 ? ((metrics.completedServices / metrics.totalTickets) * 100).toFixed(0) : '0'}%`}
+        />
+        <KPICard
+          icon="⚠️"
+          label="Stok Menipau"
+          value={metrics.lowStockCount.toString()}
+          trend={metrics.lowStockCount > 0 ? 'Perlu restock' : 'OK'}
+        />
       </div>
 
       {/* Widget Search Panel */}
