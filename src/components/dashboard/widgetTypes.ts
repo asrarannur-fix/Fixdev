@@ -2,10 +2,38 @@ import React from "react";
 
 /* ── Widget Types ────────────────────────────────────── */
 
+export interface DashboardMetrics {
+  posRevenue: number;
+  serviceRevenue: number;
+  totalRevenue: number;
+  grossProfit: number;
+  profitMargin: string | number;
+  completedServices: number;
+  activeTickets: number;
+  totalTickets: number;
+  avgTicketValue: number;
+  deadStock: number;
+  totalProducts: number;
+  totalCustomers: number;
+  totalCashIn: number;
+  totalCashOut: number;
+  cashFlow: number;
+  totalPayroll: number;
+  lowStockCount: number;
+  lowStockItems: any[];
+  totalBillingPaid: number;
+  totalBillingUnpaid: number;
+  transactions: any[];
+  services: any[];
+  dateLabel: string;
+  revenueDelta: string | null;
+  serviceDelta: string | null;
+}
+
 export interface WidgetConfig {
   id: string;
   label: string;
-  icon: string; // lucide icon name
+  icon: string;
   defaultVisible: boolean;
   defaultOrder: number;
   component: React.FC<WidgetProps>;
@@ -65,6 +93,7 @@ export const DEFAULT_LAYOUT: WidgetLayout = {
     "kpi-operations",
     "kpi-billing",
     "stock-alerts",
+    "ops-overview",
     "cash-flow",
     "ops-overview",
     "analytics",
@@ -74,6 +103,7 @@ export const DEFAULT_LAYOUT: WidgetLayout = {
     "kpi-operations": true,
     "kpi-billing": true,
     "stock-alerts": true,
+    "ops-overview": true,
     "cash-flow": true,
     "ops-overview": true,
     "analytics": true,
