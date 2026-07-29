@@ -51,3 +51,56 @@ export async function getServiceTicket(
   }
   return (payload?.data || payload) as ServiceTicket;
 }
+
+export async function uploadServicePhoto(
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  id: string,
+  file: Blob
+): Promise<string> {
+  if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+    throw new Error('Foto harus JPG atau PNG maksimal 5 MB.');
+  }
+  const create = await apiFetch(`${SERVICE_ENDPOINT}/${encodeURIComponent(id)}/photos/upload-url`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contentType: file.type, sizeBytes: file.size }),
+  });
+  const upload = await create.json().catch(() => null);
+  if (!create.ok || !upload?.uploadUrl) throw new Error(upload?.error || 'Gagal menyiapkan unggahan foto.');
+  const put = await apiFetch(upload.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!put.ok) {
+    const payload = await put.json().catch(() => null);
+    throw new Error(payload?.error || 'Gagal mengunggah foto.');
+  }
+  return upload.uploadUrl;
+}
+
+export async function patchServiceTicketScope<T extends Record<string, unknown>>(
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  id: string,
+  scope: 'intake-checklist' | 'qc-draft',
+  body: T
+): Promise<ServiceTicket> {
+  const response = await apiFetch(`${SERVICE_ENDPOINT}/${encodeURIComponent(id)}/${scope}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error || 'Gagal menyimpan tiket.');
+  return (payload?.data || payload) as ServiceTicket;
+}
+
+export async function getServiceStatusEvents(
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  id: string
+) {
+  const response = await apiFetch(`${SERVICE_ENDPOINT}/${encodeURIComponent(id)}/status-events`);
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error || 'Gagal memuat riwayat tiket.');
+  return Array.isArray(payload?.data) ? payload.data : [];
+}

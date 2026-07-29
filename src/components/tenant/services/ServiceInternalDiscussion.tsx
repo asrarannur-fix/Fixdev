@@ -6,32 +6,31 @@ interface ServiceInternalDiscussionProps {
   currentUser: any;
   value: string;
   onChange: (value: string) => void;
-  updateServiceTicket: (id: string, updates: any) => void;
+  patchServiceWork: (id: string, updates: { internalDiscussion: { text: string } }) => Promise<unknown>;
   canComment: boolean;
 }
 
 export const ServiceInternalDiscussion: React.FC<ServiceInternalDiscussionProps> = ({
   ticket,
-  currentUser,
   value,
   onChange,
-  updateServiceTicket,
+  patchServiceWork,
   canComment,
 }) => {
-  const submit = (suffix: string) => {
-    if (!canComment || !value.trim()) return;
-    updateServiceTicket(ticket.id, {
-      internalDiscussions: [
-        ...(ticket.internalDiscussions || []),
-        {
-          id: 'comm-' + Date.now().toString(36) + suffix,
-          text: value.trim(),
-          operator: currentUser?.name || 'System',
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    });
-    onChange('');
+  const [pending, setPending] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const submit = async () => {
+    if (!canComment || !value.trim() || pending) return;
+    setPending(true);
+    setError('');
+    try {
+      await patchServiceWork(ticket.id, { internalDiscussion: { text: value.trim() } });
+      onChange('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Gagal mengirim diskusi.');
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -66,6 +65,7 @@ export const ServiceInternalDiscussion: React.FC<ServiceInternalDiscussionProps>
           </p>
         )}
       </div>
+      {error && <p role="alert" className="relative text-[10px] text-rose-600">{error}</p>}
       <div className="pt-2 border-t border-amber-200/50 flex gap-2">
         <input
           type="text"
@@ -75,12 +75,12 @@ export const ServiceInternalDiscussion: React.FC<ServiceInternalDiscussionProps>
           placeholder={canComment ? 'Ketik pesan untuk tim...' : 'Tidak punya akses menulis'}
           className="flex-1 bg-white border border-amber-200 rounded-lg text-[10px] px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
           onKeyDown={(e) => {
-            if (e.key === 'Enter') submit('1');
+            if (e.key === 'Enter') void submit();
           }}
         />
         <button
-          onClick={() => submit('2')}
-           disabled={!canComment || !value.trim()}
+          onClick={() => void submit()}
+            disabled={!canComment || !value.trim() || pending}
           className="bg-amber-500 disabled:bg-amber-300 hover:bg-amber-600 text-white p-1.5 rounded-lg transition"
         >
           <MessageSquare className="w-3.5 h-3.5" />

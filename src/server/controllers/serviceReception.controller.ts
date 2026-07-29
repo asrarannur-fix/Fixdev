@@ -42,7 +42,7 @@ export const serviceReceptionSchema = z.object({
         z.object({
           id: z.string().trim().min(1).max(100),
           category: z.string().trim().min(1).max(100),
-          url: z.string().trim().min(1).max(2_000_000),
+          url: z.string().trim().regex(/^tenant\/[0-9a-f-]+\/service\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png)$/i).max(255),
           timestamp: z.string().datetime(),
         })
       )
@@ -136,7 +136,9 @@ export async function createServiceReception(req: Request, res: Response) {
       }
       if (input.reception.storageLocationId) {
         const location = await client.query(
-          'SELECT id FROM warehouses WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 LIMIT 1',
+          `SELECT record_id FROM module_records
+           WHERE record_id=$1 AND tenant_id=$2 AND module='storage_locations' AND deleted_at IS NULL
+             AND payload->>'branchId'=$3 LIMIT 1`,
           [input.reception.storageLocationId, tenantId, input.branchId]
         );
         if (!location.rows[0]) {

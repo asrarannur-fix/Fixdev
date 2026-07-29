@@ -20,6 +20,7 @@ import { getStorageLocations } from './StorageLocationManager';
 import { buildServiceReceptionPreview, normalizeIndonesianPhone } from '../../utils/serviceReceptionUtils';
 import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from '../../types';
 import { useSaaS } from '../../context/SaaSContext';
+import { patchServiceTicketScope, uploadServicePhoto } from '../../lib/api/services';
 import {
   Building2,
   Sliders,
@@ -102,7 +103,7 @@ const hasAnyPermission = (permissions: string[], keys: string[]) =>
   keys.some((key) => permissions.includes(key));
 
 export const ServiceDetailModal: React.FC<any> = (props) => {
-  const { publicBaseUrl } = useSaaS();
+  const { publicBaseUrl, apiFetch } = useSaaS();
   const {
     activeTenantId,
     addServiceDiagnostic,
@@ -135,6 +136,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     requestServicePart,
     requestedPartId,
     requestedPartQty,
+    selectedPartWarehouseId,
+    setSelectedPartWarehouseId,
+    warehouses,
     selectedSparepartId,
     setAdditionalCostApprovedBy,
     setAdditionalCostTicket,
@@ -169,13 +173,39 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     tenantObj,
     tenantServices,
     updateServiceStatus,
-    updateServiceTicket,
     videoRef,
      viewingServiceTicketId,
      detailLoading,
-     detailError,
-   } = props;
+      detailError,
+      onDetailUpdated,
+    } = props;
   const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const restoreFocusRef = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    if (!viewingServiceTicketId) return;
+    restoreFocusRef.current = document.activeElement as HTMLElement;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        setViewingServiceTicketId(null);
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((element) => !element.hasAttribute('disabled'));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    requestAnimationFrame(() => dialogRef.current?.focus());
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      restoreFocusRef.current?.focus();
+    };
+  }, [viewingServiceTicketId, setViewingServiceTicketId]);
   const runAction = async (action: string, callback: () => Promise<void> | void) => {
     if (pendingAction) return;
     setPendingAction(action);
@@ -209,11 +239,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const canDiagnose =
     isSuperAdmin ||
-    ['OWNER', 'ADMIN', 'MANAGER', 'TEKNISI'].includes(currentUser?.role || '') ||
+    ['OWNER', 'ADMIN', 'TEKNISI'].includes(currentUser?.role || '') ||
     hasAnyPermission(currentUserPermissions, ['service', 'service_diagnose', 'service_repair']);
   const canRepair =
     isSuperAdmin ||
-    ['OWNER', 'ADMIN', 'MANAGER', 'TEKNISI'].includes(currentUser?.role || '') ||
+    ['OWNER', 'ADMIN', 'TEKNISI'].includes(currentUser?.role || '') ||
     hasAnyPermission(currentUserPermissions, ['service', 'service_repair']);
   const isTicketLocked = LOCKED_STATUSES.includes(ticket.status);
   const editableIntake = INTAKE_STATUSES.includes(ticket.status) && canDiagnose;
@@ -242,32 +272,17 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   );
 
   // Photo capture handlers (extracted for ServiceTicketCamera component)
-  const handleCapturePhoto = () => {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 640;
-      canvas.height = 480;
-      const ctx = canvas.getContext('2d');
-      if (ctx && videoRef.current) {
-        ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        const newPhoto = {
-          id: 'photo-' + Date.now().toString(36) + 'a',
-          url: dataUrl,
-          category: 'Kerusakan Fisik',
-          timestamp: new Date().toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        };
-        updateServiceTicket(ticket.id, {
-          capturedConditions: [...(ticket.capturedConditions || []), newPhoto],
-        });
-        showToast('Foto berhasil diambil dan disimpan langsung ke tiket!', 'success');
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const handleCapturePhoto = async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !videoRef.current) return;
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const file = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    if (!file) throw new Error('Gagal menyiapkan foto.');
+    await uploadServicePhoto(apiFetch, ticket.id, file);
+    showToast('Foto berhasil diunggah. Muat ulang detail untuk melihat foto baru.', 'success');
   };
 
   return createPortal(
@@ -279,6 +294,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
       aria-labelledby="service-detail-title"
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="flex h-[100dvh] w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-white to-zinc-100 shadow-2xl dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950"
         onClick={(e) => e.stopPropagation()}
       >
@@ -436,9 +453,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </h4>
                   <div className="relative rounded-xl overflow-hidden border border-white/30 shadow-sm">
                     <img
-                      src={ticket.initialPhotos[0]}
-                      alt="Condition"
-                      className="w-full h-32 object-cover"
+                       src={ticket.initialPhotos[0]}
+                       alt={`Kondisi awal ${ticket.deviceName}`}
+                       loading="lazy"
+                       decoding="async"
+                       className="w-full h-32 object-cover"
                     />
                   </div>
                 </div>
@@ -460,13 +479,13 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
             <ServiceTimeline entries={ticket.timeline} />
 
-            <ServiceInternalDiscussion
-              ticket={ticket}
-              currentUser={currentUser}
+               <ServiceInternalDiscussion
+               ticket={ticket}
+               currentUser={currentUser}
+               patchServiceWork={props.patchServiceWork}
               value={internalCommentText}
               onChange={setInternalCommentText}
-              updateServiceTicket={updateServiceTicket}
-              canComment={canRepair && !isTicketLocked}
+               canComment={canRepair && !isTicketLocked}
             />
           </div>
 
@@ -694,8 +713,19 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               </option>
                             ))}
                           </select>
-                          <div className="flex gap-2">
-                            <input
+                           <select
+                             aria-label="Gudang spare part"
+                             value={selectedPartWarehouseId}
+                             onChange={(e) => setSelectedPartWarehouseId(e.target.value)}
+                             className="w-full text-xs p-2 rounded-lg border border-slate-200"
+                           >
+                             <option value="">-- Pilih Gudang --</option>
+                             {warehouses.filter((warehouse) => warehouse.tenantId === currentTenantId && warehouse.branchId === ticket.branchId).map((warehouse) => (
+                               <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
+                             ))}
+                           </select>
+                           <div className="flex gap-2">
+                             <input
                               type="number"
                               min="1"
                               value={requestedPartQty}
@@ -707,9 +737,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 const part = sparepartsList.find(
                                   (item) => item.id === requestedPartId
                                 );
-                                const warehouseId =
-                                  part?.warehouseId || Object.keys(part?.warehouseStock || {})[0];
-                                if (!part || !warehouseId || requestedPartQty <= 0) {
+                                 const warehouseId = selectedPartWarehouseId;
+                                 if (!part || !warehouseId || requestedPartQty <= 0) {
                                   showToast('Pilih spare part dan gudang yang valid.', 'error');
                                   return;
                                 }
@@ -897,17 +926,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   disabled={!editableIntake}
                                   onChange={() => {
                                     if (!editableIntake) return;
-                                    const updatedList = ticket.initialChecklist.map((c, i) =>
-                                      i === idx
-                                        ? {
-                                            ...c,
-                                            checked: !c.checked,
-                                          }
-                                        : c
-                                    );
-                                    updateServiceTicket(ticket.id, {
-                                      initialChecklist: updatedList,
-                                    });
+                                    showToast('Checklist penerimaan hanya dapat diubah saat penerimaan tiket.', 'info');
                                   }}
                                   className="accent-emerald-600 h-3.5 w-3.5 rounded"
                                 />
@@ -937,43 +956,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             }
                             onClick={() => {
                               if (!editableIntake) return;
-                              const defaultList = [
-                                {
-                                  name: 'Unit Menyala (Power On)',
-                                  checked: false,
-                                },
-                                {
-                                  name: 'Fisik Mulus (No Dents/Scratch)',
-                                  checked: false,
-                                },
-                                {
-                                  name: 'LCD / Layar Normal',
-                                  checked: false,
-                                },
-                                {
-                                  name: 'Touch Screen / Touchpad Normal',
-                                  checked: false,
-                                },
-                                {
-                                  name: 'Speaker & Audio Output',
-                                  checked: false,
-                                },
-                                {
-                                  name: 'Kamera Depan & Belakang',
-                                  checked: false,
-                                },
-                                {
-                                  name: 'Wi-Fi & Bluetooth Sinyal',
-                                  checked: false,
-                                },
-                                {
-                                  name: 'Charger & Port Pengisian',
-                                  checked: false,
-                                },
-                              ];
-                              updateServiceTicket(ticket.id, {
-                                initialChecklist: defaultList,
-                              });
+                               showToast('Checklist penerimaan dikelola saat pembuatan tiket.', 'info');
                             }}
                             className="mt-2 px-2.5 py-1 bg-accent text-white rounded text-[10px] font-bold hover:bg-accent-hover cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                           >
@@ -1064,8 +1047,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     <div className="flex items-center gap-2 truncate">
                                       <input
                                         type="checkbox"
-                                        checked={item.passed}
-                                        onChange={() => {
+                                         checked={item.passed}
+                                         disabled={!!pendingAction}
+                                         onChange={() => {
                                           const updatedList = currentQcList.map((c, i) =>
                                             i === idx
                                               ? {
@@ -1083,13 +1067,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                             (passedCount / updatedList.length) * 100
                                           );
 
-                                          updateServiceTicket(ticket.id, {
-                                            qcChecklist: updatedList,
-                                            qcScore: suggestedScore,
-                                          });
-
-                                          // Also sync to active QC states if this ticket is in focus
-                                          setQcScore(suggestedScore);
+                                           void runAction('qc-draft', async () => {
+                                             const updated = await patchServiceTicketScope(apiFetch, ticket.id, 'qc-draft', {
+                                               checklist: updatedList,
+                                               score: suggestedScore,
+                                             });
+                                             onDetailUpdated?.(updated);
+                                             setQcScore(suggestedScore);
+                                           });
                                         }}
                                         className="accent-emerald-600 h-3.5 w-3.5 rounded"
                                       />
@@ -1113,13 +1098,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 <div className="pt-2 text-center">
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      updateServiceTicket(ticket.id, {
-                                        qcChecklist: currentQcList,
-                                        qcScore: 0,
-                                      });
-                                      setQcScore(0);
-                                    }}
+                                     onClick={() => void runAction('qc-draft', async () => {
+                                       const updated = await patchServiceTicketScope(apiFetch, ticket.id, 'qc-draft', {
+                                         checklist: currentQcList,
+                                         score: 0,
+                                       });
+                                       onDetailUpdated?.(updated);
+                                       setQcScore(0);
+                                     })}
+                                     disabled={!!pendingAction}
                                     className="w-full bg-accent-lighter border border-indigo-100 text-accent rounded-lg py-1.5 text-[10px] font-bold hover:bg-indigo-100/50 cursor-pointer transition-all"
                                   >
                                     Simpan Checklist QC Standar (10 Pengujian)
@@ -1588,7 +1575,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       const isRefOrProofRequired =
                         handoverPaymentMethod !== PaymentMethod.CASH &&
                         handoverPaymentMethod !== PaymentMethod.TEMPO;
-                      const isHandoverValid = !isRefOrProofRequired || handoverRefNo.trim() !== '';
+                       const isHandoverValid = !isRefOrProofRequired || handoverRefNo.trim() !== '' || handoverProofName.trim() !== '';
 
                       const estCost = Number(ticket.estimatedCost) || 0;
                       const taxSettings = tenantObj?.settings?.taxSettings;
@@ -1708,8 +1695,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               {!isHandoverValid && (
                                 <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg text-[10px] text-rose-600 font-medium leading-relaxed">
                                   ⚠️ <strong>Validasi Gagal</strong>: Harap masukkan Nomor Referensi
-                                  ATAU unggah file Bukti Transfer sebagai prasyarat status 'Unit
-                                  Diambil'.
+                                   sebagai prasyarat status 'Unit Diambil'.
                                 </div>
                               )}
                             </div>

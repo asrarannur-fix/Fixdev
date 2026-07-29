@@ -24,6 +24,13 @@ import {
   settleServiceReceivable,
   getStatusEvents,
   bulkDeleteServiceTickets,
+  createServicePhotoUpload,
+  listServicePhotos,
+  uploadServicePhoto,
+  getServicePhoto,
+  deleteServicePhoto,
+  updateServiceIntakeChecklist,
+  updateServiceQcDraft,
 } from '../controllers/serviceWorkflow.controller.js';
 import { requireValidTenant, requireServiceTicketTenant } from '../middleware/tenant.middleware.js';
 
@@ -42,6 +49,11 @@ router.delete(
   bulkDeleteServiceTickets
 );
 router.get('/:id', requireServiceTicketTenant, getServiceTicket);
+router.get('/:id/photos', requireServiceTicketTenant, listServicePhotos);
+router.post('/:id/photos/upload-url', requireServiceTicketTenant, requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'CS', 'SUPER_ADMIN'), createServicePhotoUpload);
+router.put('/:id/photos/:fileName', requireServiceTicketTenant, requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'CS', 'SUPER_ADMIN'), express.raw({ type: ['image/jpeg', 'image/png'], limit: '5mb' }), uploadServicePhoto);
+router.get('/:id/photos/:fileName', requireServiceTicketTenant, getServicePhoto);
+router.delete('/:id/photos/:fileName', requireServiceTicketTenant, requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'CS', 'SUPER_ADMIN'), deleteServicePhoto);
 
 // Transitions
 router.post(
@@ -49,6 +61,12 @@ router.post(
   requireServiceTicketTenant,
   requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'CS', 'SUPER_ADMIN'),
   transitionServiceTicket
+);
+router.patch(
+  '/:id/intake-checklist',
+  requireServiceTicketTenant,
+  requireRoles('OWNER', 'ADMIN', 'CS', 'SUPER_ADMIN'),
+  updateServiceIntakeChecklist
 );
 router.post(
   '/:id/diagnosis',
@@ -64,6 +82,7 @@ router.post(
   requireRoles('OWNER', 'ADMIN', 'CS', 'SUPER_ADMIN'),
   approveServiceEstimate
 );
+router.patch('/:id/qc-draft', requireServiceTicketTenant, requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'), updateServiceQcDraft);
 router.post('/:id/qc', requireServiceTicketTenant, requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'), completeServiceQc);
 
 // Settlements

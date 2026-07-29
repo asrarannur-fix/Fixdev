@@ -14,7 +14,7 @@ interface ServiceTicketCameraProps {
   startCamera: () => void;
   stopCamera: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
-  onCapture: () => void;
+  onCapture: () => Promise<void>;
 }
 
 export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
@@ -26,6 +26,19 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
   onCapture,
 }) => {
   const capturedConditions: Photo[] | undefined = ticket?.capturedConditions;
+  const [pending, setPending] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const capture = async () => {
+    setPending(true);
+    setError('');
+    try {
+      await onCapture();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Gagal mengunggah foto.');
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <div className="p-2.5 bg-white border border-slate-100 rounded-xl space-y-2 shadow-xs">
@@ -59,6 +72,7 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
         </p>
       )}
 
+      {error && <p role="alert" className="text-[10px] text-rose-600">{error}</p>}
       {/* Live Workstation Camera Trigger */}
       {cameraActive ? (
         <div className="border border-indigo-100 rounded-lg p-2 bg-slate-900 space-y-2" aria-labelledby={`service-camera-${ticket?.id || 'ticket'}`}>
@@ -72,7 +86,8 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
           <div className="flex gap-1.5">
             <button
               type="button"
-              onClick={onCapture}
+              onClick={() => void capture()}
+              disabled={pending}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold py-1 rounded cursor-pointer"
             >
               Jepret

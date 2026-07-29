@@ -13,6 +13,7 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
   ],
   [ServiceStatus.ANTRIAN]: [ServiceStatus.DIAGNOSA, ServiceStatus.DIBATALKAN],
   [ServiceStatus.DIAGNOSA]: [
+    ServiceStatus.MENUGGU_PART_ORDER,
     ServiceStatus.ESTIMATE_PENDING,
     ServiceStatus.MENUGGU_APPROVAL,
     ServiceStatus.TIDAK_BISA_DIPERBAIKI,

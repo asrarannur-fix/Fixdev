@@ -12,6 +12,14 @@ const receptionRoutes = readFileSync(
   new URL('./serviceReception.routes.ts', import.meta.url),
   'utf8'
 );
+const workflowController = readFileSync(
+  new URL('../controllers/serviceWorkflow.controller.ts', import.meta.url),
+  'utf8'
+);
+const receptionController = readFileSync(
+  new URL('../controllers/serviceReception.controller.ts', import.meta.url),
+  'utf8'
+);
 
 describe('service status event routes', () => {
   it('exposes status history as read-only and tenant-scoped', () => {
@@ -19,6 +27,33 @@ describe('service status event routes', () => {
     expect(receptionRoutes).toContain("router.get('/:id/status-events', requireServiceTicketTenant");
     expect(workflowRoutes).not.toContain("router.post('/:id/status-events'");
     expect(receptionRoutes).not.toContain("router.post('/:id/status-events'");
+  });
+
+  it('exposes scoped photo list, upload, stream, and delete endpoints', () => {
+    expect(workflowRoutes).toContain("router.get('/:id/photos', requireServiceTicketTenant, listServicePhotos)");
+    expect(workflowRoutes).toContain("router.put('/:id/photos/:fileName'");
+    expect(workflowRoutes).toContain("router.get('/:id/photos/:fileName'");
+    expect(workflowRoutes).toContain("router.delete('/:id/photos/:fileName'");
+    expect(workflowController).toContain("flag: 'wx'");
+    expect(workflowController).toContain('validPhotoSignature');
+  });
+
+  it('validates storage locations through tenant-scoped module records', () => {
+    expect(workflowController).toContain("module='storage_locations'");
+    expect(receptionController).toContain("module='storage_locations'");
+    expect(workflowController).not.toContain('requireTicketWarehouse(client, current, parsed.data.storageLocationId)');
+  });
+
+  it('exposes draft-only intake and QC endpoints with role policy', () => {
+    expect(workflowRoutes).toContain("router.patch(\n  '/:id/intake-checklist'");
+    expect(workflowRoutes).toContain("requireRoles('OWNER', 'ADMIN', 'CS', 'SUPER_ADMIN')");
+    expect(workflowRoutes).toContain("router.patch('/:id/qc-draft'");
+    expect(workflowRoutes).toContain("requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'), updateServiceQcDraft");
+    expect(workflowController).toContain('FOR UPDATE');
+    expect(workflowController).toContain('SERVICE_INTAKE_CHECKLIST_UPDATED');
+    expect(workflowController).toContain('SERVICE_QC_DRAFT_UPDATED');
+    expect(workflowController).toContain('return finalTicket(client, req)');
+    expect(workflowController).toContain("current.status !== 'QC'");
   });
 
   it('registers bulk delete before ticket detail', () => {

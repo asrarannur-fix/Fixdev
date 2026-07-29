@@ -77,7 +77,7 @@ import { ServiceReceptionWizard } from './ServiceReceptionWizard';
 import { StorageLocation } from '../../types';
 import { renderTenantWaTemplate } from '../../utils/waTemplate';
 import { useServiceReception } from '../../hooks/useServiceReception';
-import { getServiceTicket } from '../../lib/api/services';
+import { getServiceStatusEvents, getServiceTicket } from '../../lib/api/services';
 import {
   Tenant,
   Branch,
@@ -147,6 +147,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     addCustomer,
     employees,
     products,
+    warehouses,
     currentTenantId: contextTenantId,
     publicBaseUrl,
   } = useSaaS();
@@ -171,6 +172,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   }, [tenantObj, currentUser]);
   // Declaring missing states, variables, and helper functions
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [selectedPartWarehouseId, setSelectedPartWarehouseId] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [srvSort, setSrvSort] = useState<string>('newest');
   const [srvSearchQuery, setSrvSearchQuery] = useState<string>('');
@@ -224,8 +226,8 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     return () => window.removeEventListener('popstate', readUrl);
   }, [serviceTickets]);
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('serviceId');
-    if (!id || serviceTickets.some((ticket) => ticket.id === id)) {
+    const id = viewingServiceTicketId;
+    if (!id) {
       setFetchedService(null);
       setDetailError(null);
       return;
@@ -233,9 +235,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     let cancelled = false;
     setDetailLoading(true);
     setDetailError(null);
-    getServiceTicket(apiFetch, id)
-      .then((ticket) => {
-        if (!cancelled) setFetchedService(ticket);
+    Promise.all([getServiceTicket(apiFetch, id), getServiceStatusEvents(apiFetch, id)])
+      .then(([ticket, timeline]) => {
+        if (!cancelled) setFetchedService({ ...ticket, timeline: timeline.length ? timeline : ticket.timeline });
       })
       .catch((error: Error) => {
         if (!cancelled) setDetailError(error.message);
@@ -246,7 +248,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [apiFetch, serviceTickets]);
+  }, [apiFetch, viewingServiceTicketId]);
   const [showSpkPrintout, setShowSpkPrintout] = useState<string | null>(null);
   const [showInvoicePrintout, setShowInvoicePrintout] = useState<string | null>(null);
   const [showProvisionalQuote, setShowProvisionalQuote] = useState<string | null>(null);
@@ -757,8 +759,11 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 qcScore,
                 requestPartMode,
                 requestedPartId,
-                requestedPartQty,
-                renderTenantWaTemplate,
+                 requestedPartQty,
+                 selectedPartWarehouseId,
+                 setSelectedPartWarehouseId,
+                 warehouses,
+                 renderTenantWaTemplate,
                 savingAdditionalCost,
                 savingMicroUsage,
                 savingPartOrder,
@@ -836,10 +841,11 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 statusFilter,
                 stopCamera,
                 tenantObj,
-                 tenantServices: fetchedService && !serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? [...serviceTickets, fetchedService] : serviceTickets,
+                 tenantServices: fetchedService ? serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? serviceTickets.map((ticket) => ticket.id === fetchedService.id ? { ...ticket, ...fetchedService } : ticket) : [...serviceTickets, fetchedService] : serviceTickets,
                  detailLoading,
                  detailError,
-                 updateServiceStatus,
+                 onDetailUpdated: setFetchedService,
+                  updateServiceStatus,
                 videoRef,
                 viewingServiceTicketId,
                 currentUser,
@@ -1072,8 +1078,11 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
               renderTenantWaTemplate,
               requestPartMode,
               requestedPartId,
-              requestedPartQty,
-              savingAdditionalCost,
+               requestedPartQty,
+               selectedPartWarehouseId,
+               setSelectedPartWarehouseId,
+               warehouses,
+               savingAdditionalCost,
               savingMicroUsage,
               savingPartOrder,
               selectedMicro,

@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { dbTransaction, dbQuery } from '../../lib/db.js';
@@ -107,12 +109,45 @@ const diagnosisSchema = z.object({
     )
     .default([]),
 });
-const photo = z.string().trim().min(1).max(2_000_000);
+const photo = z.string().trim().regex(/^tenant\/[0-9a-f-]+\/service\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png)$/i).max(255);
+const SERVICE_PHOTO_BYTES = 5 * 1024 * 1024;
+const serviceUploadRoot = path.resolve(process.env.FILE_UPLOAD_DIR || 'uploads');
+
+function servicePhotoPath(tenantId: string, ticketId: string, fileId: string, extension: string) {
+  return `tenant/${tenantId}/service/${ticketId}/${fileId}.${extension}`;
+}
+
+function serviceLocalPath(objectPath: string) {
+  const resolved = path.resolve(serviceUploadRoot, objectPath);
+  if (!resolved.startsWith(`${serviceUploadRoot}${path.sep}`)) throw new Error('Invalid upload path.');
+  return resolved;
+}
+
+function validPhotoSignature(buffer: Buffer, contentType: string) {
+  return contentType === 'image/png'
+    ? buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    : contentType === 'image/jpeg' && buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+}
+
 const approvalSchema = z.object({
   approved: z.boolean(),
   signatureName: z.string().trim().optional(),
   signature: z.string().optional(),
 });
+const intakeChecklistSchema = z
+  .object({
+    checklist: z.array(z.object({ name: z.string().trim().min(1).max(200), checked: z.boolean() }).strict()).max(100),
+  })
+  .strict();
+const qcDraftSchema = z
+  .object({
+    score: z.number().finite().min(0).max(100).optional(),
+    notes: z.string().trim().max(5000).optional(),
+    checklist: z.array(z.object({ criteria: z.string().trim().min(1).max(200), passed: z.boolean() }).strict()).max(100).optional(),
+    photos: z.array(photo).max(20).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, 'Draft QC wajib berisi perubahan.');
 const qcSchema = z
   .object({
     passed: z.boolean(),
@@ -164,15 +199,11 @@ const handoverSchema = z
         message: 'Termin hanya berlaku untuk pembayaran tempo.',
       });
     }
-    if (
-      !['CASH', 'TEMPO'].includes(value.paymentMethod) &&
-      !value.referenceNo &&
-      !value.proofName
-    ) {
+    if (!['CASH', 'TEMPO'].includes(value.paymentMethod) && !value.referenceNo) {
       ctx.addIssue({
         code: 'custom',
         path: ['referenceNo'],
-        message: 'Referensi atau bukti pembayaran wajib diisi.',
+        message: 'Nomor referensi pembayaran wajib diisi.',
       });
     }
   });
@@ -226,6 +257,20 @@ function ticketSelect() {
     down_payment::float AS "downPayment", payment_method AS "paymentMethod", payment_ref AS "paymentRef",
     payment_proof_name AS "paymentProofName", tempo_days AS "tempoDays", handover_at AS "handoverAt",
     invoice_id AS "invoiceId", public_tracking_token AS "publicTrackingToken", created_at AS "createdAt"`;
+}
+
+async function requireTicketStorageLocation(client: any, ticket: any, locationId: string) {
+  const result = await client.query(
+    `SELECT record_id FROM module_records
+     WHERE record_id=$1 AND tenant_id=$2 AND module='storage_locations' AND deleted_at IS NULL
+       AND payload->>'branchId'=$3 LIMIT 1`,
+    [locationId, ticket.tenantId, ticket.branchId]
+  );
+  if (!result.rows[0]) {
+    const error: any = new Error('Lokasi penyimpanan tidak tersedia pada cabang tiket.');
+    error.status = 403;
+    throw error;
+  }
 }
 
 async function requireTicketWarehouse(client: any, ticket: any, warehouseId: string) {
@@ -411,6 +456,77 @@ function sendError(res: Response, error: any) {
   });
 }
 
+export async function createServicePhotoUpload(req: Request, res: Response) {
+  const contentType = String(req.body?.contentType || '');
+  const sizeBytes = Number(req.body?.sizeBytes);
+  if (!['image/jpeg', 'image/png'].includes(contentType) || !Number.isInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > SERVICE_PHOTO_BYTES)
+    return res.status(422).json({ error: 'Foto harus JPG atau PNG maksimal 5 MB.' });
+  const objectPath = servicePhotoPath(req.tenantId!, req.params.id, randomUUID(), contentType === 'image/png' ? 'png' : 'jpg');
+  res.json({ objectPath, uploadUrl: `/api/services/${req.params.id}/photos/${path.basename(objectPath)}`, expiresIn: 60 });
+}
+
+export async function listServicePhotos(req: Request, res: Response) {
+  try {
+    const ticket = await dbQuery(
+      'SELECT initial_photos, qc_photos FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 AND deleted_at IS NULL',
+      [req.params.id, req.tenantId, req.branchId]
+    );
+    if (!ticket.rows[0]) return res.status(404).json({ error: 'Tiket servis tidak ditemukan.' });
+    const photos = [...(ticket.rows[0].initial_photos || []), ...(ticket.rows[0].qc_photos || [])]
+      .filter((value, index, values) => typeof value === 'string' && values.indexOf(value) === index);
+    res.json({ data: photos });
+  } catch (error: any) {
+    return sendError(res, error);
+  }
+}
+
+export async function deleteServicePhoto(req: Request, res: Response) {
+  const fileName = path.basename(req.params.fileName || '');
+  if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName)) return res.status(404).end();
+  try {
+    const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
+    await fs.unlink(serviceLocalPath(objectPath));
+    await dbQuery(
+      `UPDATE service_tickets SET initial_photos=COALESCE(initial_photos,'[]'::jsonb)-$1, qc_photos=COALESCE(qc_photos,'[]'::jsonb)-$1, updated_at=NOW()
+       WHERE id=$2 AND tenant_id=$3 AND branch_id=$4 AND deleted_at IS NULL`,
+      [objectPath, req.params.id, req.tenantId, req.branchId]
+    );
+    return res.status(204).end();
+  } catch (error: any) {
+    if (error.code === 'ENOENT') return res.status(404).end();
+    return sendError(res, error);
+  }
+}
+
+export async function uploadServicePhoto(req: Request, res: Response) {
+  const fileName = path.basename(req.params.fileName || '');
+  const contentType = String(req.headers['content-type'] || '').split(';')[0];
+  if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName) || !Buffer.isBuffer(req.body) || req.body.length < 1 || req.body.length > SERVICE_PHOTO_BYTES || !validPhotoSignature(req.body, contentType))
+    return res.status(422).json({ error: 'File foto tidak valid.' });
+  try {
+    const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
+    const target = serviceLocalPath(objectPath);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, req.body, { flag: 'wx' });
+    return res.status(204).end();
+  } catch (error: any) {
+    if (error.code === 'EEXIST') return res.status(409).json({ error: 'Foto sudah diunggah.' });
+    return sendError(res, error);
+  }
+}
+
+export async function getServicePhoto(req: Request, res: Response) {
+  const fileName = path.basename(req.params.fileName || '');
+  if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName)) return res.status(404).end();
+  try {
+    const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
+    res.type(fileName.endsWith('.png') ? 'png' : 'jpg').send(await fs.readFile(serviceLocalPath(objectPath)));
+  } catch (error: any) {
+    if (error.code === 'ENOENT') return res.status(404).end();
+    return sendError(res, error);
+  }
+}
+
 export async function listServiceTickets(req: Request, res: Response) {
   try {
     const branchId = req.branchId;
@@ -562,6 +678,62 @@ WHERE ticket_id=$1 AND tenant_id=$2 AND EXISTS (
        [req.params.id, req.tenantId, req.branchId]
     );
     res.json({ data: result.rows });
+  } catch (error: any) {
+    sendError(res, error);
+  }
+}
+
+export async function updateServiceIntakeChecklist(req: Request, res: Response) {
+  const parsed = intakeChecklistSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(422).json({ error: 'Checklist penerimaan tidak valid.', details: parsed.error.flatten() });
+  try {
+    const ticket = await dbTransaction(async (client) => {
+      const current = await lockedTicket(client, req);
+      if (!['DITERIMA', 'ANTRIAN'].includes(current.status)) {
+        const error: any = new Error('Checklist penerimaan hanya dapat diubah sebelum diagnosis.');
+        error.status = 409;
+        throw error;
+      }
+      await client.query(
+        'UPDATE service_tickets SET initial_checklist=$1::jsonb,updated_at=NOW() WHERE id=$2 AND tenant_id=$3 AND branch_id=$4',
+        [JSON.stringify(parsed.data.checklist), current.id, req.tenantId, current.branchId]
+      );
+      await client.query(
+        'INSERT INTO audit_logs(id,tenant_id,user_id,action,details) VALUES(gen_random_uuid(),$1,$2,$3,$4)',
+        [req.tenantId, req.authActor?.userId || null, 'SERVICE_INTAKE_CHECKLIST_UPDATED', `Checklist penerimaan diperbarui untuk ${current.ticketNo}.`]
+      );
+      return finalTicket(client, req);
+    });
+    res.json({ data: ticket });
+  } catch (error: any) {
+    sendError(res, error);
+  }
+}
+
+export async function updateServiceQcDraft(req: Request, res: Response) {
+  const parsed = qcDraftSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(422).json({ error: 'Draft QC tidak valid.', details: parsed.error.flatten() });
+  try {
+    const ticket = await dbTransaction(async (client) => {
+      const current = await lockedTicket(client, req);
+      if (current.status !== 'QC') {
+        const error: any = new Error('Draft QC hanya dapat diubah pada tahap QC.');
+        error.status = 409;
+        throw error;
+      }
+      await client.query(
+        `UPDATE service_tickets SET qc_score=COALESCE($1,qc_score),qc_notes=COALESCE($2,qc_notes),
+         qc_checklist=COALESCE($3::jsonb,qc_checklist),qc_photos=COALESCE($4::jsonb,qc_photos),updated_at=NOW()
+         WHERE id=$5 AND tenant_id=$6 AND branch_id=$7`,
+        [parsed.data.score ?? null, parsed.data.notes ?? null, parsed.data.checklist === undefined ? null : JSON.stringify(parsed.data.checklist), parsed.data.photos === undefined ? null : JSON.stringify(parsed.data.photos), current.id, req.tenantId, current.branchId]
+      );
+      await client.query(
+        'INSERT INTO audit_logs(id,tenant_id,user_id,action,details) VALUES(gen_random_uuid(),$1,$2,$3,$4)',
+        [req.tenantId, req.authActor?.userId || null, 'SERVICE_QC_DRAFT_UPDATED', `Draft QC diperbarui untuk ${current.ticketNo}.`]
+      );
+      return finalTicket(client, req);
+    });
+    res.json({ data: ticket });
   } catch (error: any) {
     sendError(res, error);
   }
@@ -1221,8 +1393,8 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
   try {
     const ticket = await dbTransaction(async (client) => {
       const current = await lockedTicket(client, req);
-      if (current.status === 'DIAMBIL') {
-        const error: any = new Error('Metadata pekerjaan tidak dapat diubah setelah unit diambil.');
+      if (['DIAMBIL', 'DIBATALKAN', 'TIDAK_BISA_DIPERBAIKI', 'CUSTOMER_TIDAK_MERESPON', 'BARANG_TIDAK_DIAMBIL', 'RUSAK'].includes(current.status)) {
+        const error: any = new Error('Metadata pekerjaan tidak dapat diubah pada status terminal.');
         error.status = 409;
         throw error;
       }
@@ -1242,7 +1414,7 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
         ? new Date(parsed.data.repairStartTime)
         : null;
       const repairEndTime = parsed.data.repairEndTime ? new Date(parsed.data.repairEndTime) : null;
-      if (parsed.data.storageLocationId) await requireTicketWarehouse(client, current, parsed.data.storageLocationId);
+      if (parsed.data.storageLocationId) await requireTicketStorageLocation(client, current, parsed.data.storageLocationId);
       if (repairEndTime && repairStartTime && repairEndTime < repairStartTime) {
         const error: any = new Error('Waktu selesai perbaikan tidak boleh sebelum waktu mulai.');
         error.status = 422;
