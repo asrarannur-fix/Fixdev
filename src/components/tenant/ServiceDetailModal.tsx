@@ -281,8 +281,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     const file = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
     if (!file) throw new Error('Gagal menyiapkan foto.');
-    await uploadServicePhoto(apiFetch, ticket.id, file);
-    showToast('Foto berhasil diunggah. Muat ulang detail untuk melihat foto baru.', 'success');
+    const updated = await uploadServicePhoto(apiFetch, ticket.id, file);
+    onDetailUpdated?.(updated);
+    showToast('Foto berhasil diunggah.', 'success');
   };
 
   return createPortal(

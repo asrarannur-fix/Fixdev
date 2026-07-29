@@ -6,7 +6,7 @@ import { ShieldCheck, AlertCircle, Clock, CheckCircle, XCircle, Search } from "l
 import { ServiceStatus } from "../../types";
 
 export const WarrantyClaims: React.FC = () => {
-  const { services, claimWarranty, updateServiceTicket, currentTenantId } = useSaaS();
+  const { services, claimWarranty, updateServiceStatus, currentTenantId } = useSaaS();
   const { showToast: toast } = useToast();
   const { confirm: showConfirm } = useConfirm();
 
@@ -68,15 +68,11 @@ export const WarrantyClaims: React.FC = () => {
 
       const newStatus = approved ? ServiceStatus.SEDANG_DIKERJAKAN : ServiceStatus.SELESAI;
 
-      await updateServiceTicket(ticketId, {
-        status: newStatus,
-        timeline: [...(ticket.timeline || []), {
-          status: newStatus,
-          note: approved ? "Klaim garansi disetujui - pengerjaan ulang gratis" : "Klaim garansi ditolak - di luar masa garansi/syarat",
-          timestamp: new Date().toISOString(),
-          operator: "Teknisi / Admin",
-        }],
-      });
+      await updateServiceStatus(
+        ticketId,
+        newStatus,
+        approved ? 'Klaim garansi disetujui - pengerjaan ulang gratis' : 'Klaim garansi ditolak - di luar masa garansi/syarat'
+      );
 
       toast(approved ? "Garansi disetujui! Perangkat dikerjakan ulang." : "Garansi ditolak.", approved ? "success" : "warning");
     } catch {

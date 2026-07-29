@@ -26,6 +26,15 @@ test.describe('Service workflow workspace', () => {
     await expect(page).toHaveURL(/serviceId=/);
   });
 
+  test('opens ticket and closes detail through accessible controls', async ({ page }) => {
+    const ticket = page.getByRole('row', { name: /Pilih tiket E2E-DEVTES-READY/ });
+    await expect(ticket).toBeVisible();
+    await ticket.press('Enter');
+    await expect(page.getByRole('button', { name: 'Tutup detail tiket servis' })).toBeVisible();
+    await page.getByRole('button', { name: 'Tutup detail tiket servis' }).click();
+    await expect(page).not.toHaveURL(/serviceId=/);
+  });
+
   test('detail survives refresh and browser back closes workspace', async ({ page }) => {
     const ticket = page.locator('tr').filter({ hasText: 'Siap Diambil' }).first();
     await expect(ticket).toHaveCount(1);

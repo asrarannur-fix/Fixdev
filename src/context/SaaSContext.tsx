@@ -2558,65 +2558,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newTicket;
   };
 
-  const updateServiceTicket = async (id: string, updates: Partial<ServiceTicket>) => {
-    const existing = services.find((s) => s.id === id);
-    if (!existing) throw new Error('Tiket servis tidak ditemukan.');
-    verifyScope(existing.tenantId, existing.branchId);
-
-    const timeline = updates.timeline ? [...updates.timeline] : [...existing.timeline];
-    if (updates.status && updates.status !== existing.status) {
-      timeline.push({
-        status: updates.status,
-        note: `Pembaruan data servis: Status diubah ke ${updates.status}. ${updates.techDiagnosis ? 'Diagnosa: ' + updates.techDiagnosis : ''}`,
-        timestamp: new Date().toISOString(),
-        operator: currentUser.name || 'System',
-      });
-
-      const customer = customers.find((c) => c.id === existing.customerId);
-      const customerName = customer ? customer.name : 'Pelanggan';
-      const customerPhone = customer ? customer.phone : '';
-
-      // Dispatch live notification
-      window.dispatchEvent(
-        new CustomEvent('live_notification', {
-          detail: {
-            title: '🔧 Perubahan Status Tiket',
-            text: `Tiket ${existing.ticketNo} (${existing.deviceName}) diubah ke status: ${updates.status}.`,
-            message: `Tiket ${existing.ticketNo} (${existing.deviceName}) diubah ke status: ${updates.status}.`,
-            category: 'repair',
-            customerName: customerName,
-            phone: customerPhone,
-          },
-        })
-      );
-    } else if (updates.techDiagnosis && updates.techDiagnosis !== existing.techDiagnosis) {
-      timeline.push({
-        status: existing.status,
-        note: `Teknisi mengunggah detail pekerjaan. Diagnosa: ${updates.techDiagnosis}.`,
-        timestamp: new Date().toISOString(),
-        operator: currentUser.name || 'System',
-      });
-    }
-
-    const updatedTicket = { ...existing, ...updates, timeline };
-
-    // Optimistic update, then persist to backend. If the sync fails we roll
-    // back the optimistic state and surface the error instead of silently
-    // losing the edit (data would otherwise disappear after reload).
-    setServices((prev) => prev.map((s) => (s.id === id ? updatedTicket : s)));
-    try {
-      await syncToApi('services', 'update', updatedTicket);
-      addLog('Update Service Ticket', `Memperbarui detail tiket servis ID: ${id}`, 'SERVICE');
-      // Soft-delete: drop the ticket from local state once persisted so the
-      // list reflects deletion immediately (backend also filters deleted_at).
-      if ((updates as any).deletedAt) {
-        setServices((prev) => prev.filter((s) => s.id !== id));
-      }
-    } catch (err: any) {
-      setServices((prev) => prev.map((s) => (s.id === id ? existing : s)));
-      showToast('Gagal menyimpan perubahan tiket: ' + (err?.message || 'unknown error'), 'error');
-      throw err;
-    }
+  const updateServiceTicket = async (_id: string, _updates: Partial<ServiceTicket>) => {
+    throw new Error('Direct service ticket mutation disabled; use scoped service workflow API.');
   };
 
   const triggerCustomerNotification = (
@@ -3012,41 +2955,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     servicePartOrderRequest(id, `/${orderId}/cancel`, 'POST');
 
   const updateServiceStatus = async (id: string, status: ServiceStatus, note: string) => {
-    if (isBackendConfigured()) {
-      await runServiceWorkflow(id, 'transition', { status, note });
-      return;
-    }
-    setServices((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const updated: ServiceTicket = {
-            ...s,
-            status,
-            ...(status === ServiceStatus.MENUGGU_APPROVAL ||
-            status === ServiceStatus.ESTIMATE_PENDING
-              ? { customerApprovalStatus: 'PENDING' as const }
-              : {}),
-            timeline: [
-              ...s.timeline,
-              {
-                status,
-                note,
-                timestamp: new Date().toISOString(),
-                operator: currentUser.name,
-              },
-            ],
-          };
-          setTimeout(() => triggerCustomerNotification(updated, status, note), 50);
-          return updated;
-        }
-        return s;
-      })
-    );
-    addLog(
-      'Update Service Status',
-      `Mengubah status servis ID: ${id} menjadi ${status}`,
-      'SERVICE'
-    );
+    if (!isBackendConfigured()) throw new Error('Perubahan status servis memerlukan backend aktif.');
+    await runServiceWorkflow(id, 'transition', { status, note });
   };
 
   const addServiceDiagnostic = async (
@@ -3055,49 +2965,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     estCost: number,
     parts: any[]
   ) => {
-    if (isBackendConfigured()) {
-      await runServiceWorkflow(id, 'diagnosis', { diagnosis, estimatedCost: estCost, parts });
-      return;
-    }
-    setServices((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const updated: ServiceTicket = {
-            ...s,
-            techDiagnosis: diagnosis,
-            estimatedCost: estCost,
-            partsUsed: parts,
-            status: ServiceStatus.MENUGGU_APPROVAL,
-            customerApprovalStatus: 'PENDING' as const,
-            timeline: [
-              ...s.timeline,
-              {
-                status: ServiceStatus.DIAGNOSA,
-                note: 'Pemeriksaan teknisi selesai. Estimasi biaya dibuat.',
-                timestamp: new Date().toISOString(),
-                operator: currentUser.name,
-              },
-            ],
-          };
-          setTimeout(
-            () =>
-              triggerCustomerNotification(
-                updated,
-                ServiceStatus.MENUGGU_APPROVAL,
-                'Estimasi biaya perbaikan telah dibuat.'
-              ),
-            50
-          );
-          return updated;
-        }
-        return s;
-      })
-    );
-    addLog(
-      'Diagnosis Teknis Selesai',
-      `Diagnosa srv ID: ${id}, Est: Rp${(estCost ?? 0).toLocaleString()}`,
-      'SERVICE'
-    );
+    if (!isBackendConfigured()) throw new Error('Diagnosis servis memerlukan backend aktif.');
+    await runServiceWorkflow(id, 'diagnosis', { diagnosis, estimatedCost: estCost, parts });
   };
 
   const approveServiceEstimate = async (
@@ -4500,38 +4369,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ==========================================
 
   const claimWarranty = async (ticketId: string, complaints: string) => {
-    if (isBackendConfigured()) {
-      try {
-        await runServiceWorkflow(ticketId, 'transition', {
-          status: 'KLAIM_GARANSI',
-          note: `Garansi diklaim: ${complaints}`,
-        });
-        addLog(
-          'Warranty Claim Log',
-          `Klaim garansi pada tiket servis ID: ${ticketId}`,
-          'SERVICE',
-          'MEDIUM'
-        );
-        return;
-      } catch (e: any) {
-        console.error('Server warranty claim failed, falling back to local:', e);
-      }
-    }
-    const existing = services.find((s) => s.id === ticketId);
-    if (existing) {
-      updateServiceTicket(ticketId, {
-        status: ServiceStatus.KLAIM_GARANSI,
-        timeline: [
-          ...existing.timeline,
-          {
-            status: ServiceStatus.KLAIM_GARANSI,
-            note: `Garansi diklaim customer: ${complaints}`,
-            timestamp: new Date().toISOString(),
-            operator: currentUser.name,
-          },
-        ],
-      });
-    }
+    if (!isBackendConfigured()) throw new Error('Klaim garansi memerlukan backend aktif.');
+    await runServiceWorkflow(ticketId, 'transition', {
+      status: 'KLAIM_GARANSI',
+      note: `Garansi diklaim: ${complaints}`,
+    });
     addLog(
       'Warranty Claim Log',
       `Klaim garansi pada tiket servis ID: ${ticketId}`,

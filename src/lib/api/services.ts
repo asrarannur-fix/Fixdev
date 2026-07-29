@@ -13,6 +13,7 @@ export interface ServiceTicketList {
   total: number;
   limit: number;
   offset: number;
+  kpi?: { total: number; active: number; overdue: number; estimated: number };
 }
 
 export async function getServiceTickets(
@@ -32,6 +33,7 @@ export async function getServiceTickets(
     total: Number(payload?.total) || 0,
     limit: Number(payload?.limit) || 50,
     offset: Number(payload?.offset) || 0,
+    kpi: payload?.kpi,
   };
 }
 
@@ -56,7 +58,7 @@ export async function uploadServicePhoto(
   apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   id: string,
   file: Blob
-): Promise<string> {
+): Promise<ServiceTicket> {
   if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
     throw new Error('Foto harus JPG atau PNG maksimal 5 MB.');
   }
@@ -72,11 +74,10 @@ export async function uploadServicePhoto(
     headers: { 'Content-Type': file.type },
     body: file,
   });
-  if (!put.ok) {
-    const payload = await put.json().catch(() => null);
-    throw new Error(payload?.error || 'Gagal mengunggah foto.');
-  }
-  return upload.uploadUrl;
+  const payload = await put.json().catch(() => null);
+  if (!put.ok) throw new Error(payload?.error || 'Gagal mengunggah foto.');
+  if (!payload?.data) throw new Error('Respons unggahan foto tidak valid.');
+  return payload.data as ServiceTicket;
 }
 
 export async function patchServiceTicketScope<T extends Record<string, unknown>>(

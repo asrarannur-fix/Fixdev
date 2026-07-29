@@ -63,6 +63,13 @@ describe('Service Workflow — SIAP_DIAMBIL & DIAMBIL status', () => {
     }
   });
 
+  it('keeps transition destinations valid and rejects unknown statuses', () => {
+    for (const step of WORKFLOW_STEPS) expect(Object.values(ServiceStatus)).toContain(step.status);
+    expect(canServiceTransition('UNKNOWN', ServiceStatus.DITERIMA)).toBe(false);
+    expect(canServiceTransition(ServiceStatus.DITERIMA, 'UNKNOWN')).toBe(false);
+    expect(canServiceTransition(ServiceStatus.DITERIMA, ServiceStatus.DITERIMA)).toBe(false);
+  });
+
   it('WORKFLOW_STEPS distinguishes completed, ready, and collected units', () => {
     const steps = Object.fromEntries(WORKFLOW_STEPS.map((step) => [step.status, step.label]));
 

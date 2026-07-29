@@ -7,6 +7,7 @@ import express from 'express';
 import { requireJwt, requireTenantScope, requireRoles } from '../../middleware/auth.middleware.js';
 import {
   listServiceTickets,
+  exportServiceTickets,
   getServiceTicket,
   transitionServiceTicket,
   diagnoseService,
@@ -41,6 +42,7 @@ router.use(requireJwt, requireTenantScope, requireValidTenant);
 
 // List & get
 router.get('/', listServiceTickets);
+router.get('/export.csv', exportServiceTickets);
 router.get('/tickets', listServiceTickets);
 router.get('/list', listServiceTickets);
 router.delete(

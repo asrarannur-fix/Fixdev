@@ -47,7 +47,8 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
     scopedEmployees,
     currentUser,
     payroll,
-    updateServiceTicket,
+    updateServiceStatus,
+    patchServiceWork,
     requestCashAdvance,
     recordAttendance,
     scopedInternalMessages,
@@ -588,10 +589,11 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                updateServiceTicket(task.id, {
-                                  repairStartTime: new Date().toISOString(),
-                                  status: ServiceStatus.SEDANG_DIKERJAKAN,
-                                });
+                                void updateServiceStatus(
+                                  task.id,
+                                  ServiceStatus.SEDANG_DIKERJAKAN,
+                                  'Pengerjaan dimulai oleh teknisi.'
+                                );
                               }}
                               className="flex-1 sm:flex-none px-3 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-[10px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition"
                             >
@@ -1135,10 +1137,12 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          updateServiceTicket(task.id, {
-                            assignedTechId: employeeTechId,
-                            status: ServiceStatus.DIAGNOSA,
-                          });
+                           void patchServiceWork(task.id, { assignedTechId: employeeTechId });
+                           void updateServiceStatus(
+                             task.id,
+                             ServiceStatus.DIAGNOSA,
+                             'Teknisi mengambil tiket untuk diagnosis.'
+                           );
                         }}
                         className="text-[9px] font-bold bg-accent-lighter text-accent hover:bg-indigo-100 px-2 py-1 rounded transition"
                       >

@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { dbTransaction, dbQuery } from '../../lib/db.js';
+import { logger } from '../../lib/logger.js';
 import { ensureAccount, paymentDebitAccountCode } from '../lib/coa.js';
 import type { WhatsAppTemplate } from '../../types/index.js';
 import {
@@ -117,10 +118,16 @@ function servicePhotoPath(tenantId: string, ticketId: string, fileId: string, ex
   return `tenant/${tenantId}/service/${ticketId}/${fileId}.${extension}`;
 }
 
-function serviceLocalPath(objectPath: string) {
+export function serviceLocalPath(objectPath: string) {
   const resolved = path.resolve(serviceUploadRoot, objectPath);
   if (!resolved.startsWith(`${serviceUploadRoot}${path.sep}`)) throw new Error('Invalid upload path.');
   return resolved;
+}
+
+async function cleanupServicePhotos(objectPaths: unknown[]) {
+  const paths = objectPaths.filter((value): value is string => photo.safeParse(value).success);
+  const results = await Promise.allSettled(paths.map((objectPath) => fs.unlink(serviceLocalPath(objectPath))));
+  return results.filter((result) => result.status === 'fulfilled' || result.reason?.code === 'ENOENT').length;
 }
 
 function validPhotoSignature(buffer: Buffer, contentType: string) {
@@ -459,10 +466,14 @@ function sendError(res: Response, error: any) {
 export async function createServicePhotoUpload(req: Request, res: Response) {
   const contentType = String(req.body?.contentType || '');
   const sizeBytes = Number(req.body?.sizeBytes);
+  const conditionId = req.body?.conditionId ? String(req.body.conditionId) : '';
   if (!['image/jpeg', 'image/png'].includes(contentType) || !Number.isInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > SERVICE_PHOTO_BYTES)
     return res.status(422).json({ error: 'Foto harus JPG atau PNG maksimal 5 MB.' });
+  if (conditionId && !/^[\w-]{1,200}$/.test(conditionId)) return res.status(422).json({ error: 'Kondisi foto tidak valid.' });
   const objectPath = servicePhotoPath(req.tenantId!, req.params.id, randomUUID(), contentType === 'image/png' ? 'png' : 'jpg');
-  res.json({ objectPath, uploadUrl: `/api/services/${req.params.id}/photos/${path.basename(objectPath)}`, expiresIn: 60 });
+  const photoUrl = `/api/services/${req.params.id}/photos/${path.basename(objectPath)}`;
+  const uploadUrl = conditionId ? `${photoUrl}?conditionId=${encodeURIComponent(conditionId)}` : photoUrl;
+  res.json({ objectPath, photoUrl, uploadUrl, conditionId: conditionId || null, expiresIn: 60 });
 }
 
 export async function listServicePhotos(req: Request, res: Response) {
@@ -486,11 +497,12 @@ export async function deleteServicePhoto(req: Request, res: Response) {
   try {
     const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
     await fs.unlink(serviceLocalPath(objectPath));
-    await dbQuery(
+    const result = await dbQuery(
       `UPDATE service_tickets SET initial_photos=COALESCE(initial_photos,'[]'::jsonb)-$1, qc_photos=COALESCE(qc_photos,'[]'::jsonb)-$1, updated_at=NOW()
        WHERE id=$2 AND tenant_id=$3 AND branch_id=$4 AND deleted_at IS NULL`,
       [objectPath, req.params.id, req.tenantId, req.branchId]
     );
+    logger.info({ tenantId: req.tenantId, ticketId: req.params.id, objectPath, rows: result.rowCount }, '[service-photo] deleted');
     return res.status(204).end();
   } catch (error: any) {
     if (error.code === 'ENOENT') return res.status(404).end();
@@ -501,15 +513,41 @@ export async function deleteServicePhoto(req: Request, res: Response) {
 export async function uploadServicePhoto(req: Request, res: Response) {
   const fileName = path.basename(req.params.fileName || '');
   const contentType = String(req.headers['content-type'] || '').split(';')[0];
+  const conditionId = typeof req.query.conditionId === 'string' ? req.query.conditionId : '';
   if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName) || !Buffer.isBuffer(req.body) || req.body.length < 1 || req.body.length > SERVICE_PHOTO_BYTES || !validPhotoSignature(req.body, contentType))
     return res.status(422).json({ error: 'File foto tidak valid.' });
+  if (conditionId && !/^[\w-]{1,200}$/.test(conditionId)) return res.status(422).json({ error: 'Kondisi foto tidak valid.' });
+  const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
+  const target = serviceLocalPath(objectPath);
   try {
-    const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
-    const target = serviceLocalPath(objectPath);
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, req.body, { flag: 'wx' });
-    return res.status(204).end();
+    const ticket = await dbTransaction(async (client) => {
+      const locked = await lockedTicket(client, req);
+      const capturedConditions = Array.isArray(locked.capturedConditions) ? locked.capturedConditions : [];
+      if (conditionId && !capturedConditions.some((condition: any) => condition?.id === conditionId)) {
+        const error: any = new Error('Kondisi tiket tidak ditemukan.');
+        error.status = 422;
+        throw error;
+      }
+      const updatedConditions = conditionId
+        ? capturedConditions.map((condition: any) => condition?.id === conditionId ? { ...condition, photoUrl: objectPath, url: objectPath } : condition)
+        : capturedConditions;
+      const updated = await client.query(
+        `UPDATE service_tickets SET initial_photos=CASE WHEN $6::text <> '' THEN COALESCE(initial_photos, '[]'::jsonb) WHEN COALESCE(initial_photos, '[]'::jsonb) ? $1 THEN initial_photos ELSE COALESCE(initial_photos, '[]'::jsonb) || to_jsonb($1::text) END,
+         captured_conditions=$2::jsonb, updated_at=NOW()
+         WHERE id=$3 AND tenant_id=$4 AND branch_id=$5 RETURNING ${ticketSelect()}`,
+        [objectPath, JSON.stringify(updatedConditions), req.params.id, req.tenantId, req.branchId || req.headers['x-branch-id'], conditionId]
+      );
+      await client.query(
+        'INSERT INTO audit_logs(id,tenant_id,user_id,action,details) VALUES(gen_random_uuid(),$1,$2,$3,$4)',
+        [req.tenantId, req.authActor?.userId || null, 'SERVICE_PHOTO_UPLOADED', `Foto ${objectPath} ditambahkan ke tiket ${req.params.id}`]
+      );
+      return updated.rows[0];
+    });
+    return res.status(200).json({ data: ticket, photoUrl: `/api/services/${req.params.id}/photos/${fileName}` });
   } catch (error: any) {
+    await fs.unlink(target).catch(() => undefined);
     if (error.code === 'EEXIST') return res.status(409).json({ error: 'Foto sudah diunggah.' });
     return sendError(res, error);
   }
@@ -529,37 +567,53 @@ export async function getServicePhoto(req: Request, res: Response) {
 
 export async function listServiceTickets(req: Request, res: Response) {
   try {
-    const branchId = req.branchId;
+    const branchId = req.branchId || String(req.query.branchId || req.headers['x-branch-id'] || '');
     const limit = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
-    const offset = Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0);
-    const query = String(req.query.q || '').trim();
+    const offset = Math.min(1_000_000, Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0));
+    const query = String(req.query.q || '').trim().slice(0, 200);
     const status = String(req.query.status || '').trim();
+    const technician = String(req.query.technician || req.query.tech || '').trim();
+    const group = String(req.query.group || '').trim();
+    const sla = String(req.query.sla || '').trim();
+    const from = String(req.query.from || req.query.dateFrom || '').trim();
+    const to = String(req.query.to || req.query.dateTo || '').trim();
     const sort = String(req.query.sort || 'newest');
-    const order = sort === 'oldest' ? 'ASC' : sort === 'cost_desc' ? 'DESC' : 'DESC';
-    const orderColumn = sort === 'cost_desc' ? 'estimated_cost' : 'created_at';
+    const sortMap: Record<string, string> = { newest: 'created_at DESC', oldest: 'created_at ASC', cost_desc: 'estimated_cost DESC', cost_asc: 'estimated_cost ASC', urgent: 'estimated_completion_date ASC NULLS LAST, created_at ASC' };
     const values: any[] = [req.tenantId, branchId];
-    const filters = ['tenant_id=$1', 'branch_id=$2', 'deleted_at IS NULL'];
-    if (query) {
-      values.push(`%${query}%`);
-      filters.push(`(ticket_no ILIKE $${values.length} OR device_name ILIKE $${values.length} OR device_brand_model ILIKE $${values.length})`);
-    }
-    if (status && status !== 'ALL') {
-      values.push(status);
-      filters.push(`status=$${values.length}`);
-    }
+    const filters = ['st.tenant_id=$1', 'st.branch_id=$2', 'st.deleted_at IS NULL'];
+    const add = (sql: string, value: any) => { values.push(value); filters.push(sql.replace('$N', `$${values.length}`)); };
+    if (query) add(`(st.ticket_no ILIKE $N OR st.device_name ILIKE $N OR st.device_brand_model ILIKE $N OR c.name ILIKE $N)`, `%${query}%`);
+    if (status && status !== 'ALL') add('st.status=$N', status);
+    if (technician === 'unassigned') filters.push('st.assigned_tech_id IS NULL');
+    else if (technician && technician !== 'ALL') add('st.assigned_tech_id=$N', technician);
+    const groups: Record<string, string[]> = { diagnosis: ['DITERIMA', 'ANTRIAN'], approval: ['ESTIMATE_PENDING', 'MENUGGU_APPROVAL'], repair: ['SEDANG_DIKERJAKAN', 'REWORK'], qc: ['QC'], pickup: ['SIAP_DIAMBIL'] };
+    if (groups[group]) { values.push(groups[group]); filters.push(`st.status = ANY($${values.length})`); }
+    if (from) add('st.created_at >= $N::timestamptz', from);
+    if (to) add('st.created_at < ($N::date + INTERVAL \'1 day\')', to);
+    if (sla === 'overdue') filters.push("st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('SELESAI','DIAMBIL')");
+    if (sla === 'on-track') filters.push("(st.created_at >= NOW() - INTERVAL '48 hours' OR st.status IN ('SELESAI','DIAMBIL'))");
     const where = filters.join(' AND ');
-    const countResult = await dbQuery(
-      `SELECT COUNT(*)::int AS total FROM service_tickets WHERE ${where}`,
-      values
-    );
-    const result = await dbQuery(
-      `SELECT ${ticketSelect()} FROM service_tickets WHERE ${where} ORDER BY ${orderColumn} ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
-      [...values, limit, offset]
-    );
-    res.json({ data: result.rows, total: countResult.rows[0]?.total || 0, limit, offset });
-  } catch (error: any) {
-    sendError(res, error);
-  }
+    const base = `FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`;
+    const countResult = await dbQuery(`SELECT COUNT(*)::int AS total ${base}`, values);
+    const kpiResult = await dbQuery(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE st.status NOT IN ('SELESAI','DIAMBIL'))::int AS active, COUNT(*) FILTER (WHERE st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('SELESAI','DIAMBIL'))::int AS overdue, COALESCE(SUM(st.estimated_cost),0)::float AS estimated FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`, values);
+    const result = await dbQuery(`SELECT ${ticketSelect()}, c.name AS "customerName" ${base} ORDER BY ${sortMap[sort] || sortMap.newest}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, limit, offset]);
+    res.json({ data: result.rows, total: countResult.rows[0]?.total || 0, limit, offset, kpi: kpiResult.rows[0] || { total: 0, active: 0, overdue: 0, estimated: 0 } });
+  } catch (error: any) { sendError(res, error); }
+}
+
+export async function exportServiceTickets(req: Request, res: Response) {
+  const original = req.query.limit;
+  req.query.limit = '100';
+  req.query.offset = '0';
+  const json = res.json.bind(res);
+  res.json = (payload: any) => {
+    const cell = (v: unknown) => { const s = String(v ?? ''); return `"${(/^[=+@-]/.test(s) ? `'${s}` : s).replaceAll('"', '""')}"`; };
+    const rows = [['Ticket No', 'Device', 'Customer', 'Status', 'Estimated Cost'], ...(payload.data || []).map((s: any) => [s.ticketNo, s.deviceName, s.customerName, s.status, s.estimatedCost])];
+    res.type('text/csv').set('Content-Disposition', 'attachment; filename="service-tickets.csv"').send(`\\ufeff${rows.map((r) => r.map(cell).join(',')).join('\\r\\n')}`);
+    return res;
+  };
+  await listServiceTickets(req, res);
+  req.query.limit = original;
 }
 
 export async function getServiceTicket(req: Request, res: Response) {
@@ -1471,9 +1525,12 @@ export async function bulkDeleteServiceTickets(req: Request, res: Response) {
     const result = await dbQuery(
       `UPDATE service_tickets SET deleted_at=NOW(),updated_at=NOW()
        WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL AND id=ANY($3::uuid[])
-       RETURNING id`,
+       RETURNING id, initial_photos, qc_photos`,
       [req.tenantId, req.branchId, parsed.data.ids]
     );
+    const photoPaths = result.rows.flatMap((row) => [...(row.initial_photos || []), ...(row.qc_photos || [])]);
+    const cleanedPhotos = await cleanupServicePhotos(photoPaths);
+    logger.info({ tenantId: req.tenantId, branchId: req.branchId, ticketCount: result.rowCount, photoCount: cleanedPhotos }, '[service] tickets deleted');
     res.json({ data: { deletedIds: result.rows.map((row) => row.id) } });
   } catch (error: any) {
     sendError(res, error);
