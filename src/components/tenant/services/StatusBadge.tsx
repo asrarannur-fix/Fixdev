@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge } from '../ui/Badge';
+import { Badge } from '../../ui/Badge';
 import { ServiceStatus, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../../domain/serviceWorkflow';
 
 interface StatusBadgeProps {

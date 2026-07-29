@@ -50,7 +50,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
       device_name: ticket.deviceName,
     };
 
-    let message = "";
+    let message: string;
     if (value === "intake") {
       message = renderTenantWaTemplateLocal("SERVICE_UPDATE", {
         ...common,

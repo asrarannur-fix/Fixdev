@@ -2,12 +2,14 @@ import React from "react";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: "primary" | "secondary" | "danger" | "success" | "warning" | "info";
-  size?: "sm" | "md";
+  tone?: string;
+  size?: "sm" | "md" | "lg";
 }
 
 export const Badge: React.FC<BadgeProps> = ({
   children,
   variant = "primary",
+  tone,
   size = "md",
   className = "",
   ...props
@@ -32,6 +34,7 @@ export const Badge: React.FC<BadgeProps> = ({
   const sizes = {
     sm: "px-1.5 py-0.5 text-[9px]",
     md: "px-2 py-0.5 text-[10px]",
+    lg: "px-2.5 py-1 text-xs",
   };
 
   return (

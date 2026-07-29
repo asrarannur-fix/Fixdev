@@ -93,7 +93,7 @@ const SettingsDropdown: React.FC<{ onSetTab?: (tab: string, subTab?: string) => 
                   key={item.id}
                   onClick={() => {
                     setOpen(false);
-                    onSetTab && onSetTab('settings', item.id);
+                    onSetTab?.('settings', item.id);
                   }}
                   className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-[10px] font-bold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
                   role="menuitem"

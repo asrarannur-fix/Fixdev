@@ -4,53 +4,59 @@ const TEST_BASE_URL = process.env.TEST_BASE_URL || 'http://127.0.0.1:3001';
 const OWNER_EMAIL = process.env.TEST_OWNER_EMAIL || 'devtes1@mail.com';
 const OWNER_PASSWORD = process.env.TEST_OWNER_PASSWORD || '778877';
 
-test.describe('Service Workflow E2E', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(TEST_BASE_URL + '/login');
-    await page.getByLabel('Alamat email').fill(OWNER_EMAIL);
-    await page.getByLabel('Password').fill(OWNER_PASSWORD);
-    await page.locator('form').getByRole('button', { name: 'Masuk' }).click();
-    // Navigate to tenant services page after login
-    await page.goto(TEST_BASE_URL + '/tenant/devtes/services', { waitUntil: 'networkidle' });
+test.describe('Service workflow workspace', () => {
+  test.beforeEach(async ({ page, context }) => {
+    const login = await page.request.post(`${TEST_BASE_URL}/api/auth/login`, {
+      data: { email: OWNER_EMAIL, password: OWNER_PASSWORD },
+    });
+    expect(login.ok()).toBeTruthy();
+    await context.addCookies(await page.request.storageState().then((state) => state.cookies));
+    await page.goto(`${TEST_BASE_URL}/tenant/devtes/services`, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: /Servis, buka menu/ }).click();
+    await page.getByText('Daftar Servis', { exact: true }).click();
+    await expect(page.getByPlaceholder('Cari tiket, nama, perangkat...')).toBeVisible();
   });
 
-  test('Can see SIAP_DIAMBIL status in service list', async ({ page }) => {
-    // Check if page loaded tenant services
-    const hasTable = await page.locator('table').count() > 0;
-    if (!hasTable) {
-      console.log('No table found on services page, checking if tenant page loaded');
-      return;
-    }
-    await expect(page.locator('body')).toContainText('SIAP_DIAMBIL', { timeout: 5000 });
+  test('opens ready pickup detail with next step and stable URL', async ({ page }) => {
+    const ticket = page.locator('tr').filter({ hasText: 'Siap Diambil' }).first();
+    await expect(ticket).toHaveCount(1);
+    await ticket.click();
+    await expect(page.getByTestId('next-step-banner')).toBeVisible();
+    await expect(page.getByTestId('next-step-banner')).toContainText('Unit Siap Diambil');
+    await expect(page).toHaveURL(/serviceId=/);
   });
 
-  test('ServiceDetailModal shows next step for SIAP_DIAMBIL', async ({ page }) => {
-    // Check if there are any ticket rows with SIAP_DIAMBIL
-    const ticketRow = page.locator('tr').filter({ hasText: 'SIAP_DIAMBIL' }).first();
-    const count = await ticketRow.count();
-    
-    if (count === 0) {
-      console.log('No SIAP_DIAMBIL ticket found, skipping test');
-      return;
-    }
-    
-    await ticketRow.click();
-    
-    // Check for next step banner
-    await expect(page.locator('[data-testid="next-step-banner"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('[data-testid="next-step-banner"]')).toContainText(/Ambil Unit|Handover/);
+  test('detail survives refresh and browser back closes workspace', async ({ page }) => {
+    const ticket = page.locator('tr').filter({ hasText: 'Siap Diambil' }).first();
+    await expect(ticket).toHaveCount(1);
+    await ticket.click();
+    await expect(page.getByTestId('service-actions')).toBeVisible();
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByTestId('service-actions')).toBeVisible();
+    await page.goBack();
+    await expect(page).not.toHaveURL(/serviceId=/);
   });
 
-  test('ServiceTicketActions shows Ambil Unit button for SELESAI status', async ({ page }) => {
-    const ticketRow = page.locator('tr').filter({ hasText: 'SELESAI' }).first();
-    const count = await ticketRow.count();
-    
-    if (count === 0) {
-      console.log('No SELESAI ticket found, skipping test');
-      return;
-    }
-    
-    await ticketRow.click();
-    await expect(page.locator('[data-testid="service-actions"]')).toContainText('Ambil Unit', { timeout: 10000 });
+  test('shows handover action for technically completed ticket', async ({ page }) => {
+    const ticket = page.locator('tr').filter({ hasText: 'Selesai Teknis' }).first();
+    await expect(ticket).toHaveCount(1);
+    await ticket.click();
+    await expect(page.getByTestId('service-actions')).toContainText('Ambil Unit');
+  });
+
+  test('persists search and status filters in URL', async ({ page }) => {
+    await page.getByPlaceholder('Cari tiket, nama, perangkat...').fill('E2E-DEVTES-READY');
+    await expect(page).toHaveURL(/q=E2E-DEVTES-READY/);
+    await page.getByLabel('Filter semua status').selectOption('SIAP_DIAMBIL');
+    await expect(page).toHaveURL(/status=SIAP_DIAMBIL/);
+    await expect(page.locator('tr').filter({ hasText: 'E2E-DEVTES-READY' })).toHaveCount(1);
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.getByPlaceholder('Cari tiket, nama, perangkat...')).toHaveValue('E2E-DEVTES-READY');
+  });
+
+  test('opens a service detail from direct URL', async ({ page }) => {
+    await page.goto(`${TEST_BASE_URL}/tenant/devtes/services?serviceId=00000000-0000-4000-8000-000000000105`, { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('next-step-banner')).toContainText('Unit Siap Diambil');
+    await expect(page.getByTestId('service-actions')).toBeVisible();
   });
 });

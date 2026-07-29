@@ -29,7 +29,11 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
     ServiceStatus.DIBATALKAN,
     ServiceStatus.CUSTOMER_TIDAK_MERESPON,
   ],
-  [ServiceStatus.APPROVAL_DITOLAK]: [ServiceStatus.DIAGNOSA, ServiceStatus.DIBATALKAN],
+  [ServiceStatus.APPROVAL_DITOLAK]: [
+    ServiceStatus.DIAGNOSA,
+    ServiceStatus.MENUGGU_APPROVAL,
+    ServiceStatus.DIBATALKAN,
+  ],
   [ServiceStatus.MENUGGU_SPAREPART]: [
     ServiceStatus.SEDANG_DIKERJAKAN,
     ServiceStatus.DIKIRIM_KE_VENDOR,
@@ -138,7 +142,7 @@ export const WORKFLOW_STEPS = [
   { status: ServiceStatus.MENUGGU_APPROVAL, label: 'Menunggu Persetujuan' },
   { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan' },
   { status: ServiceStatus.QC, label: 'QC/Testing' },
-  { status: ServiceStatus.SELESAI, label: 'Siap Diambil' },
+  { status: ServiceStatus.SELESAI, label: 'Selesai' },
   { status: ServiceStatus.SIAP_DIAMBIL, label: 'Siap Diambil' },
   { status: ServiceStatus.DIAMBIL, label: 'Diambil' },
 ];

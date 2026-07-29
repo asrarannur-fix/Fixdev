@@ -13,7 +13,7 @@ export async function databaseTestHandler(_req: Request, res: Response) {
   } catch {
     return res.status(503).json({ success: false, message: "Gagal menghubungkan ke database PostgreSQL." });
   } finally {
-    try { await client.end(); } catch {}
+    try { await client.end(); } catch { /* ignore */ }
   }
 }
 
@@ -56,8 +56,8 @@ export async function runPendingMigrations(connectionString: string) {
     await client.end();
     return logs;
   } catch (error) {
-    try { await client.query("SELECT pg_advisory_unlock(hashtext('fixdev_schema_migrations'))"); } catch {}
-    try { await client.end(); } catch {}
+    try { await client.query("SELECT pg_advisory_unlock(hashtext('fixdev_schema_migrations'))"); } catch { /* ignore */ }
+    try { await client.end(); } catch { /* ignore */ }
     throw error;
   }
 }

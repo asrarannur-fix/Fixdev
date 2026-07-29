@@ -153,8 +153,12 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const { confirm: showConfirm } = useConfirm();
   const activeTenantId = currentTenantId || contextTenantId;
   const tenantObj = tenants.find((t: Tenant) => t.id === activeTenantId);
-  const serviceTickets = services.filter(
-    (service) => service.tenantId === activeTenantId && service.branchId === currentBranchId
+  const serviceTickets = useMemo(
+    () =>
+      services.filter(
+        (service) => service.tenantId === activeTenantId && service.branchId === currentBranchId
+      ),
+    [services, activeTenantId, currentBranchId]
   );
   const triggers = [] as any[];
 
@@ -170,6 +174,51 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const [srvSort, setSrvSort] = useState<string>('newest');
   const [srvSearchQuery, setSrvSearchQuery] = useState<string>('');
   const [viewingServiceTicketId, setViewingServiceTicketId] = useState<string | null>(null);
+  const updateUrl = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(window.location.search);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    });
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  };
+  const setViewingServiceTicketIdFromUrl = (id: string | null) => {
+    const validId = id && serviceTickets.some((ticket) => ticket.id === id) ? id : null;
+    setViewingServiceTicketId(validId);
+    window.history.pushState(null, '', `${window.location.pathname}${(() => {
+      const params = new URLSearchParams(window.location.search);
+      if (validId) params.set('serviceId', validId);
+      else params.delete('serviceId');
+      const query = params.toString();
+      return query ? `?${query}` : '';
+    })()}${window.location.hash}`);
+  };
+  const setSrvSearchQueryFromUrl = (value: string) => {
+    setSrvSearchQuery(value);
+    updateUrl({ q: value || null });
+  };
+  const setStatusFilterFromUrl = (value: string) => {
+    setStatusFilter(value);
+    updateUrl({ status: value === 'ALL' ? null : value });
+  };
+  const setSrvSortFromUrl = (value: string) => {
+    setSrvSort(value);
+    updateUrl({ sort: value === 'newest' ? null : value });
+  };
+  useEffect(() => {
+    const readUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSrvSearchQuery(params.get('q') || '');
+      setStatusFilter(params.get('status') || 'ALL');
+      setSrvSort(params.get('sort') || 'newest');
+      const id = params.get('serviceId');
+      setViewingServiceTicketId(id && serviceTickets.some((ticket) => ticket.id === id) ? id : null);
+    };
+    readUrl();
+    window.addEventListener('popstate', readUrl);
+    return () => window.removeEventListener('popstate', readUrl);
+  }, [serviceTickets]);
   const [showSpkPrintout, setShowSpkPrintout] = useState<string | null>(null);
   const [showInvoicePrintout, setShowInvoicePrintout] = useState<string | null>(null);
   const [showProvisionalQuote, setShowProvisionalQuote] = useState<string | null>(null);
@@ -335,25 +384,23 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     setLocalSubTab(activeSubTab);
   }, [activeSubTab]);
 
-  // Auto-open the detail/workflow modal right after a reception is created,
-  // so the user is taken straight to the next step (diagnosis) instead of
-  // being dropped back on the list.
-  useEffect(() => {
-    if (justCreatedTicket && justCreatedTicket.id) {
-      setViewingServiceTicketId(justCreatedTicket.id);
-      if (activeSubTab !== 'list') setActiveSubTab('list');
-      setJustCreatedTicket(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [justCreatedTicket]);
-
   const setActiveSubTab = (sub: string) => {
     setLocalSubTab(sub);
     try {
       localStorage.setItem('fixdev_srv_subtab', sub);
-    } catch {}
+    } catch {
+      onSetTab?.('services', sub);
+      return;
+    }
     onSetTab?.('services', sub);
   };
+  useEffect(() => {
+    if (justCreatedTicket?.id) {
+      setViewingServiceTicketIdFromUrl(justCreatedTicket.id);
+      if (activeSubTab !== 'list') setActiveSubTab('list');
+      setJustCreatedTicket(null);
+    }
+  }, [justCreatedTicket, activeSubTab, setViewingServiceTicketIdFromUrl, setActiveSubTab]);
   const {
     newSrvCustName,
     setNewSrvCustName,
@@ -628,7 +675,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     <>
       <div className="space-y-6" id="services-pane">
         {/* Subtab: LIST OF SERVICES */}
-        {localSubTab === 'list' && (
+        {(localSubTab === 'list' || viewingServiceTicketId) && (
           <>
             <ServiceList
               {...{
@@ -745,10 +792,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 setShowWarrantyPrintout,
                 setSparepartQty,
                 setSparepartSN,
-                setSrvSearchQuery,
-                setSrvSort,
-                setStatusFilter,
-                setViewingServiceTicketId,
+                setSrvSearchQuery: setSrvSearchQueryFromUrl,
+                setSrvSort: setSrvSortFromUrl,
+                setStatusFilter: setStatusFilterFromUrl,
+                setViewingServiceTicketId: setViewingServiceTicketIdFromUrl,
                 showInvoicePrintout,
                 showProvisionalQuote,
                 showSpkPrintout,
@@ -1057,10 +1104,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
               setShowWarrantyPrintout,
               setSparepartQty,
               setSparepartSN,
-              setSrvSearchQuery,
-              setSrvSort,
-              setStatusFilter,
-              setViewingServiceTicketId,
+               setSrvSearchQuery: setSrvSearchQueryFromUrl,
+               setSrvSort: setSrvSortFromUrl,
+               setStatusFilter: setStatusFilterFromUrl,
+               setViewingServiceTicketId: setViewingServiceTicketIdFromUrl,
               showInvoicePrintout,
               showProvisionalQuote,
               showSpkPrintout,

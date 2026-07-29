@@ -10,67 +10,60 @@ const DeltaBadge: React.FC<{ delta: string | null; good?: boolean }> = ({ delta,
   if (num === 0) return null;
   const isUp = num > 0;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-full ${
-      isUp ? (good ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400")
-      : (good ? "bg-rose-100 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400" : "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400")
+    <span className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2 py-0.5 rounded-lg ${
+      isUp ? (good ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400")
+      : (good ? "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400" : "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400")
     }`}>
-      {isUp ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
+      {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
       {isUp ? "+" : ""}{delta}%
     </span>
   );
 };
 
+const GradientCard: React.FC<{
+  children: React.ReactNode;
+  gradient: string;
+}> = ({ children, gradient }) => (
+  <div className="group relative overflow-hidden rounded-2xl border border-white/20 dark:border-zinc-800/40 shadow-lg shadow-slate-200/30 dark:shadow-zinc-900/30 hover:shadow-xl transition-all duration-300">
+    <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10" />
+    <div className="absolute -top-8 -right-8 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+    <div className="relative p-4">{children}</div>
+  </div>
+);
+
 export const KPIRevenueWidget: React.FC<WidgetProps> = ({ data }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-2xl p-3 border border-emerald-100 dark:border-emerald-900/30 shadow-sm relative overflow-hidden">
-      <div className="absolute top-2 right-2 w-12 h-12 rounded-full bg-emerald-100/60 dark:bg-emerald-900/30 -mr-3 -mt-3" />
-      <div className="relative">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-7 h-7 rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30">
-            <Banknote className="w-3.5 h-3.5 text-white" />
-          </div>
-          <DeltaBadge delta={data.revenueDelta} />
-        </div>
-        <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Total Pendapatan</p>
-        <p className="text-lg font-black text-emerald-800 dark:text-emerald-200">{fmtRupiah(data.totalRevenue)}</p>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <GradientCard gradient="from-emerald-400 via-teal-400 to-cyan-500 dark:from-emerald-600 dark:via-teal-600 dark:to-cyan-600">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Total Pendapatan</p>
+        <DeltaBadge delta={data.revenueDelta} />
       </div>
-    </div>
+      <p className="text-xl font-black text-white drop-shadow-sm tracking-tight">{fmtRupiah(data.totalRevenue)}</p>
+    </GradientCard>
 
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl p-3 border border-blue-100 dark:border-blue-900/30 shadow-sm relative overflow-hidden">
-      <div className="absolute top-2 right-2 w-12 h-12 rounded-full bg-blue-100/60 dark:bg-blue-900/30 -mr-3 -mt-3" />
-      <div className="relative">
-        <div className="w-7 h-7 rounded-xl bg-blue-500 flex items-center justify-center mb-2 shadow-sm shadow-blue-200 dark:shadow-blue-900/30">
-          <ShoppingBag className="w-3.5 h-3.5 text-white" />
-        </div>
-        <p className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-0.5">Pendapatan POS</p>
-        <p className="text-lg font-black text-blue-800 dark:text-blue-200">{fmtRupiah(data.posRevenue)}</p>
-      </div>
-    </div>
+    <GradientCard gradient="from-blue-500 via-indigo-500 to-violet-500 dark:from-blue-600 dark:via-indigo-600 dark:to-violet-600">
+      <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-2">Pendapatan POS</p>
+      <p className="text-xl font-black text-white drop-shadow-sm tracking-tight">{fmtRupiah(data.posRevenue)}</p>
+    </GradientCard>
 
-    <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 rounded-2xl p-3 border border-violet-100 dark:border-violet-900/30 shadow-sm relative overflow-hidden">
-      <div className="absolute top-2 right-2 w-12 h-12 rounded-full bg-violet-100/60 dark:bg-violet-900/30 -mr-3 -mt-3" />
-      <div className="relative">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-7 h-7 rounded-xl bg-violet-500 flex items-center justify-center shadow-sm shadow-violet-200 dark:shadow-violet-900/30">
-            <Wrench className="w-3.5 h-3.5 text-white" />
-          </div>
-          <DeltaBadge delta={data.serviceDelta} />
-        </div>
-        <p className="text-[9px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-0.5">Pendapatan Servis</p>
-        <p className="text-lg font-black text-violet-800 dark:text-violet-200">{fmtRupiah(data.serviceRevenue)}</p>
+    <GradientCard gradient="from-violet-500 via-purple-500 to-fuchsia-500 dark:from-violet-600 dark:via-purple-600 dark:to-fuchsia-600">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Pendapatan Servis</p>
+        <DeltaBadge delta={data.serviceDelta} />
       </div>
-    </div>
+      <p className="text-xl font-black text-white drop-shadow-sm tracking-tight">{fmtRupiah(data.serviceRevenue)}</p>
+    </GradientCard>
 
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl p-3 border border-amber-100 dark:border-amber-900/30 shadow-sm relative overflow-hidden">
-      <div className="absolute top-2 right-2 w-12 h-12 rounded-full bg-amber-100/60 dark:bg-amber-900/30 -mr-3 -mt-3" />
-      <div className="relative">
-        <div className="w-7 h-7 rounded-xl bg-amber-500 flex items-center justify-center mb-2 shadow-sm shadow-amber-200 dark:shadow-amber-900/30">
-          <TrendingUp className="w-3.5 h-3.5 text-white" />
+    <GradientCard gradient="from-amber-500 via-orange-500 to-red-500 dark:from-amber-600 dark:via-orange-600 dark:to-red-600">
+      <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-2">Laba Kotor</p>
+      <p className="text-xl font-black text-white drop-shadow-sm tracking-tight">{fmtRupiah(data.grossProfit)}</p>
+      <div className="mt-2 flex items-center gap-2">
+        <div className="h-1.5 flex-1 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-full bg-white rounded-full" style={{ width: `${Math.max(0, Math.min(Number(data.profitMargin) || 0, 100))}%` }} />
         </div>
-        <p className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-0.5">Laba Kotor</p>
-        <p className="text-lg font-black text-amber-800 dark:text-amber-200">{fmtRupiah(data.grossProfit)}</p>
-        <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400">Margin: {data.profitMargin}%</span>
+        <span className="text-[10px] font-bold text-white/80">{data.profitMargin}%</span>
       </div>
-    </div>
+    </GradientCard>
   </div>
 );

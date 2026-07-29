@@ -1,31 +1,38 @@
 import React from "react";
-import { Clock, AlertTriangle } from "lucide-react";
 import { WidgetProps } from "../widgetTypes";
 
 const fmtRupiah = (n: number) => `Rp ${Math.round(n || 0).toLocaleString("id-ID")}`;
 
-export const KPIBillingWidget: React.FC<WidgetProps> = ({ data }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-    <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-2xl p-3 border border-orange-100 dark:border-orange-900/30 shadow-sm relative overflow-hidden">
-      <div className="absolute top-2 right-2 w-12 h-12 rounded-full bg-orange-100/60 dark:bg-orange-900/30 -mr-3 -mt-3" />
-      <div className="relative">
-        <div className="w-7 h-7 rounded-xl bg-orange-500 flex items-center justify-center mb-2 shadow-sm shadow-orange-200 dark:shadow-orange-900/30">
-          <Clock className="w-3.5 h-3.5 text-white" />
-        </div>
-        <p className="text-[9px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-0.5">Tagihan Belum Dibayar</p>
-        <p className="text-lg font-black text-orange-800 dark:text-orange-200">{fmtRupiah(data.totalBillingUnpaid)}</p>
-      </div>
-    </div>
+const GradientCard: React.FC<{
+  children: React.ReactNode;
+  gradient: string;
+}> = ({ children, gradient }) => (
+  <div className="group relative overflow-hidden rounded-2xl border border-white/20 dark:border-zinc-800/40 shadow-lg shadow-slate-200/30 dark:shadow-zinc-900/30 hover:shadow-xl transition-all duration-300">
+    <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10" />
+    <div className="absolute -top-8 -right-8 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+    <div className="relative p-4">{children}</div>
+  </div>
+);
 
-    <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20 rounded-2xl p-3 border border-red-100 dark:border-red-900/30 shadow-sm relative overflow-hidden">
-      <div className="absolute top-2 right-2 w-12 h-12 rounded-full bg-red-100/60 dark:bg-red-900/30 -mr-3 -mt-3" />
-      <div className="relative">
-        <div className="w-7 h-7 rounded-xl bg-red-500 flex items-center justify-center mb-2 shadow-sm shadow-red-200 dark:shadow-red-900/30">
-          <AlertTriangle className="w-3.5 h-3.5 text-white" />
-        </div>
-        <p className="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-0.5">Biaya Operasional</p>
-        <p className="text-lg font-black text-red-800 dark:text-red-200">{fmtRupiah(data.totalPayroll + data.totalBillingPaid)}</p>
+export const KPIBillingWidget: React.FC<WidgetProps> = ({ data }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <GradientCard gradient="from-orange-500 via-amber-500 to-yellow-500 dark:from-orange-600 dark:via-amber-600 dark:to-yellow-600">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Tagihan Belum Dibayar</p>
+        {data.totalBillingUnpaid > 0 && (
+          <span className="flex items-center gap-1 text-[10px] font-bold text-white/90 bg-white/20 px-2 py-0.5 rounded-lg">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            Perlu ditindak
+          </span>
+        )}
       </div>
-    </div>
+      <p className="text-xl font-black text-white drop-shadow-sm tracking-tight">{fmtRupiah(data.totalBillingUnpaid)}</p>
+    </GradientCard>
+
+    <GradientCard gradient="from-red-500 via-rose-500 to-pink-500 dark:from-red-600 dark:via-rose-600 dark:to-pink-600">
+      <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-2">Biaya Operasional</p>
+      <p className="text-xl font-black text-white drop-shadow-sm tracking-tight">{fmtRupiah(data.totalPayroll + data.totalBillingPaid)}</p>
+    </GradientCard>
   </div>
 );

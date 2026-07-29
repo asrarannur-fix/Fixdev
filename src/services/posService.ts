@@ -381,7 +381,6 @@ export async function processPOSTransaction(
   const hppAcctId = await ensureAccount(client, tenantId, '50100');
   const inventoryAcctId = await ensureAccount(client, tenantId, '10200');
 
-  let journalCreated = false;
   {
     const journalRes = await client.query(
       `INSERT INTO journal_entries (id, tenant_id, branch_id, description, reference_no, source_type, created_by)
@@ -389,7 +388,6 @@ export async function processPOSTransaction(
       [tenantId, branchId, `POS Penjualan ${invoiceNo}`, invoiceNo, userId]
     );
     const journalId = journalRes.rows[0].id;
-    journalCreated = true;
 
     await client.query(
       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
@@ -430,9 +428,7 @@ export async function processPOSTransaction(
   }
 
   // Mark posted_to_ledger
-  if (journalCreated) {
-    await client.query(`UPDATE pos_transactions SET posted_to_ledger = TRUE WHERE id = $1`, [txId]);
-  }
+  await client.query(`UPDATE pos_transactions SET posted_to_ledger = TRUE WHERE id = $1`, [txId]);
 
   // Handle TEMPO receivable tracking
   if (parsed.paymentMethod === 'TEMPO') {

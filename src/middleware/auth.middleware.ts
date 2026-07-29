@@ -41,6 +41,7 @@ export interface AuthActor {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       authActor?: AuthActor;

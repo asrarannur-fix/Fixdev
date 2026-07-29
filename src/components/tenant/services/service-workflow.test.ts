@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ServiceStatus } from '../../../types';
+import {
+  NEXT_STEP,
+  SERVICE_TERMINAL_STATUSES,
+  canServiceTransition,
+  WORKFLOW_STEPS,
+} from '../../../domain/serviceWorkflow';
 
 describe('Service Workflow — SIAP_DIAMBIL & DIAMBIL status', () => {
   it('SIAP_DIAMBIL and DIAMBIL are valid service statuses', () => {
@@ -7,37 +13,43 @@ describe('Service Workflow — SIAP_DIAMBIL & DIAMBIL status', () => {
     expect(Object.values(ServiceStatus)).toContain('DIAMBIL');
   });
 
-  it('NEXT_STEP banner supports SIAP_DIAMBIL status', async () => {
-    // Simulate NEXT_STEP lookup
-    const NEXT_STEP: Record<string, { label: string; hint: string }> = {
-      [ServiceStatus.DIAGNOSA]: { label: 'Isi Diagnosa', hint: 'Buka bagian Diagnosa Teknis' },
-      [ServiceStatus.MENUGGU_APPROVAL]: { label: 'Menunggu Persetujuan', hint: 'Tunggu persetujuan dari pemilik' },
-      [ServiceStatus.SEDANG_DIKERJAKAN]: { label: 'Proses Perbaikan', hint: 'Pekerjaan sedang berlangsung' },
-      [ServiceStatus.QC]: { label: 'QC/Testing', hint: 'Lakukan pengecekan kualitas' },
-      [ServiceStatus.SELESAI]: { label: 'Serah Terima', hint: 'Unit siap diambil pemilik' },
-      [ServiceStatus.SIAP_DIAMBIL]: { label: 'Ambil Unit', hint: 'Klik untuk mengambil unit yang sudah selesai' },
-      [ServiceStatus.DIAMBIL]: { label: 'Diambil', hint: 'Unit telah diambil oleh pemilik' },
-    };
-
+  it('NEXT_STEP banner supports SIAP_DIAMBIL status', () => {
     expect(NEXT_STEP[ServiceStatus.SIAP_DIAMBIL]).toBeDefined();
     expect(NEXT_STEP[ServiceStatus.DIAMBIL]).toBeDefined();
-    expect(NEXT_STEP[ServiceStatus.SIAP_DIAMBIL]?.label).toBe('Ambil Unit');
-    expect(NEXT_STEP[ServiceStatus.DIAMBIL]?.label).toBe('Diambil');
+    expect(NEXT_STEP[ServiceStatus.SIAP_DIAMBIL]?.label).toBe('Unit Siap Diambil');
+    expect(NEXT_STEP[ServiceStatus.DIAMBIL]?.label).toBe('Unit Diambil');
   });
 
-  it('WORKFLOW_STEPS includes SIAP_DIAMBIL and DIAMBIL', async () => {
-    const WORKFLOW_STEPS = [
-      { status: ServiceStatus.DIAGNOSA, label: 'Diagnosa' },
-      { status: ServiceStatus.MENUGGU_APPROVAL, label: 'Menunggu Persetujuan' },
-      { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan' },
-      { status: ServiceStatus.QC, label: 'QC/Testing' },
-      { status: ServiceStatus.SELESAI, label: 'Selesai' },
-      { status: ServiceStatus.SIAP_DIAMBIL, label: 'Siap Diambil' },
-      { status: ServiceStatus.DIAMBIL, label: 'Diambil' },
-    ];
+  it.each([
+    [ServiceStatus.DRAFT, ServiceStatus.BOOKING],
+    [ServiceStatus.MENUGGU_APPROVAL, ServiceStatus.APPROVAL_DITOLAK],
+    [ServiceStatus.APPROVAL_DITOLAK, ServiceStatus.MENUGGU_APPROVAL],
+    [ServiceStatus.SIAP_DIAMBIL, ServiceStatus.DIAMBIL],
+  ])('allows valid transition from %s to %s', (from, to) => {
+    expect(canServiceTransition(from, to)).toBe(true);
+  });
 
-    const statuses = WORKFLOW_STEPS.map(s => s.status);
-    expect(statuses).toContain(ServiceStatus.SIAP_DIAMBIL);
-    expect(statuses).toContain(ServiceStatus.DIAMBIL);
+  it.each([
+    [ServiceStatus.DRAFT, ServiceStatus.DIAMBIL],
+    [ServiceStatus.QC, ServiceStatus.BOOKING],
+    [ServiceStatus.APPROVAL_DITOLAK, ServiceStatus.SEDANG_DIKERJAKAN],
+  ])('rejects invalid transition from %s to %s', (from, to) => {
+    expect(canServiceTransition(from, to)).toBe(false);
+  });
+
+  it('rejects every transition from terminal statuses', () => {
+    for (const from of SERVICE_TERMINAL_STATUSES) {
+      for (const to of Object.values(ServiceStatus)) {
+        expect(canServiceTransition(from, to)).toBe(false);
+      }
+    }
+  });
+
+  it('WORKFLOW_STEPS distinguishes completed, ready, and collected units', () => {
+    const steps = Object.fromEntries(WORKFLOW_STEPS.map((step) => [step.status, step.label]));
+
+    expect(steps[ServiceStatus.SELESAI]).toBe('Selesai');
+    expect(steps[ServiceStatus.SIAP_DIAMBIL]).toBe('Siap Diambil');
+    expect(steps[ServiceStatus.DIAMBIL]).toBe('Diambil');
   });
 });

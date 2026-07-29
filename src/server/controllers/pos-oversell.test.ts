@@ -33,12 +33,12 @@ describe('POS oversell protection — input validation', () => {
   });
 });
 
+import * as fs from 'fs';
 describe('POS oversell protection — SQL guard', () => {
-  const fs = require('fs');
   let source = '';
   try {
     source = fs.readFileSync('./src/services/posService.ts', 'utf-8');
-  } catch (e) {}
+  } catch { /* ignore */ }
 
   it('stock deduction SQL contains quantity guard', () => {
     const hasOversellGuard = source.includes('quantity >= $1');

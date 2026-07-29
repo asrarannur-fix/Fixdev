@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SERVICE_STATUS, SERVICE_STATUS_META } from '../../../domain/serviceWorkflow';
+import { ServiceStatus, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../../domain/serviceWorkflow';
 import { Check, X, AlertCircle, Filter as FilterIcon } from 'lucide-react';
 
 interface ServiceStatusFilterProps {
@@ -16,12 +16,12 @@ export const ServiceStatusFilter: React.FC<ServiceStatusFilterProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const activeStatusCount = Object.values(SERVICE_STATUS).filter(
-    s => s !== SERVICE_STATUS.DRAFT && s !== SERVICE_STATUS.BOOKING
+  const activeStatusCount = Object.values(ServiceStatus).filter(
+    s => s !== ServiceStatus.DRAFT && s !== ServiceStatus.BOOKING
   ).length;
 
-  const filteredStatuses = Object.entries(SERVICE_STATUS).filter(([key, value]) => {
-    if (value === SERVICE_STATUS.DRAFT || value === SERVICE_STATUS.BOOKING) return false;
+  const filteredStatuses = Object.entries(ServiceStatus).filter(([key, value]) => {
+    if (value === ServiceStatus.DRAFT || value === ServiceStatus.BOOKING) return false;
     if (searchTerm === '') return true;
     return SERVICE_STATUS_META[value]?.label?.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -68,12 +68,12 @@ export const ServiceStatusFilter: React.FC<ServiceStatusFilterProps> = ({
                   key={key}
                   onClick={() => { onStatusChange(value); setIsOpen(false); }}
                   className={`w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 ${
-                    selectedStatus === value 
-                      ? `bg-${meta?.color || 'blue'}-50 text-${meta?.color || 'blue'}-700 font-medium` 
+                    selectedStatus === value
+                      ? 'bg-blue-50 text-blue-700 font-medium'
                       : 'hover:bg-gray-100'
                   }`}
                 >
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: meta?.color || '#3b82f6' }} />
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: meta?.tone || '#3b82f6' }} />
                   {meta?.label || value}
                   {selectedStatus === value && <Check className="ml-auto h-4 w-4" />}
                 </button>

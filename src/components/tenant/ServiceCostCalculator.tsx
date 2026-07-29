@@ -346,7 +346,7 @@ export const ServiceCostCalculator: React.FC<ServiceCostCalculatorProps> = ({
               const disc = Number.isFinite(discRaw) && discRaw >= 0 ? discRaw : 0;
               const total = subtotal + tax - disc;
 
-              let customerObj = null;
+              let customerObj: { id: string; name: string; phone: string } | null;
               if (calcCustomerId === "new") {
                 if (!calcCustName || !calcCustPhone) {
                   showToast("Mohon lengkapi data Nama & WhatsApp pelanggan baru!", "error");

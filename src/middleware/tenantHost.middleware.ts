@@ -3,6 +3,7 @@ import { extractTenantHost, getHostTenantId, normalizeHostname, type HostTenant 
 import { logger } from "../lib/logger.js";
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       hostTenant?: HostTenant;

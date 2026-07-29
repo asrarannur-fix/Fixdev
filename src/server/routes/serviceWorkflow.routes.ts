@@ -22,7 +22,6 @@ import {
   patchServiceWorkMetadata,
   handoverServiceTicket,
   settleServiceReceivable,
-  addStatusEvent,
   getStatusEvents,
 } from '../controllers/serviceWorkflow.controller.js';
 import { requireValidTenant, requireServiceTicketTenant } from '../middleware/tenant.middleware.js';
@@ -77,7 +76,6 @@ router.post(
 );
 
 // Status events
-router.post('/:id/status-events', requireServiceTicketTenant, addStatusEvent);
 router.get('/:id/status-events', requireServiceTicketTenant, getStatusEvents);
 
 // Parts & additional costs

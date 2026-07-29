@@ -1,22 +1,22 @@
-ALTER TABLE service_tickets
-  ADD CONSTRAINT chk_service_tickets_status
-  CHECK (status IN ('DITERIMA','ANTRIAN','DIAGNOSA','MENUGGU_APPROVAL','ESTIMATE_PENDING','APPROVAL_DITOLAK','MENUGGU_SPAREPART','SEDANG_DIKERJAKAN','DIKIRIM_KE_VENDOR','TIDAK_BISA_DIPERBAIKI','REWORK','QC','SELESAI','KLAIM_GARANSI','MENUGGU_PEMBAYARAN','SIAP_DIAMBIL','DIAMBIL','DIBATALKAN','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','DRAFT','BOOKING','RUSAK')) NOT VALID;
-
-ALTER TABLE service_payments
-  ADD CONSTRAINT chk_service_payments_amounts
-  CHECK (subtotal >= 0 AND tax_rate >= 0 AND tax_rate <= 100 AND tax_amount >= 0 AND down_payment_used >= 0 AND amount >= 0 AND tempo_days >= 0) NOT VALID;
-
-ALTER TABLE service_payments
-  ADD CONSTRAINT chk_service_payments_method
-  CHECK (method IN ('CASH','BANK_TRANSFER','QRIS','EDC','E_WALLET','TEMPO')) NOT VALID;
-
-ALTER TABLE service_payments
-  ADD CONSTRAINT chk_service_payments_status
-  CHECK (status IN ('PENDING','PAID','RECEIVABLE','PARTIALLY_PAID','VOID','REFUNDED')) NOT VALID;
-
-ALTER TABLE journal_lines
-  ADD CONSTRAINT chk_journal_lines_nonzero
-  CHECK (debit > 0 OR credit > 0) NOT VALID;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='chk_service_tickets_status') THEN
+    ALTER TABLE service_tickets ADD CONSTRAINT chk_service_tickets_status CHECK (status IN ('DITERIMA','ANTRIAN','DIAGNOSA','MENUGGU_APPROVAL','ESTIMATE_PENDING','APPROVAL_DITOLAK','MENUGGU_SPAREPART','SEDANG_DIKERJAKAN','DIKIRIM_KE_VENDOR','TIDAK_BISA_DIPERBAIKI','REWORK','QC','SELESAI','KLAIM_GARANSI','MENUGGU_PEMBAYARAN','SIAP_DIAMBIL','DIAMBIL','DIBATALKAN','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','DRAFT','BOOKING','RUSAK')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='chk_service_payments_amounts') THEN
+    ALTER TABLE service_payments ADD CONSTRAINT chk_service_payments_amounts CHECK (subtotal >= 0 AND tax_rate >= 0 AND tax_rate <= 100 AND tax_amount >= 0 AND down_payment_used >= 0 AND amount >= 0 AND tempo_days >= 0) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='chk_service_payments_method') THEN
+    ALTER TABLE service_payments ADD CONSTRAINT chk_service_payments_method CHECK (method IN ('CASH','BANK_TRANSFER','QRIS','EDC','E_WALLET','TEMPO')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='chk_service_payments_status') THEN
+    ALTER TABLE service_payments ADD CONSTRAINT chk_service_payments_status CHECK (status IN ('PENDING','PAID','RECEIVABLE','PARTIALLY_PAID','VOID','REFUNDED')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='chk_journal_lines_nonzero') THEN
+    ALTER TABLE journal_lines ADD CONSTRAINT chk_journal_lines_nonzero CHECK (debit > 0 OR credit > 0) NOT VALID;
+  END IF;
+END
+$$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_journal_entries_tenant_source
   ON journal_entries (tenant_id, source_type, source_id)

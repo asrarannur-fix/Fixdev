@@ -884,7 +884,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.removeItem(SYNC_KEY);
       localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
     }
-  } catch (_) {}
+  } catch { /* ignore */ }
 
   const [tenants, setTenants] = useState<Tenant[]>(
     parseArray<Tenant>('saas_tenants', isBackendConfigured() ? [] : INITIAL_TENANTS)
@@ -907,7 +907,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object' && parsed.id) return parsed;
       }
-    } catch (_) {}
+  } catch { /* ignore */ }
     return isBackendConfigured()
       ? ({
           id: '',
@@ -1378,7 +1378,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'SECURITY'
       );
     } catch (err: any) {
-      throw new Error(err.message || 'Gagal memperbarui password. Silakan coba lagi.');
+      throw new Error(err.message || 'Gagal memperbarui password. Silakan coba lagi.', { cause: err });
     } finally {
       setApiLoading(false);
       setApiStatus('');
@@ -1388,7 +1388,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logoutUser = async () => {
     try {
       addLog('Logout', 'User melakukan logout', 'AUTH');
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -4715,7 +4715,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const reseedCOAAccounts = (tenantId: string, template: string) => {
-    let templateAccounts: any[] = [];
+    let templateAccounts: any[];
     if (template === 'repair') {
       templateAccounts = [
         {

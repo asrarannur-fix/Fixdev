@@ -57,6 +57,7 @@ const RESERVED_QUERY = new Set([
 ]);
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       crudCfg?: CrudResourceConfig;

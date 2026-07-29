@@ -1,6 +1,14 @@
 -- Rental Module Schema for FixDev ERP
 -- Creates tables for device rental contracts, catalog, devices, and inventory integration
 
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Rental device catalog (master list of rentable device types)
 CREATE TABLE IF NOT EXISTS rental_device_catalog (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -133,6 +141,10 @@ CREATE INDEX IF NOT EXISTS idx_rental_events_contract ON rental_contract_events(
 CREATE INDEX IF NOT EXISTS idx_rental_events_type ON rental_contract_events(event_type);
 
 -- Updated triggers
+DROP TRIGGER IF EXISTS update_rental_catalog_updated_at ON rental_device_catalog;
+DROP TRIGGER IF EXISTS update_rental_devices_updated_at ON rental_devices;
+DROP TRIGGER IF EXISTS update_rental_contracts_updated_at ON rental_contracts;
+DROP TRIGGER IF EXISTS update_rental_inspections_updated_at ON rental_inspections;
 CREATE TRIGGER update_rental_catalog_updated_at BEFORE UPDATE ON rental_device_catalog
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

@@ -4,6 +4,13 @@ import { Badge } from '../ui/Badge';
 import { DocumentPrintouts } from './services/DocumentPrintouts';
 import { ServiceTicketHeader } from './services/ServiceTicketHeader';
 import { ServiceTicketCamera } from './services/ServiceTicketCamera';
+import { ServiceInternalDiscussion } from './services/ServiceInternalDiscussion';
+import { ServiceIntakeChecklist } from './services/ServiceIntakeChecklist';
+import { ServiceTimeline } from './services/ServiceTimeline';
+import { ServiceTicketSummary } from './services/ServiceTicketSummary';
+import { ServiceWhatsAppHub } from './services/ServiceWhatsAppHub';
+import { ServiceNextStepBanner } from './services/ServiceNextStepBanner';
+import { ServicePartsLedger } from './services/ServicePartsLedger';
 import {
   ServiceTicketActions,
   SERVICE_TRANSITIONS,
@@ -25,7 +32,6 @@ import {
   Save,
   PlusCircle,
   CheckCircle2,
-  Trash2,
   Copy,
   AlertTriangle,
   Monitor,
@@ -43,11 +49,9 @@ import {
   MessageCircle,
   Check,
   Calendar,
-  ArrowRight,
   Printer,
   AlertCircle,
   RefreshCw,
-  MessageSquare,
   Wrench,
   Upload,
   Minus,
@@ -61,7 +65,6 @@ import {
   Filter,
   ChevronLeft,
   QrCode,
-  Cpu,
   Share2,
   Barcode,
   ShieldCheck,
@@ -98,15 +101,6 @@ const LOCKED_STATUSES: ServiceStatus[] = [
 const hasAnyPermission = (permissions: string[], keys: string[]) =>
   keys.some((key) => permissions.includes(key));
 
-const sanitizeWhatsAppPhone = (phone?: string): string => {
-  const digits = (phone || '').replace(/\D/g, '');
-  if (!digits) return '';
-  if (digits.startsWith('62')) return digits;
-  if (digits.startsWith('0')) return `62${digits.slice(1)}`;
-  if (digits.startsWith('8')) return `62${digits}`;
-  return digits;
-};
-
 export const ServiceDetailModal: React.FC<any> = (props) => {
   const { publicBaseUrl } = useSaaS();
   const {
@@ -122,10 +116,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     customers,
     employees,
     handoverChecklist,
+    handoverServiceDevice,
     handoverPaymentMethod,
     handoverProofName,
     handoverRefNo,
-    handoverServiceDevice,
     handoverTempoDays,
     internalCommentText,
     liveTimerSeconds,
@@ -179,9 +173,32 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     videoRef,
     viewingServiceTicketId,
   } = props;
+  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const runAction = async (action: string, callback: () => Promise<void> | void) => {
+    if (pendingAction) return;
+    setPendingAction(action);
+    try {
+      await callback();
+    } catch (error: any) {
+      showToast(error?.message || 'Aksi gagal diproses.', 'error');
+    } finally {
+      setPendingAction(null);
+    }
+  };
   if (!viewingServiceTicketId) return null;
   const ticket = tenantServices.find((s) => s.id === viewingServiceTicketId);
-  if (!ticket) return null;
+  if (!ticket) {
+    return createPortal(
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-900">
+          <h2 className="text-sm font-black text-slate-900 dark:text-white">Tiket tidak ditemukan</h2>
+          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">Data tiket sudah berubah atau tidak tersedia pada cabang aktif.</p>
+          <button type="button" onClick={() => props.setViewingServiceTicketId(null)} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">Kembali ke daftar</button>
+        </div>
+      </div>,
+      document.body
+    );
+  }
   const currentUserPermissions: string[] = Array.isArray(props.currentUserPermissions)
     ? props.currentUserPermissions
     : Array.isArray(currentUser?.permissions)
@@ -199,6 +216,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   const isTicketLocked = LOCKED_STATUSES.includes(ticket.status);
   const editableIntake = INTAKE_STATUSES.includes(ticket.status) && canDiagnose;
   const canRequestParts = PART_STATUSES.includes(ticket.status) && canRepair;
+  const canHandover =
+    isSuperAdmin ||
+    ['OWNER', 'ADMIN'].includes(currentUser?.role || '') ||
+    hasAnyPermission(currentUserPermissions, ['service_handover']);
   const isWorkPhase = WORK_STATUSES.includes(ticket.status);
   const isQcPhase = ticket.status === ServiceStatus.QC;
   const customer = customers.find((c) => c.id === ticket.customerId);
@@ -271,14 +292,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex bg-slate-900/40"
       onClick={() => setViewingServiceTicketId(null)}
       role="dialog"
       aria-modal="true"
       aria-labelledby="service-detail-title"
     >
       <div
-        className="flex h-[100dvh] w-full max-w-5xl flex-col bg-white shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl"
+        className="flex h-[100dvh] w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-white to-zinc-100 shadow-2xl dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -308,134 +329,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
         />
 
         {/* Next-step guidance so the workflow is never "missed" */}
-        <NextStepBanner ticket={ticket} />
+        <ServiceNextStepBanner status={ticket.status} />
 
         <div className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden">
           {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
-          <div className="order-2 xl:order-1 xl:w-[30%] 2xl:w-[28%] border-r border-slate-100 bg-slate-50/50 p-2 lg:p-3 overflow-y-auto space-y-2">
-            {/* Section: Customer & Device */}
-            <div className="bg-white p-3 border border-slate-100 rounded-2xl space-y-2 shadow-xs">
-              <div className="space-y-1.5 text-xs text-slate-600">
-                <p>
-                  <span className="text-slate-400 font-mono text-[10px]">PELANGGAN:</span>{' '}
-                  <strong className="text-slate-800">{customer?.name || 'Umum'}</strong>
-                </p>
-                <p>
-                  <span className="text-slate-400 font-mono text-[10px]">PHONE:</span>{' '}
-                  <span className="font-mono">{customer?.phone || '-'}</span>
-                </p>
-                <p>
-                  <span className="text-slate-400 font-mono text-[10px]">TIPE UNIT:</span>{' '}
-                  <strong className="text-slate-700">{ticket.deviceName}</strong>
-                </p>
-                {ticket.deviceBrandModel && (
-                  <p>
-                    <span className="text-slate-400 font-mono text-[10px]">BRAND/MODEL:</span>{' '}
-                    <span>{ticket.deviceBrandModel}</span>
-                  </p>
-                )}
-                <p>
-                  <span className="text-slate-400 font-mono text-[10px]">SERIAL NO:</span>{' '}
-                  <span className="font-mono text-[11px] bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                    {ticket.deviceSerial || 'N/A'}
-                  </span>
-                </p>
-                <p>
-                  <span className="text-slate-400 font-mono text-[10px]">MASA GARANSI:</span>{' '}
-                  <span className="font-bold text-accent">{ticket.warrantyMonths} Bulan</span>
-                </p>
+          <div className="order-2 xl:order-1 xl:w-[30%] 2xl:w-[28%] border-r border-slate-100 dark:border-zinc-800 bg-gradient-to-b from-slate-50/80 to-zinc-100/50 dark:from-zinc-900/80 dark:to-zinc-950/50 p-3 lg:p-4 overflow-y-auto space-y-3">
+            <ServiceTicketSummary ticket={ticket} customer={customer} />
 
-                {ticket.deviceCategory && (
-                  <p>
-                    <span className="text-slate-400 font-mono text-[10px]">KATEGORI:</span>{' '}
-                    <strong className="text-slate-700">{ticket.deviceCategory}</strong>
-                  </p>
-                )}
-                {ticket.physicalCondition && (
-                  <p>
-                    <span className="text-slate-400 font-mono text-[10px]">KONDISI FISIK:</span>{' '}
-                    <strong className="text-slate-700">{ticket.physicalCondition}</strong>
-                  </p>
-                )}
-
-                {ticket.estimatedCompletionDate && (
-                  <p>
-                    <span className="text-slate-400 font-mono text-[10px]">EST. SELESAI:</span>{' '}
-                    <strong className="text-emerald-700">
-                      {new Date(ticket.estimatedCompletionDate).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </strong>
-                  </p>
-                )}
-
-                {((ticket.accessoriesLeft && ticket.accessoriesLeft.length > 0) ||
-                  ticket.customAccessories) && (
-                  <p>
-                    <span className="text-slate-400 font-mono text-[10px]">AKSESORIS TITIPAN:</span>{' '}
-                    <span className="font-semibold text-slate-700 text-[11px]">
-                      {ticket.accessoriesLeft
-                        ? ticket.accessoriesLeft
-                            .map((acc) => {
-                              const labels: Record<string, string> = {
-                                charger: 'Charger',
-                                cable: 'Kabel',
-                                sim: 'SIM',
-                                sd: 'SD',
-                                case: 'Case',
-                                box: 'Box',
-                              };
-                              return labels[acc] || acc;
-                            })
-                            .join(', ')
-                        : ''}
-                      {ticket.customAccessories
-                        ? ticket.accessoriesLeft && ticket.accessoriesLeft.length > 0
-                          ? `, ${ticket.customAccessories}`
-                          : ticket.customAccessories
-                        : ''}
-                    </span>
-                  </p>
-                )}
-
-                {ticket.isCheckOnly && (
-                  <div className="mt-1 bg-amber-50 border border-amber-100 text-amber-800 text-[10.5px] font-bold px-2 py-1 rounded-lg">
-                    🔍 HANYA CEK / ESTIMASI DULU
-                  </div>
-                )}
-                {ticket.downPayment && ticket.downPayment > 0 ? (
-                  <div className="mt-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10.5px] font-bold px-2 py-1 rounded-lg flex items-center justify-between">
-                    <span>💵 UANG MUKA (DP):</span>
-                    <span>Rp {ticket.downPayment.toLocaleString()}</span>
-                  </div>
-                ) : null}
-
-                {/* Dynamic Specifications Viewer inside Ticket Details */}
-                {ticket.dynamicFields && Object.keys(ticket.dynamicFields).length > 0 && (
-                  <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                    <p className="font-mono text-[9px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
-                      <Cpu className="w-3.5 h-3.5 text-indigo-500 animate-pulse" /> Spesifikasi
-                      Kategori ({ticket.deviceCategory})
-                    </p>
-                    <div className="grid grid-cols-1 gap-1 text-[10.5px]">
-                      {Object.entries(ticket.dynamicFields).map(([key, val]) => (
-                        <div
-                          key={key}
-                          className="flex justify-between border-b border-slate-100 last:border-0 py-0.5"
-                        >
-                          <span className="text-slate-400 capitalize">
-                            {key.replace('_', ' ')}:
-                          </span>
-                          <strong className="text-slate-700 font-mono text-[10px]">
-                            {String(val)}
-                          </strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            <div className="relative overflow-hidden rounded-2xl border border-white/40 p-3 shadow-md dark:border-zinc-800/40">
 
                 {/* Interactive Technician Assign / Change Dropdown */}
                 <div className="mt-3.5 pt-3 border-t border-slate-100 space-y-1">
@@ -444,8 +345,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </label>
                   <select
                     value={ticket.assignedTechId || ''}
-                    disabled={(
-                      [
+                     disabled={!canRepair || (
+                       [
                         ServiceStatus.SELESAI,
                         ServiceStatus.SIAP_DIAMBIL,
                         ServiceStatus.DIAMBIL,
@@ -500,8 +401,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       </label>
                       <select
                         value={ticket.storageLocationId || ''}
-                        disabled={(
-                          [
+                         disabled={!canRepair || (
+                           [
                             ServiceStatus.SELESAI,
                             ServiceStatus.SIAP_DIAMBIL,
                             ServiceStatus.DIAMBIL,
@@ -543,17 +444,17 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     </div>
                   ) : null;
                 })()}
-              </div>
             </div>
 
             {/* Section: Photos (initial photos) */}
-            <div className="mt-4">
-              {ticket.initialPhotos && ticket.initialPhotos.length > 0 && (
-                <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-2 shadow-xs">
-                  <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
+            {ticket.initialPhotos && ticket.initialPhotos.length > 0 && (
+                <div className="relative overflow-hidden p-3.5 border border-white/40 dark:border-zinc-800/40 rounded-2xl space-y-2 shadow-md">
+                  <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-rose-500/5 to-red-500/5" />
+                  <h4 className="relative font-bold text-[10px] text-pink-600 dark:text-pink-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500" />
                     Foto Masuk
                   </h4>
-                  <div className="rounded-lg overflow-hidden border border-slate-200">
+                  <div className="relative rounded-xl overflow-hidden border border-white/30 shadow-sm">
                     <img
                       src={ticket.initialPhotos[0]}
                       alt="Condition"
@@ -562,150 +463,31 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </div>
                 </div>
               )}
-            </div>
 
-            <ServiceTicketCamera
-              ticket={ticket}
-              cameraActive={cameraActive}
-              startCamera={startCamera}
-              stopCamera={stopCamera}
-              videoRef={videoRef}
-              onCapture={handleCapturePhoto}
-              onDemo={handleDemoPhoto}
-            />
-
-            {/* Section: Checklist */}
-            {ticket.initialChecklist && ticket.initialChecklist.length > 0 && (
-              <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-2 shadow-xs">
-                <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
-                  Checklist Masuk
-                </h4>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {ticket.initialChecklist.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between text-xs py-1 border-b border-slate-50 last:border-0"
-                    >
-                      <span className="text-slate-600">{item.name}</span>
-                      <span
-                        className={`px-1.5 py-0.5 text-[8px] font-bold rounded-lg font-mono uppercase ${
-                          item.checked
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}
-                      >
-                        {item.checked ? 'OK' : 'BELUM DIPERIKSA'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {canRepair && !isTicketLocked && (
+              <ServiceTicketCamera
+                ticket={ticket}
+                cameraActive={cameraActive}
+                startCamera={startCamera}
+                stopCamera={stopCamera}
+                videoRef={videoRef}
+                onCapture={handleCapturePhoto}
+                onDemo={handleDemoPhoto}
+              />
             )}
 
-            {/* Section: Timeline Logs */}
-            <div className="bg-white p-3.5 border border-slate-100 rounded-xl space-y-3 shadow-xs">
-              <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
-                Log Riwayat Perjalanan
-              </h4>
-              <div className="relative border-l-2 border-slate-100 pl-3 space-y-3 text-xs">
-                {ticket.timeline && ticket.timeline.length > 0 ? (
-                  ticket.timeline.map((log, idx) => (
-                    <div key={idx} className="relative group">
-                      <div className="absolute -left-[17px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-white" />
-                      <p className="font-semibold text-[10px] font-mono text-accent">
-                        {log.status}{' '}
-                        <span className="text-slate-400 font-normal">
-                          | {new Date(log.timestamp).toLocaleDateString()}
-                        </span>
-                      </p>
-                      <p className="text-slate-500 mt-0.5 italic">{log.note}</p>
-                      <p className="text-[9px] text-slate-400">Oleh: {log.operator || 'Sistem'}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-slate-400 italic text-[11px]">Belum ada catatan perjalanan.</p>
-                )}
-              </div>
-            </div>
+            <ServiceIntakeChecklist items={ticket.initialChecklist} />
 
-            {/* Section: Internal Discussions */}
-            <div className="mt-4 bg-amber-50/50 p-3.5 border border-amber-100 rounded-xl space-y-3 shadow-xs flex-col max-h-80">
-              <h4 className="font-bold text-[10px] text-amber-700 uppercase font-mono tracking-wider flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-amber-500" /> Diskusi Internal (Tim)
-              </h4>
-              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-                {ticket.internalDiscussions && ticket.internalDiscussions.length > 0 ? (
-                  ticket.internalDiscussions.map((msg, idx) => (
-                    <div
-                      key={msg.id || idx}
-                      className="bg-white p-2 rounded-lg border border-amber-100 shadow-sm relative"
-                    >
-                      <div className="flex items-center justify-between mb-1 text-[9px]">
-                        <span className="font-bold text-amber-800">{msg.operator}</span>
-                        <span className="text-amber-500/70">
-                          {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-700 whitespace-pre-wrap">{msg.text}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-[10px] text-amber-600/60 italic text-center py-2">
-                    Belum ada diskusi internal.
-                  </p>
-                )}
-              </div>
-              <div className="pt-2 border-t border-amber-200/50 flex gap-2">
-                <input
-                  type="text"
-                  value={internalCommentText}
-                  onChange={(e) => setInternalCommentText(e.target.value)}
-                  placeholder="Ketik pesan untuk tim..."
-                  className="flex-1 bg-white border border-amber-200 rounded-lg text-[10px] px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && internalCommentText.trim()) {
-                      updateServiceTicket(ticket.id, {
-                        internalDiscussions: [
-                          ...(ticket.internalDiscussions || []),
-                          {
-                            id: 'comm-' + Date.now().toString(36) + '1',
-                            text: internalCommentText.trim(),
-                            operator: currentUser?.name || 'System',
-                            timestamp: new Date().toISOString(),
-                          },
-                        ],
-                      });
-                      setInternalCommentText('');
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    if (internalCommentText.trim()) {
-                      updateServiceTicket(ticket.id, {
-                        internalDiscussions: [
-                          ...(ticket.internalDiscussions || []),
-                          {
-                            id: 'comm-' + Date.now().toString(36) + '2',
-                            text: internalCommentText.trim(),
-                            operator: currentUser?.name || 'System',
-                            timestamp: new Date().toISOString(),
-                          },
-                        ],
-                      });
-                      setInternalCommentText('');
-                    }
-                  }}
-                  disabled={!internalCommentText.trim()}
-                  className="bg-amber-500 disabled:bg-amber-300 hover:bg-amber-600 text-white p-1.5 rounded-lg transition"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            <ServiceTimeline entries={ticket.timeline} />
+
+            <ServiceInternalDiscussion
+              ticket={ticket}
+              currentUser={currentUser}
+              value={internalCommentText}
+              onChange={setInternalCommentText}
+              updateServiceTicket={updateServiceTicket}
+              canComment={canRepair && !isTicketLocked}
+            />
           </div>
 
           {/* RIGHT PANEL: Interactive Workstation */}
@@ -714,7 +496,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               {/* Visual Repair Workflow Stepper */}
               <ServiceTicketActions
                 ticket={ticket}
-                currentUser={currentUser}
+                canChangeStatus={canRepair}
+                canRequestParts={canRequestParts}
+                canAddCost={isSuperAdmin || ['OWNER', 'ADMIN'].includes(currentUser?.role || '')}
+                canHandover={canHandover}
                 liveTimerSeconds={liveTimerSeconds}
                 repairStartTime={ticket.repairStartTime}
                 onStatusChange={(status, note) => updateServiceStatus(ticket.id, status, note)}
@@ -723,23 +508,25 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   setAdditionalCostTicket(ticket);
                   setAdditionalCostApprovedBy(customer?.name || '');
                 }}
+                onHandover={() => document.getElementById('service-handover')?.scrollIntoView({ behavior: 'smooth' })}
               />
 
               {/* Technician Tools Center */}
-              {(currentUser.role === 'TEKNISI' ||
-                currentUser.role === 'ADMIN' ||
-                currentUser.role === 'MANAGER') && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-3">
+              {canRepair && (
+                <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 rounded-2xl p-5 shadow-lg shadow-slate-200/30 dark:shadow-zinc-900/30 space-y-5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-rose-400 via-pink-400 to-orange-400 dark:from-rose-600 dark:via-pink-600 dark:to-orange-600" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10" />
+                  <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+                  <div className="relative flex flex-wrap items-center justify-between gap-4 border-b border-white/20 pb-3">
                     <div className="flex items-center gap-2">
-                      <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
+                      <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl text-white">
                         <Timer className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
+                        <h4 className="font-black text-xs uppercase text-white tracking-widest">
                           Pusat Kendali Teknisi
                         </h4>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-white/70">
                           SLA Timer, Catatan & Permintaan Suku Cadang
                         </p>
                       </div>
@@ -936,7 +723,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               className="w-20 text-xs p-2 rounded-lg border border-slate-200"
                             />
                             <button
-                              onClick={async () => {
+                              onClick={() => void runAction('request-part', async () => {
                                 const part = sparepartsList.find(
                                   (item) => item.id === requestedPartId
                                 );
@@ -964,7 +751,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     'error'
                                   );
                                 }
-                              }}
+                              })}
+                              disabled={!!pendingAction || !canRequestParts}
                               className="flex-1 bg-emerald-600 text-white text-xs font-bold rounded-lg cursor-pointer hover:bg-emerald-700"
                             >
                               Kirim Permintaan
@@ -1071,23 +859,26 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               )}
 
               {/* Interactive Testing & Checklist Center (Pre-Service & Post-Service QC) */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 rounded-2xl p-5 shadow-lg shadow-slate-200/30 dark:shadow-zinc-900/30 space-y-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-400 dark:from-emerald-600 dark:via-teal-600 dark:to-cyan-600" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10" />
+                <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+                <div className="relative flex items-center justify-between border-b border-white/20 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-accent-lighter rounded-lg text-accent">
+                    <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl text-white">
                       <CheckCircle className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
-                        Pusat Pengujian & Checklist Fungsi Perangkat
+                      <h4 className="font-black text-xs uppercase text-white tracking-widest">
+                        Pusat Pengujian & Checklist
                       </h4>
-                      <p className="text-[10px] text-slate-400">
-                        Verifikasi kelayakan hardware & software secara real-time
+                      <p className="text-[10px] text-white/70">
+                        Verifikasi kelayakan hardware & software
                       </p>
                     </div>
                   </div>
-                  <span className="text-[9px] font-mono bg-accent-lighter text-accent px-2.5 py-1 rounded-full font-bold border border-indigo-200">
-                    Teknisi: {technician?.name || 'Belum Ditugaskan'}
+                  <span className="text-[9px] font-mono bg-white/20 backdrop-blur-sm text-white px-2.5 py-1 rounded-full font-bold border border-white/20">
+                    {technician?.name || 'Belum Ditugaskan'}
                   </span>
                 </div>
 
@@ -1407,12 +1198,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
               {/* QC Inline Form — inside ticket detail modal */}
               {ticket.status === 'QC' && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <h4 className="font-bold text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Quality Control (QC)
+                <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 rounded-2xl p-4 shadow-lg shadow-slate-200/30 dark:shadow-zinc-900/30 space-y-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-400 via-cyan-400 to-sky-400 dark:from-teal-600 dark:via-cyan-600 dark:to-sky-600" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10" />
+                  <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+                  <div className="relative flex items-center justify-between border-b border-white/20 pb-2">
+                    <h4 className="font-black text-[11px] text-white uppercase tracking-widest flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" /> Quality Control (QC)
                     </h4>
-                    <span className="text-[9px] font-mono font-bold text-slate-400 uppercase">
+                    <span className="text-[9px] font-mono font-bold text-white/70 uppercase">
                       #{ticket.ticketNo}
                     </span>
                   </div>
@@ -1448,15 +1242,17 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => completeServiceQC(ticket.id, qcScore, qcNotes, false)}
-                      disabled={qcNotes.trim().length < 2 || !ticket.qcChecklist?.length}
+                      onClick={() => void runAction('qc-rework', () => completeServiceQC(ticket.id, qcScore, qcNotes, false))}
+                      disabled={!!pendingAction || !canRepair || qcNotes.trim().length < 2 || !ticket.qcChecklist?.length}
                       className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs py-2 rounded-lg cursor-pointer border border-rose-200"
                     >
                       Rework (Gagal QC)
                     </button>
                     <button
                       disabled={
-                        qcScore < 80 ||
+                         !!pendingAction ||
+                         !canRepair ||
+                         qcScore < 80 ||
                         qcNotes.trim().length < 2 ||
                         !ticket.qcChecklist?.length ||
                         ticket.qcChecklist.some((item) => !item.passed)
@@ -1472,7 +1268,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 ? 'Semua pemeriksaan QC harus lulus.'
                                 : ''
                       }
-                      onClick={() => completeServiceQC(ticket.id, qcScore, qcNotes, true)}
+                      onClick={() => void runAction('qc-pass', () => completeServiceQC(ticket.id, qcScore, qcNotes, true))}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs py-2 rounded-lg cursor-pointer"
                     >
                       Lolos QC (Selesai)
@@ -1485,9 +1281,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               {editableIntake && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Left Workshop column: Manual Diagnostic Updates */}
-                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
-                    <h4 className="font-bold text-[11px] text-slate-700 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                      <Wrench className="w-4 h-4 text-slate-400" /> Analisa Kerusakan Teknis
+                  <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 p-4 rounded-2xl space-y-4 shadow-md">
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-zinc-100 to-gray-100 dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900" />
+                    <h4 className="relative font-black text-[11px] text-slate-700 dark:text-zinc-200 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200/50 dark:border-zinc-700/50 pb-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-slate-500 to-zinc-500" />
+                      Analisa Kerusakan Teknis
                     </h4>
 
                     <div>
@@ -1519,14 +1317,13 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       <div className="flex items-end">
                         <button
                           type="button"
-                          onClick={async () => {
-                            const estCost = Number(manualDiagCost || 0);
+                              onClick={() => void runAction('diagnosis', async () => {
+                                const estCost = Number(manualDiagCost || 0);
                             if (!manualDiagNotes.trim()) {
                               showToast('Catatan diagnosis wajib diisi.', 'error');
                               return;
                             }
-                            try {
-                              await addServiceDiagnostic(
+                            await addServiceDiagnostic(
                                 ticket.id,
                                 manualDiagNotes,
                                 estCost,
@@ -1548,10 +1345,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               } else {
                                 showToast('Penawaran dimasukkan ke antrean WhatsApp API.', 'info');
                               }
-                            } catch (error: any) {
-                              showToast(error?.message || 'Gagal menyimpan diagnosis.', 'error');
-                            }
-                          }}
+                          })}
+                          disabled={!!pendingAction}
                           className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
                         >
                           Simpan Diagnosa & Kirim Penawaran
@@ -1561,10 +1356,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </div>
 
                   {/* Right Workshop column: Spareparts Inventory Integration */}
-                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
-                    <h4 className="font-bold text-[11px] text-slate-700 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                      <Package className="w-4 h-4 text-slate-400" /> Penggantian Suku Cadang
-                      (Inventory)
+                  <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 p-4 rounded-2xl space-y-4 shadow-md">
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-zinc-100 to-gray-100 dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900" />
+                    <h4 className="relative font-black text-[11px] text-slate-700 dark:text-zinc-200 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200/50 dark:border-zinc-700/50 pb-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500" />
+                      Penggantian Suku Cadang
                     </h4>
 
                     <div>
@@ -1614,8 +1410,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       <div className="flex items-end">
                         <button
                           type="button"
-                          onClick={async () => {
-                            if (!selectedSparepartId) return;
+                          onClick={() => void runAction('reserve-part', async () => {
+                            if (!selectedSparepartId) {
+                              showToast('Pilih spare part terlebih dahulu.', 'error');
+                              return;
+                            }
                             const partProd = products.find((p) => p.id === selectedSparepartId);
                             if (!partProd) return;
                             const warehouseId = Object.keys(partProd.warehouseStock || {})[0];
@@ -1623,8 +1422,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               showToast('Gudang spare part belum ditentukan.', 'error');
                               return;
                             }
-                            try {
-                              await requestServicePart(ticket.id, {
+                            await requestServicePart(ticket.id, {
                                 productId: selectedSparepartId,
                                 warehouseId,
                                 quantity: sparepartQty,
@@ -1637,10 +1435,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 `${partProd.name} berhasil direservasi. Stok dipotong saat handover.`,
                                 'success'
                               );
-                            } catch (error: any) {
-                              showToast(error?.message || 'Gagal mereservasi spare part.', 'error');
-                            }
-                          }}
+                          })}
+                          disabled={!!pendingAction || !canRequestParts}
                           className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center transition-all shadow-xs"
                         >
                           Reservasi Spare Part
@@ -1651,84 +1447,28 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 </div>
               )}
 
-              {/* Section 2: Spareparts Used Ledger */}
-              <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
-                <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
-                  Rincian Komponen Suku Cadang Terpakai
-                </h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-600">
-                    <thead className="bg-slate-50 font-mono text-[9px] uppercase border-b border-slate-100">
-                      <tr>
-                        <th className="px-3 py-2">Nama Barang</th>
-                        <th className="px-3 py-2">Harga Satuan</th>
-                        <th className="px-3 py-2">Qty</th>
-                        <th className="px-3 py-2">Total Harga</th>
-                        <th className="px-3 py-2 text-right">Tindakan</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {ticket.partsUsed && ticket.partsUsed.length > 0 ? (
-                        ticket.partsUsed.map((part, pIdx) => (
-                          <tr key={pIdx} className="hover:bg-slate-50">
-                            <td className="px-3 py-2 font-medium text-slate-700">
-                              {part.name}
-                              {part.serialNumber && (
-                                <div className="text-[9px] font-mono text-indigo-500 mt-0.5 border border-indigo-100 bg-accent-lighter inline-block px-1 rounded">
-                                  SN: {part.serialNumber}
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 font-mono">
-                              Rp {part.unitPrice.toLocaleString()}
-                            </td>
-                            <td className="px-3 py-2 font-mono font-bold">{part.quantity}</td>
-                            <td className="px-3 py-2 font-mono font-extrabold text-accent">
-                              Rp {part.totalPrice.toLocaleString()}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <button
-                                onClick={async () => {
-                                  if (!(part as any).id) {
-                                    showToast('ID reservasi spare part tidak tersedia.', 'error');
-                                    return;
-                                  }
-                                  try {
-                                    await cancelServicePart(ticket.id, (part as any).id);
-                                    showToast(`Reservasi ${part.name} dibatalkan.`, 'success');
-                                  } catch (error: any) {
-                                    showToast(
-                                      error?.message || 'Gagal membatalkan spare part.',
-                                      'error'
-                                    );
-                                  }
-                                }}
-                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded cursor-pointer transition-all inline-flex items-center"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="px-3 py-3 text-slate-400 italic text-[11px] text-center bg-slate-50/50 rounded-lg"
-                          >
-                            Belum ada suku cadang yang diaplikasikan pada unit perbaikan ini.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <ServicePartsLedger
+                ticket={ticket}
+                onCancelPart={async (part) => {
+                  if (!part.id) {
+                    showToast('ID reservasi spare part tidak tersedia.', 'error');
+                    return;
+                  }
+                  try {
+                    await cancelServicePart(ticket.id, part.id);
+                    showToast(`Reservasi ${part.name} dibatalkan.`, 'success');
+                  } catch (error: any) {
+                    showToast(error?.message || 'Gagal membatalkan spare part.', 'error');
+                  }
+                }}
+              />
 
               {/* Section 3: Manual Status & Workflow Controller */}
-              <div className="bg-white border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider">
+              <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 shadow-md">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5" />
+                <div className="relative space-y-3">
+                  <h4 className="font-black text-[10px] text-indigo-700 dark:text-indigo-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
                     Lompati / Ubah Status Manual
                   </h4>
                   <div>
@@ -1737,19 +1477,17 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     </label>
                     <select
                       value={ticket.status}
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const newStatus = e.target.value as ServiceStatus;
-                        try {
-                          await updateServiceStatus(
+                        void runAction('manual-status', () =>
+                          updateServiceStatus(
                             ticket.id,
                             newStatus,
                             'Status diperbarui melalui aksi operasional.'
-                          );
-                        } catch (err) {
-                          console.error('Failed to update service status:', err);
-                          return;
-                        }
+                          )
+                        );
                       }}
+                      disabled={!!pendingAction}
                       className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
                     >
                       <option value={ticket.status}>Status saat ini: {ticket.status}</option>
@@ -1781,11 +1519,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     <div className="space-y-2">
                       <button
                         onClick={() =>
-                          updateServiceStatus(
-                            ticket.id,
-                            ServiceStatus.MENUGGU_APPROVAL,
-                            'Teknisi merumuskan estimasi biaya dan menunggu persetujuan pelanggan.'
-                          )
+                          runAction('submit-estimate', () => updateServiceStatus(
+                             ticket.id,
+                             ServiceStatus.MENUGGU_APPROVAL,
+                             'Teknisi merumuskan estimasi biaya dan menunggu persetujuan pelanggan.'
+                           ))
                         }
                         className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                       >
@@ -1831,13 +1569,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       </button>
                       <div className="grid grid-cols-2 gap-2">
                         <button
-                          onClick={() => approveServiceEstimate(ticket.id, true)}
+                          onClick={() => void runAction('approve-estimate', () => approveServiceEstimate(ticket.id, true))}
+                          disabled={!!pendingAction}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                         >
                           Setujui Digital
                         </button>
                         <button
-                          onClick={() => approveServiceEstimate(ticket.id, false)}
+                          onClick={() => void runAction('reject-estimate', () => approveServiceEstimate(ticket.id, false))}
+                          disabled={!!pendingAction}
                           className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                         >
                           Tolak / Cancel
@@ -1848,15 +1588,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                   {ticket.status === ServiceStatus.SEDANG_DIKERJAKAN && (
                     <button
-                      onClick={async () => {
+                      onClick={() => void runAction('enter-qc', async () => {
                         await updateServiceStatus(
                           ticket.id,
                           ServiceStatus.QC,
                           'Unit masuk pemeriksaan quality control.'
                         );
                         setQcScore(ticket.qcScore ?? 0);
-                        setQcNotes(ticket.qcNotes ?? '');
-                      }}
+                         setQcNotes(ticket.qcNotes ?? '');
+                       })}
                       className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1.5"
                     >
                       <ShieldCheck className="w-4 h-4" /> Buka Panel Quality Control (QC)
@@ -1898,7 +1638,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       const isChecklistComplete = Object.values(handoverChecklist).every(Boolean);
 
                       return (
-                        <div className="space-y-3.5 border border-slate-200/85 p-4 rounded-xl bg-slate-50/70 w-full text-left shadow-sm">
+                        <div id="service-handover" className="space-y-3.5 border border-slate-200/85 p-4 rounded-xl bg-slate-50/70 w-full text-left shadow-sm">
                           <div className="flex justify-between items-center bg-accent-lighter/50 border border-indigo-100/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
                             <span className="text-slate-600">
                               Sisa Pelunasan setelah DP (PPN {tenantTaxRate}%):
@@ -2106,7 +1846,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           </div>
 
                           <button
-                            onClick={async () => {
+                            onClick={() => void runAction('handover', async () => {
                               if (isRefOrProofRequired && !isHandoverValid) {
                                 showToast(
                                   'Gagal memproses: Nomor referensi transaksi diperlukan!',
@@ -2123,10 +1863,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                     : undefined,
                                 checklist: handoverChecklist,
                                 taxRate: tenantTaxRate,
-                              };
+};
 
-                              try {
-                                await handoverServiceDevice(
+                              await handoverServiceDevice(
                                   ticket.id,
                                   handoverPaymentMethod,
                                   detailsObj
@@ -2141,13 +1880,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   invoiceReady: false,
                                   warrantyReady: false,
                                 });
-                              } catch {
-                                // Error already surfaced by handoverServiceDevice toast.
-                              }
-                            }}
-                            disabled={
-                              (isRefOrProofRequired && !isHandoverValid) || !isChecklistComplete
-                            }
+                             })}
+                             disabled={
+                               !!pendingAction || !canHandover ||
+                               (isRefOrProofRequired && !isHandoverValid) || !isChecklistComplete
+                             }
                             className={`w-full font-bold text-xs py-2.5 rounded-lg text-center transition-all duration-200 ${
                               (isRefOrProofRequired && !isHandoverValid) || !isChecklistComplete
                                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
@@ -2199,140 +1936,22 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 </div>
               </div>
 
-              {/* Section 4: WhatsApp Customer Communication Hub (Manual click-to-chat link helper) */}
-              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Customer
-                    Communication Hub
-                  </h4>
-                  <span className="text-[9px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full">
-                    Manual Adjustment Mode
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-mono text-slate-400 uppercase">
-                      Pilih Template Pesan
-                    </label>
-                    <select
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const estTotal = Number(ticket.estimatedCost) || 0;
-                        const portalLink =
-                          publicBaseUrl +
-                          '/?tab=service&sub=approve-quote&ticket=' +
-                          ticket.ticketNo;
-                        let txt = '';
-                        if (val === 'intake') {
-                          const ctx = {
-                            customer_name: customer?.name || 'Pelanggan',
-                            ticket_no: ticket.ticketNo,
-                            device_name: ticket.deviceName,
-                            ticket_status: 'DITERIMA',
-                            status_note: 'Unit telah terdaftar dan menunggu diagnosa.',
-                          };
-                          txt =
-                            renderTenantWaTemplate('SERVICE_UPDATE', ctx) ||
-                            `Halo *${customer?.name || 'Pelanggan'}*,\n\nUnit *${ticket.deviceName}* Anda telah berhasil terdaftar dengan No. Tiket *${ticket.ticketNo}*.\n\nTerima kasih telah mempercayakan perbaikan Anda kepada kami. Tim teknisi kami akan segera melakukan diagnosa secara mendalam.`;
-                        } else if (val === 'diagnose') {
-                          const ctx = {
-                            customer_name: customer?.name || 'Pelanggan',
-                            ticket_no: ticket.ticketNo,
-                            device_name: ticket.deviceName,
-                            ticket_status: 'DIAGNOSA',
-                            status_note: `Estimasi biaya: Rp ${estTotal.toLocaleString()}.`,
-                            estimated_cost: estTotal,
-                            approval_link: portalLink,
-                          };
-                          txt =
-                            renderTenantWaTemplate('SERVICE_UPDATE', ctx) ||
-                            `Halo *${customer?.name || 'Pelanggan'}*,\n\nUnit *${ticket.deviceName}* (No. Tiket *${ticket.ticketNo}*) telah selesai didiagnosa.\n\nKerusakan memerlukan perbaikan dengan total estimasi biaya perbaikan sebesar *Rp ${estTotal.toLocaleString()}*.\n\nSilakan lihat rincian estimasi dan berikan persetujuan digital Anda melalui tautan portal resmi kami berikut:\n${portalLink}\n\nTerima kasih!`;
-                        } else if (val === 'completed') {
-                          const ctx = {
-                            customer_name: customer?.name || 'Pelanggan',
-                            ticket_no: ticket.ticketNo,
-                            device_name: ticket.deviceName,
-                            ticket_status: 'SELESAI',
-                            status_note: `Total biaya: Rp ${estTotal.toLocaleString()}.`,
-                          };
-                          txt =
-                            renderTenantWaTemplate('SERVICE_UPDATE', ctx) ||
-                            `Halo *${customer?.name || 'Pelanggan'}*,\n\nKabar baik! Unit *${ticket.deviceName}* (No. Tiket *${ticket.ticketNo}*) telah selesai diperbaiki dan LOLOS uji kontrol kualitas (QC) kami!\n\nUnit kini siap untuk diambil kembali di toko kami dengan total biaya *Rp ${estTotal.toLocaleString()}*.\n\nTerima kasih atas kepercayaan Anda!`;
-                        } else {
-                          txt = `Halo *${customer?.name || 'Pelanggan'}*,\n\nMengenai unit *${ticket.deviceName}* (No. Tiket *${ticket.ticketNo}*), mohon hubungi kami kembali untuk mendiskusikan kelanjutan proses perbaikan. Terima kasih.`;
-                        }
-                        setCustomWaMessageText(txt);
-                      }}
-                      className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent font-medium"
-                    >
-                      <option value="intake">✓ Tanda Terima Unit Baru (Intake)</option>
-                      <option value="diagnose">✓ Diagnosa Selesai & Estimasi Biaya</option>
-                      <option value="completed">✓ Perbaikan Selesai & Siap Diambil</option>
-                      <option value="custom">✓ Pesan Kustom / Lainnya</option>
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-2 space-y-1">
-                    <label className="block text-[10px] font-mono text-slate-400 uppercase">
-                      Isi Pesan WhatsApp (Dapat Diedit Manual)
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={
-                        customWaMessageText ||
-                        (() => {
-                          const ctx = {
-                            customer_name: customer?.name || 'Pelanggan',
-                            ticket_no: ticket.ticketNo,
-                            device_name: ticket.deviceName,
-                            ticket_status: ticket.status,
-                          };
-                          return (
-                            renderTenantWaTemplate('SERVICE_UPDATE', ctx) ||
-                            `Halo *${customer?.name || 'Pelanggan'}*,\n\nUnit *${ticket.deviceName}* Anda telah terdaftar di sistem kami.`
-                          );
-                        })()
-                      }
-                      onChange={(e) => setCustomWaMessageText(e.target.value)}
-                      className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-accent font-medium leading-relaxed font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const text = customWaMessageText || '';
-                      navigator.clipboard.writeText(text);
-                      showToast('Isi pesan WhatsApp berhasil disalin ke clipboard!', 'success');
-                    }}
-                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold cursor-pointer"
-                  >
-                    Salin Pesan
-                  </button>
-                  <a
-                    href={`https://wa.me/${(customer?.phone || '62')
-                      .split('')
-                      .filter((c) => c >= '0' && c <= '9')
-                      .join('')}?text=${encodeURIComponent(customWaMessageText || '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Share2 className="w-3.5 h-3.5" /> Kirim via wa.me (Manual Link)
-                  </a>
-                </div>
-              </div>
+              <ServiceWhatsAppHub
+                ticket={ticket}
+                customer={customer}
+                publicBaseUrl={publicBaseUrl}
+                customWaMessageText={customWaMessageText}
+                renderTenantWaTemplate={renderTenantWaTemplate}
+                setCustomWaMessageText={setCustomWaMessageText}
+                showToast={showToast}
+              />
             </div>
 
             {/* Footer Info inside Modal */}
-            <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-400">
+            <div className="border-t border-slate-200/50 dark:border-zinc-700/50 pt-3 flex items-center justify-between text-xs text-slate-400 dark:text-zinc-500">
               <p>
                 Operator:{' '}
-                <strong className="text-slate-600">
+                <strong className="text-slate-600 dark:text-zinc-300">
                   {currentUser?.name} ({currentUser?.role})
                 </strong>
               </p>
@@ -2345,36 +1964,5 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
       </div>
     </div>,
     document.body
-  );
-};
-
-// Guidance banner that always shows the user the next workflow step,
-// so no stage (diagnosis -> approval -> repair -> QC -> handover) is missed.
-const NEXT_STEP: Record<string, { label: string; hint: string }> = {
-  [ServiceStatus.DITERIMA]: { label: 'Isi Diagnosa & Estimasi', hint: 'Buka bagian "Diagnosa Teknis", tulis hasil & estimasi biaya, lalu simpan.' },
-  [ServiceStatus.ANTRIAN]: { label: 'Isi Diagnosa & Estimasi', hint: 'Buka bagian "Diagnosa Teknis", tulis hasil & estimasi biaya, lalu simpan.' },
-  [ServiceStatus.DIAGNOSA]: { label: 'Kirim Estimasi ke Pelanggan', hint: 'Gunakan "Kirim Estimasi via WhatsApp" agar pelanggan bisa menyetujui.' },
-  [ServiceStatus.ESTIMATE_PENDING]: { label: 'Persetujuan Pelanggan', hint: 'Tunggu pelanggan menyetujui estimasi (link WhatsApp) lalu klik "Setujui Digital".' },
-  [ServiceStatus.MENUGGU_APPROVAL]: { label: 'Persetujuan Pelanggan', hint: 'Tunggu pelanggan menyetujui estimasi (link WhatsApp) lalu klik "Setujui Digital".' },
-  [ServiceStatus.SEDANG_DIKERJAKAN]: { label: 'Proses Perbaikan', hint: 'Gunakan "Pusat Kendali Teknisi" untuk spare part / biaya tambahan.' },
-  [ServiceStatus.REWORK]: { label: 'Proses Perbaikan (Rework)', hint: 'Lanjutkan perbaikan pada unit yang dikembalikan.' },
-  [ServiceStatus.MENUGGU_SPAREPART]: { label: 'Terima Sparepart', hint: 'Setelah spare part tiba, lanjutkan ke proses perbaikan.' },
-  [ServiceStatus.QC]: { label: 'Lakukan QC / Testing', hint: 'Klik "Selesaikan QC" dan isi checklist pengujian.' },
-  [ServiceStatus.SELESAI]: { label: 'Serah Terima (Handover)', hint: 'Klik "Serah Terima Unit" untuk menyelesaikan servis.' },
-  [ServiceStatus.SIAP_DIAMBIL]: { label: 'Unit Siap Diambil', hint: 'Customer dapat mengambil unit setelah pembayaran selesai.' },
-  [ServiceStatus.DIAMBIL]: { label: 'Unit Diambil', hint: 'Unit berhasil diambil oleh customer. Servis selesai.' },
-};
-
-const NextStepBanner: React.FC<{ ticket: any }> = ({ ticket }) => {
-  const step = NEXT_STEP[ticket?.status];
-  if (!step) return null;
-  return (
-    <div className="mx-3 mt-3 flex items-start gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-3 py-2">
-      <ArrowRight className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-      <div className="text-xs">
-        <p className="font-bold text-blue-800">Langkah Selanjutnya: {step.label}</p>
-        <p className="text-blue-600/80">{step.hint}</p>
-      </div>
-    </div>
   );
 };

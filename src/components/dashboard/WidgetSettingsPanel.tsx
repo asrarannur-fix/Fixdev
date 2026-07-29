@@ -1,5 +1,5 @@
 import React from "react";
-import { Settings, RotateCcw, Eye, EyeOff, X } from "lucide-react";
+import { Settings, RotateCcw, Eye, EyeOff, X, GripVertical } from "lucide-react";
 import { WidgetConfig, WidgetLayout, saveWidgetLayout, resetWidgetLayout } from "./widgetTypes";
 import {
   DndContext,
@@ -28,7 +28,7 @@ interface WidgetSettingsPanelProps {
 const WIDGET_COLORS: Record<string, string> = {
   "kpi-revenue": "from-emerald-400 to-teal-500",
   "kpi-operations": "from-pink-400 to-rose-500",
-  "kpi-billing": "from-emerald-400 to-green-500",
+  "kpi-billing": "from-orange-400 to-amber-500",
   "stock-alerts": "from-rose-400 to-red-500",
   "ops-overview": "from-indigo-400 to-blue-500",
   "cash-flow": "from-violet-400 to-purple-500",
@@ -55,20 +55,16 @@ const SortableItem: React.FC<{
       style={style}
       {...attributes}
       {...listeners}
-      className={`flex items-center gap-2.5 rounded-2xl border px-3 py-3 transition-all cursor-grab active:cursor-grabbing ${
+      className={`flex items-center gap-3 rounded-2xl border px-3 py-3 transition-all duration-200 cursor-grab active:cursor-grabbing ${
         visible
-          ? "border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm"
-          : "border-slate-100 dark:border-zinc-900 bg-slate-50 dark:bg-zinc-900 opacity-50"
+          ? "border-slate-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm shadow-sm hover:shadow-md"
+          : "border-slate-100/60 dark:border-zinc-900/60 bg-slate-50/50 dark:bg-zinc-900/50 opacity-50"
       }`}
     >
-      <div className="shrink-0">
-        <svg className="w-4 h-4 text-slate-300 dark:text-zinc-600" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
-          <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-          <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
-        </svg>
+      <div className="shrink-0 text-slate-300 dark:text-zinc-600">
+        <GripVertical className="w-4 h-4" />
       </div>
-      <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
+      <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0 shadow-sm`}>
         <span className="text-white text-[10px] font-black">{idx + 1}</span>
       </div>
       <div className="flex-1 min-w-0">
@@ -77,10 +73,10 @@ const SortableItem: React.FC<{
       <button
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); onToggle(id); }}
-        className={`p-1.5 rounded-xl transition-colors ${
+        className={`p-1.5 rounded-xl transition-all duration-200 ${
           visible
-            ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100"
-            : "text-slate-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200"
+            ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/50"
+            : "text-slate-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700"
         }`}
       >
         {visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -139,11 +135,11 @@ export const WidgetSettingsPanel: React.FC<WidgetSettingsPanelProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 bg-pink-900/20 dark:bg-black/50 backdrop-blur-sm z-40"
+        className="fixed inset-0 bg-violet-900/20 dark:bg-black/50 backdrop-blur-sm z-40"
         onClick={onClose}
       />
-      <div className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-zinc-950 shadow-2xl z-50 flex flex-col rounded-l-3xl overflow-hidden border-l border-slate-200 dark:border-zinc-800">
-        <div className="bg-gradient-to-r from-pink-500 to-violet-500 px-5 py-4">
+      <div className="fixed right-0 top-0 h-full w-80 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm shadow-2xl z-50 flex flex-col rounded-l-3xl overflow-hidden border-l border-slate-200/60 dark:border-zinc-800/60">
+        <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Settings className="w-4 h-4 text-white" />
@@ -187,10 +183,10 @@ export const WidgetSettingsPanel: React.FC<WidgetSettingsPanelProps> = ({
             </SortableContext>
           </DndContext>
         </div>
-        <div className="px-4 py-3 border-t border-slate-100 dark:border-zinc-800">
+        <div className="px-4 py-3 border-t border-slate-100/80 dark:border-zinc-800/80">
           <button
             onClick={handleReset}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-violet-500 py-2.5 text-xs font-black text-white hover:shadow-lg hover:shadow-pink-200 dark:hover:shadow-pink-900/30 transition-all"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 py-2.5 text-xs font-black text-white hover:shadow-lg hover:shadow-violet-200 dark:hover:shadow-violet-900/30 transition-all duration-200"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Reset ke Default
           </button>

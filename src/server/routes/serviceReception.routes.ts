@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireJwt, requireTenantScope, requireRoles } from '../../middleware/auth.middleware.js';
 import { createServiceReception } from '../controllers/serviceReception.controller.js';
-import { listServiceTickets, getServiceTicket, addStatusEvent, getStatusEvents } from '../controllers/serviceWorkflow.controller.js';
+import { listServiceTickets, getServiceTicket, getStatusEvents } from '../controllers/serviceWorkflow.controller.js';
 import { requireValidTenant, requireServiceTicketTenant } from '../middleware/tenant.middleware.js';
 
 const router = express.Router();
@@ -17,8 +17,6 @@ router.post(
 );
 router.get('/:id', requireServiceTicketTenant, getServiceTicket);
 
-// Endpoint untuk status-events
-router.post('/:id/status-events', requireServiceTicketTenant, addStatusEvent);
 router.get('/:id/status-events', requireServiceTicketTenant, getStatusEvents);
 
 export default router;

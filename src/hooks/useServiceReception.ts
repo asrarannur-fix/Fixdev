@@ -138,7 +138,6 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     } catch {
       /* abaikan draft rusak */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -177,7 +176,6 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     } catch {
       /* abaikan */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     showNewSrvCustForm,
     newSrvCustName,
@@ -368,7 +366,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       setAutoAssignReason(null);
       try {
         localStorage.removeItem(SRV_DRAFT);
-      } catch {}
+      } catch { /* ignore */ }
       showToast('Penerimaan Unit Servis berhasil didaftarkan!', 'success');
       setActiveSubTab('list');
     } catch (error: any) {

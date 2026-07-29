@@ -7,46 +7,6 @@ export interface DashboardMetrics {
   serviceRevenue: number;
   totalRevenue: number;
   grossProfit: number;
-  profitMargin: string | number;
-  completedServices: number;
-  activeTickets: number;
-  totalTickets: number;
-  avgTicketValue: number;
-  deadStock: number;
-  totalProducts: number;
-  totalCustomers: number;
-  totalCashIn: number;
-  totalCashOut: number;
-  cashFlow: number;
-  totalPayroll: number;
-  lowStockCount: number;
-  lowStockItems: any[];
-  totalBillingPaid: number;
-  totalBillingUnpaid: number;
-  transactions: any[];
-  services: any[];
-  shifts?: any[];
-  fieldVisits?: any[];
-  totalLoyaltyPoints?: number;
-  dateLabel: string;
-  revenueDelta: string | null;
-  serviceDelta: string | null;
-}
-
-export interface WidgetConfig {
-  id: string;
-  label: string;
-  icon: string;
-  defaultVisible: boolean;
-  defaultOrder: number;
-  component: React.FC<WidgetProps>;
-}
-
-export interface DashboardMetrics {
-  posRevenue: number;
-  serviceRevenue: number;
-  totalRevenue: number;
-  grossProfit: number;
   profitMargin: string;
   completedServices: number;
   activeTickets: number;
@@ -67,14 +27,25 @@ export interface DashboardMetrics {
   subscriptionTier: string;
   transactions: any[];
   services: any[];
+  shifts?: any[];
+  fieldVisits?: any[];
   dateLabel: string;
   revenueDelta: string | null;
   serviceDelta: string | null;
-  totalLoyaltyPoints: number;
-  activeShifts: number;
-  todayShifts: number;
-  fieldVisitsToday: number;
-  stockMovementsToday: number;
+  totalLoyaltyPoints?: number;
+  activeShifts?: number;
+  todayShifts?: number;
+  fieldVisitsToday?: number;
+  stockMovementsToday?: number;
+}
+
+export interface WidgetConfig {
+  id: string;
+  label: string;
+  icon: string;
+  defaultVisible: boolean;
+  defaultOrder: number;
+  component: React.FC<WidgetProps>;
 }
 
 export interface WidgetProps {
@@ -98,7 +69,6 @@ export const DEFAULT_LAYOUT: WidgetLayout = {
     "stock-alerts",
     "ops-overview",
     "cash-flow",
-    "ops-overview",
     "analytics",
   ],
   visible: {
@@ -108,7 +78,6 @@ export const DEFAULT_LAYOUT: WidgetLayout = {
     "stock-alerts": true,
     "ops-overview": true,
     "cash-flow": true,
-    "ops-overview": true,
     "analytics": true,
   },
 };

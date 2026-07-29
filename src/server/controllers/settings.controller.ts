@@ -775,3 +775,53 @@ export async function getSettingsTabs(req: Request, res: Response) {
   ];
   res.json({ tabs });
 }
+
+export async function getBranding(req: Request, res: Response) {
+  try {
+    const result = await dbQuery('SELECT branding, version FROM tenants WHERE id=$1 LIMIT 1', [req.tenantId]);
+    const tenant = result.rows[0];
+    if (!tenant) return res.status(404).json({ error: 'Tenant tidak ditemukan.' });
+    res.json({ value: tenant.branding || {}, version: tenant.version });
+  } catch (error: any) {
+    logger.error({ err: error.message, tenantId: req.tenantId }, 'Branding get failed');
+    res.status(500).json({ error: 'Branding gagal dimuat.' });
+  }
+}
+
+export async function updateBranding(req: Request, res: Response) {
+  const parsed = schemas.branding.safeParse(req.body?.value || req.body);
+  if (!parsed.success) return res.status(422).json({ error: parsed.error.issues });
+  try {
+    const result = await dbTransaction(async (client: PoolClient) =>
+      client.query(
+        `UPDATE tenants SET branding=$2::jsonb,version=version+1 WHERE id=$1 RETURNING branding,version`,
+        [req.tenantId, JSON.stringify(parsed.data)]
+      )
+    );
+    const tenant = result.rows[0];
+    if (!tenant) return res.status(404).json({ error: 'Tenant tidak ditemukan.' });
+    res.json({ value: tenant.branding || {}, version: tenant.version });
+  } catch (error: any) {
+    logger.error({ err: error.message, tenantId: req.tenantId }, 'Branding update failed');
+    res.status(500).json({ error: 'Branding gagal disimpan.' });
+  }
+}
+
+export async function getSubscriptionStatus(req: Request, res: Response) {
+  try {
+    const result = await dbQuery(
+      'SELECT tier,status,trial_ends_at AS "expiresAt" FROM tenants WHERE id=$1 LIMIT 1',
+      [req.tenantId]
+    );
+    const tenant = result.rows[0];
+    if (!tenant) return res.status(404).json({ error: 'Tenant tidak ditemukan.' });
+    res.json({ plan: tenant.tier, status: tenant.status, expiresAt: tenant.expiresAt || null });
+  } catch (error: any) {
+    logger.error({ err: error.message, tenantId: req.tenantId }, 'Subscription get failed');
+    res.status(500).json({ error: 'Langganan gagal dimuat.' });
+  }
+}
+
+export async function updateSubscription(_req: Request, res: Response) {
+  res.status(405).json({ error: 'Perubahan langganan harus melalui proses billing.' });
+}

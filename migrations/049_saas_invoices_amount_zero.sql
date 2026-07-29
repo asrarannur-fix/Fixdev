@@ -7,7 +7,7 @@
 -- was consumed, preventing repeatable credit harvesting (audit H2).
 
 ALTER TABLE saas_invoices DROP CONSTRAINT IF EXISTS saas_invoices_amount_positive;
-ALTER TABLE saas_invoices ADD CONSTRAINT saas_invoices_amount_nonneg CHECK (amount >= 0);
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='saas_invoices_amount_nonneg') THEN ALTER TABLE saas_invoices ADD CONSTRAINT saas_invoices_amount_nonneg CHECK (amount >= 0); END IF; END $$;
 
 ALTER TABLE saas_invoices
   ADD COLUMN IF NOT EXISTS proration_source_invoice_id text;

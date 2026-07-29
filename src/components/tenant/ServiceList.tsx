@@ -1,73 +1,34 @@
 import * as React from 'react';
-import { createPortal } from 'react-dom';
-import { Badge } from '../ui/Badge';
 import { ServiceModals } from './ServiceModals';
 import { ServiceDetailModal } from './ServiceDetailModal';
-import { getStorageLocations } from './StorageLocationManager';
-import { buildServiceReceptionPreview } from '../../utils/serviceReceptionUtils';
-import { ServiceStatus, UserRole, CustomerSegment, PaymentMethod } from '../../types';
-import { SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../domain/serviceWorkflow';
+import { ServiceStatus, UserRole } from '../../types';
+import { NEXT_STEP, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../domain/serviceWorkflow';
+import { Pagination } from './services/Pagination';
 import {
-  Building2,
-  Sliders,
-  Receipt,
-  Lock,
-  Zap,
+  PlusCircle,
   FileText,
   ChevronRight,
-  HelpCircle,
-  Save,
-  PlusCircle,
-  CheckCircle2,
   Trash2,
-  Copy,
-  AlertTriangle,
-  Monitor,
-  ExternalLink,
-  Brush,
-  Ticket,
-  X,
-  Paintbrush,
-  Fingerprint,
-  MapPin,
   Search,
-  CheckSquare,
-  Activity,
-  Camera,
-  Maximize,
-  Check,
-  Calendar,
-  ArrowRight,
-  Printer,
-  AlertCircle,
-  RefreshCw,
-  MessageSquare,
-  Wrench,
-  Upload,
-  Minus,
-  Eye,
-  Edit,
-  MoreVertical,
-  SearchIcon,
-  CheckCircle,
-  Package,
-  Send,
-  Filter,
-  ChevronLeft,
-  QrCode,
-  Cpu,
-  Share2,
-  Barcode,
-  ShieldCheck,
-  Timer,
-  PackagePlus,
-  ListChecks,
+  X,
 } from 'lucide-react';
+
+const GradientCard: React.FC<{
+  children: React.ReactNode;
+  gradient: string;
+  className?: string;
+}> = ({ children, gradient, className = '' }) => (
+  <div className={`relative overflow-hidden rounded-xl border border-white/20 dark:border-zinc-800/40 shadow-md shadow-slate-200/30 dark:shadow-zinc-900/30 hover:shadow-lg transition-all duration-300 ${className}`}>
+    <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10" />
+    <div className="absolute -top-6 -right-6 w-16 h-16 bg-white/10 rounded-full blur-xl" />
+    <div className="relative p-3">{children}</div>
+  </div>
+);
 
 export const ServiceList: React.FC<any> = (props) => {
   const {
     activeTenantId,
-    activeWaModal,
     additionalCostAmount,
     additionalCostApprovedBy,
     additionalCostDescription,
@@ -223,172 +184,278 @@ export const ServiceList: React.FC<any> = (props) => {
     createServicePartOrder,
     addApprovedAdditionalCost,
   } = props;
+
+  const filterStorageKey = `fixdev_service_list_filters_${currentUser?.id || activeTenantId || 'default'}`;
+  const readFilters = () => {
+    const params = new URLSearchParams(window.location.search);
+    const saved = !params.has('tech') && !params.has('range') && !params.has('sla')
+      ? JSON.parse(localStorage.getItem(filterStorageKey) || '{}')
+      : {};
+    return {
+      group: params.get('group') || 'ALL',
+      tech: params.get('tech') || saved.tech || 'ALL',
+      range: params.get('range') || saved.range || 'all',
+      sla: params.get('sla') || saved.sla || 'all',
+    };
+  };
+  const [page, setPage] = React.useState(1);
+  const [operationalFilter, setOperationalFilter] = React.useState(() => readFilters().group);
+  const [technicianFilter, setTechnicianFilter] = React.useState(() => readFilters().tech);
+  const [dateRangeFilter, setDateRangeFilter] = React.useState(() => readFilters().range);
+  const [slaFilter, setSlaFilter] = React.useState(() => readFilters().sla);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const active = tenantServices.filter((s) => !SERVICE_TERMINAL_STATUSES.has(s.status));
+  const baruHariIni = tenantServices.filter((s) => {
+    const d = s.createdAt ? new Date(s.createdAt) : null;
+    return d && d >= todayStart;
+  }).length;
+  const menungguDiagnosa = tenantServices.filter(
+    (s) => s.status === ServiceStatus.DITERIMA || s.status === ServiceStatus.ANTRIAN
+  ).length;
+  const menungguApproval = tenantServices.filter(
+    (s) =>
+      s.status === ServiceStatus.MENUGGU_APPROVAL ||
+      s.status === ServiceStatus.ESTIMATE_PENDING
+  ).length;
+  const dikerjakan = tenantServices.filter(
+    (s) => s.status === ServiceStatus.SEDANG_DIKERJAKAN
+  ).length;
+  const qc = tenantServices.filter((s) => s.status === ServiceStatus.QC).length;
+  const selesai = tenantServices.filter((s) => s.status === ServiceStatus.SELESAI).length;
+  const siapDiambil = tenantServices.filter(
+    (s) => s.status === ServiceStatus.SIAP_DIAMBIL
+  ).length;
+  const diambil = tenantServices.filter(
+    (s) => s.status === ServiceStatus.DIAMBIL
+  ).length;
+  const terlambat = tenantServices.filter((s) => {
+    const est = s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate) : null;
+    return est && est < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
+  }).length;
+  const totalEstimasiBulanIni = Math.round(
+    tenantServices
+      .filter((s) => {
+        const d = s.createdAt ? new Date(s.createdAt) : null;
+        return d && d >= monthStart;
+      })
+      .reduce((n, t) => n + (Number(t.estimatedCost) || 0), 0)
+  );
+
+  const operationalGroups: Record<string, ServiceStatus[]> = {
+    diagnosis: [ServiceStatus.DITERIMA, ServiceStatus.ANTRIAN],
+    approval: [ServiceStatus.ESTIMATE_PENDING, ServiceStatus.MENUGGU_APPROVAL],
+    repair: [ServiceStatus.SEDANG_DIKERJAKAN, ServiceStatus.REWORK],
+    qc: [ServiceStatus.QC],
+    pickup: [ServiceStatus.SIAP_DIAMBIL],
+  };
+  const kpiItems = [
+    { key: 'diagnosis', label: 'Diagnosis', value: menungguDiagnosa, gradient: 'from-amber-400 via-orange-400 to-red-400' },
+    { key: 'approval', label: 'Approval', value: menungguApproval, gradient: 'from-orange-400 via-red-400 to-pink-400' },
+    { key: 'repair', label: 'Repair', value: dikerjakan + tenantServices.filter((s) => s.status === ServiceStatus.REWORK).length, gradient: 'from-blue-400 via-cyan-400 to-teal-400' },
+    { key: 'qc', label: 'QC', value: qc, gradient: 'from-teal-400 via-cyan-400 to-sky-500' },
+    { key: 'pickup', label: 'Ready Pickup', value: siapDiambil, gradient: 'from-emerald-400 via-green-400 to-teal-500' },
+  ];
+
+  React.useEffect(() => setPage(1), [operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter]);
+  React.useEffect(() => {
+    const readQuery = () => {
+      const filters = readFilters();
+      setOperationalFilter(filters.group);
+      setTechnicianFilter(filters.tech);
+      setDateRangeFilter(filters.range);
+      setSlaFilter(filters.sla);
+    };
+    window.addEventListener('popstate', readQuery);
+    return () => window.removeEventListener('popstate', readQuery);
+  }, [filterStorageKey]);
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const filters = { group: operationalFilter, tech: technicianFilter, range: dateRangeFilter, sla: slaFilter };
+    Object.entries(filters).forEach(([key, value]) => value === 'ALL' || value === 'all' ? params.delete(key) : params.set(key, value));
+    localStorage.setItem(filterStorageKey, JSON.stringify({ tech: technicianFilter, range: dateRangeFilter, sla: slaFilter }));
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  }, [operationalFilter, technicianFilter, dateRangeFilter, slaFilter, filterStorageKey]);
+
+  const filteredServices = tenantServices
+    .filter((s) => {
+      const q = srvSearchQuery.toLowerCase();
+      const matchesQuery =
+        String(s.ticketNo || '').toLowerCase().includes(q) ||
+        String(s.deviceName || '').toLowerCase().includes(q) ||
+        String(s.deviceBrandModel || '').toLowerCase().includes(q) ||
+        (customers.find((c) => c.id === s.customerId)?.name || '').toLowerCase().includes(q);
+      const effectiveStatusFilter = qcView ? ServiceStatus.QC : statusFilter;
+      const matchesStatus = effectiveStatusFilter === 'ALL' || s.status === effectiveStatusFilter;
+      const matchesGroup = operationalFilter === 'ALL' || operationalGroups[operationalFilter]?.includes(s.status);
+      const matchesTechnician = technicianFilter === 'ALL' || (technicianFilter === 'unassigned' ? !s.assignedTechId : s.assignedTechId === technicianFilter);
+      const createdAt = s.createdAt ? new Date(s.createdAt) : null;
+      const rangeDays = dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''));
+      const rangeStart = dateRangeFilter === 'all' ? null : new Date(todayStart.getTime() - (rangeDays - 1) * 86400_000);
+      const matchesDate = !rangeStart || (createdAt && createdAt >= rangeStart);
+      const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
+      const overdue = Boolean(createdAt && !SERVICE_TERMINAL_STATUSES.has(s.status) && now.getTime() - createdAt.getTime() > slaHours * 3600_000);
+      const matchesSla = slaFilter === 'all' || (slaFilter === 'overdue' ? overdue : !overdue);
+      return matchesQuery && matchesStatus && matchesGroup && matchesTechnician && matchesDate && matchesSla;
+    })
+    .sort((a, b) => {
+      if (srvSort === 'urgent') {
+        const urgency = (ticket) => {
+          const estimate = ticket.estimatedCompletionDate ? new Date(ticket.estimatedCompletionDate).getTime() : Infinity;
+          return estimate < now.getTime() && !SERVICE_TERMINAL_STATUSES.has(ticket.status) ? estimate : Infinity;
+        };
+        const overdueDiff = urgency(a) - urgency(b);
+        if (overdueDiff) return overdueDiff;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (srvSort === 'cost_desc') return Number(b.estimatedCost || 0) - Number(a.estimatedCost || 0);
+      if (srvSort === 'cost_asc') return Number(a.estimatedCost || 0) - Number(b.estimatedCost || 0);
+      const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return srvSort === 'oldest' ? diff : -diff;
+    });
+  const totalPages = Math.ceil(filteredServices.length / 15);
+  const paginatedServices = filteredServices.slice((page - 1) * 15, page * 15);
+
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-3 shadow-sm animate-fadeIn space-y-3">
-      {/* KPI Dashboard Summary */}
-      {(() => {
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const active = tenantServices.filter((s) => !SERVICE_TERMINAL_STATUSES.has(s.status));
-        const baruHariIni = tenantServices.filter((s) => {
-          const d = s.createdAt ? new Date(s.createdAt) : null;
-          return d && d >= todayStart;
-        }).length;
-        const menungguDiagnosa = tenantServices.filter(
-          (s) => s.status === ServiceStatus.DITERIMA || s.status === ServiceStatus.ANTRIAN
-        ).length;
-        const menungguApproval = tenantServices.filter(
-          (s) =>
-            s.status === ServiceStatus.MENUGGU_APPROVAL ||
-            s.status === ServiceStatus.ESTIMATE_PENDING
-        ).length;
-        const dikerjakan = tenantServices.filter(
-          (s) => s.status === ServiceStatus.SEDANG_DIKERJAKAN
-        ).length;
-        const qc = tenantServices.filter((s) => s.status === ServiceStatus.QC).length;
-        const selesai = tenantServices.filter((s) => s.status === ServiceStatus.SELESAI).length;
-        const siapDiambil = tenantServices.filter(
-          (s) => s.status === ServiceStatus.SIAP_DIAMBIL
-        ).length;
-        const diambil = tenantServices.filter(
-          (s) => s.status === ServiceStatus.DIAMBIL
-        ).length;
-        const terlambat = tenantServices.filter((s) => {
-          const est = s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate) : null;
-          return est && est < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
-        }).length;
-        const totalEstimasiBulanIni = Math.round(
-          tenantServices
-            .filter((s) => {
-              const d = s.createdAt ? new Date(s.createdAt) : null;
-              return d && d >= monthStart;
-            })
-            .reduce((n, t) => n + (Number(t.estimatedCost) || 0), 0)
-        );
-        const kpiItems = [
-          { label: 'Aktif', value: active.length, color: 'text-blue-600 dark:text-blue-400' },
-          {
-            label: 'Baru Hari Ini',
-            value: baruHariIni,
-            color: 'text-emerald-600 dark:text-emerald-400',
-          },
-          {
-            label: 'Menunggu Diagnosa',
-            value: menungguDiagnosa,
-            color: 'text-amber-600 dark:text-amber-400',
-          },
-          {
-            label: 'Menunggu Approval',
-            value: menungguApproval,
-            color: 'text-orange-600 dark:text-orange-400',
-          },
-          { label: 'Dikerjakan', value: dikerjakan, color: 'text-blue-600 dark:text-blue-400' },
-          { label: 'QC', value: qc, color: 'text-purple-600 dark:text-purple-400' },
-          { label: 'Selesai', value: selesai, color: 'text-emerald-600 dark:text-emerald-400' },
-          { label: 'Siap Diambil', value: siapDiambil, color: 'text-accent dark:text-accent' },
-          { label: 'Diambil', value: diambil, color: 'text-teal-600 dark:text-teal-400' },
-          { label: 'Terlambat', value: terlambat, color: 'text-rose-600 dark:text-rose-400' },
-          {
-            label: 'Estimasi (Bln Ini)',
-            value: `Rp${totalEstimasiBulanIni.toLocaleString('id-ID')}`,
-            color: 'text-slate-700 dark:text-zinc-300',
-          },
-        ];
-        return (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
-              {kpiItems.map((item, i) => (
-                <div key={i} className="bg-slate-50 dark:bg-zinc-800/50 rounded-xl p-2 text-center">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                    {item.label}
-                  </p>
-                  <p className={`text-sm font-extrabold mt-0.5 ${item.color}`}>{item.value}</p>
-                </div>
-              ))}
-            </div>
-            {/* QC Report + SLA Breach */}
-            {(() => {
-              const qcTickets = tenantServices.filter((s) => typeof s.qcScore === 'number');
-              const avgQcScore = qcTickets.length
-                ? Math.round(
-                    qcTickets.reduce((sum, s) => sum + Number(s.qcScore), 0) / qcTickets.length
-                  )
-                : 0;
-              const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
-              const slaBreaches = active.filter(
-                (s) =>
-                  s.createdAt &&
-                  now.getTime() - new Date(s.createdAt).getTime() > slaHours * 3600_000
-              ).length;
-              const techCount = qcTickets.reduce((acc, s) => {
-                const k = s.assignedTechId || 'unassigned';
-                acc.add(k);
-                return acc;
-              }, new Set<string>());
-              return (
-                <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-1">
-                  <span className="font-bold text-accent">
-                    QC Rata-rata: <strong>{avgQcScore}%</strong>
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-bold text-rose-600">
-                    Pelanggaran SLA: <strong>{slaBreaches}</strong>
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-bold text-slate-600">
-                    Teknisi Aktif: <strong>{techCount.size}</strong>
-                  </span>
-                </div>
-              );
-            })()}
-          </>
-        );
-      })()}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2.5">
-        <div>
-          <h4 className="font-extrabold text-xs uppercase text-slate-800 dark:text-zinc-100 tracking-tight">
-            Daftar Servis
-          </h4>
+    <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 rounded-2xl p-4 space-y-4">
+      {/* KPI Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+        {kpiItems.map((item) => (
+          <button key={item.key} onClick={() => setOperationalFilter(item.key)} className="text-left">
+            <GradientCard gradient={item.gradient} className={operationalFilter === item.key ? 'ring-2 ring-indigo-400' : ''}>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-white/70">{item.label}</p>
+            <p className="text-lg font-black text-white drop-shadow-sm tracking-tight">{item.value}</p>
+            </GradientCard>
+          </button>
+         ))}
+      </div>
+
+      {/* Row KPI Info */}
+      <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 dark:text-zinc-400">
+        {(() => {
+          const qcTickets = tenantServices.filter((s) => typeof s.qcScore === 'number');
+          const avgQcScore = qcTickets.length
+            ? Math.round(qcTickets.reduce((sum, s) => sum + Number(s.qcScore), 0) / qcTickets.length)
+            : 0;
+          const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
+          const slaBreaches = active.filter(
+            (s) =>
+              s.createdAt &&
+              now.getTime() - new Date(s.createdAt).getTime() > slaHours * 3600_000
+          ).length;
+          const techCount = qcTickets.reduce((acc, s) => {
+            const k = s.assignedTechId || 'unassigned';
+            acc.add(k);
+            return acc;
+          }, new Set<string>());
+          return (
+            <>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 font-bold">
+                QC: {avgQcScore}%
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 font-bold">
+                SLA: {slaBreaches}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 font-bold">
+                Teknisi: {techCount.size}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold">
+                Estimasi: Rp{totalEstimasiBulanIni.toLocaleString('id-ID')}
+              </span>
+            </>
+          );
+        })()}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button onClick={() => setOperationalFilter('ALL')} className={`rounded-lg px-3 py-2 text-[10px] font-bold ${operationalFilter === 'ALL' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300'}`}>Semua Operasional</button>
+        {kpiItems.map((item) => <button key={item.key} onClick={() => setOperationalFilter(item.key)} className={`rounded-lg px-3 py-2 text-[10px] font-bold ${operationalFilter === item.key ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300'}`}>{item.label}</button>)}
+        <select aria-label="Filter semua status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="ml-auto px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
+          <option value="ALL">Semua status</option>
+          {Object.entries(SERVICE_STATUS_META).map(([status, meta]) => <option key={status} value={status}>{meta.label}</option>)}
+        </select>
+        <select aria-label="Filter teknisi" value={technicianFilter} onChange={(e) => setTechnicianFilter(e.target.value)} className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
+          <option value="ALL">Semua teknisi</option>
+          <option value="unassigned">Belum ditugaskan</option>
+          {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}
+        </select>
+        <select aria-label="Filter rentang tanggal" value={dateRangeFilter} onChange={(e) => setDateRangeFilter(e.target.value)} className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
+          <option value="all">Semua tanggal</option>
+          <option value="today">Hari ini</option>
+          <option value="7d">7 hari</option>
+          <option value="30d">30 hari</option>
+        </select>
+        <select aria-label="Filter SLA" value={slaFilter} onChange={(e) => setSlaFilter(e.target.value)} className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
+          <option value="all">Semua SLA</option>
+          <option value="overdue">Terlambat</option>
+          <option value="on-track">Sesuai SLA</option>
+        </select>
+      </div>
+
+      {/* Search & Actions */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
+          <input
+            type="text"
+            aria-label="Cari tiket servis"
+            placeholder="Cari tiket, nama, perangkat..."
+            value={srvSearchQuery}
+            onChange={(e) => setSrvSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400/20 transition-all shadow-sm"
+          />
+          {srvSearchQuery && (
+            <button
+              onClick={() => setSrvSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <X className="w-3 h-3 text-slate-400" />
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          {/* Feature 2: Bulk Actions UI */}
+        <select
+          value={srvSort}
+          onChange={(e) => setSrvSort(e.target.value as any)}
+          className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-all shadow-sm cursor-pointer"
+        >
+           <option value="urgent">Urgent: overdue dulu</option>
+           <option value="newest">Terbaru</option>
+          <option value="oldest">Terlama</option>
+          <option value="cost_desc">Biaya Tinggi</option>
+          <option value="cost_asc">Biaya Rendah</option>
+        </select>
+        <div className="flex items-center gap-1.5">
           {selectedServiceIds.length > 0 &&
             (currentUser?.role === UserRole.OWNER ||
               currentUserPermissions.includes('action-services-delete-ticket')) && (
-              <div className="flex items-center gap-2 animate-fadeIn">
-                <span className="text-[10px] font-bold text-accent px-2">
-                  {selectedServiceIds.length} Terpilih
-                </span>
-                <button
-                  onClick={async () => {
-                    if (
-                      await showConfirm({
-                        title: 'Hapus Tiket Massal',
-                        message: `Apakah Anda yakin ingin menghapus ${selectedServiceIds.length} tiket terpilih secara permanen?`,
-                        confirmLabel: 'Ya, Hapus Permanen',
-                        type: 'danger',
-                      })
-                    ) {
-                      for (const id of selectedServiceIds) {
-                        await updateServiceTicket(id, {
-                          deletedAt: new Date().toISOString(),
-                        } as any);
-                      }
-                      setSelectedServiceIds([]);
-                      showToast(
-                        `${selectedServiceIds.length} tiket berhasil dihapus secara massal.`,
-                        'success'
-                      );
-                    }
-                  }}
-                  className="px-3 py-1.5 text-[10px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-xl hover:bg-rose-100 transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Hapus Massal
-                </button>
-              </div>
+              <button
+                onClick={async () => {
+                  if (
+                    await showConfirm({
+                      title: 'Hapus Tiket Massal',
+                      message: `Apakah Anda yakin ingin menghapus ${selectedServiceIds.length} tiket terpilih secara permanen?`,
+                      confirmLabel: 'Ya, Hapus Permanen',
+                      type: 'danger',
+                    })
+                  ) {
+                    const count = selectedServiceIds.length;
+                    await Promise.all(
+                      selectedServiceIds.map((id) =>
+                        updateServiceTicket(id, { deletedAt: new Date().toISOString() } as any)
+                      )
+                    );
+                    setSelectedServiceIds([]);
+                    showToast(`${count} tiket berhasil dihapus.`, 'success');
+                  }
+                }}
+                className="px-3 py-2 text-[10px] font-bold bg-gradient-to-r from-rose-500 to-red-500 text-white rounded-xl hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Hapus
+              </button>
             )}
-          {/* Feature 3: Excel Export UI */}
           <button
             onClick={() => {
               const csvContent =
@@ -407,239 +474,99 @@ export const ServiceList: React.FC<any> = (props) => {
               link.click();
               document.body.removeChild(link);
             }}
-            className="px-3 py-1.5 text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-xl hover:bg-emerald-100 transition cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-2 text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
           >
-            <FileText className="w-3.5 h-3.5" /> Export CSV
+            <FileText className="w-3.5 h-3.5" /> CSV
           </button>
           <button
             onClick={() => setActiveSubTab('new-ticket')}
-            className={`bg-accent hover:bg-accent-hover text-white font-extrabold text-[10px] px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm transition-all ${isSubTabAllowed('services', 'new-ticket') ? '' : 'hidden'}`}
+            className={`bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 hover:shadow-lg text-white font-extrabold text-[10px] px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md transition-all hover:scale-105 ${isSubTabAllowed('services', 'new-ticket') ? '' : 'hidden'}`}
           >
             <PlusCircle className="w-3.5 h-3.5" /> Terima Unit Baru
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 xl:w-full xl:mb-2">
-        {[
-          {
-            label: 'Semua Unit',
-            filter: 'ALL',
-            count: tenantServices.length,
-            color:
-              'border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 bg-slate-50 dark:bg-zinc-900/60',
-            hide: false,
-          },
-          {
-            label: 'Baru',
-            filter: ServiceStatus.DITERIMA,
-            count: tenantServices.filter((s) => s.status === ServiceStatus.DITERIMA).length,
-            color:
-              'border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900',
-          },
-          {
-            label: 'Diagnosa',
-            filter: ServiceStatus.DIAGNOSA,
-            count: tenantServices.filter((s) => s.status === ServiceStatus.DIAGNOSA).length,
-            color:
-              'border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-950/20',
-          },
-          {
-            label: 'Pending',
-            filter: ServiceStatus.MENUGGU_APPROVAL,
-            count: tenantServices.filter((s) => s.status === ServiceStatus.MENUGGU_APPROVAL).length,
-            color:
-              'border-blue-200 dark:border-blue-900/40 text-blue-800 dark:text-blue-400 bg-blue-50/30 dark:bg-blue-950/20',
-          },
-          {
-            label: 'Kerja',
-            filter: ServiceStatus.SEDANG_DIKERJAKAN,
-            count: tenantServices.filter((s) => s.status === ServiceStatus.SEDANG_DIKERJAKAN)
-              .length,
-            color:
-              'border-blue-200 dark:border-blue-900/40 text-blue-800 dark:text-blue-400 bg-blue-50/30 dark:bg-blue-950/20',
-          },
-          {
-            label: 'Rework',
-            filter: ServiceStatus.REWORK,
-            count: tenantServices.filter((s) => s.status === ServiceStatus.REWORK).length,
-            color:
-              'border-orange-200 dark:border-orange-900/40 text-orange-800 dark:text-orange-400 bg-orange-50/30 dark:bg-orange-950/20',
-          },
-          {
-            label: 'Selesai',
-            filter: ServiceStatus.SELESAI,
-            count: tenantServices.filter((s) => s.status === ServiceStatus.SELESAI).length,
-            color:
-              'border-emerald-200 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20',
-          },
-          {
-            label: 'Diambil',
-            filter: ServiceStatus.DIAMBIL,
-            count: tenantServices.filter((s) => s.status === ServiceStatus.DIAMBIL).length,
-            color:
-              'border-slate-300 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800/40',
-          },
-          ...[
-            ServiceStatus.MENUGGU_SPAREPART,
-            ServiceStatus.DIKIRIM_KE_VENDOR,
-            ServiceStatus.QC,
-            ServiceStatus.MENUGGU_PEMBAYARAN,
-            ServiceStatus.SIAP_DIAMBIL,
-          ].map((status) => ({
-            label: SERVICE_STATUS_META[status].label,
-            filter: status,
-            count: tenantServices.filter((s) => s.status === status).length,
-            color: 'border-indigo-200 text-indigo-800 bg-indigo-50/30',
-          })),
-        ]
-          .filter((card) => card.label === 'Semua Unit' || card.count > 0)
-          .map((card) => (
-            <button
-              key={card.filter}
-              onClick={() => setStatusFilter(card.filter)}
-              className={`border rounded-xl p-2.5 text-left transition-all hover:shadow-sm cursor-pointer select-none ${statusFilter === card.filter ? 'ring-2 ring-indigo-500/30 border-accent bg-gradient-to-r from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/40 shadow-md transform scale-[1.02]' : ''} ${card.color}`}
-            >
-              <p className="text-[9px] uppercase font-mono font-bold opacity-70 tracking-wider truncate">
-                {card.label}
-              </p>
-              <p className="text-lg font-bold mt-0.5 font-mono">{card.count}</p>
-            </button>
-          ))}
-      </div>
 
-      {/* Main List Table Area */}
-      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm flex flex-col overflow-hidden min-h-[480px]">
-        <div className="p-3 border-b border-slate-100 bg-slate-50/55 flex items-center justify-between gap-2">
-          <div className="relative flex-1 flex items-center gap-2">
-            <input
-              type="text"
-              aria-label="Cari tiket servis"
-              placeholder="Cari tiket, nama, perangkat..."
-              value={srvSearchQuery}
-              onChange={(e) => setSrvSearchQuery(e.target.value)}
-              className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg outline-none focus:border-accent dark:focus:border-accent bg-white dark:bg-zinc-900"
-            />
-            <select
-              value={srvSort}
-              onChange={(e) => setSrvSort(e.target.value as any)}
-              className="text-xs px-2 py-1.5 border border-slate-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 outline-none"
-            >
-              <option value="newest">Terbaru</option>
-              <option value="oldest">Terlama</option>
-              <option value="cost_desc">Biaya Tinggi</option>
-              <option value="cost_asc">Biaya Rendah</option>
-            </select>
-          </div>
-        </div>
+      {/* Service List */}
+      <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="max-h-[650px] overflow-y-auto">
+          {filteredServices.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-zinc-500">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mb-4">
+                <Search className="w-7 h-7 text-slate-300 dark:text-zinc-600" />
+              </div>
+              <p className="text-sm font-bold">Tidak ada tiket ditemukan</p>
+              <p className="text-[11px] mt-1 opacity-60">Coba ubah filter atau kata kunci pencarian</p>
+            </div>
+           ) : (
+             <>
+             <table className="hidden md:table w-full text-left">
+               <thead className="bg-slate-50 dark:bg-zinc-800/60 text-[10px] uppercase tracking-wider text-slate-500"><tr><th className="p-3">Pilih</th><th className="p-3">Tiket</th><th className="p-3">Status</th><th className="p-3">Tindakan berikut</th><th className="p-3">Estimasi</th></tr></thead>
+               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">{paginatedServices.map((s) => {
+                 const customer = customers.find((c) => c.id === s.customerId);
+                 const overdue = s.estimatedCompletionDate && new Date(s.estimatedCompletionDate) < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
+                 return <tr key={s.id} tabIndex={0} onClick={() => { setViewingServiceTicketId(s.id); setManualDiagNotes(s.techDiagnosis || ''); setManualDiagCost(String(Number(s.estimatedCost) || 0)); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setViewingServiceTicketId(s.id); } }} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800/50 focus:outline-none focus:bg-indigo-50 dark:focus:bg-indigo-950/20"><td className="p-3" onClick={(e) => e.stopPropagation()}><input aria-label={`Pilih tiket ${s.ticketNo}`} type="checkbox" checked={selectedServiceIds.includes(s.id)} onChange={() => setSelectedServiceIds(selectedServiceIds.includes(s.id) ? selectedServiceIds.filter((id) => id !== s.id) : [...selectedServiceIds, s.id])} /></td><td className="p-3"><p className="font-mono font-bold text-indigo-600">#{s.ticketNo}</p><p className="text-xs font-semibold">{customer?.name || 'Umum'} · {s.deviceName}</p></td><td className="p-3 text-xs">{SERVICE_STATUS_META[s.status]?.label || s.status}</td><td className="p-3 text-xs font-semibold text-slate-600 dark:text-zinc-300">{NEXT_STEP[s.status]?.label || 'Tidak ada tindakan'}</td><td className={`p-3 text-xs ${overdue ? 'font-bold text-rose-600' : ''}`}>{s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—'}</td></tr>;
+               })}</tbody>
+             </table>
+             <div className="divide-y divide-slate-100 dark:divide-zinc-800 md:hidden">
+               {paginatedServices.map((s) => {
+                const customer = customers.find((c) => c.id === s.customerId);
+                const technician = employees.find((e) => e.id === s.assignedTechId);
+                const initials = (customer?.name || 'U').charAt(0).toUpperCase();
 
-        {/* Filter chips */}
-        {statusFilter !== 'ALL' && (
-          <div className="flex items-center gap-1.5 px-3 pb-1.5">
-            <span className="text-xs text-slate-500">Filter:</span>
-            <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-accent rounded-full">
-              {statusFilter}
-            </span>
-            <button
-              onClick={() => setStatusFilter('ALL')}
-              className="text-xs text-slate-500 hover:text-blue-600"
-            >
-              ✕ Clear
-            </button>
-          </div>
-        )}
+                const statusRail =
+                  s.status === ServiceStatus.SELESAI ||
+                  s.status === ServiceStatus.SIAP_DIAMBIL ||
+                  s.status === ServiceStatus.DIAMBIL
+                    ? 'from-emerald-500 to-teal-500'
+                    : s.status === ServiceStatus.REWORK
+                      ? 'from-orange-500 to-red-500'
+                      : s.status === ServiceStatus.DIAGNOSA
+                        ? 'from-amber-500 to-orange-500'
+                        : s.status === ServiceStatus.QC
+                          ? 'from-teal-500 to-cyan-500'
+                          : 'from-indigo-500 to-violet-500';
 
-        <div className="max-h-[650px] overflow-y-auto p-3 space-y-1.5 bg-slate-50/50 dark:bg-zinc-950/20">
-          {tenantServices
-            .filter((s) => {
-              const q = srvSearchQuery.toLowerCase();
-              const matchesQuery =
-                String(s.ticketNo || '')
-                  .toLowerCase()
-                  .includes(q) ||
-                String(s.deviceName || '')
-                  .toLowerCase()
-                  .includes(q) ||
-                String(s.deviceBrandModel || '')
-                  .toLowerCase()
-                  .includes(q) ||
-                (customers.find((c) => c.id === s.customerId)?.name || '')
-                  .toLowerCase()
-                  .includes(q);
-              const effectiveStatusFilter = qcView ? 'QC' : statusFilter;
-              if (effectiveStatusFilter === 'ALL') return matchesQuery;
-              return matchesQuery && s.status === effectiveStatusFilter;
-            })
-            .sort((a, b) => {
-              if (srvSort === 'cost_desc')
-                return Number(b.estimatedCost || 0) - Number(a.estimatedCost || 0);
-              if (srvSort === 'cost_asc')
-                return Number(a.estimatedCost || 0) - Number(b.estimatedCost || 0);
-              const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-              return srvSort === 'oldest' ? diff : -diff;
-            })
-            .map((s) => {
-              const customer = customers.find((c) => c.id === s.customerId);
-              const technician = employees.find((e) => e.id === s.assignedTechId);
-
-              const getStatusBadge = (status: ServiceStatus) => {
-                const tone = SERVICE_STATUS_META[status]?.tone;
-                const tones: Record<string, string> = {
-                  slate: 'bg-slate-100 text-slate-800 border-slate-200',
-                  sky: 'bg-sky-100 text-sky-800 border-sky-200',
-                  blue: 'bg-blue-100 text-blue-800 border-blue-200',
-                  amber: 'bg-amber-100 text-amber-800 border-amber-200',
-                  orange: 'bg-orange-100 text-orange-800 border-orange-200',
-                  indigo: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-                  teal: 'bg-teal-100 text-teal-800 border-teal-200',
-                  emerald: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                  violet: 'bg-purple-100 text-purple-800 border-purple-200',
-                  pink: 'bg-pink-100 text-pink-800 border-pink-200',
-                  rose: 'bg-rose-100 text-rose-800 border-rose-200',
+                const tone = SERVICE_STATUS_META[s.status]?.tone || 'slate';
+                const badgeStyles: Record<string, string> = {
+                  slate: 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300',
+                  sky: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
+                  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
+                  amber: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+                  orange: 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400',
+                  indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400',
+                  teal: 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
+                  emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+                  violet: 'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400',
+                  pink: 'bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-400',
+                  rose: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
                 };
-                return tones[tone || 'slate'] || tones.slate;
-              };
 
-              const statusRail =
-                s.status === ServiceStatus.SELESAI ||
-                s.status === ServiceStatus.SIAP_DIAMBIL ||
-                s.status === ServiceStatus.DIAMBIL
-                  ? 'border-l-emerald-500'
-                  : s.status === ServiceStatus.REWORK
-                    ? 'border-l-orange-500'
-                    : s.status === ServiceStatus.DIAGNOSA
-                      ? 'border-l-amber-500'
-                      : s.status === ServiceStatus.QC
-                        ? 'border-l-teal-500'
-                        : 'border-l-indigo-400';
-
-              // Avatar inisial
-              const initials = (customer?.name || 'U').charAt(0).toUpperCase();
-
-              return (
-                <div
-                  key={s.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    setViewingServiceTicketId(s.id);
-                    setManualDiagNotes(s.techDiagnosis || '');
-                    setManualDiagCost(String(Number(s.estimatedCost) || 0));
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
+                return (
+                  <div
+                    key={s.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
                       setViewingServiceTicketId(s.id);
                       setManualDiagNotes(s.techDiagnosis || '');
                       setManualDiagCost(String(Number(s.estimatedCost) || 0));
-                    }
-                  }}
-                  className={`group relative bg-white dark:bg-zinc-900 rounded-2xl border border-l-[4px] ${statusRail} border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer select-none ${
-                    viewingServiceTicketId === s.id
-                      ? 'ring-2 ring-indigo-400/40 border-l-[5px]'
-                      : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setViewingServiceTicketId(s.id);
+                        setManualDiagNotes(s.techDiagnosis || '');
+                        setManualDiagCost(String(Number(s.estimatedCost) || 0));
+                      }
+                    }}
+                    className={`group relative flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-all duration-200 cursor-pointer select-none ${
+                      viewingServiceTicketId === s.id ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''
+                    }`}
+                  >
+                    {/* Status Rail */}
+                    <div className={`w-1 h-10 rounded-full bg-gradient-to-b ${statusRail} shrink-0`} />
+
                     {/* Checkbox */}
                     <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -652,63 +579,41 @@ export const ServiceList: React.FC<any> = (props) => {
                             setSelectedServiceIds([...selectedServiceIds, s.id]);
                           }
                         }}
-                        className="w-3.5 h-3.5 rounded border-slate-300"
+                        className="w-3.5 h-3.5 rounded border-slate-300 dark:border-zinc-600"
                       />
                     </div>
 
-                    {/* Avatar inisial */}
-                    <span
-                      className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold font-mono
-                    ${
-                      statusRail.includes('emerald')
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : statusRail.includes('orange')
-                          ? 'bg-orange-100 text-orange-700'
-                          : statusRail.includes('amber')
-                            ? 'bg-amber-100 text-amber-700'
-                            : statusRail.includes('teal')
-                              ? 'bg-teal-100 text-teal-700'
-                              : 'bg-indigo-100 text-accent'
-                    }`}
-                    >
+                    {/* Avatar */}
+                    <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-xs font-black font-mono bg-gradient-to-br ${statusRail} text-white shadow-sm`}>
                       {initials}
                     </span>
 
-                    {/* Main content — 3-line info */}
-                    <div className="flex-1 min-w-0 flex flex-col gap-0 leading-tight">
-                      {/* Baris 1: tiket + customer */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold font-mono text-[11px] text-blue-600 dark:text-blue-400">
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-extrabold text-[11px] text-indigo-600 dark:text-indigo-400">
                           #{s.ticketNo}
                         </span>
-                        <span className="text-[10px] font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 truncate">
                           {customer?.name || 'Umum'}
                         </span>
                       </div>
-                      {/* Baris 2: device + brand + keluhan */}
-                      <div className="flex items-center gap-1.5 text-[9.5px] text-slate-500 dark:text-zinc-400 truncate">
-                        <span className="truncate">{s.deviceName}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">{s.deviceName}</span>
                         {s.deviceBrandModel && (
-                          <span className="text-[8px] text-slate-400 font-mono shrink-0">
-                            · {s.deviceBrandModel}
+                          <span className="text-[9px] text-slate-400 dark:text-zinc-500 font-mono">
+                            {s.deviceBrandModel}
                           </span>
                         )}
                       </div>
-                      {/* Baris 2b: keluhan */}
-                      {s.customerComplaints && (
-                        <div className="flex items-center gap-1 text-[9px] text-slate-400 dark:text-zinc-500 truncate italic">
-                          <span className="shrink-0">💬</span>
-                          <span className="truncate">{s.customerComplaints}</span>
-                        </div>
-                      )}
-                      {/* Baris 3: phone + teknisi + tanggal */}
-                      <div className="flex items-center gap-2 text-[8.5px] text-slate-400 dark:text-zinc-500 font-mono">
-                        {customer?.phone ? <span>{customer.phone}</span> : null}
-                        {technician ? (
+                       <p className="mt-1 text-[9px] font-semibold text-indigo-500 dark:text-indigo-400 truncate">{NEXT_STEP[s.status]?.label || 'Tidak ada tindakan'}</p>
+                       <div className="flex items-center gap-2 mt-1 text-[8.5px] text-slate-400 dark:text-zinc-500 font-mono">
+                        {customer?.phone && <span>{customer.phone}</span>}
+                        {technician && (
                           <span className="text-indigo-400 dark:text-indigo-300">
-                            · 🔧 {technician.name}
+                            {technician.name}
                           </span>
-                        ) : null}
+                        )}
                         <span className="ml-auto">
                           {new Date(s.createdAt).toLocaleDateString('id-ID', {
                             day: 'numeric',
@@ -718,31 +623,32 @@ export const ServiceList: React.FC<any> = (props) => {
                       </div>
                     </div>
 
-                    {/* Status badge + harga stacking */}
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span
-                        className={`px-2 py-0.5 text-[8px] font-bold rounded-md border uppercase font-mono tracking-wide ${getStatusBadge(s.status)}`}
-                      >
+                    {/* Status + Price */}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={`px-2.5 py-0.5 text-[9px] font-bold rounded-lg uppercase font-mono tracking-wide ${badgeStyles[tone] || badgeStyles.slate}`}>
                         {SERVICE_STATUS_META[s.status]?.label || s.status}
                       </span>
-                      <span className="font-bold font-mono text-[10px] text-slate-700 dark:text-zinc-300 tabular-nums">
+                      <span className="font-black font-mono text-[11px] text-slate-700 dark:text-zinc-300 tabular-nums">
                         Rp{Number(s.estimatedCost || 0).toLocaleString('id-ID')}
                       </span>
                     </div>
 
                     {/* Arrow */}
-                    <ChevronRight className="w-3 h-3 text-slate-300 dark:text-zinc-600 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-zinc-600 shrink-0 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                   </div>
-                </div>
-              );
-            })}
-        </div>
+                );
+               })}
+             </div>
+             </>
+           )}
+         </div>
+         <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} itemsPerPage={15} />
       </div>
 
       {/* Floating bulk action bar */}
       {selectedServiceIds.length > 0 && (
-        <div className="sticky bottom-0 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-b-2xl p-2.5 flex items-center justify-between shadow-lg -mt-2">
-          <span className="text-xs font-bold text-accent">
+        <div className="sticky bottom-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-sm border border-slate-200 dark:border-zinc-800 rounded-2xl p-3 flex items-center justify-between shadow-xl">
+          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
             {selectedServiceIds.length} terpilih
           </span>
           <div className="flex items-center gap-2">
@@ -758,24 +664,24 @@ export const ServiceList: React.FC<any> = (props) => {
                       type: 'danger',
                     })
                   ) {
-                    const selectedCount = selectedServiceIds.length;
+                    const count = selectedServiceIds.length;
                     await Promise.all(
                       selectedServiceIds.map((id) =>
                         updateServiceTicket(id, { deletedAt: new Date().toISOString() } as any)
                       )
                     );
                     setSelectedServiceIds([]);
-                    showToast(`${selectedCount} tiket dihapus.`, 'success');
+                    showToast(`${count} tiket dihapus.`, 'success');
                   }
                 }}
-                className="px-2.5 py-1 text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100"
+                className="px-3 py-1.5 text-[10px] font-bold bg-gradient-to-r from-rose-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all"
               >
                 Hapus
               </button>
             )}
             <button
               onClick={() => setSelectedServiceIds([])}
-              className="px-2.5 py-1 text-[10px] font-bold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50"
+              className="px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all"
             >
               Batal
             </button>

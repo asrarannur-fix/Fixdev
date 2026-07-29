@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * @see https://playwright.dev/docs/api/class-testoptions
  */
+const baseURL = process.env.TEST_BASE_URL || 'http://127.0.0.1:3001';
+
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
@@ -11,7 +13,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: process.env.TEST_BASE_URL || 'http://127.0.0.1:3001',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -21,11 +23,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  // Run your local dev server before starting the tests
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://127.0.0.1:3001',
-  //   reuseExistingServer: true,
-  //   timeout: 60 * 1000,
-  // },
+  ...(process.env.TEST_E2E_SERVER === '1'
+    ? {
+        webServer: {
+          command: 'npm run dev',
+          url: baseURL,
+          reuseExistingServer: true,
+          timeout: 60 * 1000,
+        },
+      }
+    : {}),
 });

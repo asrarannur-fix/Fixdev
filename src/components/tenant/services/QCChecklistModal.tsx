@@ -83,7 +83,7 @@ export const QCChecklistModal: React.FC<{
   const uncheckAll  = () => setItems(p => p.map(i => ({ ...i, checked: false })));
   const toggleGroup = (gid: string) => setCollapsed(p => {
     const n = new Set(p);
-    n.has(gid) ? n.delete(gid) : n.add(gid);
+    if (n.has(gid)) n.delete(gid); else n.add(gid);
     return n;
   });
 

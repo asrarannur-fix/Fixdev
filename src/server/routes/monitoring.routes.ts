@@ -19,7 +19,7 @@ router.get("/health", async (req, res) => {
   requestCount++;
   const uptime = Math.floor((Date.now() - startTime) / 1000);
 
-  let poolStatus = "unchecked";
+  let poolStatus: string;
   try {
     const pool = getPool();
     const client = await pool.connect();

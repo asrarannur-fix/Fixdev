@@ -80,7 +80,7 @@ export const TenantsManager: React.FC<TenantsManagerProps> = ({
           plansMap[plan.tier] = { priceMonthly: plan.priceMonthly };
         });
         setBillingPlans(plansMap);
-      } catch {}
+      } catch { /* ignore */ }
     };
     fetchPlans();
   }, [apiFetch]);

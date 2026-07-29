@@ -10,11 +10,11 @@ const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
 
 // Mock implementations for testing
-let _mockDbQueryImpl: Function | null = null;
-let _mockDbTransactionImpl: Function | null = null;
+let _mockDbQueryImpl: ((...args: any[]) => any) | null = null;
+let _mockDbTransactionImpl: ((...args: any[]) => any) | null = null;
 
 // Function to inject mock implementations for testing
-export function __setMockDb(queryImpl: Function, transactionImpl: Function) {
+export function __setMockDb(queryImpl: (...args: any[]) => any, transactionImpl: (...args: any[]) => any) {
     _mockDbQueryImpl = queryImpl;
     _mockDbTransactionImpl = transactionImpl;
 }

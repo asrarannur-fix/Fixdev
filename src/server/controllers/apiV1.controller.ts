@@ -277,7 +277,7 @@ export const createToken = async (req: any, res: any) => {
       [req.authActor.userId]
     );
     branchId = branchResult.rows[0]?.branch_id || null;
-  } catch {}
+  } catch { /* ignore */ }
 
   const secret = randomBytes(32).toString('base64url');
   const tokenString = `km_pat_${secret}`;
@@ -392,7 +392,6 @@ export const getCustomers = async (req: any, res: any) => {
       `(name ILIKE $${idx} OR email ILIKE $${idx} OR phone ILIKE $${idx} OR company_name ILIKE $${idx})`
     );
     params.push(q);
-    idx++;
   }
 
   const where = conditions.join(' AND ');
@@ -618,7 +617,6 @@ export const getTickets = async (req: any, res: any) => {
       `(ticket_no ILIKE $${idx} OR device_name ILIKE $${idx} OR device_brand_model ILIKE $${idx})`
     );
     params.push(q);
-    idx++;
   }
 
   const where = conditions.join(' AND ');
@@ -795,7 +793,6 @@ export const getInventory = async (req: any, res: any) => {
     const q = `%${search}%`;
     conditions.push(`(p.name ILIKE $${idx} OR p.sku ILIKE $${idx} OR p.barcode ILIKE $${idx})`);
     params.push(q);
-    idx++;
   }
 
   const where = conditions.join(' AND ');

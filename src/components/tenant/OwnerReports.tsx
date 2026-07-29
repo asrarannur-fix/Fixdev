@@ -33,12 +33,12 @@ const DATE_LABELS: Record<DateRange, string> = {
   custom: 'Custom',
 };
 const DATE_TAILWINDS: Record<DateRange, string> = {
-  today: 'bg-accent dark:bg-indigo-500 text-white',
-  week: 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700',
+  today: 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30',
+  week: 'bg-white/80 dark:bg-zinc-900/80 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-white dark:hover:bg-zinc-800',
   month:
-    'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700',
+    'bg-white/80 dark:bg-zinc-900/80 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-white dark:hover:bg-zinc-800',
   custom:
-    'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700',
+    'bg-white/80 dark:bg-zinc-900/80 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-white dark:hover:bg-zinc-800',
 };
 
 function getDateRange(
@@ -56,10 +56,9 @@ function getDateRange(
     return { from: m, to: now };
   }
   if (range === 'month') return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now };
-  return {
-    from: customFrom ? new Date(customFrom) : start,
-    to: customTo ? new Date(customTo + 'T23:59:59') : now,
-  };
+  const from = customFrom ? new Date(customFrom) : start;
+  const to = customTo ? new Date(customTo + 'T23:59:59') : now;
+  return from <= to ? { from, to } : { from: to, to: from };
 }
 function inRange(d: string | number | null | undefined, from: Date, to: Date): boolean {
   if (!d) return false;
@@ -78,7 +77,7 @@ const SortableWidget: React.FC<{
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : 0,
   };
   return (
@@ -90,13 +89,13 @@ const SortableWidget: React.FC<{
       {...attributes}
       {...listeners}
     >
-      <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        <div className="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-lg px-2 py-1 text-[9px] font-bold text-slate-500 dark:text-zinc-400 shadow-sm border border-slate-200 dark:border-zinc-700 flex items-center gap-1">
+      <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+        <div className="bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-xl px-2.5 py-1 text-[9px] font-bold text-slate-500 dark:text-zinc-400 shadow-sm border border-slate-200/60 dark:border-zinc-700/60 flex items-center gap-1.5">
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
           Geser
         </div>
       </div>
-      <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden pointer-events-none">
+      <div className="bg-white/60 dark:bg-zinc-950/60 backdrop-blur-sm rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden pointer-events-none">
         <WidgetComponent data={metrics} accentColor={accentColor} onSetTab={onSetTab} />
       </div>
     </div>
@@ -308,28 +307,22 @@ export const OwnerReports: React.FC<{
   return (
     <div
       id="owner-reports"
-      className="space-y-3 bg-gradient-to-br from-slate-50 via-pink-50/30 to-violet-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 min-h-screen p-3 sm:p-4 rounded-2xl"
+      className="space-y-4 bg-gradient-to-br from-slate-50 via-violet-50/20 to-purple-50/20 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 min-h-screen p-4 sm:p-5 rounded-3xl"
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-violet-500 dark:from-pink-600 dark:to-violet-600 flex items-center justify-center shadow-lg shadow-pink-200 dark:shadow-pink-900/30">
-            <Printer className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-slate-800 dark:text-zinc-100">
-              Dashboard {activeTenant?.name || 'Owner'}
-            </h1>
-            <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-              Ringkasan performa toko
-            </p>
-          </div>
+        <div>
+          <h1 className="text-lg font-extrabold text-slate-800 dark:text-zinc-100 tracking-tight">
+            Dashboard {activeTenant?.name || 'Owner'}
+          </h1>
+          <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
+            Ringkasan performa toko
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {metrics.activeTickets > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 dark:bg-pink-950/30 text-pink-700 dark:text-pink-400 px-2.5 py-1 text-[10px] font-black">
-              <span className="w-2 h-2 rounded-full bg-pink-500" /> {metrics.activeTickets} tiket
-              aktif
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 px-2.5 py-1 text-[10px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" /> {metrics.activeTickets} aktif
             </span>
           )}
           <button
@@ -348,37 +341,37 @@ export const OwnerReports: React.FC<{
                   if (!result.ok) window.alert(result.error || 'Cetak gagal.');
                 });
             }}
-            className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all"
+            className="p-2 rounded-xl bg-white/80 dark:bg-zinc-900/80 border border-slate-200/60 dark:border-zinc-800/60 hover:shadow-md transition-all duration-200"
             title="Cetak"
           >
-            <Printer className="w-4 h-4 text-slate-500" />
+            <Printer className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
           </button>
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all"
+            className="p-2 rounded-xl bg-white/80 dark:bg-zinc-900/80 border border-slate-200/60 dark:border-zinc-800/60 hover:shadow-md transition-all duration-200"
             title="Cari (Cmd+K)"
           >
-            <Search className="w-4 h-4 text-slate-500" />
+            <Search className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:shadow-md transition-all"
+            className="p-2 rounded-xl bg-white/80 dark:bg-zinc-900/80 border border-slate-200/60 dark:border-zinc-800/60 hover:shadow-md transition-all duration-200"
             title="Atur Widget"
           >
-            <Settings className="w-4 h-4 text-slate-500" />
+            <Settings className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
           </button>
         </div>
       </div>
 
       {/* Date Filter */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Calendar className="w-4 h-4 text-slate-400" />
+      <div className="flex flex-wrap items-center gap-2 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/30 dark:border-zinc-800/40 shadow-sm">
+        <Calendar className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
         {(Object.keys(DATE_LABELS) as DateRange[]).map((r) => (
           <button
             key={r}
             onClick={() => setDateRange(r)}
-            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
-              dateRange === r ? DATE_TAILWINDS[r] : 'bg-white dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-200 ${
+              dateRange === r ? DATE_TAILWINDS[r] : 'bg-white/80 dark:bg-zinc-900/80 text-slate-500 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-white dark:hover:bg-zinc-800'
             }`}
           >
             {DATE_LABELS[r]}
@@ -390,47 +383,47 @@ export const OwnerReports: React.FC<{
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-slate-700 dark:text-zinc-200"
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-950/80 text-[11px] text-slate-700 dark:text-zinc-200 focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 outline-none"
             />
-            <span className="text-[10px] text-slate-400">s/d</span>
+            <span className="text-[10px] text-slate-400 dark:text-zinc-500">s/d</span>
             <input
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-slate-700 dark:text-zinc-200"
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-950/80 text-[11px] text-slate-700 dark:text-zinc-200 focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 outline-none"
             />
           </div>
         )}
-        <span className="text-[10px] text-slate-400 dark:text-zinc-500 ml-1">
-          📊 {metrics.dateLabel}
+        <span className="text-[10px] text-slate-400 dark:text-zinc-500 ml-1 font-medium">
+          {metrics.dateLabel}
         </span>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <KPICard
-          icon="💰"
           label="Omzet Hari Ini"
           value={`Rp ${(metrics.posRevenue + metrics.serviceRevenue).toLocaleString()}`}
           trend={metrics.revenueDelta ? `${metrics.revenueDelta}%` : '-'}
+          trendPositive={Number(metrics.revenueDelta) === 0 ? null : Number(metrics.revenueDelta) > 0}
         />
         <KPICard
-          icon="📋"
           label="Transaksi"
           value={fTx.length.toString()}
           trend={metrics.revenueDelta ? `${metrics.revenueDelta}%` : '-'}
+          trendPositive={Number(metrics.revenueDelta) === 0 ? null : Number(metrics.revenueDelta) > 0}
         />
         <KPICard
-          icon="🔧"
           label="Tiket Service"
           value={`${metrics.completedServices} selesai, ${metrics.activeTickets} aktif`}
           trend={`${metrics.totalTickets > 0 ? ((metrics.completedServices / metrics.totalTickets) * 100).toFixed(0) : '0'}%`}
+          trendPositive={metrics.totalTickets > 0 && (metrics.completedServices / metrics.totalTickets) > 0.5 ? true : metrics.totalTickets > 0 ? false : null}
         />
         <KPICard
-          icon="⚠️"
           label="Stok Menipis"
           value={metrics.lowStockCount.toString()}
           trend={metrics.lowStockCount > 0 ? 'Perlu restock' : 'OK'}
+          trendPositive={metrics.lowStockCount > 0 ? false : true}
         />
       </div>
 
@@ -438,20 +431,20 @@ export const OwnerReports: React.FC<{
       {searchOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-violet-900/30 dark:bg-black/60 backdrop-blur-md z-40"
             onClick={() => setSearchOpen(false)}
           />
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 w-96 bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl z-50 border border-slate-200 dark:border-zinc-800 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 dark:border-zinc-800">
-              <Search className="w-4 h-4 text-slate-400" />
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 w-96 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl rounded-3xl shadow-2xl z-50 border border-white/30 dark:border-zinc-800/40 overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100/80 dark:border-zinc-800/80">
+              <Search className="w-5 h-5 text-slate-400" />
               <input
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari widget..."
-                className="flex-1 text-sm text-slate-700 dark:text-zinc-200 outline-none bg-transparent"
+                className="flex-1 text-sm text-slate-700 dark:text-zinc-200 outline-none bg-transparent font-medium"
               />
-              <kbd className="text-[9px] font-mono text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+              <kbd className="text-[9px] font-mono text-slate-400 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded-lg">
                 ESC
               </kbd>
             </div>
@@ -466,7 +459,7 @@ export const OwnerReports: React.FC<{
                         ?.scrollIntoView({ behavior: 'smooth' });
                       setSearchOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-pink-50 dark:hover:bg-pink-950/20 transition-colors"
+                    className="w-full text-left px-4 py-3 rounded-2xl hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-all duration-200"
                   >
                     <span className="text-xs font-bold text-slate-700 dark:text-zinc-200">
                       {w.label}
@@ -484,7 +477,7 @@ export const OwnerReports: React.FC<{
       {/* Widget Grid */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWidgetDragEnd}>
         <SortableContext items={visibleWidgets} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {visibleWidgets.map((id: string) => {
               const widget = widgetMap.get(id);
               if (!widget) return null;

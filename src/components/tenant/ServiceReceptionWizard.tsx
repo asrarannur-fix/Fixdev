@@ -653,7 +653,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         key: string;
                         label: string;
                         placeholder: string;
-                      }[] = [];
+                      }[];
                       if (newSrvCategory === 'Laptop' || newSrvCategory === 'Desktop') {
                         fields = [
                           {
