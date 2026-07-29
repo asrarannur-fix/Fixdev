@@ -1,0 +1,53 @@
+import { ServiceTicket } from '../../types';
+
+export const SERVICE_ENDPOINT = '/api/services';
+
+export const csvCell = (value: unknown) => {
+  const text = String(value ?? '');
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safe.replaceAll('"', '""')}"`;
+};
+
+export interface ServiceTicketList {
+  data: ServiceTicket[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export async function getServiceTickets(
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  params: Record<string, string | number | undefined> = {}
+): Promise<ServiceTicketList> {
+  const query = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .map(([key, value]) => [key, String(value)])
+  );
+  const response = await apiFetch(`${SERVICE_ENDPOINT}${query.size ? `?${query}` : ''}`);
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error || 'Gagal memuat daftar tiket.');
+  return {
+    data: Array.isArray(payload?.data) ? payload.data : [],
+    total: Number(payload?.total) || 0,
+    limit: Number(payload?.limit) || 50,
+    offset: Number(payload?.offset) || 0,
+  };
+}
+
+export async function getServiceTicket(
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  id: string
+): Promise<ServiceTicket> {
+  const response = await apiFetch(`${SERVICE_ENDPOINT}/${encodeURIComponent(id)}`);
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(
+      payload?.error ||
+        (response.status === 404
+          ? 'Tiket tidak ditemukan atau tidak dapat diakses.'
+          : 'Gagal memuat tiket.')
+    );
+  }
+  return (payload?.data || payload) as ServiceTicket;
+}

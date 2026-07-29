@@ -29,7 +29,7 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
 
   return (
     <div className="p-2.5 bg-white border border-slate-100 rounded-xl space-y-2 shadow-xs">
-      <h4 className="font-bold text-[10px] text-slate-500 uppercase font-mono tracking-wider flex items-center justify-between">
+      <h4 id={`service-camera-${ticket?.id || 'ticket'}`} className="font-bold text-[10px] text-slate-500 uppercase font-mono tracking-wider flex items-center justify-between">
         <span>Foto ({capturedConditions?.length || 0})</span>
         <span className="text-[8px] font-mono font-bold bg-amber-50 text-amber-700 border border-amber-100 px-1 py-0.5 rounded-md">
           Live Capture
@@ -61,21 +61,24 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
 
       {/* Live Workstation Camera Trigger */}
       {cameraActive ? (
-        <div className="border border-indigo-100 rounded-lg p-2 bg-slate-900 space-y-2">
+        <div className="border border-indigo-100 rounded-lg p-2 bg-slate-900 space-y-2" aria-labelledby={`service-camera-${ticket?.id || 'ticket'}`}>
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full h-24 object-cover bg-black rounded"
+            aria-label="Pratinjau kamera"
+            className="w-full aspect-video max-h-64 object-cover bg-black rounded"
           />
           <div className="flex gap-1.5">
             <button
+              type="button"
               onClick={onCapture}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold py-1 rounded cursor-pointer"
             >
               Jepret
             </button>
             <button
+              type="button"
               onClick={stopCamera}
               aria-label="Tutup kamera"
               className="bg-slate-700 text-white text-xs font-bold px-2 py-1 rounded cursor-pointer"
@@ -86,6 +89,7 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
         </div>
       ) : (
         <button
+          type="button"
           onClick={startCamera}
           className="w-full bg-slate-50 border border-dashed border-slate-200 hover:bg-accent-lighter text-[10.5px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-accent cursor-pointer"
         >

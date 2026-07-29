@@ -4,6 +4,7 @@ import { ServiceDetailModal } from './ServiceDetailModal';
 import { ServiceStatus, UserRole } from '../../types';
 import { NEXT_STEP, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../domain/serviceWorkflow';
 import { Pagination } from './services/Pagination';
+import { csvCell } from '../../lib/api/services';
 import {
   PlusCircle,
   FileText,
@@ -318,13 +319,12 @@ export const ServiceList: React.FC<any> = (props) => {
     });
   const totalPages = Math.ceil(filteredServices.length / 15);
   const paginatedServices = filteredServices.slice((page - 1) * 15, page * 15);
-  const csvCell = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
   const downloadCsv = () => {
     const rows = [
       ['Ticket No', 'Device', 'Customer', 'Status', 'Price'],
       ...filteredServices.map((s) => [s.ticketNo, s.deviceName, customers.find((c) => c.id === s.customerId)?.name || '-', s.status, s.estimatedCost || 0]),
     ];
-    const blob = new Blob([rows.map((row) => row.map(csvCell).join(',')).join('\\r\\n')], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob([`\ufeff${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}`], { type: 'text/csv;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'daftar_servis_saas.csv';

@@ -4,6 +4,7 @@ import {
   NEXT_STEP,
   SERVICE_TERMINAL_STATUSES,
   canServiceTransition,
+  serviceApprovalTransition,
   WORKFLOW_STEPS,
 } from '../../../domain/serviceWorkflow';
 
@@ -41,6 +42,17 @@ describe('Service Workflow — SIAP_DIAMBIL & DIAMBIL status', () => {
     [ServiceStatus.APPROVAL_DITOLAK, ServiceStatus.SEDANG_DIKERJAKAN],
   ])('rejects invalid transition from %s to %s', (from, to) => {
     expect(canServiceTransition(from, to)).toBe(false);
+  });
+
+  it('uses one approval transition for staff and portal flows', () => {
+    expect(serviceApprovalTransition(true)).toEqual({
+      approvalStatus: 'APPROVED',
+      status: ServiceStatus.SEDANG_DIKERJAKAN,
+    });
+    expect(serviceApprovalTransition(false)).toEqual({
+      approvalStatus: 'REJECTED',
+      status: ServiceStatus.APPROVAL_DITOLAK,
+    });
   });
 
   it('rejects every transition from terminal statuses', () => {

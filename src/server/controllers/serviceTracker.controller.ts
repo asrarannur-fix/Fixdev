@@ -1,6 +1,7 @@
 import { dbQuery, dbTransaction } from '../../lib/db.js';
 import { logger } from '../../lib/logger.js';
 import { z } from 'zod';
+import { serviceApprovalTransition } from '../../domain/serviceWorkflow.js';
 
 const portalApprovalSchema = z
   .object({
@@ -192,7 +193,7 @@ export const approvePortalTicket = async (req: any, res: any) => {
   try {
     const result = await dbTransaction(async (client) => {
       const lock = await client.query(
-        `SELECT id,status,timeline FROM service_tickets
+        `SELECT id,status,timeline,ticket_no,customer_id,device_name FROM service_tickets
          WHERE id=$1 AND public_tracking_token=$2 AND tenant_id=$3 AND deleted_at IS NULL FOR UPDATE`,
         [ticketId, token, tenantId]
       );
@@ -201,7 +202,9 @@ export const approvePortalTicket = async (req: any, res: any) => {
       if (ticket.status !== 'MENUGGU_APPROVAL') {
         throw { status: 409, message: 'Tiket tidak sedang menunggu persetujuan.' };
       }
-      const nextStatus = approved ? 'SEDANG_DIKERJAKAN' : 'APPROVAL_DITOLAK';
+       const approval = serviceApprovalTransition(approved);
+       const nextStatus = approval.status;
+
       const note = approved
         ? `Estimasi disetujui pelanggan: ${signer}`
         : `Estimasi ditolak pelanggan: ${reason}`;
@@ -219,7 +222,7 @@ export const approvePortalTicket = async (req: any, res: any) => {
           provisional_approved_at=$4,timeline=$5::jsonb,updated_at=NOW() WHERE id=$6 AND tenant_id=$7`,
         [
           nextStatus,
-          approved ? 'APPROVED' : 'REJECTED',
+          approval.approvalStatus,
           signer,
           approved ? new Date() : null,
           JSON.stringify(timeline),
@@ -227,9 +230,10 @@ export const approvePortalTicket = async (req: any, res: any) => {
           tenantId,
         ]
       );
-      await client.query(
+      const event = await client.query(
         `INSERT INTO service_status_events (tenant_id,ticket_id,from_status,to_status,note,actor_user_id,metadata)
-         VALUES ($1,$2,$3,$4,$5,NULL,$6::jsonb)`,
+          VALUES ($1,$2,$3,$4,$5,NULL,$6::jsonb) RETURNING id`,
+
         [
           tenantId,
           ticketId,
@@ -239,6 +243,27 @@ export const approvePortalTicket = async (req: any, res: any) => {
           JSON.stringify({ portal: true, signer, reason: reason || null }),
         ]
       );
+      await client.query(
+        `INSERT INTO audit_logs(id,tenant_id,user_id,action,details,metadata)
+         VALUES(gen_random_uuid(),$1,NULL,'SERVICE_PORTAL_APPROVAL',$2,$3::jsonb)`,
+        [
+          tenantId,
+          `${ticket.ticket_no}: ${approval.approvalStatus} oleh ${signer}`,
+          JSON.stringify({ ticketId, fromStatus: ticket.status, toStatus: nextStatus }),
+        ]
+      );
+      const customer = await client.query(
+        'SELECT name,phone FROM customers WHERE id=$1 AND tenant_id=$2',
+        [ticket.customer_id, tenantId]
+      );
+      const settings = await client.query('SELECT settings FROM tenants WHERE id=$1', [tenantId]);
+      if (customer.rows[0]?.phone && settings.rows[0]?.settings?.waConfig?.sendingMethod !== 'MANUAL') {
+        await client.query(
+          `INSERT INTO whatsapp_queue(tenant_id,recipient_name,recipient_phone,type,message,status,ticket_id,event_id,scheduled_time)
+           VALUES($1,$2,$3,'SERVICE_UPDATE',$4,'PENDING',$5,$6,NOW())`,
+          [tenantId, customer.rows[0].name, customer.rows[0].phone, note, ticket.id, event.rows[0].id]
+        );
+      }
       return { message: approved ? 'Estimasi berhasil disetujui.' : 'Estimasi ditolak.' };
     });
     res.json(result);

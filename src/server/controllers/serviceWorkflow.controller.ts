@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { dbTransaction, dbQuery } from '../../lib/db.js';
@@ -6,6 +7,7 @@ import type { WhatsAppTemplate } from '../../types/index.js';
 import {
   SERVICE_TRANSITIONS as DOMAIN_SERVICE_TRANSITIONS,
   canServiceTransition,
+  serviceApprovalTransition,
 } from '../../domain/serviceWorkflow.js';
 
 export const SERVICE_TRANSITIONS: Record<string, string[]> = DOMAIN_SERVICE_TRANSITIONS;
@@ -60,7 +62,7 @@ const partOrderSchema = z.object({
   note: z.string().optional(),
   idempotencyKey: z.string().trim().min(8),
 });
-const partOrderUpdateSchema = z.object({
+export const partOrderUpdateSchema = z.object({
   status: z.enum(['APPROVED', 'ORDERED', 'SHIPPED', 'ARRIVED']).optional(),
   supplierName: z.string().trim().optional(),
   estimatedArrivalDate: z.string().optional(),
@@ -188,19 +190,18 @@ const partSchema = z.object({
   quantity: z.number().int().positive(),
   serialNumber: z.string().trim().optional(),
 });
-const workMetadataSchema = z.object({
+export const workMetadataSchema = z.object({
   assignedTechId: z.string().uuid().nullable().optional(),
   technicianNotes: z.string().optional(),
-  internalDiscussion: z
-    .object({
-      id: z.string(),
-      text: z.string().trim().min(1),
-      operator: z.string(),
-      timestamp: z.string(),
-    })
+  internalDiscussion: z.object({ text: z.string().trim().min(1).max(5000) }).optional(),
+  techPreChecklist: z
+    .array(z.object({ name: z.string().trim().min(1).max(200), checked: z.boolean() }))
+    .max(100)
     .optional(),
-  techPreChecklist: z.array(z.any()).max(100).optional(),
-  techPostChecklist: z.array(z.any()).max(100).optional(),
+  techPostChecklist: z
+    .array(z.object({ name: z.string().trim().min(1).max(200), checked: z.boolean() }))
+    .max(100)
+    .optional(),
   repairStartTime: z.string().datetime().nullable().optional(),
   repairEndTime: z.string().datetime().nullable().optional(),
   storageLocationId: z.string().uuid().nullable().optional(),
@@ -415,11 +416,31 @@ export async function listServiceTickets(req: Request, res: Response) {
     const branchId = req.branchId;
     const limit = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
     const offset = Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0);
-    const result = await dbQuery(
-      `SELECT ${ticketSelect()} FROM service_tickets WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
-      [req.tenantId, branchId, limit, offset]
+    const query = String(req.query.q || '').trim();
+    const status = String(req.query.status || '').trim();
+    const sort = String(req.query.sort || 'newest');
+    const order = sort === 'oldest' ? 'ASC' : sort === 'cost_desc' ? 'DESC' : 'DESC';
+    const orderColumn = sort === 'cost_desc' ? 'estimated_cost' : 'created_at';
+    const values: any[] = [req.tenantId, branchId];
+    const filters = ['tenant_id=$1', 'branch_id=$2', 'deleted_at IS NULL'];
+    if (query) {
+      values.push(`%${query}%`);
+      filters.push(`(ticket_no ILIKE $${values.length} OR device_name ILIKE $${values.length} OR device_brand_model ILIKE $${values.length})`);
+    }
+    if (status && status !== 'ALL') {
+      values.push(status);
+      filters.push(`status=$${values.length}`);
+    }
+    const where = filters.join(' AND ');
+    const countResult = await dbQuery(
+      `SELECT COUNT(*)::int AS total FROM service_tickets WHERE ${where}`,
+      values
     );
-    res.json({ data: result.rows });
+    const result = await dbQuery(
+      `SELECT ${ticketSelect()} FROM service_tickets WHERE ${where} ORDER BY ${orderColumn} ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, limit, offset]
+    );
+    res.json({ data: result.rows, total: countResult.rows[0]?.total || 0, limit, offset });
   } catch (error: any) {
     sendError(res, error);
   }
@@ -653,12 +674,12 @@ export async function approveServiceEstimate(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
-      const status = parsed.data.approved ? 'SEDANG_DIKERJAKAN' : 'APPROVAL_DITOLAK';
+      const approval = serviceApprovalTransition(parsed.data.approved);
       await client.query(
         `UPDATE service_tickets SET customer_approval_status=$1,provisional_signature_name=$2,
           provisional_signature=$3,provisional_approved_at=$4,updated_at=NOW() WHERE id=$5 AND tenant_id=$6`,
         [
-          parsed.data.approved ? 'APPROVED' : 'REJECTED',
+          approval.approvalStatus,
           parsed.data.signatureName || null,
           parsed.data.signature || null,
           parsed.data.approved ? new Date() : null,
@@ -670,7 +691,7 @@ export async function approveServiceEstimate(req: Request, res: Response) {
         client,
         req,
         current,
-        status,
+        approval.status,
         parsed.data.approved
           ? 'Estimasi disetujui; pengerjaan dimulai.'
           : 'Estimasi ditolak pelanggan.'
@@ -816,6 +837,27 @@ export async function updateServicePartOrder(req: Request, res: Response) {
   try {
     const result = await dbTransaction(async (client) => {
       const ticket = await lockedTicket(client, req);
+      const existing = await client.query(
+        'SELECT status FROM service_part_orders WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 FOR UPDATE',
+        [req.params.orderId, req.tenantId, ticket.id]
+      );
+      if (!existing.rows[0]) {
+        const error: any = new Error('Permintaan spare part tidak ditemukan.');
+        error.status = 404;
+        throw error;
+      }
+      const transitions: Record<string, string[]> = {
+        REQUESTED: ['APPROVED', 'CANCELLED'],
+        APPROVED: ['ORDERED', 'CANCELLED'],
+        ORDERED: ['SHIPPED', 'ARRIVED', 'CANCELLED'],
+        SHIPPED: ['ARRIVED', 'CANCELLED'],
+        ARRIVED: [],
+      };
+      if (parsed.data.status && !transitions[existing.rows[0].status]?.includes(parsed.data.status)) {
+        const error: any = new Error('Transisi status permintaan part tidak diizinkan.');
+        error.status = 409;
+        throw error;
+      }
       const updated = await client.query(
         `UPDATE service_part_orders SET status=COALESCE($1,status),supplier_name=COALESCE($2,supplier_name),
          estimated_arrival_date=COALESCE($3::date,estimated_arrival_date),note=COALESCE($4,note),updated_at=NOW()
@@ -864,14 +906,26 @@ export async function receiveServicePartOrder(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
+      await requireTicketWarehouse(client, ticket, parsed.data.warehouseId);
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+        `${parsed.data.productId}:${parsed.data.warehouseId}`,
+      ]);
       const product = await client.query(
         `SELECT p.name,p.sell_price,COALESCE(ps.quantity,0)::float stock FROM products p
          LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
          WHERE p.id=$1 AND p.tenant_id=$3 LIMIT 1`,
         [parsed.data.productId, parsed.data.warehouseId, req.tenantId]
       );
-      if (!product.rows[0] || Number(product.rows[0].stock) < Number(order.quantity)) {
-        const error: any = new Error('Stok part yang tiba belum mencukupi.');
+      const reserved = await client.query(
+        `SELECT COALESCE(SUM(quantity),0)::float quantity FROM service_parts
+         WHERE tenant_id=$1 AND product_id=$2 AND warehouse_id=$3 AND status='RESERVED'`,
+        [req.tenantId, parsed.data.productId, parsed.data.warehouseId]
+      );
+      if (
+        !product.rows[0] ||
+        Number(product.rows[0].stock) - Number(reserved.rows[0].quantity) < Number(order.quantity)
+      ) {
+        const error: any = new Error('Stok part yang tiba belum mencukupi setelah reservasi aktif.');
         error.status = 409;
         throw error;
       }
@@ -1188,6 +1242,7 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
         ? new Date(parsed.data.repairStartTime)
         : null;
       const repairEndTime = parsed.data.repairEndTime ? new Date(parsed.data.repairEndTime) : null;
+      if (parsed.data.storageLocationId) await requireTicketWarehouse(client, current, parsed.data.storageLocationId);
       if (repairEndTime && repairStartTime && repairEndTime < repairStartTime) {
         const error: any = new Error('Waktu selesai perbaikan tidak boleh sebelum waktu mulai.');
         error.status = 422;
@@ -1198,17 +1253,19 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
             ...(current.internalDiscussions || []),
             {
               ...parsed.data.internalDiscussion,
+              id: randomUUID(),
               operator: req.authActor?.email || req.authActor?.userId,
               timestamp: new Date().toISOString(),
             },
           ]
         : current.internalDiscussions || [];
       await client.query(
-        `UPDATE service_tickets SET assigned_tech_id=COALESCE($1,assigned_tech_id),technician_notes=COALESCE($2,technician_notes),
-         internal_discussions=$3::jsonb,tech_pre_checklist=COALESCE($4::jsonb,tech_pre_checklist),
-         tech_post_checklist=COALESCE($5::jsonb,tech_post_checklist),repair_start_time=COALESCE($6::timestamp,repair_start_time),
-         repair_end_time=COALESCE($7::timestamp,repair_end_time),storage_location_id=COALESCE($8,storage_location_id),
-         updated_at=NOW() WHERE id=$9 AND tenant_id=$10`,
+        `UPDATE service_tickets SET assigned_tech_id=CASE WHEN $11 THEN $1 ELSE assigned_tech_id END,technician_notes=COALESCE($2,technician_notes),
+          internal_discussions=$3::jsonb,tech_pre_checklist=COALESCE($4::jsonb,tech_pre_checklist),
+          tech_post_checklist=COALESCE($5::jsonb,tech_post_checklist),repair_start_time=CASE WHEN $12 THEN $6::timestamp ELSE repair_start_time END,
+          repair_end_time=CASE WHEN $13 THEN $7::timestamp ELSE repair_end_time END,storage_location_id=CASE WHEN $14 THEN $8 ELSE storage_location_id END,
+          updated_at=NOW() WHERE id=$9 AND tenant_id=$10`,
+
         [
           parsed.data.assignedTechId ?? null,
           parsed.data.technicianNotes ?? null,
@@ -1216,10 +1273,15 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
           parsed.data.techPreChecklist ? JSON.stringify(parsed.data.techPreChecklist) : null,
           parsed.data.techPostChecklist ? JSON.stringify(parsed.data.techPostChecklist) : null,
           repairStartTime,
-          repairEndTime,
-          parsed.data.storageLocationId ?? null,
-          current.id,
-          req.tenantId,
+           repairEndTime,
+           parsed.data.storageLocationId ?? null,
+           current.id,
+           req.tenantId,
+           parsed.data.assignedTechId !== undefined,
+           parsed.data.repairStartTime !== undefined,
+           parsed.data.repairEndTime !== undefined,
+           parsed.data.storageLocationId !== undefined,
+
         ]
       );
       return finalTicket(client, req);
@@ -1265,8 +1327,8 @@ export async function settleServiceReceivable(req: Request, res: Response) {
       }
       const item = receivable.rows[0];
       const duplicate = await client.query(
-        'SELECT id FROM service_receivable_payments WHERE tenant_id=$1 AND idempotency_key=$2',
-        [req.tenantId, parsed.data.idempotencyKey]
+        'SELECT id FROM service_receivable_payments WHERE tenant_id=$1 AND receivable_id=$2 AND idempotency_key=$3',
+        [req.tenantId, item.id, parsed.data.idempotencyKey]
       );
       if (duplicate.rows[0]) return { receivable: item, idempotent: true };
       const remaining = Number(item.amount) - Number(item.paid_amount);
@@ -1296,6 +1358,11 @@ export async function settleServiceReceivable(req: Request, res: Response) {
          WHERE id=$3 AND tenant_id=$4 AND branch_id=$5 RETURNING *`,
         [paidAmount, status, item.id, req.tenantId, item.branch_id]
       );
+      await client.query('UPDATE service_payments SET status=$1 WHERE id=$2 AND tenant_id=$3', [
+        status === 'PAID' ? 'PAID' : 'PARTIALLY_PAID',
+        item.service_payment_id,
+        req.tenantId,
+      ]);
       const debitAccountId = await ensureAccount(
         client,
         req.tenantId!,
@@ -1456,8 +1523,9 @@ export async function handoverServiceTicket(req: Request, res: Response) {
           req.authActor?.userId,
         ]
       );
-      if (invoice.total > 0) {
-        const debitAccountId = await ensureAccount(
+       if (invoice.total > 0) {
+       const debitAccountId = await ensureAccount(
+
           client,
           req.tenantId!,
           parsed.data.paymentMethod === 'TEMPO'

@@ -5,6 +5,10 @@ import { encryptScreenLockPin, redactScreenLockPin } from '../lib/screenLockPin.
 import { ensureAccount, paymentDebitAccountCode } from '../lib/coa.js';
 
 const optionalText = z.string().trim().optional().default('');
+const optionalDate = optionalText.refine(
+  (value) => !value || !Number.isNaN(Date.parse(value)),
+  'Tanggal tidak valid.'
+);
 
 export const serviceReceptionSchema = z.object({
   idempotencyKey: z.string().uuid(),
@@ -39,16 +43,17 @@ export const serviceReceptionSchema = z.object({
           id: z.string().trim().min(1).max(100),
           category: z.string().trim().min(1).max(100),
           url: z.string().trim().min(1).max(2_000_000),
-          timestamp: z.string().trim().max(100),
+          timestamp: z.string().datetime(),
         })
       )
       .max(10)
+      .refine((items) => new Set(items.map((item) => item.id)).size === items.length, 'ID kondisi harus unik.')
       .default([]),
-    storageLocationId: optionalText,
+    storageLocationId: z.union([z.string().uuid(), z.literal('')]).optional().default(''),
   }),
   service: z.object({
     assignedTechId: z.string().uuid().optional().nullable(),
-    estimatedCompletionDate: optionalText,
+    estimatedCompletionDate: optionalDate,
     warrantyMonths: z.number().int().min(0).max(120).default(0),
     downPayment: z.number().min(0).max(1_000_000_000).default(0),
     downPaymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS']).default('CASH'),
@@ -128,6 +133,28 @@ export async function createServiceReception(req: Request, res: Response) {
         const error: any = new Error('Cabang tidak ditemukan pada tenant aktif.');
         error.status = 403;
         throw error;
+      }
+      if (input.reception.storageLocationId) {
+        const location = await client.query(
+          'SELECT id FROM warehouses WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 LIMIT 1',
+          [input.reception.storageLocationId, tenantId, input.branchId]
+        );
+        if (!location.rows[0]) {
+          const error: any = new Error('Lokasi penyimpanan tidak berada pada cabang tiket.');
+          error.status = 422;
+          throw error;
+        }
+      }
+      if (input.outsourcing.enabled) {
+        const vendor = await client.query(
+          'SELECT id FROM suppliers WHERE id=$1 AND tenant_id=$2 AND is_active=TRUE LIMIT 1',
+          [input.outsourcing.vendorId, tenantId]
+        );
+        if (!vendor.rows[0]) {
+          const error: any = new Error('Vendor outsourcing tidak aktif atau tidak berada pada tenant aktif.');
+          error.status = 422;
+          throw error;
+        }
       }
 
       let customer: any;

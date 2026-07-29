@@ -77,6 +77,7 @@ import { ServiceReceptionWizard } from './ServiceReceptionWizard';
 import { StorageLocation } from '../../types';
 import { renderTenantWaTemplate } from '../../utils/waTemplate';
 import { useServiceReception } from '../../hooks/useServiceReception';
+import { getServiceTicket } from '../../lib/api/services';
 import {
   Tenant,
   Branch,
@@ -216,7 +217,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
       setStatusFilter(params.get('status') || 'ALL');
       setSrvSort(params.get('sort') || 'newest');
       const id = params.get('serviceId');
-      setViewingServiceTicketId(id && serviceTickets.some((ticket) => ticket.id === id) ? id : null);
+      setViewingServiceTicketId(id);
     };
     readUrl();
     window.addEventListener('popstate', readUrl);
@@ -232,13 +233,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     let cancelled = false;
     setDetailLoading(true);
     setDetailError(null);
-    apiFetch(`/api/services/${encodeURIComponent(id)}`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error(response.status === 404 ? 'Tiket tidak ditemukan atau tidak dapat diakses.' : 'Gagal memuat tiket.');
-        return response.json();
-      })
-      .then((data) => {
-        if (!cancelled) setFetchedService((data?.data || data) as ServiceTicket);
+    getServiceTicket(apiFetch, id)
+      .then((ticket) => {
+        if (!cancelled) setFetchedService(ticket);
       })
       .catch((error: Error) => {
         if (!cancelled) setDetailError(error.message);

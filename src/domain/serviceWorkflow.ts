@@ -134,6 +134,11 @@ export const SERVICE_TERMINAL_STATUSES = new Set(
 export const canServiceTransition = (from: string, to: string) =>
   SERVICE_TRANSITIONS[from as ServiceStatus]?.includes(to as ServiceStatus) ?? false;
 
+export const serviceApprovalTransition = (approved: boolean) => ({
+  approvalStatus: approved ? 'APPROVED' : 'REJECTED',
+  status: approved ? ServiceStatus.SEDANG_DIKERJAKAN : ServiceStatus.APPROVAL_DITOLAK,
+});
+
 
 // Workflow steps for ServiceTicketActions component
 export const WORKFLOW_STEPS = [

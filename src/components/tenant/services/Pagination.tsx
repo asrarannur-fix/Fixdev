@@ -38,13 +38,14 @@ export const Pagination: React.FC<PaginationProps> = ({
   const showLast = visiblePages[visiblePages.length - 1] < totalPages;
 
   return (
-    <div className="flex items-center justify-center gap-1 mt-4">
+    <nav aria-label="Paginasi tiket servis" className="flex items-center justify-center gap-1 mt-4">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
         className="h-8 w-8 p-0"
+        aria-label="Halaman pertama"
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -69,6 +70,8 @@ export const Pagination: React.FC<PaginationProps> = ({
           size="sm"
           onClick={() => onPageChange(page)}
           className="h-8 w-8 p-0"
+          aria-label={`Halaman ${page}`}
+          aria-current={page === currentPage ? 'page' : undefined}
         >
           {page}
         </Button>
@@ -93,9 +96,10 @@ export const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage === totalPages}
         className="h-8 w-8 p-0"
+        aria-label="Halaman terakhir"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
-    </div>
+    </nav>
   );
 };
