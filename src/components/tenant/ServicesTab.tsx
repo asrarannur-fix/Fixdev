@@ -174,6 +174,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const [srvSort, setSrvSort] = useState<string>('newest');
   const [srvSearchQuery, setSrvSearchQuery] = useState<string>('');
   const [viewingServiceTicketId, setViewingServiceTicketId] = useState<string | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [fetchedService, setFetchedService] = useState<ServiceTicket | null>(null);
   const updateUrl = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(window.location.search);
     Object.entries(updates).forEach(([key, value]) => {
@@ -184,11 +187,11 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
   };
   const setViewingServiceTicketIdFromUrl = (id: string | null) => {
-    const validId = id && serviceTickets.some((ticket) => ticket.id === id) ? id : null;
-    setViewingServiceTicketId(validId);
+    setDetailError(null);
+    setViewingServiceTicketId(id);
     window.history.pushState(null, '', `${window.location.pathname}${(() => {
       const params = new URLSearchParams(window.location.search);
-      if (validId) params.set('serviceId', validId);
+      if (id) params.set('serviceId', id);
       else params.delete('serviceId');
       const query = params.toString();
       return query ? `?${query}` : '';
@@ -219,6 +222,34 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     window.addEventListener('popstate', readUrl);
     return () => window.removeEventListener('popstate', readUrl);
   }, [serviceTickets]);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('serviceId');
+    if (!id || serviceTickets.some((ticket) => ticket.id === id)) {
+      setFetchedService(null);
+      setDetailError(null);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetailError(null);
+    apiFetch(`/api/services/${encodeURIComponent(id)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(response.status === 404 ? 'Tiket tidak ditemukan atau tidak dapat diakses.' : 'Gagal memuat tiket.');
+        return response.json();
+      })
+      .then((data) => {
+        if (!cancelled) setFetchedService((data?.data || data) as ServiceTicket);
+      })
+      .catch((error: Error) => {
+        if (!cancelled) setDetailError(error.message);
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiFetch, serviceTickets]);
   const [showSpkPrintout, setShowSpkPrintout] = useState<string | null>(null);
   const [showInvoicePrintout, setShowInvoicePrintout] = useState<string | null>(null);
   const [showProvisionalQuote, setShowProvisionalQuote] = useState<string | null>(null);
@@ -808,8 +839,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 statusFilter,
                 stopCamera,
                 tenantObj,
-                tenantServices,
-                updateServiceStatus,
+                 tenantServices: fetchedService && !serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? [...serviceTickets, fetchedService] : serviceTickets,
+                 detailLoading,
+                 detailError,
+                 updateServiceStatus,
                 videoRef,
                 viewingServiceTicketId,
                 currentUser,

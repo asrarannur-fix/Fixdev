@@ -105,6 +105,7 @@ const diagnosisSchema = z.object({
     )
     .default([]),
 });
+const photo = z.string().trim().min(1).max(2_000_000);
 const approvalSchema = z.object({
   approved: z.boolean(),
   signatureName: z.string().trim().optional(),
@@ -118,7 +119,7 @@ const qcSchema = z
     checklist: z
       .array(z.object({ criteria: z.string().trim().min(1), passed: z.boolean() }))
       .min(1),
-    photos: z.array(z.string()).default([]),
+    photos: z.array(photo).max(20).default([]),
   })
   .superRefine((data, ctx) => {
     if (data.passed && data.score < 80) {
@@ -173,12 +174,14 @@ const handoverSchema = z
       });
     }
   });
+const money = z.number().finite().min(0).max(1_000_000_000);
 const receivableSettlementSchema = z.object({
-  amount: z.number().positive(),
+  amount: money.positive(),
   method: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET']),
-  referenceNo: z.string().trim().optional(),
-  idempotencyKey: z.string().trim().min(8),
+  referenceNo: z.string().trim().max(200).optional(),
+  idempotencyKey: z.string().trim().min(8).max(200),
 });
+const bulkDeleteSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(100) });
 const partSchema = z.object({
   productId: z.string().uuid(),
   warehouseId: z.string().uuid(),
@@ -394,8 +397,8 @@ async function queueNotification(
 async function finalTicket(client: any, req: Request) {
   return (
     await client.query(
-      `SELECT ${ticketSelect()} FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
-      [req.params.id, req.tenantId]
+      `SELECT ${ticketSelect()} FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 AND deleted_at IS NULL`,
+      [req.params.id, req.tenantId, req.branchId]
     )
   ).rows[0];
 }
@@ -409,10 +412,12 @@ function sendError(res: Response, error: any) {
 
 export async function listServiceTickets(req: Request, res: Response) {
   try {
-    const branchId = req.branchId || req.headers['x-branch-id'];
+    const branchId = req.branchId;
+    const limit = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
+    const offset = Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0);
     const result = await dbQuery(
-      `SELECT ${ticketSelect()} FROM service_tickets WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 500`,
-      [req.tenantId, branchId]
+      `SELECT ${ticketSelect()} FROM service_tickets WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
+      [req.tenantId, branchId, limit, offset]
     );
     res.json({ data: result.rows });
   } catch (error: any) {
@@ -528,9 +533,12 @@ export async function getStatusEvents(req: Request, res: Response) {
       `SELECT id, ticket_id AS "ticketId", from_status AS "fromStatus", to_status AS "toStatus", 
              note, actor_user_id AS "actorUserId", metadata, created_at AS "createdAt"
        FROM service_status_events
-       WHERE ticket_id=$1 AND tenant_id=$2
-       ORDER BY created_at ASC`,
-      [req.params.id, req.tenantId]
+WHERE ticket_id=$1 AND tenant_id=$2 AND EXISTS (
+          SELECT 1 FROM service_tickets st
+          WHERE st.id=$1 AND st.tenant_id=$2 AND st.branch_id=$3 AND st.deleted_at IS NULL
+        )
+        ORDER BY created_at ASC`,
+       [req.params.id, req.tenantId, req.branchId]
     );
     res.json({ data: result.rows });
   } catch (error: any) {
@@ -561,7 +569,7 @@ export async function diagnoseService(req: Request, res: Response) {
       for (const part of parsed.data.parts) {
         // Validasi produk milik tenant aktif untuk mencegah cross-tenant stock write.
         const owned = await client.query(
-          'SELECT id FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1',
+          'SELECT id, name, sell_price FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1',
           [part.productId, req.tenantId]
         );
         if (!owned.rows[0]) {
@@ -589,9 +597,9 @@ export async function diagnoseService(req: Request, res: Response) {
             current.id,
             part.productId,
             part.warehouseId || null,
-            part.name,
+            owned.rows[0].name,
             part.quantity,
-            part.unitPrice,
+            Number(owned.rows[0].sell_price) || 0,
             part.serialNumber || null,
           ]
         );
@@ -1217,6 +1225,22 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
       return finalTicket(client, req);
     });
     res.json({ data: ticket });
+  } catch (error: any) {
+    sendError(res, error);
+  }
+}
+
+export async function bulkDeleteServiceTickets(req: Request, res: Response) {
+  const parsed = bulkDeleteSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(422).json({ error: 'Daftar tiket tidak valid.' });
+  try {
+    const result = await dbQuery(
+      `UPDATE service_tickets SET deleted_at=NOW(),updated_at=NOW()
+       WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL AND id=ANY($3::uuid[])
+       RETURNING id`,
+      [req.tenantId, req.branchId, parsed.data.ids]
+    );
+    res.json({ data: { deletedIds: result.rows.map((row) => row.id) } });
   } catch (error: any) {
     sendError(res, error);
   }

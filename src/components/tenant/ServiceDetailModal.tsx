@@ -171,8 +171,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     updateServiceStatus,
     updateServiceTicket,
     videoRef,
-    viewingServiceTicketId,
-  } = props;
+     viewingServiceTicketId,
+     detailLoading,
+     detailError,
+   } = props;
   const [pendingAction, setPendingAction] = React.useState<string | null>(null);
   const runAction = async (action: string, callback: () => Promise<void> | void) => {
     if (pendingAction) return;
@@ -191,8 +193,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     return createPortal(
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-900">
-          <h2 className="text-sm font-black text-slate-900 dark:text-white">Tiket tidak ditemukan</h2>
-          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">Data tiket sudah berubah atau tidak tersedia pada cabang aktif.</p>
+           <h2 className="text-sm font-black text-slate-900 dark:text-white">{detailLoading ? 'Memuat tiket…' : 'Tiket tidak ditemukan'}</h2>
+           <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400" role={detailError ? 'alert' : undefined}>{detailError || (detailLoading ? 'Mengambil detail tiket terbaru.' : 'Data tiket sudah berubah atau tidak tersedia pada cabang aktif.')}</p>
           <button type="button" onClick={() => props.setViewingServiceTicketId(null)} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">Kembali ke daftar</button>
         </div>
       </div>,
@@ -266,28 +268,6 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     } catch (err) {
       console.error(err);
     }
-  };
-
-  const handleDemoPhoto = () => {
-    const images = [
-      'https://images.unsplash.com/photo-1601524909162-be87252be298?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80',
-    ];
-    const randomImg = images[Math.floor(Math.random() * images.length)];
-    const newPhoto = {
-      id: 'photo-' + Date.now().toString(36) + 'b',
-      url: randomImg,
-      category: 'Internal Damaged Component',
-      timestamp: new Date().toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
-    updateServiceTicket(ticket.id, {
-      capturedConditions: [...(ticket.capturedConditions || []), newPhoto],
-    });
   };
 
   return createPortal(
@@ -472,7 +452,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 stopCamera={stopCamera}
                 videoRef={videoRef}
                 onCapture={handleCapturePhoto}
-                onDemo={handleDemoPhoto}
+
               />
             )}
 

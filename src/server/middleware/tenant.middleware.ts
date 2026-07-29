@@ -40,14 +40,12 @@ export async function requireServiceTicketTenant(req: Request, res: Response, ne
 
   try {
     const result = await dbQuery(
-      'SELECT id, tenant_id AS "tenantId" FROM service_tickets WHERE id = $1 LIMIT 1',
-      [ticketId]
+      `SELECT id FROM service_tickets
+       WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 AND deleted_at IS NULL LIMIT 1`,
+      [ticketId, tenantId, req.branchId]
     );
     if (!result.rows[0]) {
       return res.status(404).json({ error: 'Tiket servis tidak ditemukan.' });
-    }
-    if (result.rows[0].tenantId !== tenantId) {
-      return res.status(403).json({ error: 'Tiket servis tidak milik tenant ini.' });
     }
     next();
   } catch (error) {

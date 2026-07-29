@@ -15,7 +15,6 @@ interface ServiceTicketCameraProps {
   stopCamera: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
   onCapture: () => void;
-  onDemo: () => void;
 }
 
 export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
@@ -25,7 +24,6 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
   stopCamera,
   videoRef,
   onCapture,
-  onDemo,
 }) => {
   const capturedConditions: Photo[] | undefined = ticket?.capturedConditions;
 
@@ -78,16 +76,11 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
               Jepret
             </button>
             <button
-              onClick={onDemo}
-              className="bg-accent hover:bg-accent-hover text-white text-[9px] font-bold px-1.5 py-1 rounded cursor-pointer"
-            >
-              Demo
-            </button>
-            <button
               onClick={stopCamera}
-              className="bg-slate-700 text-white text-[9px] font-bold px-1.5 py-1 rounded cursor-pointer"
+              aria-label="Tutup kamera"
+              className="bg-slate-700 text-white text-xs font-bold px-2 py-1 rounded cursor-pointer"
             >
-              X
+              Tutup
             </button>
           </div>
         </div>

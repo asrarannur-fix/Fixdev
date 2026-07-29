@@ -11,10 +11,16 @@ const receptionRoutes = readFileSync(
 );
 
 describe('service status event routes', () => {
-  it('exposes status history as read-only', () => {
-    expect(workflowRoutes).toContain("router.get('/:id/status-events'");
-    expect(receptionRoutes).toContain("router.get('/:id/status-events'");
+  it('exposes status history as read-only and tenant-scoped', () => {
+    expect(workflowRoutes).toContain("router.get('/:id/status-events', requireServiceTicketTenant");
+    expect(receptionRoutes).toContain("router.get('/:id/status-events', requireServiceTicketTenant");
     expect(workflowRoutes).not.toContain("router.post('/:id/status-events'");
     expect(receptionRoutes).not.toContain("router.post('/:id/status-events'");
+  });
+
+  it('registers bulk delete before ticket detail', () => {
+    expect(workflowRoutes.indexOf("router.delete(\n  '/bulk'")).toBeLessThan(
+      workflowRoutes.indexOf("router.get('/:id'")
+    );
   });
 });

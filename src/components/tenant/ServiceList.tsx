@@ -318,6 +318,19 @@ export const ServiceList: React.FC<any> = (props) => {
     });
   const totalPages = Math.ceil(filteredServices.length / 15);
   const paginatedServices = filteredServices.slice((page - 1) * 15, page * 15);
+  const csvCell = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+  const downloadCsv = () => {
+    const rows = [
+      ['Ticket No', 'Device', 'Customer', 'Status', 'Price'],
+      ...filteredServices.map((s) => [s.ticketNo, s.deviceName, customers.find((c) => c.id === s.customerId)?.name || '-', s.status, s.estimatedCost || 0]),
+    ];
+    const blob = new Blob([rows.map((row) => row.map(csvCell).join(',')).join('\\r\\n')], { type: 'text/csv;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'daftar_servis_saas.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 rounded-2xl p-4 space-y-4">
@@ -457,23 +470,7 @@ export const ServiceList: React.FC<any> = (props) => {
               </button>
             )}
           <button
-            onClick={() => {
-              const csvContent =
-                'data:text/csv;charset=utf-8,Ticket No,Device,Customer,Status,Price\n' +
-                tenantServices
-                  .map(
-                    (s) =>
-                      `${s.ticketNo},${s.deviceName},${customers.find((c) => c.id === s.customerId)?.name || '-'},${s.status},${s.estimatedCost || 0}`
-                  )
-                  .join('\n');
-              const encodedUri = encodeURI(csvContent);
-              const link = document.createElement('a');
-              link.setAttribute('href', encodedUri);
-              link.setAttribute('download', 'daftar_servis_saas.csv');
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
+            onClick={downloadCsv}
             className="px-3 py-2 text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
           >
             <FileText className="w-3.5 h-3.5" /> CSV
@@ -689,7 +686,7 @@ export const ServiceList: React.FC<any> = (props) => {
         </div>
       )}
 
-      <ServiceDetailModal {...props} />
+       <ServiceDetailModal {...props} />
       <ServiceModals {...props} />
     </div>
   );

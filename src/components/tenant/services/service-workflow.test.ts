@@ -13,6 +13,12 @@ describe('Service Workflow — SIAP_DIAMBIL & DIAMBIL status', () => {
     expect(Object.values(ServiceStatus)).toContain('DIAMBIL');
   });
 
+  it('maps ESTIMATE_PENDING to approval step', () => {
+    const steps = Object.fromEntries(WORKFLOW_STEPS.map((step) => [step.status, step.label]));
+    expect(steps[ServiceStatus.ESTIMATE_PENDING]).toBe('Estimasi');
+    expect(NEXT_STEP[ServiceStatus.ESTIMATE_PENDING]?.label).toBe('Persetujuan Pelanggan');
+  });
+
   it('NEXT_STEP banner supports SIAP_DIAMBIL status', () => {
     expect(NEXT_STEP[ServiceStatus.SIAP_DIAMBIL]).toBeDefined();
     expect(NEXT_STEP[ServiceStatus.DIAMBIL]).toBeDefined();

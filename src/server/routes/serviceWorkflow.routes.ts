@@ -23,6 +23,7 @@ import {
   handoverServiceTicket,
   settleServiceReceivable,
   getStatusEvents,
+  bulkDeleteServiceTickets,
 } from '../controllers/serviceWorkflow.controller.js';
 import { requireValidTenant, requireServiceTicketTenant } from '../middleware/tenant.middleware.js';
 
@@ -35,6 +36,11 @@ router.use(requireJwt, requireTenantScope, requireValidTenant);
 router.get('/', listServiceTickets);
 router.get('/tickets', listServiceTickets);
 router.get('/list', listServiceTickets);
+router.delete(
+  '/bulk',
+  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  bulkDeleteServiceTickets
+);
 router.get('/:id', requireServiceTicketTenant, getServiceTicket);
 
 // Transitions
