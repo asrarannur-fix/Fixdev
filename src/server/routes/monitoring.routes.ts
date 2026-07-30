@@ -6,6 +6,21 @@
 import express from "express";
 import { getPool, dbQuery } from "../../lib/db.js";
 import { logger } from "../../lib/logger.js";
+import { diskHealth } from "../lib/diskMonitor.js";
+
+const diskAlertStates = new Map<string, string>();
+
+async function reportDiskHealth() {
+  const disks = await diskHealth();
+  for (const disk of disks) {
+    const previous = diskAlertStates.get(disk.path);
+    if (disk.status !== "ok" && disk.status !== previous) {
+      logger.warn({ disk }, "[monitoring] Disk capacity alert");
+    }
+    diskAlertStates.set(disk.path, disk.status);
+  }
+  return disks;
+}
 
 const router = express.Router();
 const startTime = Date.now();
@@ -20,6 +35,7 @@ router.get("/health", async (req, res) => {
   const uptime = Math.floor((Date.now() - startTime) / 1000);
 
   let poolStatus: string;
+  const disks = await reportDiskHealth();
   try {
     const pool = getPool();
     const client = await pool.connect();
@@ -31,11 +47,12 @@ router.get("/health", async (req, res) => {
   }
 
   res.json({
-    status: poolStatus === "connected" ? "healthy" : "degraded",
+    status: poolStatus === "connected" && disks.every((disk) => disk.status === "ok") ? "healthy" : "degraded",
     uptime: `${uptime}s`,
     startedAt: new Date(startTime).toISOString(),
     requests: { total: requestCount, errors: errorCount },
     database: { status: poolStatus },
+    disks,
   });
 });
 
