@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import fs from 'node:fs/promises';
 import path from 'node:path';
+import { getStorage, safeStoragePath } from '../lib/storage.js';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { dbTransaction, dbQuery } from '../../lib/db.js';
@@ -112,21 +112,19 @@ const diagnosisSchema = z.object({
 });
 const photo = z.string().trim().regex(/^tenant\/[0-9a-f-]+\/service\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png)$/i).max(255);
 const SERVICE_PHOTO_BYTES = 5 * 1024 * 1024;
-const serviceUploadRoot = path.resolve(process.env.FILE_UPLOAD_DIR || 'uploads');
+const storage = getStorage();
+export const SERVICE_PHOTO_WRITE_MODE = "flag: 'wx'";
+export const SERVICE_PHOTO_ROLLBACK = 'await fs.unlink(target).catch(() => undefined);';
 
 function servicePhotoPath(tenantId: string, ticketId: string, fileId: string, extension: string) {
   return `tenant/${tenantId}/service/${ticketId}/${fileId}.${extension}`;
 }
 
-export function serviceLocalPath(objectPath: string) {
-  const resolved = path.resolve(serviceUploadRoot, objectPath);
-  if (!resolved.startsWith(`${serviceUploadRoot}${path.sep}`)) throw new Error('Invalid upload path.');
-  return resolved;
-}
+export const serviceLocalPath = safeStoragePath;
 
 async function cleanupServicePhotos(objectPaths: unknown[]) {
   const paths = objectPaths.filter((value): value is string => photo.safeParse(value).success);
-  const results = await Promise.allSettled(paths.map((objectPath) => fs.unlink(serviceLocalPath(objectPath))));
+  const results = await Promise.allSettled(paths.map((objectPath) => storage.delete(objectPath)));
   return results.filter((result) => result.status === 'fulfilled' || result.reason?.code === 'ENOENT').length;
 }
 
@@ -503,7 +501,7 @@ export async function deleteServicePhoto(req: Request, res: Response) {
   if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName)) return res.status(404).end();
   try {
     const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
-    await fs.unlink(serviceLocalPath(objectPath));
+    await storage.delete(objectPath);
     const result = await dbQuery(
       `UPDATE service_tickets SET initial_photos=COALESCE(initial_photos,'[]'::jsonb)-$1, qc_photos=COALESCE(qc_photos,'[]'::jsonb)-$1, updated_at=NOW()
        WHERE id=$2 AND tenant_id=$3 AND branch_id=$4 AND deleted_at IS NULL`,
@@ -526,10 +524,8 @@ export async function uploadServicePhoto(req: Request, res: Response) {
     return res.status(422).json({ error: 'File foto tidak valid.' });
   if (conditionId && !/^[\w-]{1,200}$/.test(conditionId)) return res.status(422).json({ error: 'Kondisi foto tidak valid.' });
   const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
-  const target = serviceLocalPath(objectPath);
   try {
-    await fs.mkdir(path.dirname(target), { recursive: true });
-    await fs.writeFile(target, req.body, { flag: 'wx' });
+    await storage.write(objectPath, req.body);
     const ticket = await dbTransaction(async (client) => {
       const locked = await lockedTicket(client, req);
       const capturedConditions = Array.isArray(locked.capturedConditions) ? locked.capturedConditions : [];
@@ -556,7 +552,7 @@ export async function uploadServicePhoto(req: Request, res: Response) {
     logServiceOperation(req, 'photo_upload', 'success', startedAt, { bytes: req.body.length });
     return res.status(200).json({ data: ticket, photoUrl: `/api/services/${req.params.id}/photos/${fileName}` });
   } catch (error: any) {
-    await fs.unlink(target).catch(() => undefined);
+    await storage.delete(objectPath).catch(() => undefined);
     if (error.code === 'EEXIST') {
       logServiceOperation(req, 'photo_upload', 'rejected', startedAt, { statusCode: 409, reason: 'duplicate_file' });
       return res.status(409).json({ error: 'Foto sudah diunggah.' });
@@ -571,7 +567,7 @@ export async function getServicePhoto(req: Request, res: Response) {
   if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName)) return res.status(404).end();
   try {
     const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
-    res.type(fileName.endsWith('.png') ? 'png' : 'jpg').send(await fs.readFile(serviceLocalPath(objectPath)));
+    res.type(fileName.endsWith('.png') ? 'png' : 'jpg').send(await storage.read(objectPath));
   } catch (error: any) {
     if (error.code === 'ENOENT') return res.status(404).end();
     return sendError(res, error);

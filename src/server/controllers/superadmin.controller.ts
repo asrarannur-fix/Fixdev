@@ -6,8 +6,9 @@ import { logger } from '../../lib/logger.js';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
 import { redactTenantSettingsSecrets } from './bootstrap.controller.js';
-import fs from 'fs/promises';
-import path from 'path';
+import { getStorage } from '../lib/storage.js';
+
+const storage = getStorage();
 
 interface TenantSubscriptionInfo {
   id: string;
@@ -233,23 +234,10 @@ export async function getOverview(req: Request, res: Response) {
 
 export async function collectStorageUsage(req: Request, res: Response) {
   try {
-    const uploadDir = process.env.FILE_UPLOAD_DIR || './uploads';
     const tenants = await dbQuery(`SELECT id FROM tenants ORDER BY id`);
     let measured = 0;
     for (const tenant of tenants.rows) {
-      let total = 0;
-      const tenantDir = path.join(uploadDir, `tenant-${tenant.id}`);
-      try {
-        const files = await fs.readdir(tenantDir, { recursive: true, withFileTypes: true });
-        for (const file of files) {
-          if (file.isFile()) {
-            const stats = await fs.stat(path.join(tenantDir, file.name));
-            total += stats.size;
-          }
-        }
-      } catch {
-        // directory doesn't exist, total remains 0
-      }
+      const total = await storage.measureTenant(tenant.id);
       await dbTransaction(async (client) => {
         await client.query(
           `UPDATE tenants SET storage_used_bytes=$2,storage_measured_at=now() WHERE id=$1`,
@@ -1412,14 +1400,7 @@ export async function permanentDeleteTenant(req: Request, res: Response) {
       // Delete the tenant. This will CASCADE to all dependent tables (users, branches, audit_events etc.)
       await client.query(`DELETE FROM tenants WHERE id=$1`, [tenant.id]);
 
-      // Delete associated file storage
-      const uploadDir = process.env.FILE_UPLOAD_DIR || './uploads';
-      const tenantDir = path.join(uploadDir, `tenant-${tenant.id}`);
-      try {
-        await fs.rm(tenantDir, { recursive: true, force: true });
-      } catch {
-        // directory doesn't exist or already removed
-      }
+      await storage.deleteTenant(tenant.id);
 
       return { tenant: { id: tenant.id, name: tenant.name, subdomain: tenant.subdomain } };
     });
