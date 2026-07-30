@@ -166,7 +166,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     fieldError(k) ? 'figma-input border-red-400' : 'figma-input';
   const FieldError = ({ name }: { name: string }) =>
     fieldError(name) ? (
-      <p className="text-[10px] font-medium text-rose-600 mt-1">{fieldError(name)}</p>
+      <p id={`reception-error-${name}`} role="alert" className="text-[10px] font-medium text-rose-600 mt-1">{fieldError(name)}</p>
     ) : null;
 
   return (
@@ -179,15 +179,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
           <div className="flex-1">
             <span className="text-sm font-bold text-slate-800">Penerimaan Servis</span>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5">
-            {['Pelanggan', 'Kondisi', 'Penugasan'].map((step, i) => (
-              <div key={step} className="flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-indigo-500' : 'bg-slate-300'}`} />
-                <span className={`text-[10px] font-semibold ${i === 0 ? 'text-indigo-600' : 'text-slate-400'}`}>{step}</span>
-                {i < 2 && <div className="w-4 h-px bg-slate-200" />}
-              </div>
-            ))}
-          </div>
+
         </div>
         {Object.keys(receptionErrors).length > 0 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
@@ -350,6 +342,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                           value={newSrvCustName}
                           onChange={(e) => setNewSrvCustName(e.target.value)}
                           placeholder="Nama lengkap"
+                          aria-invalid={Boolean(fieldError('customerName'))}
+                          aria-describedby={fieldError('customerName') ? 'reception-error-customerName' : undefined}
+                          data-reception-error={fieldError('customerName') ? 'true' : undefined}
                           className={`w-full text-xs pl-9 pr-3 py-2 ${fieldBorder('customerName')} rounded-lg outline-none focus:border-accent`}
                         />
                         <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -367,6 +362,9 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                             setNewSrvCustPhone(normalizeIndonesianPhone(newSrvCustPhone))
                           }
                           placeholder="081234567890"
+                          aria-invalid={Boolean(fieldError('customerPhone'))}
+                          aria-describedby={fieldError('customerPhone') ? 'reception-error-customerPhone' : undefined}
+                          data-reception-error={fieldError('customerPhone') ? 'true' : undefined}
                           className={`w-full text-xs pl-9 pr-3 py-2 ${fieldBorder('customerPhone')} rounded-lg outline-none focus:border-accent font-mono`}
                         />
                         <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

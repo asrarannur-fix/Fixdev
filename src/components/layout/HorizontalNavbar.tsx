@@ -52,6 +52,7 @@ import {
   getEffectiveFeatures,
   getRequiredTierForModule,
   isModuleLocked as isFeatureLocked,
+  isSubTabFeatureAllowed,
 } from '../../lib/featureUtils';
 
 interface HorizontalNavbarProps {
@@ -186,6 +187,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
 
   const isSubmenuAllowed = (modId: string, subId: string) => {
     if (isSuperAdmin) return false;
+    if (!isSubTabFeatureAllowed(modId, subId, activeTenant || {})) return false;
 
     // Tier-based feature gating untuk settings subtabs
     if (modId === 'settings') {

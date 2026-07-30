@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Save, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 /* ── checklist data ─────────────────────────────────────────── */
@@ -58,7 +58,7 @@ interface CheckItem {
 export const QCChecklistModal: React.FC<{
   ticket: any;
   onClose: () => void;
-  onSave: (checklist: CheckItem[]) => Promise<void>;
+  onSave: (checklist: { criteria: string; passed: boolean }[]) => Promise<void>;
   initialChecklist?: any[];
 }> = ({ ticket, onClose, onSave, initialChecklist = [] }) => {
   const buildItems = (): CheckItem[] => {
@@ -72,7 +72,8 @@ export const QCChecklistModal: React.FC<{
     });
   };
 
-  const [items, setItems]       = useState<CheckItem[]>(buildItems);
+   const [items, setItems]       = useState<CheckItem[]>(buildItems);
+   useEffect(() => setItems(buildItems()), [ticket?.id, initialChecklist]);
   const [saving, setSaving]     = useState(false);
   const [noteId, setNoteId]     = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -89,13 +90,13 @@ export const QCChecklistModal: React.FC<{
 
   const pass    = items.filter(i => i.checked).length;
   const total   = items.length;
-  const rate    = Math.round((pass / total) * 100);
+   const rate    = total ? Math.round((pass / total) * 100) : 0;
   const isGood  = rate >= 80;
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave(items);
+      await onSave(items.map(({ label, checked }) => ({ criteria: label, passed: checked })));
     } catch (err) {
       console.error('Failed to save QC checklist:', err);
       // Error already surfaced by parent component

@@ -23,6 +23,10 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'mobile-chromium',
+      use: { ...devices['iPhone 13'] },
+    },
   ],
   ...(process.env.TEST_E2E_SERVER === '1'
     ? {

@@ -290,7 +290,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     setIsSubmittingReception(true);
     const ticketId = `TKT-${Date.now()}`;
     const newTicket: any = {
-      tenantId: currentTenantId,
+       tenantId: activeTenantId,
       branchId: currentBranchId || 'HQ',
       customerId: customerId,
       deviceName: newSrvDevice,
@@ -333,6 +333,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       const createdTicket = await addServiceTicket(newTicket);
       setJustCreatedTicket(createdTicket);
       setPreviewReceptionTicket(createdTicket);
+      receptionIdempotencyKeyRef.current = crypto.randomUUID();
       setReceptionErrors({});
       setNewSrvCustomer('');
       setShowNewSrvCustForm(false);
@@ -375,7 +376,6 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       showToast(message, 'error');
     } finally {
       setIsSubmittingReception(false);
-      receptionIdempotencyKeyRef.current = crypto.randomUUID();
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { useSaaS } from "../context/SaaSContext";
 import { useToast } from "./ui/Toast";
 import { useServiceTrackerQr } from "../hooks/useServiceTrackerQr";
+import { ServiceTicket } from "../types";
 import {
   QrCode,
   Printer,
@@ -101,9 +102,9 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
     }).format(num);
   };
 
-  const handleShareWhatsApp = (ticketNo: string) => {
-    const url = getTrackingUrl(ticketNo);
-    const text = `Halo Kak, silakan pantau status servis unit Anda dengan No. Tiket *#${ticketNo}* secara live dan real-time melalui tautan resmi kami berikut:\n\n🔗 ${url}\n\nTerima kasih atas kepercayaannya!`;
+  const handleShareWhatsApp = (ticket: ServiceTicket) => {
+    const url = getTrackingUrl(ticket);
+    const text = `Halo Kak, silakan pantau status servis unit Anda dengan No. Tiket *#${ticket.ticketNo}* secara live dan real-time melalui tautan resmi kami berikut:\n\n🔗 ${url}\n\nTerima kasih atas kepercayaannya!`;
 
     // Copy to clipboard as a fallback for iframe sandbox window.open blocks
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -391,7 +392,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                       <Printer className="w-3.5 h-3.5" /> Label 58mm
                     </button>
                     <button
-                      onClick={() => handleShareWhatsApp(selectedTicket.ticketNo)}
+                      onClick={() => handleShareWhatsApp(selectedTicket)}
                       className="flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black py-2 rounded-xl cursor-pointer transition-all"
                     >
                       <Send className="w-3.5 h-3.5" /> WhatsApp
@@ -477,7 +478,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                   <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 p-3 rounded-2xl text-center space-y-2">
                     <div className="w-32 h-32 mx-auto bg-white p-2 rounded-lg border border-slate-200 dark:border-zinc-800 flex items-center justify-center">
                       <img
-                        src={getQrCodeUrl(selectedTicket.ticketNo)}
+                        src={getQrCodeUrl(selectedTicket)}
                         className="w-full h-full object-contain"
                         alt="Lacak Servis QR Code"
                         referrerPolicy="no-referrer"
@@ -840,7 +841,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                       {/* Small compact QR */}
                       <div className="text-center space-y-1">
                         <img
-                          src={getQrCodeUrl(selectedTicket.ticketNo)}
+                          src={getQrCodeUrl(selectedTicket)}
                           className="w-20 h-20 mx-auto border p-1 rounded bg-white"
                           alt="Compact QR"
                           referrerPolicy="no-referrer"
@@ -857,7 +858,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
                     <div className="text-center space-y-2 py-1 leading-none">
                       <p className="font-bold">#{selectedTicket.ticketNo}</p>
                       <img
-                        src={getQrCodeUrl(selectedTicket.ticketNo)}
+                        src={getQrCodeUrl(selectedTicket)}
                         className="w-28 h-28 mx-auto border p-1 bg-white"
                         alt="Sticker QR Only"
                         referrerPolicy="no-referrer"
@@ -910,7 +911,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
 
                       <div className="text-center pt-1.5 border-t border-dashed border-zinc-300">
                         <img
-                          src={getQrCodeUrl(selectedTicket.ticketNo)}
+                          src={getQrCodeUrl(selectedTicket)}
                           className="w-16 h-16 mx-auto border p-1 bg-white"
                           alt="Receipt QR"
                           referrerPolicy="no-referrer"

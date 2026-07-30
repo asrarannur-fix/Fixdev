@@ -112,6 +112,7 @@ export const OwnerReports: React.FC<{
     scopedProducts: products,
     scopedCustomers: customers,
     scopedEmployees: employees,
+    scopedPayroll: payrollRecords,
     scopedCashTransactions: cashTransactions,
     scopedShifts: shifts,
     scopedFieldVisits: fieldVisits,
@@ -229,7 +230,9 @@ export const OwnerReports: React.FC<{
     const cOut = ca
       .filter((c: any) => c.type === 'CASH_OUT')
       .reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0);
-    const payroll = em.reduce((s: number, e: any) => s + (Number(e.basicSalary) || 0), 0);
+    const payroll = (payrollRecords || [])
+      .filter((p: any) => p.status === 'PAID')
+      .reduce((s: number, p: any) => s + (Number(p.netSalary) || 0), 0);
     const billHist = (activeTenant as any)?.billingHistory || [];
     const bPaid = billHist
       .filter((i: any) => i.status === 'PAID')
@@ -288,6 +291,7 @@ export const OwnerReports: React.FC<{
     products,
     customers,
     employees,
+    payrollRecords,
     shifts,
     fieldVisits,
     warehouses,

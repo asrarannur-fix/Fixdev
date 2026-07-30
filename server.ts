@@ -49,7 +49,6 @@ import {
 } from "./src/server/controllers/data.controller.js";
 import {
   databaseTestHandler,
-  databaseMigrateHandler,
 } from "./src/server/controllers/database.controller.js";
 import {
   whatsappGetLogsHandler,
@@ -353,7 +352,6 @@ app.use("/api/monitoring", requireJwt, requireSuperAdmin, monitoringRoutes);
 app.use("/api/crud", createCrudRouter());
 
 app.post("/api/database/test", requireAdminToken, databaseTestHandler);
-app.post("/api/database/migrate", requireAdminToken, databaseMigrateHandler);
 
 // API requests must never fall through to Vite's SPA HTML fallback.
 app.use("/api", (req, res) => {

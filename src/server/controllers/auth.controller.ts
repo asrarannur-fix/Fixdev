@@ -279,11 +279,23 @@ export async function adminResetPasswordHandler(req: Request, res: Response) {
   try {
     const passwordHash = await bcrypt.hash(String(password), 10);
     const result = (await withDb(async (c) => {
-      const r = await c.query(
-        'UPDATE users SET password_hash = $1 WHERE email = $2 RETURNING id, email',
-        [passwordHash, String(email).toLowerCase().trim()]
-      );
-      return r.rows;
+      await c.query('BEGIN');
+      try {
+        const r = await c.query(
+          'UPDATE users SET password_hash = $1 WHERE email = $2 RETURNING id, email',
+          [passwordHash, String(email).toLowerCase().trim()]
+        );
+        if (r.rows[0]) {
+          await c.query('UPDATE auth_sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [
+            r.rows[0].id,
+          ]);
+        }
+        await c.query('COMMIT');
+        return r.rows;
+      } catch (error) {
+        await c.query('ROLLBACK');
+        throw error;
+      }
     })) as any[];
 
     if (!result.length) {

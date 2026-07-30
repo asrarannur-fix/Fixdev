@@ -404,7 +404,7 @@ export const requireSuperAdminConsoleSession = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (req.authActor?.role !== 'SUPER_ADMIN' || SAFE_METHODS.has(req.method)) return next();
+  if (req.authActor?.role !== 'SUPER_ADMIN') return next();
   const sessionId = String(headerValue(req, 'x-superadmin-session-id') || '').trim();
   if (!sessionId) {
     return res.status(423).json({

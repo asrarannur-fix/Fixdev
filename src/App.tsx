@@ -311,8 +311,9 @@ const MainAppContent: React.FC = () => {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ticketParam = params.get('ticket');
+    const trackingParam = params.get('tracking');
     const subParam = params.get('sub');
-    if (ticketParam && subParam !== 'warranty-claim') {
+    if ((trackingParam || ticketParam) && subParam !== 'warranty-claim') {
       setActiveTab('customer-portal');
       setActiveSubTab('overview');
       return;
@@ -345,7 +346,9 @@ const MainAppContent: React.FC = () => {
   }, [currentUser.role]);
 
   const params = new URLSearchParams(window.location.search);
-  const isPublicTicketTrack = !!(params.get('ticket') && params.get('sub') !== 'warranty-claim');
+  const isPublicTicketTrack = !!(
+    (params.get('tracking') || params.get('ticket')) && params.get('sub') !== 'warranty-claim'
+  );
 
   if (invitationToken) {
     return (

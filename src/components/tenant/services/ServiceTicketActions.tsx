@@ -25,6 +25,7 @@ interface ServiceTicketActionsProps {
   canAddCost: boolean;
   canHandover: boolean;
   liveTimerSeconds?: number;
+  slaSeconds?: number;
   repairStartTime?: string;
 }
 
@@ -54,34 +55,18 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
   canAddCost,
   canHandover,
   liveTimerSeconds = 0,
+  slaSeconds = 48 * 3600,
   repairStartTime,
 }) => {
   const [showHandoverConfirm, setShowHandoverConfirm] = React.useState(false);
 
   const getActiveStepIndex = (st: ServiceStatus) => {
-    switch (st) {
-      case ServiceStatus.DITERIMA:
-      case ServiceStatus.ANTRIAN:
-      case ServiceStatus.DIAGNOSA:
-        return 0;
-      case ServiceStatus.MENUGGU_APPROVAL:
-      case ServiceStatus.APPROVAL_DITOLAK:
-        return 1;
-      case ServiceStatus.SEDANG_DIKERJAKAN:
-      case ServiceStatus.MENUGGU_SPAREPART:
-        return 2;
-      case ServiceStatus.QC:
-      case ServiceStatus.REWORK:
-        return 3;
-      case ServiceStatus.SELESAI:
-        return 4;
-      case ServiceStatus.SIAP_DIAMBIL:
-        return 5;
-      case ServiceStatus.DIAMBIL:
-        return 6;
-      default:
-        return 0;
-    }
+    const stepIndex = WORKFLOW_STEPS.findIndex((step) => step.status === st);
+    if (stepIndex >= 0) return stepIndex;
+    if (st === ServiceStatus.DITERIMA || st === ServiceStatus.ANTRIAN) return 0;
+    if (st === ServiceStatus.APPROVAL_DITOLAK) return 2;
+    if (st === ServiceStatus.MENUGGU_SPAREPART || st === ServiceStatus.REWORK) return 3;
+    return 0;
   };
 
   const activeStep = getActiveStepIndex(ticket.status);
@@ -228,7 +213,7 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
                       .padStart(2, '0')}
                     :{(liveTimerSeconds % 60).toString().padStart(2, '0')}
                   </span>
-                  {liveTimerSeconds > 48 * 3600 && (
+                  {liveTimerSeconds > slaSeconds && (
                     <span className="text-[8px] font-black text-white bg-white/30 px-2 py-0.5 rounded-full animate-pulse">
                       SLA BREACH
                     </span>

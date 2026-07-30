@@ -76,7 +76,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
   >('track');
 
   // Local ticket tracking states
-  const [ticketNo, setTicketNo] = useState('TKT/2606/0001');
+  const [ticketNo, setTicketNo] = useState('');
+  const [phoneLast4, setPhoneLast4] = useState('');
   const [searchedTicket, setSearchedTicket] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [signerName, setSignerName] = useState('');
@@ -241,16 +242,18 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
   };
 
   // Perform search core logic
-  const performSearch = async (targetTicketNo: string) => {
+  const performSearch = async (targetTicketNo: string, trackingToken?: string) => {
     setErrorMsg('');
     const trimmed = targetTicketNo.trim();
-    if (!trimmed) {
+    if (!trackingToken && !trimmed) {
       setErrorMsg('Nomor tiket tidak boleh kosong.');
       triggerToast('Masukkan nomor tiket yang valid.', 'warning');
       return;
     }
 
-    const foundLocal = services.find((s) => s.ticketNo.toLowerCase() === trimmed.toLowerCase());
+    const foundLocal = trackingToken
+      ? services.find((s) => s.publicTrackingToken === trackingToken)
+      : undefined;
 
     if (foundLocal) {
       setSearchedTicket(foundLocal);
@@ -269,7 +272,12 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
 
     // Fallback search online on server
     try {
-      const response = await fetch(`/api/service-tracking/status/${trimmed}`);
+      const response = await fetch(
+        trackingToken
+          ? `/api/service-tracking/token/${encodeURIComponent(trackingToken)}`
+          : '/api/service-tracking/ticket',
+        trackingToken ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketNo: trimmed, phoneLast4 }) }
+      );
       const data = await readJsonResponse<{ id?: string; ticketNo: string; deviceName: string; deviceBrandModel: string; status: string; customerApprovalStatus: string; estimatedCost: number; downPayment: number; timeline: any; customerNameObscured: string; warrantyMonths: number; warrantyEndsAt: Date }>(response, 'Service Tracking API');
       setSearchedTicket({
         id: data.id || 'temp-srv-id',
@@ -305,9 +313,12 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
   // Auto search ticket from URL param on load/mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const trackingToken = params.get('tracking');
     const ticketParam = params.get('ticket');
     const subParam = params.get('sub');
-    if (ticketParam && subParam !== 'warranty-claim') {
+    if (trackingToken && subParam !== 'warranty-claim') {
+      performSearch('', trackingToken);
+    } else if (ticketParam && subParam !== 'warranty-claim') {
       setTicketNo(ticketParam);
       performSearch(ticketParam);
     }
@@ -986,15 +997,29 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           <Search className="w-4 h-4 text-slate-400" /> Masukkan Nomor Tiket Nota
                         </h3>
                         <form onSubmit={handleSearchTicket} className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="cth: TKT/2606/0001"
+                           <input
+                             type="text"
+                             placeholder="cth: TKT/2606/0001"
+                             aria-label="Nomor tiket"
+                             autoComplete="off"
                             value={ticketNo}
                             onChange={(e) => setTicketNo(e.target.value)}
                             className="w-full text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none focus:border-accent transition"
-                            required
-                          />
-                          <button
+                             required
+                           />
+                           <input
+                             type="text"
+                             inputMode="numeric"
+                             pattern="[0-9]{4}"
+                             maxLength={4}
+                             aria-label="4 digit terakhir nomor HP"
+                             placeholder="4 digit HP"
+                             value={phoneLast4}
+                             onChange={(e) => setPhoneLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                             className="w-28 text-xs px-3 py-2.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-800 dark:text-white rounded-xl outline-none focus:border-accent transition"
+                             required
+                           />
+                           <button
                             type="submit"
                             className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition shrink-0 shadow-sm"
                           >

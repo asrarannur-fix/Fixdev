@@ -4,6 +4,7 @@ import { useToast } from '../components/ui/Toast';
 import { usePrintConfig } from './usePrintConfig';
 import { useSaaS } from '../context/SaaSContext';
 import { printJobAsync } from '../utils/printJob';
+import { generateQrSvg } from '../utils/qrSvg';
 import {
   getPrintPageSize,
   getPrintMargin,
@@ -55,49 +56,34 @@ export function useServiceTrackerQr(
     }
   }, [services, currentTenantId, selectedTicketId]);
 
-  /**
-   * Syncs the current service ticket with the backend in-memory cache
-   * so that it can be searched/queried publicly by the customer scanning the QR code.
-   */
   const handleSyncTicket = async (ticket: ServiceTicket) => {
-    if (!ticket) return;
-    try {
-      setSyncStatus('syncing');
-      const response = await apiFetch('/api/service-tracking/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticket }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSyncStatus('success');
-        setSyncMessage('Tiket sukses disinkronkan ke gateway tracking online!');
-      } else {
-        setSyncStatus('error');
-        setSyncMessage('Gagal menyelaraskan tiket dengan server.');
-      }
-    } catch (err) {
-      console.error('Tracking sync error:', err);
+    if (!ticket?.publicTrackingToken) {
       setSyncStatus('error');
-      setSyncMessage('Kesalahan jaringan saat menyinkronkan data.');
+      setSyncMessage('Token tracking tiket belum tersedia.');
+      return;
     }
+    setSyncStatus('success');
+    setSyncMessage('Link tracking sudah aktif dan memakai data tiket terbaru.');
   };
 
   /**
    * Generates the public tracking URL for a given ticket.
    */
-  const getTrackingUrl = (ticketNo: string) => {
-    return `${publicBaseUrl}/?ticket=${encodeURIComponent(ticketNo)}`;
+  const getTrackingUrl = (ticket: ServiceTicket) => {
+    if (!ticket.publicTrackingToken) return '';
+    return `${publicBaseUrl}/?tracking=${encodeURIComponent(ticket.publicTrackingToken)}`;
   };
 
-  const getQrCodeUrl = (ticketNo: string) => getTrackingUrl(ticketNo);
+  const getQrCodeUrl = (ticket: ServiceTicket) => {
+    const trackingUrl = getTrackingUrl(ticket);
+    return trackingUrl ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(generateQrSvg(trackingUrl, 4, 2))}` : '';
+  };
 
   /**
    * Open a print-friendly overlay window to print the tracking receipt card beautifully.
    */
   const handlePrintReceipt = async (ticket: ServiceTicket, businessName = tenantName) => {
-    const qrUrl = '';
+    const qrUrl = getTrackingUrl(ticket);
     const dateStr = ticket.customerApprovalDate
       ? new Date(ticket.customerApprovalDate).toLocaleDateString('id-ID', {
           day: 'numeric',
@@ -275,8 +261,9 @@ export function useServiceTrackerQr(
               printConfig?.printQrCode !== false
                 ? `
             <div class="qr-section">
-               <div class="qr-code" style="border:1px dashed #64748b;display:flex;align-items:center;justify-content:center;font-size:12px">TIKET<br/>${ticket.ticketNo}</div>
-               <div class="scan-instructions">Sebutkan nomor tiket saat memantau status servis.</div>
+<div class="qr-placeholder">Scan untuk lacak status servis</div>
+                <div class="scan-instructions">Scan QR untuk lihat status servis.</div>
+                <div class="url-display">${escapeHtml(qrUrl)}</div>
             </div>`
                 : ''
             }
@@ -298,12 +285,13 @@ export function useServiceTrackerQr(
       printConfig,
       documentType: 'service_receipt',
       documentId: ticket.id,
+      qrPayload: qrUrl,
     }).then((result) =>
       showToast(
         result.ok ? 'Nota servis dikirim ke printer.' : result.error || 'Cetak nota servis gagal.',
         result.ok ? 'success' : 'error'
       )
-    );
+    ).catch((error) => showToast(error?.message || 'Cetak nota servis gagal.', 'error'));
   };
 
   /**
@@ -320,7 +308,7 @@ export function useServiceTrackerQr(
   };
 
   const handleDirectPrintLabel = (ticket: ServiceTicket, businessName = tenantName) => {
-    const qrUrl = '';
+    const qrUrl = getTrackingUrl(ticket);
     const dateStr = ticket.createdAt
       ? new Date(ticket.createdAt).toLocaleDateString('id-ID', {
           day: 'numeric',
@@ -345,8 +333,8 @@ export function useServiceTrackerQr(
         <div class="lbl-row"><span>Device:</span><span>${escapeHtml(ticket.deviceName || '-')}</span></div>
         <div class="lbl-row"><span>Masuk:</span><span>${escapeHtml(dateStr)}</span></div>
         ${printConfig?.printCustomerNotes !== false ? `<div class="lbl-row"><span>Keluhan:</span><span>${escapeHtml(ticket.customerComplaints || '-')}</span></div>` : ''}
-        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr">TIKET ${escapeHtml(ticket.ticketNo)}</div>` : ''}
-        <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || 'Scan untuk lacak status servis')}</div>
+        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr"><div class="qr-placeholder">Scan untuk lacak status servis</div></div>` : ''}
+        <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || 'Scan untuk lihat status servis')}</div>
       </body></html>
     `;
     void printJobAsync({
@@ -355,6 +343,7 @@ export function useServiceTrackerQr(
       printConfig,
       documentType: 'service_label',
       documentId: ticket.id,
+      qrPayload: qrUrl,
     }).then((result) =>
       showToast(
         result.ok
@@ -362,7 +351,7 @@ export function useServiceTrackerQr(
           : result.error || 'Cetak label servis gagal.',
         result.ok ? 'success' : 'error'
       )
-    );
+    ).catch((error) => showToast(error?.message || 'Cetak label servis gagal.', 'error'));
   };
 
   return {

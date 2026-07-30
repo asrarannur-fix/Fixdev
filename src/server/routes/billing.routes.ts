@@ -135,52 +135,64 @@ router.post(
   notifyTrialExpiringWithEmail
 );
 // Invoice template CRUD
-router.get('/invoice-template', requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'), getInvoiceTemplate);
+router.get(
+  '/invoice-template',
+  requireSuperAdminPermission('billing:view_config'),
+  requireSuperAdminConsoleSession,
+  getInvoiceTemplate
+);
 router.post(
   '/invoice-template',
-  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  requireSuperAdminPermission('billing:manage_config'),
   requireSuperAdminConsoleSession,
   updateInvoiceTemplate
 );
-router.get('/gateway-config', requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'), getGatewayConfig);
+router.get(
+  '/gateway-config',
+  requireSuperAdminPermission('billing:view_config'),
+  requireSuperAdminConsoleSession,
+  getGatewayConfig
+);
 router.post(
   '/gateway-config',
-  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  requireSuperAdminPermission('billing:manage_config'),
   requireSuperAdminConsoleSession,
   updateGatewayConfig
 );
 router.get(
   '/telegram-manual-payment-config',
-  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  requireSuperAdminPermission('billing:view_config'),
+  requireSuperAdminConsoleSession,
   getPlatformTelegramConfig
 );
 router.post(
   '/telegram-manual-payment-config',
-  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  requireSuperAdminPermission('billing:manage_config'),
   requireSuperAdminConsoleSession,
   updatePlatformTelegramConfig
 );
 router.get(
   '/manual-payment-config',
-  requireTenantOrSuperAdminPermission('billing:view_config', true),
+  requireSuperAdminPermission('billing:view_config'),
+  requireSuperAdminConsoleSession,
   getManualPaymentConfig
 );
 router.post(
   '/manual-payment-config/qris-upload',
-  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  requireSuperAdminPermission('billing:manage_config'),
   requireSuperAdminConsoleSession,
   createManualQrisUpload
 );
 router.put(
   '/manual-payment-config/qris-upload/:fileName',
-  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  requireSuperAdminPermission('billing:manage_config'),
   requireSuperAdminConsoleSession,
   express.raw({ type: ['image/jpeg', 'image/png'], limit: '2mb' }),
   uploadManualQris
 );
 router.put(
   '/manual-payment-config',
-  requireRoles('OWNER', 'ADMIN', 'SUPER_ADMIN'),
+  requireSuperAdminPermission('billing:manage_config'),
   requireSuperAdminConsoleSession,
   updateManualPaymentConfig
 );

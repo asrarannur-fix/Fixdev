@@ -42,10 +42,10 @@ export const Pagination: React.FC<PaginationProps> = ({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => onPageChange(1)}
+        onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className="h-8 w-8 p-0"
-        aria-label="Halaman pertama"
+        aria-label="Halaman sebelumnya"
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -93,10 +93,10 @@ export const Pagination: React.FC<PaginationProps> = ({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => onPageChange(totalPages)}
+        onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className="h-8 w-8 p-0"
-        aria-label="Halaman terakhir"
+        aria-label="Halaman berikutnya"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>

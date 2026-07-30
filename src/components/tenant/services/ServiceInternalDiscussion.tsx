@@ -8,6 +8,7 @@ interface ServiceInternalDiscussionProps {
   onChange: (value: string) => void;
   patchServiceWork: (id: string, updates: { internalDiscussion: { text: string } }) => Promise<unknown>;
   canComment: boolean;
+  onUpdated?: (ticket: any) => void;
 }
 
 export const ServiceInternalDiscussion: React.FC<ServiceInternalDiscussionProps> = ({
@@ -16,6 +17,7 @@ export const ServiceInternalDiscussion: React.FC<ServiceInternalDiscussionProps>
   onChange,
   patchServiceWork,
   canComment,
+  onUpdated,
 }) => {
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -24,7 +26,8 @@ export const ServiceInternalDiscussion: React.FC<ServiceInternalDiscussionProps>
     setPending(true);
     setError('');
     try {
-      await patchServiceWork(ticket.id, { internalDiscussion: { text: value.trim() } });
+      const updated = await patchServiceWork(ticket.id, { internalDiscussion: { text: value.trim() } });
+      if (updated) onUpdated?.(updated);
       onChange('');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Gagal mengirim diskusi.');
@@ -69,8 +72,9 @@ export const ServiceInternalDiscussion: React.FC<ServiceInternalDiscussionProps>
       <div className="pt-2 border-t border-amber-200/50 flex gap-2">
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+           value={value}
+           maxLength={5000}
+           onChange={(e) => onChange(e.target.value)}
           disabled={!canComment}
           placeholder={canComment ? 'Ketik pesan untuk tim...' : 'Tidak punya akses menulis'}
           className="flex-1 bg-white border border-amber-200 rounded-lg text-[10px] px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500"

@@ -42,9 +42,17 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
   const chargeableMicroUsages = (ticket.microComponentUsages || []).filter(
     (usage: any) => usage.chargeable
   );
-  const grandTotal = ticket.estimatedCost || 0;
-  const totalTax = 0;
+  const grandTotal = Number(ticket.estimatedCost || 0);
+  const taxRate = Number(ticket.taxRate ?? 0);
+  const taxEnabled = Boolean(ticket.taxEnabled ?? false);
+  const totalTax = taxEnabled && Number.isFinite(taxRate) ? Math.round(grandTotal * taxRate / 100) : 0;
   const finalTotal = grandTotal + totalTax;
+  const downPayment = Math.max(0, Number(ticket.downPayment || 0));
+  const balanceDue = Math.max(0, finalTotal - downPayment);
+  const isPaid = Boolean(ticket.paymentStatus === 'PAID' || ticket.paidAt) || balanceDue === 0;
+  const trackingUrl = ticket.publicTrackingToken
+    ? `${publicBaseUrl}/?tracking=${encodeURIComponent(ticket.publicTrackingToken)}`
+    : '';
 
   const handlePrint = () => {
     const printDoc = document.createElement('div');
@@ -89,7 +97,7 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
               <strong>TANGGAL CETAK:</strong><br/>
               ${new Date().toLocaleDateString('id-ID')}<br/><br/>
               <strong>STATUS:</strong><br/>
-              <span style="background: #ecfdf5; color: #065f46; padding: 2px 6px; border-radius: 4px; font-weight: bold;">LUNAS</span>
+              <span style="background: ${isPaid ? '#ecfdf5' : '#fff7ed'}; color: ${isPaid ? '#065f46' : '#9a3412'}; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${isPaid ? 'LUNAS' : 'BELUM LUNAS'}</span>
             </div>
           </div>
           <div class="section">
@@ -137,12 +145,16 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
               <span>Rp ${(ticket.estimatedCost || 0).toLocaleString()}</span>
             </div>
             <div class="totals-row">
-              <span>PPN (${0}%):</span>
-              <span>Rp ${totalTax.toLocaleString()}</span>
-            </div>
-            <div class="totals-row grand-total">
-              <span>TOTAL AKHIR (LUNAS):</span>
-              <span>Rp ${finalTotal.toLocaleString()}</span>
+               <span>PPN (${taxEnabled ? taxRate : 0}%):</span>
+               <span>Rp ${totalTax.toLocaleString()}</span>
+             </div>
+             <div class="totals-row">
+               <span>UANG MUKA:</span>
+               <span>- Rp ${downPayment.toLocaleString()}</span>
+             </div>
+             <div class="totals-row grand-total">
+               <span>${isPaid ? 'TOTAL DIBAYAR:' : 'SISA TAGIHAN:'}</span>
+               <span>Rp ${(isPaid ? finalTotal : balanceDue).toLocaleString()}</span>
             </div>
           </div>
           <div class="signatures">
@@ -160,7 +172,7 @@ export const InvoicePrintout: React.FC<InvoicePrintoutProps> = ({
           ${printConfig?.printQrCode
             ? `\
           <div style="text-align: center; margin-top: 15px;">
-             <div class="qr-placeholder">Lacak status dengan nomor tiket: ${escapeHtml(ticket.ticketNo)}</div>
+             <div class="qr-placeholder">Lacak status: ${trackingUrl ? escapeHtml(trackingUrl) : 'Token tracking belum tersedia'}</div>
           </div>
           `
             : ''}

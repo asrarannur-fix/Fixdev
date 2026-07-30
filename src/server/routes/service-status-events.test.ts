@@ -20,6 +20,14 @@ const receptionController = readFileSync(
   new URL('../controllers/serviceReception.controller.ts', import.meta.url),
   'utf8'
 );
+const migrationScript = readFileSync(
+  new URL('../../../scripts/migrate.ts', import.meta.url),
+  'utf8'
+);
+const databaseController = readFileSync(
+  new URL('../controllers/database.controller.ts', import.meta.url),
+  'utf8'
+);
 
 describe('service status event routes', () => {
   it('exposes status history as read-only and tenant-scoped', () => {
@@ -63,6 +71,17 @@ describe('service status event routes', () => {
   });
 });
 
+describe('migration runners', () => {
+  it('shares version-checksum ledger and upgrades filename-only ledgers', () => {
+    for (const runner of [migrationScript, databaseController]) {
+      expect(runner).toContain('version TEXT PRIMARY KEY, checksum TEXT');
+      expect(runner).toContain("RENAME COLUMN filename TO version");
+      expect(runner).toContain('sha256');
+      expect(runner).toContain('UPDATE schema_migrations SET checksum');
+    }
+  });
+});
+
 describe('service audit schema', () => {
   it('scopes reception idempotency to tenant and ignores absent keys', () => {
     const sql = migration('063_service_reception_idempotency.sql');
@@ -90,5 +109,15 @@ describe('service audit schema', () => {
 
     expect(sql).toContain('WHERE NOT EXISTS');
     expect(sql).toContain("ev.ticket_id=st.id AND ev.to_status='DITERIMA'");
+  });
+
+  it('enforces each event tenant-ticket pair without scanning legacy rows', () => {
+    const sql = migration('069_service_status_event_tenant_scope.sql');
+
+    expect(sql).toContain('ON service_tickets(tenant_id, id)');
+    expect(sql).toContain('FOREIGN KEY (tenant_id, ticket_id)');
+    expect(sql).toContain('REFERENCES service_tickets(tenant_id, id)');
+    expect(sql).toContain('NOT VALID');
+    expect(sql).not.toMatch(/\bUPDATE\b|\bDELETE\b|\bINSERT\b/);
   });
 });

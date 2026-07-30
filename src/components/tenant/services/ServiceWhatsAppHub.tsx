@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Share2 } from 'lucide-react';
+import { normalizeIndonesianPhone } from '../../../utils/serviceReceptionUtils';
 
 interface ServiceWhatsAppHubProps {
   ticket: any;
@@ -19,8 +20,18 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
   renderTenantWaTemplate,
   setCustomWaMessageText,
   showToast,
-}) => (
-  <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 rounded-2xl p-4 space-y-3.5 shadow-md">
+}) => {
+  const defaultMessage = renderTenantWaTemplate('SERVICE_UPDATE', {
+    customer_name: customer?.name || 'Pelanggan',
+    ticket_no: ticket.ticketNo,
+    device_name: ticket.deviceName,
+    ticket_status: ticket.status,
+  }) || `Halo *${customer?.name || 'Pelanggan'}*,\n\nUnit *${ticket.deviceName}* Anda telah terdaftar di sistem kami.`;
+  const message = customWaMessageText || defaultMessage;
+  const recipientPhone = normalizeIndonesianPhone(customer?.phone || '');
+
+  return (
+   <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 rounded-2xl p-4 space-y-3.5 shadow-md">
     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-green-500/5 to-teal-500/5" />
     <div className="relative flex items-center justify-between">
       <h4 className="font-black text-[10px] text-emerald-700 dark:text-emerald-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
@@ -68,10 +79,7 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
         <label className="block text-[10px] font-mono text-slate-400 uppercase">Isi Pesan WhatsApp (Dapat Diedit Manual)</label>
         <textarea
           rows={4}
-          value={customWaMessageText || (() => {
-            const ctx = { customer_name: customer?.name || 'Pelanggan', ticket_no: ticket.ticketNo, device_name: ticket.deviceName, ticket_status: ticket.status };
-            return renderTenantWaTemplate('SERVICE_UPDATE', ctx) || `Halo *${customer?.name || 'Pelanggan'}*,\n\nUnit *${ticket.deviceName}* Anda telah terdaftar di sistem kami.`;
-          })()}
+          value={message}
           onChange={(e) => setCustomWaMessageText(e.target.value)}
           className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-accent font-medium leading-relaxed font-mono"
         />
@@ -79,10 +87,11 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
     </div>
 
     <div className="flex gap-2 justify-end">
-      <button type="button" onClick={() => { navigator.clipboard.writeText(customWaMessageText || ''); showToast('Isi pesan WhatsApp berhasil disalin ke clipboard!', 'success'); }} className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold cursor-pointer">Salin Pesan</button>
-      <a href={`https://wa.me/${(customer?.phone || '62').split('').filter((c) => c >= '0' && c <= '9').join('')}?text=${encodeURIComponent(customWaMessageText || '')}`} target="_blank" rel="noopener noreferrer" className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm">
+      <button type="button" onClick={() => { void navigator.clipboard.writeText(message); showToast('Isi pesan WhatsApp berhasil disalin ke clipboard!', 'success'); }} className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold cursor-pointer">Salin Pesan</button>
+      <a href={recipientPhone ? `https://wa.me/${recipientPhone}?text=${encodeURIComponent(message)}` : undefined} aria-disabled={!recipientPhone} target="_blank" rel="noopener noreferrer" className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm aria-disabled:pointer-events-none aria-disabled:opacity-50">
         <Share2 className="w-3.5 h-3.5" /> Kirim via wa.me (Manual Link)
       </a>
     </div>
   </div>
-);
+  );
+};

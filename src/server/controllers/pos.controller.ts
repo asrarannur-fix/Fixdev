@@ -447,7 +447,9 @@ export const voidSale = async (req: any, res: any) => {
         `SELECT id, invoice_no as "invoiceNo", items, grand_total as "grandTotal",
                 subtotal, discount_amount as "discountAmount", tax_amount as "taxAmount",
                 payment_method as "paymentMethod", is_refunded, shift_id as "shiftId",
-                customer_id as "customerId", deposit_used as "depositUsed"
+                 customer_id as "customerId", deposit_used as "depositUsed",
+                 payment_details as "paymentDetails"
+
          FROM pos_transactions WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 FOR UPDATE`,
         [id, tenantId, branchId]
       );
@@ -466,8 +468,8 @@ export const voidSale = async (req: any, res: any) => {
       // Mark as refunded
       await client.query(
         `UPDATE pos_transactions SET is_refunded=TRUE, status='VOIDED', voided_at=NOW(),
-         void_reason=$1 WHERE id=$2`,
-        [reason, id]
+         void_reason=$1 WHERE id=$2 AND tenant_id=$3 AND branch_id=$4 AND is_refunded=FALSE`,
+        [reason, id, tenantId, branchId]
       );
 
       const warehouseRes = await client.query(
@@ -573,6 +575,19 @@ export const voidSale = async (req: any, res: any) => {
           `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
            VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
           [journalId, taxAcct.rows[0].id, tx.taxAmount]
+        );
+      }
+      const totalCogs = tx.items.reduce(
+        (sum: number, item: any) => sum + (Number(item.unitCost) || 0) * (Number(item.quantity) || 0),
+        0
+      );
+      if (totalCogs > 0) {
+        const cogsAcctId = await ensureAccount(client, tenantId, '50100');
+        const inventoryAcctId = await ensureAccount(client, tenantId, '10200');
+        await client.query(
+          `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
+           VALUES (gen_random_uuid(), $1, $2, $3, 0), (gen_random_uuid(), $1, $4, 0, $3)`,
+          [journalId, inventoryAcctId, totalCogs, cogsAcctId]
         );
       }
 

@@ -8,6 +8,7 @@ import {
   getPrintHeaderHtml,
   getPrintFooterHtml,
   getPrintTermsHtml,
+  escapeHtml,
 } from '../utils/print';
 import {
   Smartphone,
@@ -230,14 +231,13 @@ export const DeviceRentalDashboard: React.FC = () => {
   const handleProcessReturn = async () => {
     if (!returningContract) return;
 
-    const damageAmt = Math.min(
-      returningContract.deposit_amount,
-      Math.max(0, damageDeductionInput ? Number(damageDeductionInput) || 0 : 0)
-    );
-    if (damageAmt > returningContract.deposit_amount) {
-      showToast('Denda kerusakan tidak boleh melebihi nilai deposit penjamin!', 'error');
+    const depositPaid = Math.max(0, Number(returningContract.deposit_paid) || 0);
+    const requestedDamage = damageDeductionInput ? Number(damageDeductionInput) : 0;
+    if (!Number.isFinite(requestedDamage) || requestedDamage < 0 || requestedDamage > depositPaid) {
+      showToast('Denda kerusakan harus valid dan tidak boleh melebihi deposit yang dibayar!', 'error');
       return;
     }
+    const damageAmt = requestedDamage;
 
     try {
       await returnContract(returningContract.id, {
@@ -288,7 +288,7 @@ export const DeviceRentalDashboard: React.FC = () => {
   };
 
   const handleCancelContract = async (contract: RentalContract) => {
-    if (!confirm(`Batalkan kontrak ${contract.contract_number}?`)) return;
+    if (!confirm(`Batalkan kontrak ${escapeHtml(contract.contract_number)}?`)) return;
 
     try {
       await cancelContract(contract.id);
@@ -302,7 +302,6 @@ export const DeviceRentalDashboard: React.FC = () => {
   // Print functions
   const handlePrintRentalContract = (contract: RentalContract) => {
     const printDoc = document.createElement('div');
-
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
       businessName,
@@ -315,7 +314,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     printDoc.innerHTML = `
       <html>
         <head>
-          <title>Contract - ${contract.contract_number}</title>
+          <title>Contract - ${escapeHtml(contract.contract_number)}</title>
           <style>
             body { font-family: 'Courier New', Courier, monospace; width: 76mm; margin: 0 auto; padding: 10px; font-size: ${fontSizePx}px; color: #000; }
             .text-center { text-align: center; }
@@ -327,17 +326,17 @@ export const DeviceRentalDashboard: React.FC = () => {
         <body>
           <div class="text-center">${headerHtml}</div>
           <div class="hr"></div>
-          <p>ID Kontrak: ${contract.contract_number}</p>
-          <p>Tanggal: ${contract.start_date}</p>
-          <p>Pelanggan: ${contract.customer_name}</p>
+          <p>ID Kontrak: ${escapeHtml(contract.contract_number)}</p>
+          <p>Tanggal: ${escapeHtml(contract.start_date)}</p>
+          <p>Pelanggan: ${escapeHtml(contract.customer_name)}</p>
           <div class="hr"></div>
           <div class="section">
             <p class="bold">Perangkat:</p>
-            <p>${contract.device_name}</p>
+            <p>${escapeHtml(contract.device_name)}</p>
           </div>
           <div class="section">
             <p>Durasi: ${contract.duration_days} Hari</p>
-            <p>Berakhir: ${contract.end_date}</p>
+            <p>Berakhir: ${escapeHtml(contract.end_date)}</p>
           </div>
           <div class="hr"></div>
           <p>Biaya Sewa: Rp ${contract.total_rent_amount.toLocaleString()}</p>
@@ -371,7 +370,8 @@ export const DeviceRentalDashboard: React.FC = () => {
   const handlePrintReturnReceipt = (contract: RentalContract, damage: number, notes: string) => {
     const printDoc = document.createElement('div');
 
-    const netRefund = contract.deposit_amount - damage;
+    const depositPaid = Math.max(0, Number(contract.deposit_paid) || 0);
+    const netRefund = depositPaid - damage;
 
     const fontSizePx = getPrintFontSizePx(printConfig);
     const headerHtml = getPrintHeaderHtml(printConfig, {
@@ -385,7 +385,7 @@ export const DeviceRentalDashboard: React.FC = () => {
     printDoc.innerHTML = `
       <html>
         <head>
-          <title>Return - ${contract.contract_number}</title>
+          <title>Return - ${escapeHtml(contract.contract_number)}</title>
           <style>
             body { font-family: 'Courier New', Courier, monospace; width: 76mm; margin: 0 auto; padding: 10px; font-size: ${fontSizePx}px; color: #000; }
             .text-center { text-align: center; }
@@ -396,13 +396,13 @@ export const DeviceRentalDashboard: React.FC = () => {
         <body>
           <div class="text-center">${headerHtml}</div>
           <div class="hr"></div>
-          <p>ID Kontrak: ${contract.contract_number}</p>
-          <p>Pelanggan: ${contract.customer_name}</p>
-          <p>Perangkat: ${contract.device_name}</p>
+          <p>ID Kontrak: ${escapeHtml(contract.contract_number)}</p>
+          <p>Pelanggan: ${escapeHtml(contract.customer_name)}</p>
+          <p>Perangkat: ${escapeHtml(contract.device_name)}</p>
           <div class="hr"></div>
-          <p>Deposit Awal: Rp ${contract.deposit_amount.toLocaleString()}</p>
+          <p>Deposit Dibayar: Rp ${depositPaid.toLocaleString()}</p>
           <p>Denda Kerusakan: Rp ${damage.toLocaleString()}</p>
-          ${notes ? `<p>Catatan: ${notes}</p>` : ''}
+          ${notes ? `<p>Catatan: ${escapeHtml(notes)}</p>` : ''}
           <div class="hr"></div>
           <p class="bold">REFUND DEPOSIT: Rp ${netRefund.toLocaleString()}</p>
           <div class="hr"></div>

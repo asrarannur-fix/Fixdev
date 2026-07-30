@@ -146,7 +146,6 @@ const intakeChecklistSchema = z
   .strict();
 const qcDraftSchema = z
   .object({
-    score: z.number().finite().min(0).max(100).optional(),
     notes: z.string().trim().max(5000).optional(),
     checklist: z.array(z.object({ criteria: z.string().trim().min(1).max(200), passed: z.boolean() }).strict()).max(100).optional(),
     photos: z.array(photo).max(20).optional(),
@@ -155,35 +154,17 @@ const qcDraftSchema = z
   .refine((value) => Object.keys(value).length > 0, 'Draft QC wajib berisi perubahan.');
 const qcSchema = z
   .object({
-    passed: z.boolean(),
-    score: z.number().min(0).max(100),
     notes: z.string().trim().min(2),
     checklist: z
       .array(z.object({ criteria: z.string().trim().min(1), passed: z.boolean() }))
       .min(1),
     photos: z.array(photo).max(20).default([]),
-  })
-  .superRefine((data, ctx) => {
-    if (data.passed && data.score < 80) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['score'],
-        message: 'Skor minimal untuk lulus QC adalah 80.',
-      });
-    }
-    if (data.passed && data.checklist.some((item) => !item.passed)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['checklist'],
-        message: 'Semua pemeriksaan harus lulus sebelum QC diselesaikan.',
-      });
-    }
   });
 const handoverSchema = z
   .object({
     paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'TEMPO']),
     referenceNo: z.string().trim().max(200).optional(),
-    proofName: z.string().trim().max(255).optional(),
+    proofName: z.string().trim().max(255).regex(/^[A-Za-z0-9._-]+$/, 'Nama bukti pembayaran tidak valid.').optional(),
     tempoDays: z.number().int().min(1).max(365).optional(),
     checklist: z.object({
       accessoriesReturned: z.literal(true),
@@ -204,7 +185,7 @@ const handoverSchema = z
         message: 'Termin hanya berlaku untuk pembayaran tempo.',
       });
     }
-    if (!['CASH', 'TEMPO'].includes(value.paymentMethod) && !value.referenceNo) {
+    if (!['CASH', 'TEMPO'].includes(value.paymentMethod) && !value.referenceNo && !value.proofName) {
       ctx.addIssue({
         code: 'custom',
         path: ['referenceNo'],
@@ -218,6 +199,10 @@ const receivableSettlementSchema = z.object({
   method: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET']),
   referenceNo: z.string().trim().max(200).optional(),
   idempotencyKey: z.string().trim().min(8).max(200),
+}).superRefine((value, ctx) => {
+  if (value.method !== 'CASH' && !value.referenceNo) {
+    ctx.addIssue({ code: 'custom', path: ['referenceNo'], message: 'Nomor referensi pembayaran wajib diisi.' });
+  }
 });
 const bulkDeleteSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(100) });
 const partSchema = z.object({
@@ -243,25 +228,24 @@ export const workMetadataSchema = z.object({
   storageLocationId: z.string().uuid().nullable().optional(),
 });
 
-function ticketSelect() {
-  return `id, tenant_id AS "tenantId", branch_id AS "branchId", ticket_no AS "ticketNo",
-    customer_id AS "customerId", device_name AS "deviceName", device_serial AS "deviceSerial",
-    device_brand_model AS "deviceBrandModel", customer_complaints AS "customerComplaints",
-    tech_diagnosis AS "techDiagnosis", estimated_cost::float AS "estimatedCost",
-    customer_approval_status AS "customerApprovalStatus", assigned_tech_id AS "assignedTechId",
-    parts_requested AS "partsRequested", parts_used AS "partsUsed", initial_checklist AS "initialChecklist",
-    initial_photos AS "initialPhotos", accessories_left AS "accessoriesLeft", custom_accessories AS "customAccessories",
-    physical_condition AS "physicalCondition", estimated_completion_date AS "estimatedCompletionDate",
-    captured_conditions AS "capturedConditions", dynamic_fields AS "dynamicFields", storage_location_id AS "storageLocationId",
-    internal_discussions AS "internalDiscussions", tech_pre_checklist AS "techPreChecklist",
-    tech_post_checklist AS "techPostChecklist", technician_notes AS "technicianNotes",
-    repair_start_time AS "repairStartTime", repair_end_time AS "repairEndTime",
-    qc_score::float AS "qcScore",
-    qc_checklist AS "qcChecklist", qc_photos AS "qcPhotos", qc_notes AS "qcNotes", qc_status AS "qcStatus",
-    status, timeline, warranty_months AS "warrantyMonths", warranty_ends_at AS "warrantyEndsAt",
-    down_payment::float AS "downPayment", payment_method AS "paymentMethod", payment_ref AS "paymentRef",
-    payment_proof_name AS "paymentProofName", tempo_days AS "tempoDays", handover_at AS "handoverAt",
-    invoice_id AS "invoiceId", public_tracking_token AS "publicTrackingToken", created_at AS "createdAt"`;
+function ticketSelect(prefix = '') {
+  return `${prefix}id, ${prefix}tenant_id AS "tenantId", ${prefix}branch_id AS "branchId", ${prefix}ticket_no AS "ticketNo",
+    ${prefix}customer_id AS "customerId", ${prefix}device_name AS "deviceName", ${prefix}device_serial AS "deviceSerial",
+    ${prefix}device_brand_model AS "deviceBrandModel", ${prefix}customer_complaints AS "customerComplaints",
+    ${prefix}tech_diagnosis AS "techDiagnosis", ${prefix}estimated_cost::float AS "estimatedCost",
+    ${prefix}customer_approval_status AS "customerApprovalStatus", ${prefix}assigned_tech_id AS "assignedTechId",
+    ${prefix}parts_requested AS "partsRequested", ${prefix}parts_used AS "partsUsed", ${prefix}initial_checklist AS "initialChecklist",
+    ${prefix}initial_photos AS "initialPhotos", ${prefix}accessories_left AS "accessoriesLeft", ${prefix}custom_accessories AS "customAccessories",
+    ${prefix}physical_condition AS "physicalCondition", ${prefix}estimated_completion_date AS "estimatedCompletionDate",
+    ${prefix}captured_conditions AS "capturedConditions", ${prefix}dynamic_fields AS "dynamicFields", ${prefix}storage_location_id AS "storageLocationId",
+    ${prefix}internal_discussions AS "internalDiscussions", ${prefix}tech_pre_checklist AS "techPreChecklist",
+    ${prefix}tech_post_checklist AS "techPostChecklist", ${prefix}technician_notes AS "technicianNotes",
+    ${prefix}repair_start_time AS "repairStartTime", ${prefix}repair_end_time AS "repairEndTime",
+    ${prefix}qc_checklist AS "qcChecklist", ${prefix}qc_photos AS "qcPhotos", ${prefix}qc_notes AS "qcNotes", ${prefix}qc_status AS "qcStatus",
+    ${prefix}status, ${prefix}timeline, ${prefix}warranty_months AS "warrantyMonths", ${prefix}warranty_ends_at AS "warrantyEndsAt",
+    ${prefix}down_payment::float AS "downPayment", ${prefix}payment_method AS "paymentMethod", ${prefix}payment_ref AS "paymentRef",
+    ${prefix}payment_proof_name AS "paymentProofName", ${prefix}tempo_days AS "tempoDays", ${prefix}handover_at AS "handoverAt",
+    ${prefix}invoice_id AS "invoiceId", ${prefix}public_tracking_token AS "publicTrackingToken", ${prefix}created_at AS "createdAt"`;
 }
 
 async function requireTicketStorageLocation(client: any, ticket: any, locationId: string) {
@@ -347,8 +331,8 @@ async function appendEvent(
     ]
   );
   await client.query(
-    `UPDATE service_tickets SET status=$1,timeline=$2::jsonb,updated_at=NOW() WHERE id=$3 AND tenant_id=$4`,
-    [toStatus, JSON.stringify(timeline), ticket.id, req.tenantId]
+    `UPDATE service_tickets SET status=$1,timeline=$2::jsonb,updated_at=NOW() WHERE id=$3 AND tenant_id=$4 AND branch_id=$5`,
+    [toStatus, JSON.stringify(timeline), ticket.id, req.tenantId, ticket.branchId]
   );
   ticket.status = toStatus;
   ticket.timeline = timeline;
@@ -446,10 +430,11 @@ async function queueNotification(
 }
 
 async function finalTicket(client: any, req: Request) {
+  const branchId = req.branchId || String(req.headers['x-branch-id'] || '');
   return (
     await client.query(
       `SELECT ${ticketSelect()} FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 AND deleted_at IS NULL`,
-      [req.params.id, req.tenantId, req.branchId]
+      [req.params.id, req.tenantId, branchId]
     )
   ).rows[0];
 }
@@ -538,8 +523,9 @@ export async function uploadServicePhoto(req: Request, res: Response) {
         ? capturedConditions.map((condition: any) => condition?.id === conditionId ? { ...condition, photoUrl: objectPath, url: objectPath } : condition)
         : capturedConditions;
       const updated = await client.query(
-        `UPDATE service_tickets SET initial_photos=CASE WHEN $6::text <> '' THEN COALESCE(initial_photos, '[]'::jsonb) WHEN COALESCE(initial_photos, '[]'::jsonb) ? $1 THEN initial_photos ELSE COALESCE(initial_photos, '[]'::jsonb) || to_jsonb($1::text) END,
-         captured_conditions=$2::jsonb, updated_at=NOW()
+`UPDATE service_tickets SET initial_photos=CASE WHEN $6::text = '' AND NOT (COALESCE(initial_photos, '[]'::jsonb) ? $1) THEN COALESCE(initial_photos, '[]'::jsonb) || to_jsonb($1::text) ELSE initial_photos END,
+          qc_photos=CASE WHEN $6::text <> '' AND NOT (COALESCE(qc_photos, '[]'::jsonb) ? $1) THEN COALESCE(qc_photos, '[]'::jsonb) || to_jsonb($1::text) ELSE qc_photos END,
+          captured_conditions=$2::jsonb, updated_at=NOW()
          WHERE id=$3 AND tenant_id=$4 AND branch_id=$5 RETURNING ${ticketSelect()}`,
         [objectPath, JSON.stringify(updatedConditions), req.params.id, req.tenantId, req.branchId || req.headers['x-branch-id'], conditionId]
       );
@@ -566,7 +552,13 @@ export async function getServicePhoto(req: Request, res: Response) {
   const fileName = path.basename(req.params.fileName || '');
   if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName)) return res.status(404).end();
   try {
+    const ticket = await dbQuery(
+      'SELECT initial_photos, qc_photos FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3 AND deleted_at IS NULL',
+      [req.params.id, req.tenantId, req.branchId]
+    );
     const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
+    const registered = [...(ticket.rows[0]?.initial_photos || []), ...(ticket.rows[0]?.qc_photos || [])].some((photo: unknown) => photo === objectPath || path.basename(String(photo)) === fileName);
+    if (!registered) return res.status(404).end();
     res.type(fileName.endsWith('.png') ? 'png' : 'jpg').send(await storage.read(objectPath));
   } catch (error: any) {
     if (error.code === 'ENOENT') return res.status(404).end();
@@ -587,7 +579,7 @@ export async function listServiceTickets(req: Request, res: Response) {
     const from = String(req.query.from || req.query.dateFrom || '').trim();
     const to = String(req.query.to || req.query.dateTo || '').trim();
     const sort = String(req.query.sort || 'newest');
-    const sortMap: Record<string, string> = { newest: 'created_at DESC', oldest: 'created_at ASC', cost_desc: 'estimated_cost DESC', cost_asc: 'estimated_cost ASC', urgent: 'estimated_completion_date ASC NULLS LAST, created_at ASC' };
+    const sortMap: Record<string, string> = { newest: 'st.created_at DESC', oldest: 'st.created_at ASC', cost_desc: 'st.estimated_cost DESC', cost_asc: 'st.estimated_cost ASC', urgent: 'st.estimated_completion_date ASC NULLS LAST, st.created_at ASC' };
     const values: any[] = [req.tenantId, branchId];
     const filters = ['st.tenant_id=$1', 'st.branch_id=$2', 'st.deleted_at IS NULL'];
     const add = (sql: string, value: any) => { values.push(value); filters.push(sql.replace('$N', `$${values.length}`)); };
@@ -605,24 +597,31 @@ export async function listServiceTickets(req: Request, res: Response) {
     const base = `FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`;
     const countResult = await dbQuery(`SELECT COUNT(*)::int AS total ${base}`, values);
     const kpiResult = await dbQuery(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE st.status NOT IN ('SELESAI','DIAMBIL'))::int AS active, COUNT(*) FILTER (WHERE st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('SELESAI','DIAMBIL'))::int AS overdue, COALESCE(SUM(st.estimated_cost),0)::float AS estimated FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`, values);
-    const result = await dbQuery(`SELECT ${ticketSelect()}, c.name AS "customerName" ${base} ORDER BY ${sortMap[sort] || sortMap.newest}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, limit, offset]);
+    const result = await dbQuery(`SELECT ${ticketSelect('st.')}, c.name AS "customerName" ${base} ORDER BY ${sortMap[sort] || sortMap.newest}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, limit, offset]);
     res.json({ data: result.rows, total: countResult.rows[0]?.total || 0, limit, offset, kpi: kpiResult.rows[0] || { total: 0, active: 0, overdue: 0, estimated: 0 } });
   } catch (error: any) { sendError(res, error); }
 }
 
 export async function exportServiceTickets(req: Request, res: Response) {
   const original = req.query.limit;
+  const originalOffset = req.query.offset;
   req.query.limit = '100';
   req.query.offset = '0';
   const json = res.json.bind(res);
   res.json = (payload: any) => {
     const cell = (v: unknown) => { const s = String(v ?? ''); return `"${(/^[=+@-]/.test(s) ? `'${s}` : s).replaceAll('"', '""')}"`; };
     const rows = [['Ticket No', 'Device', 'Customer', 'Status', 'Estimated Cost'], ...(payload.data || []).map((s: any) => [s.ticketNo, s.deviceName, s.customerName, s.status, s.estimatedCost])];
-    res.type('text/csv').set('Content-Disposition', 'attachment; filename="service-tickets.csv"').send(`\\ufeff${rows.map((r) => r.map(cell).join(',')).join('\\r\\n')}`);
+    res.type('text/csv').set('Content-Disposition', 'attachment; filename="service-tickets.csv"').send(`\ufeff${rows.map((r) => r.map(cell).join(',')).join('\r\n')}`);
     return res;
   };
-  await listServiceTickets(req, res);
-  req.query.limit = original;
+  try {
+    await listServiceTickets(req, res);
+  } finally {
+    if (original === undefined) delete req.query.limit;
+    else req.query.limit = original;
+    if (originalOffset === undefined) delete req.query.offset;
+    else req.query.offset = originalOffset;
+  }
 }
 
 export async function getServiceTicket(req: Request, res: Response) {
@@ -642,7 +641,7 @@ export async function transitionServiceTicket(req: Request, res: Response) {
   const startedAt = Date.now();
   const parsed = transitionSchema.safeParse(req.body);
   if (!parsed.success) return res.status(422).json({ error: 'Status atau catatan tidak valid.' });
-  const ticketId = req.params.id;
+  const ticketId = `${req.tenantId}:${req.branchId || String(req.headers['x-branch-id'] || '')}:${req.params.id}`;
   const cooldown = checkTransitionCooldown(ticketId);
   if (!cooldown.ok) {
     return res.status(429).json({
@@ -651,7 +650,6 @@ export async function transitionServiceTicket(req: Request, res: Response) {
   }
   try {
     const ticket = await dbTransaction(async (client) => {
-      ticketTransitionTimes.set(ticketId, Date.now());
       const current = await lockedTicket(client, req);
       const to = parsed.data.status;
       // Status pasca-pembayaran WAJIB lewat handoverServiceTicket (potong stok,
@@ -694,6 +692,7 @@ export async function transitionServiceTicket(req: Request, res: Response) {
         throw error;
       }
       await appendEvent(client, req, current, to, parsed.data.note);
+      ticketTransitionTimes.set(ticketId, Date.now());
       return finalTicket(client, req);
     });
     logServiceOperation(req, 'workflow_transition', 'success', startedAt, { toStatus: parsed.data.status });
@@ -788,10 +787,10 @@ export async function updateServiceQcDraft(req: Request, res: Response) {
         throw error;
       }
       await client.query(
-        `UPDATE service_tickets SET qc_score=COALESCE($1,qc_score),qc_notes=COALESCE($2,qc_notes),
-         qc_checklist=COALESCE($3::jsonb,qc_checklist),qc_photos=COALESCE($4::jsonb,qc_photos),updated_at=NOW()
-         WHERE id=$5 AND tenant_id=$6 AND branch_id=$7`,
-        [parsed.data.score ?? null, parsed.data.notes ?? null, parsed.data.checklist === undefined ? null : JSON.stringify(parsed.data.checklist), parsed.data.photos === undefined ? null : JSON.stringify(parsed.data.photos), current.id, req.tenantId, current.branchId]
+        `UPDATE service_tickets SET qc_notes=COALESCE($1,qc_notes),qc_checklist=COALESCE($2::jsonb,qc_checklist),
+         qc_photos=COALESCE($3::jsonb,qc_photos),updated_at=NOW()
+         WHERE id=$4 AND tenant_id=$5 AND branch_id=$6`,
+        [parsed.data.notes ?? null, parsed.data.checklist === undefined ? null : JSON.stringify(parsed.data.checklist), parsed.data.photos === undefined ? null : JSON.stringify(parsed.data.photos), current.id, req.tenantId, current.branchId]
       );
       await client.query(
         'INSERT INTO audit_logs(id,tenant_id,user_id,action,details) VALUES(gen_random_uuid(),$1,$2,$3,$4)',
@@ -955,7 +954,8 @@ export async function completeServiceQc(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
-      if (parsed.data.passed) {
+      const passed = parsed.data.checklist.every((item) => item.passed);
+      if (passed) {
         const unresolved = await client.query(
           `SELECT COUNT(*)::int AS total FROM service_parts WHERE tenant_id=$1 AND ticket_id=$2 AND status='REQUESTED'`,
           [req.tenantId, current.id]
@@ -969,14 +969,13 @@ export async function completeServiceQc(req: Request, res: Response) {
         }
       }
       await client.query(
-        `UPDATE service_tickets SET qc_score=$1,qc_notes=$2,qc_checklist=$3::jsonb,qc_photos=$4::jsonb,qc_status=$5,updated_at=NOW()
-         WHERE id=$6 AND tenant_id=$7`,
+        `UPDATE service_tickets SET qc_notes=$1,qc_checklist=$2::jsonb,qc_photos=$3::jsonb,qc_status=$4,updated_at=NOW()
+         WHERE id=$5 AND tenant_id=$6`,
         [
-          parsed.data.score,
           parsed.data.notes,
           JSON.stringify(parsed.data.checklist),
           JSON.stringify(parsed.data.photos),
-          parsed.data.passed ? 'PASSED' : 'FAILED',
+          passed ? 'PASSED' : 'FAILED',
           current.id,
           req.tenantId,
         ]
@@ -985,10 +984,8 @@ export async function completeServiceQc(req: Request, res: Response) {
         client,
         req,
         current,
-        parsed.data.passed ? 'SELESAI' : 'REWORK',
-        parsed.data.passed
-          ? `QC lulus dengan skor ${parsed.data.score}.`
-          : `QC gagal; unit kembali ke rework. Skor ${parsed.data.score}.`
+        passed ? 'SELESAI' : 'REWORK',
+        passed ? 'QC lulus; semua pemeriksaan checklist berhasil.' : 'QC gagal; unit kembali ke rework.'
       );
       return finalTicket(client, req);
     });
@@ -1325,8 +1322,6 @@ export async function requestServicePart(req: Request, res: Response) {
       const ticket = await lockedTicket(client, req);
       if (
         ![
-          'DIAGNOSA',
-          'MENUGGU_APPROVAL',
           'SEDANG_DIKERJAKAN',
           'MENUGGU_SPAREPART',
           'REWORK',
@@ -1413,14 +1408,10 @@ export async function cancelServicePart(req: Request, res: Response) {
   try {
     const data = await dbTransaction(async (client) => {
       const ticket = await lockedTicket(client, req);
-      const cancelledPart = await client.query(
-        `SELECT id, (quantity * unit_price)::float AS cost
-         FROM service_parts WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status IN ('REQUESTED','RESERVED') LIMIT 1`,
-        [req.params.partId, req.tenantId, ticket.id]
-      );
       const removed = await client.query(
         `UPDATE service_parts SET status='CANCELLED',updated_at=NOW()
-         WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status IN ('REQUESTED','RESERVED') RETURNING id`,
+         WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status IN ('REQUESTED','RESERVED')
+         RETURNING id, (quantity * unit_price)::float AS cost`,
         [req.params.partId, req.tenantId, ticket.id]
       );
       if (!removed.rows[0]) {
@@ -1429,7 +1420,7 @@ export async function cancelServicePart(req: Request, res: Response) {
         throw error;
       }
       // Roll back the cancelled part cost from the ticket's estimated_cost.
-      const cancelledCost = Number(cancelledPart.rows[0]?.cost) || 0;
+      const cancelledCost = Number(removed.rows[0].cost) || 0;
       await client.query(
         `UPDATE service_tickets SET estimated_cost = GREATEST(0, COALESCE(estimated_cost,0) - $1), updated_at=NOW()
          WHERE id=$2 AND tenant_id=$3`,

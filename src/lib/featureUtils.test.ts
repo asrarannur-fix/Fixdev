@@ -1,7 +1,7 @@
 
 import { describe, expect, it } from "vitest";
 import { SubscriptionTier } from "../types";
-import { ALL_FEATURES, getEffectiveFeatures, isModuleLocked, isTrialActive, TIER_FEATURES } from "./featureUtils";
+import { ALL_FEATURES, getEffectiveFeatures, isModuleLocked, isSubTabFeatureAllowed, isTrialActive, TIER_FEATURES } from "./featureUtils";
 
 describe('featureUtils feature gating', () => {
   it('should grant all features when trial is active', () => {
@@ -30,5 +30,12 @@ describe('featureUtils feature gating', () => {
   it('should expire trial when trialEndsAt is in the past', () => {
     const tenant = { status: 'TRIAL' as const, trialEndsAt: new Date(Date.now() - 86400000).toISOString() };
     expect(isTrialActive(tenant)).toBe(false);
+  });
+
+  it('hides rental subtab without RENTAL feature', () => {
+    const tenant = { tier: SubscriptionTier.ENTERPRISE, limits: { features: ['SERVICE'] } };
+    expect(isSubTabFeatureAllowed('services', 'rental', tenant)).toBe(false);
+    expect(isSubTabFeatureAllowed('services', 'list', tenant)).toBe(true);
+    expect(isSubTabFeatureAllowed('services', 'rental', { tier: SubscriptionTier.ENTERPRISE })).toBe(true);
   });
 });

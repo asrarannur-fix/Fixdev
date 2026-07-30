@@ -48,7 +48,6 @@ import {
   Send,
   Filter,
   ChevronLeft,
-  QrCode,
   Cpu,
   Share2,
   Barcode,
@@ -65,7 +64,6 @@ import { Button } from '../ui/Button';
 import { FieldServiceGps } from '../FieldServiceGps';
 import { DeviceRentalDashboard } from '../DeviceRentalDashboard';
 import { WarrantyClaims } from '../WarrantyClaims';
-import { ServiceTrackerQr } from '../ServiceTrackerQr';
 import { KnowledgeBase } from '../KnowledgeBase';
 import { DocumentPrintouts } from './services/DocumentPrintouts';
 import { WhatsAppHub } from './services/WhatsAppHub';
@@ -91,6 +89,7 @@ import {
   UserRole,
 } from '../../types';
 import { CATEGORY_CONFIGS } from '../../config/categoryConfigs';
+import { isSubTabFeatureAllowed } from '../../lib/featureUtils';
 import {
   buildServiceReceptionPreview,
   isValidIndonesianPhone,
@@ -235,9 +234,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     let cancelled = false;
     setDetailLoading(true);
     setDetailError(null);
-    Promise.all([getServiceTicket(apiFetch, id), getServiceStatusEvents(apiFetch, id)])
-      .then(([ticket, timeline]) => {
-        if (!cancelled) setFetchedService({ ...ticket, timeline: timeline.length ? timeline : ticket.timeline });
+    getServiceTicket(apiFetch, id)
+      .then(async (ticket) => {
+        const timeline = await getServiceStatusEvents(apiFetch, id).catch(() => null);
+        if (!cancelled) setFetchedService({ ...ticket, timeline: timeline ?? ticket.timeline });
       })
       .catch((error: Error) => {
         if (!cancelled) setDetailError(error.message);
@@ -381,7 +381,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const [showDocumentation, setShowDocumentation] = useState<boolean>(false);
   const [showScreenLock, setShowScreenLock] = useState<boolean>(false);
   // Quality control states
-  const [qcScore, setQcScore] = useState<number>(0);
   const [qcNotes, setQcNotes] = useState<string>('');
   // Technician assignment
   const [autoAssignReason, setAutoAssignReason] = useState<string | null>(null);
@@ -406,15 +405,26 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
       cancelled = true;
     };
   }, [apiFetch, activeTenantId, showToast]);
-  const [localSubTab, setLocalSubTab] = useState<string>(
-    () => localStorage.getItem('fixdev_srv_subtab') || activeSubTab || 'list'
-  );
+   const rentalAllowed =
+     currentUser?.role === UserRole.SUPER_ADMIN ||
+    isSubTabFeatureAllowed('services', 'rental', tenantObj || {});
+  const [localSubTab, setLocalSubTab] = useState<string>(() => {
+    const storedSubTab = localStorage.getItem('fixdev_srv_subtab') || activeSubTab || 'list';
+    return storedSubTab === 'rental' && !rentalAllowed ? 'list' : storedSubTab;
+  });
   const [showMoreDetails, setShowMoreDetails] = useState<boolean>(false);
   useEffect(() => {
+    if (activeSubTab === 'rental' && !rentalAllowed) {
+      localStorage.setItem('fixdev_srv_subtab', 'list');
+      onSetTab?.('services', 'list');
+      setLocalSubTab('list');
+      return;
+    }
     setLocalSubTab(activeSubTab);
-  }, [activeSubTab]);
+  }, [activeSubTab, onSetTab, rentalAllowed]);
 
   const setActiveSubTab = (sub: string) => {
+    if (sub === 'rental' && !rentalAllowed) sub = 'list';
     setLocalSubTab(sub);
     try {
       localStorage.setItem('fixdev_srv_subtab', sub);
@@ -517,34 +527,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     Object.keys(newSrvChecklist).length === 0 || Object.values(newSrvChecklist).some(Boolean),
   ].filter(Boolean).length;
   const activeTenant = tenantObj;
-  const isSubTabAllowed = (tabId: string, subId: string) => {
-    if (currentUser.role === 'SUPER_ADMIN') return true;
-    const tier = tenantObj?.tier || 'BASIC';
-    const tierDefaultFeatures: Record<string, string[]> = {
-      BASIC: ['POS', 'SERVICE'],
-      PRO: ['POS', 'SERVICE', 'ACCOUNTING', 'HRM', 'CRM', 'WHATSAPP', 'TELEGRAM'],
-      ENTERPRISE: [
-        'POS',
-        'SERVICE',
-        'ACCOUNTING',
-        'HRM',
-        'CRM',
-        'WHATSAPP',
-        'TELEGRAM',
-        'MARKETPLACE',
-        'RENTAL',
-        'SECURITY',
-      ],
-    };
-    const rawFeatures = tenantObj?.limits?.features;
-    const tenantFeatures =
-      Array.isArray(rawFeatures) && rawFeatures.length > 0
-        ? (rawFeatures as string[]).map((f: string) => f.toUpperCase())
-        : tierDefaultFeatures[tier] || ['POS', 'SERVICE'];
-    if (tabId === 'services' && subId === 'rental' && !tenantFeatures.includes('RENTAL'))
-      return false;
-    return true;
-  };
+  const isSubTabAllowed = (tabId: string, subId: string) =>
+    currentUser.role === UserRole.SUPER_ADMIN ||
+    isSubTabFeatureAllowed(tabId, subId, tenantObj || {});
   const startCamera = async () => {
     let stream: MediaStream | null = null;
     try {
@@ -611,12 +596,12 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   };
   const completeServiceQC = async (
     ticketId: string,
-    score: number,
     notes: string,
-    passed: boolean
+    checklist?: ServiceTicket['qcChecklist']
   ) => {
     try {
-      await completeServiceQCContext(ticketId, score, notes, passed);
+      const ticket = await completeServiceQCContext(ticketId, notes, checklist);
+      const passed = !!ticket?.qcChecklist?.length && ticket.qcChecklist.every((item) => item.passed);
       showToast(
         passed
           ? 'Quality Control berhasil diselesaikan!'
@@ -675,7 +660,11 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
           )
           .join('\n')
       : '• Tidak ada penggantian spare part';
-    const approvalLink = `${publicBaseUrl}/?tab=service&sub=approve-quote&ticket=${encodeURIComponent(ticket.ticketNo)}`;
+    if (!ticket.publicTrackingToken) {
+      showToast('Link persetujuan belum tersedia. Muat ulang tiket lalu coba lagi.', 'error');
+      return;
+    }
+    const approvalLink = `${publicBaseUrl}/?tracking=${encodeURIComponent(ticket.publicTrackingToken)}`;
     const ctx = {
       customer_name: customer?.name || 'Pelanggan',
       ticket_no: ticket.ticketNo,
@@ -757,7 +746,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 partOrderTicket,
                 previewReceptionTicket,
                 qcNotes,
-                qcScore,
                 requestPartMode,
                 requestedPartId,
                  requestedPartQty,
@@ -809,7 +797,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 setPartOrderTicket,
                 setPreviewReceptionTicket,
                 setQcNotes,
-                setQcScore,
                 setRequestPartMode,
                 setRequestedPartId,
                 setRequestedPartQty,
@@ -855,8 +842,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 showToast,
                 customers,
                 employees,
-                products,
-                currentTenantId,
+                 products,
+                 publicBaseUrl,
+                 currentTenantId,
                 microComponentsLoading,
                 microComponentsError,
                 loadMicroComponents,
@@ -1021,169 +1009,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         {localSubTab === 'rental' && <DeviceRentalDashboard />}
         {/* Subtab: WARRANTY & CLAIMS */}
         {localSubTab === 'warranty-claims' && <WarrantyClaims />}
-        {/* Subtab: QR CODE TRACKING */}
-        {localSubTab === 'qr-tracker' && <ServiceTrackerQr />}
-        {/* Subtab: QC SCORING — reuse ServiceList filtered to QC status */}
-        {localSubTab === 'qc-scoring' && (
-          <ServiceList
-            qcView
-            {...{
-              activeTenantId,
-              activeWaModal,
-              additionalCostAmount,
-              additionalCostApprovedBy,
-              additionalCostDescription,
-              additionalCostMethod,
-              additionalCostNote,
-              additionalCostProof,
-              additionalCostTicket,
-              approveServiceEstimate,
-              cameraActive,
-              completeServiceQC,
-              currentUserPermissions,
-              customWaMessageText,
-              filteredMicroComponents,
-              handlePrintReceptionReceipt,
-              handoverChecklist,
-              handoverPaymentMethod,
-              handoverProofName,
-              handoverRefNo,
-              handoverServiceDevice,
-              handoverTempoDays,
-              internalCommentText,
-              isSubTabAllowed,
-              justCreatedTicket,
-              liveTimerSeconds,
-              manualDiagCost,
-              manualDiagNotes,
-              microChargeable,
-              microNote,
-              microQty,
-              microSearch,
-              microTicket,
-              microUnitPrice,
-              openManualEstimateWhatsApp,
-              openMicroComponentModal,
-              partOrderCost,
-              partOrderCostApproved,
-              partOrderEta,
-              partOrderName,
-              partOrderNote,
-              partOrderQty,
-              partOrderReason,
-              partOrderSupplier,
-              partOrderTicket,
-              previewReceptionTicket,
-              qcNotes,
-              qcScore,
-              renderTenantWaTemplate,
-              requestPartMode,
-              requestedPartId,
-               requestedPartQty,
-               selectedPartWarehouseId,
-               setSelectedPartWarehouseId,
-               warehouses,
-               savingAdditionalCost,
-              savingMicroUsage,
-              savingPartOrder,
-              selectedMicro,
-              selectedMicroId,
-              selectedServiceId,
-              selectedServiceIds,
-              selectedSparepartId,
-              setActiveSubTab,
-              setActiveWaModal,
-              setAdditionalCostAmount,
-              setAdditionalCostApprovedBy,
-              setAdditionalCostDescription,
-              setAdditionalCostMethod,
-              setAdditionalCostNote,
-              setAdditionalCostProof,
-              setAdditionalCostTicket,
-              setCustomWaMessageText,
-              setHandoverChecklist,
-              setHandoverPaymentMethod,
-              setHandoverProofName,
-              setHandoverRefNo,
-              setHandoverTempoDays,
-              setInternalCommentText,
-              setJustCreatedTicket,
-              setManualDiagCost,
-              setManualDiagNotes,
-              setMicroChargeable,
-              setMicroNote,
-              setMicroQty,
-              setMicroSearch,
-              setMicroTicket,
-              setMicroUnitPrice,
-              setPartOrderCost,
-              setPartOrderCostApproved,
-              setPartOrderEta,
-              setPartOrderName,
-              setPartOrderNote,
-              setPartOrderQty,
-              setPartOrderReason,
-              setPartOrderSupplier,
-              setPartOrderTicket,
-              setPreviewReceptionTicket,
-              setQcNotes,
-              setQcScore,
-              setRequestPartMode,
-              setRequestedPartId,
-              setRequestedPartQty,
-              setSavingAdditionalCost,
-              setSavingMicroUsage,
-              setSavingPartOrder,
-              setSelectedMicroId,
-              setSelectedServiceId,
-              setSelectedServiceIds,
-              setSelectedSparepartId,
-              setShowInvoicePrintout,
-              setShowProvisionalQuote,
-              setShowSpkPrintout,
-              setShowWarrantyPrintout,
-              setSparepartQty,
-              setSparepartSN,
-               setSrvSearchQuery: setSrvSearchQueryFromUrl,
-               setSrvSort: setSrvSortFromUrl,
-               setStatusFilter: setStatusFilterFromUrl,
-               setViewingServiceTicketId: setViewingServiceTicketIdFromUrl,
-              showInvoicePrintout,
-              showProvisionalQuote,
-              showSpkPrintout,
-              showWarrantyPrintout,
-              sparepartQty,
-              sparepartSN,
-              srvSearchQuery,
-              srvSort,
-              startCamera,
-              statusFilter,
-              stopCamera,
-              tenantObj,
-              tenantServices,
-              updateServiceStatus,
-              videoRef,
-              viewingServiceTicketId,
-              currentUser,
-              showConfirm,
-              updateServiceTicket,
-              showToast,
-              customers,
-              employees,
-              products,
-              currentTenantId,
-              microComponentsLoading,
-              microComponentsError,
-              loadMicroComponents,
-              consumeMicroComponentForService,
-              addServiceDiagnostic,
-              requestServicePart,
-              cancelServicePart,
-              createServicePartOrder,
-              addApprovedAdditionalCost,
-            }}
-          />
-        )}
       </div>
       <DocumentPrintouts
         showSpkPrintout={showSpkPrintout}

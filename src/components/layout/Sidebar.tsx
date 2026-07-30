@@ -12,6 +12,7 @@ import {
   getEffectiveFeatures,
   getRequiredTierForModule,
   isModuleLocked as isFeatureLocked,
+  isSubTabFeatureAllowed,
   isTrialActive,
 } from '../../lib/featureUtils';
 import { RoleAvatar } from '../ui';
@@ -284,6 +285,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isSubmenuAllowed = (modId: string, subId: string) => {
     if (isSuperAdmin || isOwner) return true;
+    if (!isSubTabFeatureAllowed(modId, subId, activeTenant || {})) return false;
 
     // Tier-based feature gating untuk settings subtabs
     if (modId === 'settings') {

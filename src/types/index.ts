@@ -482,7 +482,6 @@ export interface ServiceTicket {
   assignedTechId?: string;
   partsUsed: SparepartUsage[];
   microComponentUsages?: MicroComponentUsage[];
-  qcScore?: number;
   qcChecklist?: { criteria: string; passed: boolean }[];
   qcPhotos?: string[];
   qcNotes?: string;
@@ -491,6 +490,7 @@ export interface ServiceTicket {
   warrantyMonths: number;
   warrantyEndsAt?: string;
   invoiceId?: string;
+  publicTrackingToken?: string;
   isOutsourced: boolean;
   outsourcedVendorId?: string;
   outsourcingCost?: number;

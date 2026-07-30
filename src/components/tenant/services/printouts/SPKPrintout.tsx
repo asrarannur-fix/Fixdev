@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Printer } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import Barcode from 'react-barcode';
+import { generateQrSvg } from '../../../../utils/qrSvg';
 
 interface SPKPrintoutProps {
   ticket: any;
@@ -26,10 +27,14 @@ export const SPKPrintout: React.FC<SPKPrintoutProps> = ({
   onPrint,
   fmtPrintDate,
 }) => {
+  const trackingUrl = ticket.publicTrackingToken ? `${publicBaseUrl}/?tracking=${encodeURIComponent(ticket.publicTrackingToken)}` : '';
   return createPortal(
     <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-55 p-4 overflow-y-auto">
       <div
-        className="bg-white dark:bg-zinc-950 p-6 w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 dark:border-zinc-800 font-sans text-slate-800 dark:text-zinc-100 space-y-4 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-100]:bg-zinc-900 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Cetak Surat Perintah Kerja"
+        className="bg-white max-h-full overflow-y-auto dark:bg-zinc-950 p-6 w-full rounded-2xl shadow-2xl relative border-4 border-slate-100 dark:border-zinc-800 font-sans text-slate-800 dark:text-zinc-100 space-y-4 dark:[&_.bg-white]:bg-zinc-950 dark:[&_.bg-slate-100]:bg-zinc-900 dark:[&_.border-slate-200]:border-zinc-800 dark:[&_.text-slate-800]:text-zinc-100 dark:[&_.text-slate-700]:text-zinc-200"
         style={{
           maxWidth:
             printConfig?.paperSize === 'thermal_58'
@@ -98,7 +103,8 @@ export const SPKPrintout: React.FC<SPKPrintoutProps> = ({
             </div>
             {printConfig?.printQrCode && (
               <div className="flex flex-col items-center justify-center py-2 border-t border-dashed border-slate-200">
-                <span className="text-[8px] text-slate-500 mt-1 break-all text-center">Lacak status: {publicBaseUrl}/?ticket={encodeURIComponent(ticket.ticketNo)}</span>
+                {trackingUrl && <div className="qr-placeholder" dangerouslySetInnerHTML={{ __html: generateQrSvg(trackingUrl, 3, 2) }} />}
+                <span className="text-[8px] text-slate-500 mt-1 break-all text-center">Lacak status: {trackingUrl || 'Token tracking belum tersedia'}</span>
               </div>
             )}
             {printConfig?.printTermsAndConditions ? (

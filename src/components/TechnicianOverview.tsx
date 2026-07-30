@@ -1135,14 +1135,19 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                         #{task.ticketNo}
                       </span>
                       <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                           void patchServiceWork(task.id, { assignedTechId: employeeTechId });
-                           void updateServiceStatus(
-                             task.id,
-                             ServiceStatus.DIAGNOSA,
-                             'Teknisi mengambil tiket untuk diagnosis.'
-                           );
+                          try {
+                            await patchServiceWork(task.id, { assignedTechId: employeeTechId });
+                            await updateServiceStatus(
+                              task.id,
+                              ServiceStatus.DIAGNOSA,
+                              'Teknisi mengambil tiket untuk diagnosis.'
+                            );
+                            showToast('Tiket berhasil diambil.', 'success');
+                          } catch (error: any) {
+                            showToast(error?.message || 'Gagal mengambil tiket.', 'error');
+                          }
                         }}
                         className="text-[9px] font-bold bg-accent-lighter text-accent hover:bg-indigo-100 px-2 py-1 rounded transition"
                       >

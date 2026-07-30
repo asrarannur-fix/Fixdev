@@ -335,9 +335,9 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
         )}
       </div>
 
-      <button
-        onClick={() => {
-          if (isRefOrProofRequired && !isHandoverValid) {
+       <button
+         onClick={async () => {
+           if (isRefOrProofRequired && !isHandoverValid) {
             showToast(
               "Gagal memproses: Nomor referensi atau unggah bukti transfer diperlukan!",
               "error",
@@ -353,9 +353,13 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
                 : undefined,
           };
 
-          handoverServiceDevice(ticket.id, handoverPaymentMethod, detailsObj);
-
-          setHandoverRefNo("");
+           try {
+             await handoverServiceDevice(ticket.id, handoverPaymentMethod, detailsObj);
+           } catch {
+             return;
+           }
+ 
+           setHandoverRefNo("");
           setHandoverProofName("");
           setHandoverTempoDays("30");
           setHandoverChecklist({

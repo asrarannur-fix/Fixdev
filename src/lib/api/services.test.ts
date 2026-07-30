@@ -38,7 +38,7 @@ describe('service API helpers', () => {
 
   it('patches scoped checklist endpoint and unwraps ticket', async () => {
     const apiFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { id: 'ticket-1' } }), { status: 200 }));
-    await expect(patchServiceTicketScope(apiFetch, 'ticket-1', 'qc-draft', { score: 80 })).resolves.toEqual({ id: 'ticket-1' });
+    await expect(patchServiceTicketScope(apiFetch, 'ticket-1', 'qc-draft', { notes: 'Passed' })).resolves.toEqual({ id: 'ticket-1' });
     expect(apiFetch).toHaveBeenCalledWith(`${SERVICE_ENDPOINT}/ticket-1/qc-draft`, expect.objectContaining({ method: 'PATCH' }));
   });
 

@@ -74,7 +74,8 @@ export async function getServiceTicket(
 export async function uploadServicePhoto(
   apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   id: string,
-  file: Blob
+  file: Blob,
+  conditionId?: string
 ): Promise<ServiceTicket> {
   if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
     throw new Error('Foto harus JPG atau PNG maksimal 5 MB.');
@@ -82,7 +83,7 @@ export async function uploadServicePhoto(
   const create = await apiFetch(`${SERVICE_ENDPOINT}/${encodeURIComponent(id)}/photos/upload-url`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contentType: file.type, sizeBytes: file.size }),
+    body: JSON.stringify({ contentType: file.type, sizeBytes: file.size, conditionId }),
   });
   const upload = await create.json().catch(() => null);
   if (!create.ok || !upload?.uploadUrl) throw new Error(upload?.error || 'Gagal menyiapkan unggahan foto.');

@@ -18,6 +18,8 @@ describe('service list query contract', () => {
   });
 
   it('exports at most one page and neutralizes spreadsheet formulas', () => {
+    expect(controller).toContain("const from = String(req.query.from");
+    expect(controller).toContain("const to = String(req.query.to");
     expect(controller).toContain("req.query.limit = '100'");
     expect(controller).toContain('/^[=+@-]/.test(s)');
     expect(controller).toContain("Content-Disposition");
@@ -41,5 +43,10 @@ describe('service list query contract', () => {
     expect(controller).toContain('SERVICE_PHOTO_UPLOADED');
     expect(controller).toContain("await fs.unlink(target).catch(() => undefined);");
     expect(controller).toContain('RETURNING ${ticketSelect()}');
+  });
+
+  it('serves only photos registered on tenant and branch scoped ticket', () => {
+    expect(controller).toContain('SELECT initial_photos, qc_photos FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3');
+    expect(controller).toContain('if (!registered) return res.status(404).end();');
   });
 });

@@ -1,7 +1,8 @@
 import express from "express";
+import { servicePortalLimiter } from '../middleware/rateLimiter.js';
 import {
   getPublicTicketByToken,
-  getPublicTicketStatus,
+  getPublicTicketByNumber,
   verifyWarrantyQr,
   getPortalTicketDetail,
   approvePortalTicket,
@@ -9,20 +10,11 @@ import {
 
 const router = express.Router();
 
-router.get("/status/*", (req: any, res) => {
-  const params = req.params || {};
-  const wild = String(params[0] || "").trim();
-  if (!wild) {
-    return getPublicTicketStatus(req, res);
-  }
-  // Wildcard captures everything after /status/, including slashes
-  req.params.ticketNo = wild;
-  return getPublicTicketStatus(req, res);
-});
-router.get("/token/:token", getPublicTicketByToken);
-router.post("/verify-warranty", verifyWarrantyQr);
+router.get("/token/:token", servicePortalLimiter, getPublicTicketByToken);
+router.post("/ticket", servicePortalLimiter, getPublicTicketByNumber);
+router.post("/verify-warranty", servicePortalLimiter, verifyWarrantyQr);
 
-router.post("/portal-detail", getPortalTicketDetail);
-router.post("/portal-approve", approvePortalTicket);
+router.post("/portal-detail", servicePortalLimiter, getPortalTicketDetail);
+router.post("/portal-approve", servicePortalLimiter, approvePortalTicket);
 
 export default router;

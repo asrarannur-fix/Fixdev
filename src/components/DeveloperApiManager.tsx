@@ -101,7 +101,7 @@ export function DeveloperApiManager() {
       const res = await apiFetch('/api/v1/auth/tokens');
       if (res.ok) {
         const data = await readJsonResponse<any>(res, 'Token API');
-        setTokens(data);
+        setTokens(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []);
       } else {
         console.error('Gagal mengambil data tokens');
       }
@@ -126,13 +126,12 @@ export function DeveloperApiManager() {
 
     try {
       // Send creation request
-      const res = await fetch('/api/v1/auth/token', {
+      const res = await apiFetch('/api/v1/auth/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'owner@example.com', // Seed tenant owner credential
           tokenName: tokenName.trim(),
           abilities: selectedAbilities,
         }),

@@ -29,15 +29,25 @@ export async function runPendingMigrations(connectionString: string) {
     const files = readdirSync(migrationDir).filter((name) => /^\d+.*\.sql$/.test(name)).sort();
     await client.connect();
     await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
-      version TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      version TEXT PRIMARY KEY, checksum TEXT, applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`);
+    const columns = await client.query<{ column_name: string }>(
+      "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'schema_migrations'",
+    );
+    const names = new Set(columns.rows.map((row) => row.column_name));
+    if (names.has('filename') && !names.has('version')) {
+      await client.query('ALTER TABLE schema_migrations RENAME COLUMN filename TO version');
+    }
     await client.query("SELECT pg_advisory_lock(hashtext('fixdev_schema_migrations'))");
     for (const file of files) {
       const sql = readFileSync(join(migrationDir, file), "utf8");
       const checksum = createHash("sha256").update(sql).digest("hex");
       const applied = await client.query("SELECT checksum FROM schema_migrations WHERE version = $1", [file]);
       if (applied.rows[0]) {
-        if (applied.rows[0].checksum !== checksum) throw new Error(`Checksum migration berubah: ${file}`);
+        if (applied.rows[0].checksum && applied.rows[0].checksum !== checksum) throw new Error(`Checksum migration berubah: ${file}`);
+        if (!applied.rows[0].checksum) {
+          await client.query("UPDATE schema_migrations SET checksum = $2 WHERE version = $1", [file, checksum]);
+        }
         addLogLine(`Lewati ${file} (sudah diterapkan).`);
         continue;
       }

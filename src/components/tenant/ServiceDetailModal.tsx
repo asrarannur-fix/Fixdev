@@ -130,7 +130,6 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     openMicroComponentModal,
     products,
     qcNotes,
-    qcScore,
     renderTenantWaTemplate,
     requestPartMode,
     requestServicePart,
@@ -153,7 +152,6 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     setManualDiagNotes,
     setPartOrderTicket,
     setQcNotes,
-    setQcScore,
     setRequestPartMode,
     setRequestedPartId,
     setRequestedPartQty,
@@ -181,8 +179,24 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     } = props;
   const [pendingAction, setPendingAction] = React.useState<string | null>(null);
   const dialogRef = React.useRef<HTMLDivElement>(null);
-  const restoreFocusRef = React.useRef<HTMLElement | null>(null);
-  React.useEffect(() => {
+   const restoreFocusRef = React.useRef<HTMLElement | null>(null);
+   const closeDetail = () => {
+     stopCamera();
+     setViewingServiceTicketId(null);
+     setInternalCommentText('');
+     setManualDiagNotes('');
+     setManualDiagCost('');
+     setQcNotes('');
+     setHandoverChecklist({ accessoriesReturned: false, customerChecked: false, invoiceReady: false, warrantyReady: false });
+     setHandoverPaymentMethod(PaymentMethod.CASH);
+     setHandoverProofName('');
+     setHandoverRefNo('');
+     setHandoverTempoDays('30');
+     setSelectedSparepartId('');
+     setSparepartQty(1);
+     setSparepartSN('');
+   };
+   React.useEffect(() => {
     if (!viewingServiceTicketId) return;
     restoreFocusRef.current = document.activeElement as HTMLElement;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -202,8 +216,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     document.addEventListener('keydown', onKeyDown);
     requestAnimationFrame(() => dialogRef.current?.focus());
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      restoreFocusRef.current?.focus();
+       document.removeEventListener('keydown', onKeyDown);
+       stopCamera();
+       restoreFocusRef.current?.focus();
     };
   }, [viewingServiceTicketId, setViewingServiceTicketId]);
   const runAction = async (action: string, callback: () => Promise<void> | void) => {
@@ -219,13 +234,13 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   };
   if (!viewingServiceTicketId) return null;
   const ticket = tenantServices.find((s) => s.id === viewingServiceTicketId);
-  if (!ticket) {
-    return createPortal(
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+   if (!ticket) {
+     return createPortal(
+       <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-900">
            <h2 className="text-sm font-black text-slate-900 dark:text-white">{detailLoading ? 'Memuat tiket…' : 'Tiket tidak ditemukan'}</h2>
            <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400" role={detailError ? 'alert' : undefined}>{detailError || (detailLoading ? 'Mengambil detail tiket terbaru.' : 'Data tiket sudah berubah atau tidak tersedia pada cabang aktif.')}</p>
-          <button type="button" onClick={() => props.setViewingServiceTicketId(null)} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">Kembali ke daftar</button>
+          <button type="button" onClick={closeDetail} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">Kembali ke daftar</button>
         </div>
       </div>,
       document.body
@@ -258,17 +273,19 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   const technician = employees.find((e) => e.id === ticket.assignedTechId);
 
   // Filter products that are spare parts / accessories
-  const tenantProducts = products.filter((p) => p.tenantId === currentTenantId);
+  const tenantProducts = (products || []).filter((p: any) => p.tenantId === currentTenantId);
   const sparepartsList = tenantProducts.filter(
-    (p) =>
-      (p.category &&
+    (p: any) => {
+      const name = String(p.name || '').toLowerCase();
+      return (p.category &&
         ['SPAREPART', 'SUKU CADANG', 'AKSESORIS'].includes(p.category.toUpperCase())) ||
-      p.name.toLowerCase().includes('spare') ||
-      p.name.toLowerCase().includes('ic ') ||
-      p.name.toLowerCase().includes('layar') ||
-      p.name.toLowerCase().includes('baterai') ||
-      p.name.toLowerCase().includes('flex') ||
-      p.name.toLowerCase().includes('connector')
+        name.includes('spare') ||
+        name.includes('ic ') ||
+        name.includes('layar') ||
+        name.includes('baterai') ||
+        name.includes('flex') ||
+        name.includes('connector');
+    }
   );
 
   // Photo capture handlers (extracted for ServiceTicketCamera component)
@@ -289,7 +306,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex bg-slate-900/40"
-      onClick={() => setViewingServiceTicketId(null)}
+      onClick={closeDetail}
       role="dialog"
       aria-modal="true"
       aria-labelledby="service-detail-title"
@@ -309,21 +326,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
           onPrintSpk={() => setShowSpkPrintout(ticket.id)}
           onPrintInvoice={() => setShowInvoicePrintout(ticket.id)}
           onPrintWarranty={() => setShowWarrantyPrintout(ticket.id)}
-          onClose={() => {
-            setViewingServiceTicketId(null);
-            setInternalCommentText('');
-            setManualDiagNotes('');
-            setManualDiagCost('');
-            setQcScore(0);
-            setQcNotes('');
-            setHandoverChecklist([]);
-            setHandoverPaymentMethod(PaymentMethod.CASH);
-            setHandoverProofName('');
-            setHandoverRefNo('');
-            setHandoverTempoDays(30);
-            setSelectedSparepartId('');
-            setSparepartSN('');
-          }}
+           onClose={closeDetail}
         />
 
         {/* Next-step guidance so the workflow is never "missed" */}
@@ -369,11 +372,12 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       void props.patchServiceWork(ticket.id, {
                         assignedTechId: selectedId || null,
                         internalDiscussion: {
-                          id: crypto.randomUUID(),
                           text: `Teknisi penanggung jawab diubah ke: ${techName}`,
-                          operator: '',
-                          timestamp: new Date().toISOString(),
                         },
+                      }).then((updated: any) => {
+                        if (updated) onDetailUpdated?.(updated);
+                      }).catch((error: any) => {
+                        showToast(error?.message || 'Gagal mengubah teknisi.', 'error');
                       });
                     }}
                     className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-semibold cursor-pointer text-slate-700"
@@ -419,9 +423,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         }
                         onChange={async (e) => {
                           try {
-                            await props.patchServiceWork(ticket.id, {
+                            const updated = await props.patchServiceWork(ticket.id, {
                               storageLocationId: e.target.value || null,
                             });
+                            if (updated) onDetailUpdated?.(updated);
                             showToast('Lokasi penyimpanan diperbarui.', 'success');
                           } catch (error: any) {
                             showToast(
@@ -476,7 +481,20 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               />
             )}
 
-            <ServiceIntakeChecklist items={ticket.initialChecklist} />
+             <ServiceIntakeChecklist
+               items={ticket.initialChecklist}
+               editable={editableIntake}
+                 onSave={async (checklist) => {
+                 try {
+                   const updated = await patchServiceTicketScope(apiFetch, ticket.id, 'intake-checklist', { checklist });
+                   onDetailUpdated?.(updated);
+                   showToast('Checklist masuk berhasil disimpan.', 'success');
+                 } catch (error: any) {
+                   showToast(error?.message || 'Gagal menyimpan checklist masuk.', 'error');
+                   throw error;
+                 }
+               }}
+             />
 
             <ServiceTimeline entries={ticket.timeline} />
 
@@ -487,7 +505,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
               value={internalCommentText}
               onChange={setInternalCommentText}
                canComment={canRepair && !isTicketLocked}
-            />
+               onUpdated={onDetailUpdated}
+             />
           </div>
 
           {/* RIGHT PANEL: Interactive Workstation */}
@@ -500,8 +519,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 canRequestParts={canRequestParts}
                 canAddCost={isSuperAdmin || ['OWNER', 'ADMIN'].includes(currentUser?.role || '')}
                 canHandover={canHandover}
-                liveTimerSeconds={liveTimerSeconds}
-                repairStartTime={ticket.repairStartTime}
+                 liveTimerSeconds={liveTimerSeconds}
+                 slaSeconds={Number(tenantObj?.settings?.serviceSettings?.slaHours || 48) * 3600}
+                 repairStartTime={ticket.repairStartTime}
                 onStatusChange={(status, note) => updateServiceStatus(ticket.id, status, note)}
                 onPartOrder={() => setPartOrderTicket(ticket)}
                 onAdditionalCost={() => {
@@ -574,22 +594,30 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                             ) : !ticket.repairStartTime ? (
                               <button
                                 onClick={() =>
-                                  void props.patchServiceWork(ticket.id, {
-                                    repairStartTime: new Date().toISOString(),
-                                  })
+                                   void runAction('repair-start', async () => {
+                                     const updated = await props.patchServiceWork(ticket.id, {
+                                       repairStartTime: new Date().toISOString(),
+                                     });
+                                     if (updated) onDetailUpdated?.(updated);
+                                   })
                                 }
-                                className="text-[9px] font-bold bg-emerald-600 text-white px-2 py-1 rounded shadow-xs cursor-pointer hover:bg-emerald-700"
+                                 disabled={!!pendingAction}
+                                 className="text-[9px] font-bold bg-emerald-600 text-white px-2 py-1 rounded shadow-xs cursor-pointer hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 Mulai Servis
                               </button>
                             ) : !ticket.repairEndTime ? (
                               <button
                                 onClick={() =>
-                                  void props.patchServiceWork(ticket.id, {
-                                    repairEndTime: new Date().toISOString(),
-                                  })
+                                   void runAction('repair-end', async () => {
+                                     const updated = await props.patchServiceWork(ticket.id, {
+                                       repairEndTime: new Date().toISOString(),
+                                     });
+                                     if (updated) onDetailUpdated?.(updated);
+                                   })
                                 }
-                                className="text-[9px] font-bold bg-rose-600 text-white px-2 py-1 rounded shadow-xs cursor-pointer hover:bg-rose-700"
+                                 disabled={!!pendingAction}
+                                 className="text-[9px] font-bold bg-rose-600 text-white px-2 py-1 rounded shadow-xs cursor-pointer hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 Hentikan Waktu
                               </button>
@@ -743,13 +771,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                   showToast('Pilih spare part dan gudang yang valid.', 'error');
                                   return;
                                 }
-                                try {
-                                  await requestServicePart(ticket.id, {
-                                    productId: part.id,
-                                    warehouseId,
-                                    quantity: requestedPartQty,
-                                  });
-                                  setRequestedPartId('');
+                                 try {
+                                   const updated = await requestServicePart(ticket.id, {
+                                     productId: part.id,
+                                     warehouseId,
+                                     quantity: requestedPartQty,
+                                   });
+                                   if (updated) onDetailUpdated?.(updated);
+                                   setRequestedPartId('');
                                   setRequestPartMode(false);
                                   showToast(
                                     'Spare part berhasil direservasi dari gudang.',
@@ -1060,21 +1089,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                               : c
                                           );
 
-                                          // Calculate suggested QC score
-                                          const passedCount = updatedList.filter(
-                                            (x) => x.passed
-                                          ).length;
-                                          const suggestedScore = Math.round(
-                                            (passedCount / updatedList.length) * 100
-                                          );
-
                                            void runAction('qc-draft', async () => {
                                              const updated = await patchServiceTicketScope(apiFetch, ticket.id, 'qc-draft', {
                                                checklist: updatedList,
-                                               score: suggestedScore,
                                              });
                                              onDetailUpdated?.(updated);
-                                             setQcScore(suggestedScore);
                                            });
                                         }}
                                         className="accent-emerald-600 h-3.5 w-3.5 rounded"
@@ -1099,14 +1118,12 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 <div className="pt-2 text-center">
                                   <button
                                     type="button"
-                                     onClick={() => void runAction('qc-draft', async () => {
-                                       const updated = await patchServiceTicketScope(apiFetch, ticket.id, 'qc-draft', {
-                                         checklist: currentQcList,
-                                         score: 0,
-                                       });
-                                       onDetailUpdated?.(updated);
-                                       setQcScore(0);
-                                     })}
+                                      onClick={() => void runAction('qc-draft', async () => {
+                                        const updated = await patchServiceTicketScope(apiFetch, ticket.id, 'qc-draft', {
+                                          checklist: currentQcList,
+                                        });
+                                        onDetailUpdated?.(updated);
+                                      })}
                                      disabled={!!pendingAction}
                                     className="w-full bg-accent-lighter border border-indigo-100 text-accent rounded-lg py-1.5 text-[10px] font-bold hover:bg-indigo-100/50 cursor-pointer transition-all"
                                   >
@@ -1122,46 +1139,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   )}
                 </div>
 
-                {/* Consolidated QC Summary and Scoring Integration */}
-                {ticket.status === 'QC' && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-slate-800">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span>Skor Kelayakan QC Terhitung</span>
-                      </div>
-                      <p className="text-slate-500 text-[10px] leading-relaxed">
-                        Skor dihasilkan secara proporsional dari checklist QC di atas. Minimal skor
-                        lolos uji adalah 80.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="text-center bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-xs">
-                        <p className="text-[9px] font-mono font-bold text-slate-400 uppercase">
-                          QC SCORE
-                        </p>
-                        <p
-                          className={`text-2xl font-black font-mono tracking-tight ${
-                            (ticket.qcScore ?? 0) >= 80 ? 'text-emerald-600' : 'text-rose-600'
-                          }`}
-                        >
-                          {ticket.qcScore ?? 0}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <span
-                          className={`inline-block px-2.5 py-1 text-[10px] font-bold rounded-lg border font-mono ${
-                            (ticket.qcScore ?? 0) >= 80
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                              : 'bg-rose-50 border-rose-200 text-rose-700'
-                          }`}
-                        >
-                          {(ticket.qcScore ?? 0) >= 80 ? '✓ AMAN / LOLOS QC' : '✕ PERLU REWORK'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
               </div>
 
               {/* QC Inline Form — inside ticket detail modal */}
@@ -1178,41 +1156,34 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       #{ticket.ticketNo}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
-                        Skor Pemeriksaan (0–100)
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={qcScore}
-                        onChange={(e) => setQcScore(Number(e.target.value))}
-                        className="w-full cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
-                      />
-                      <p className="text-right text-xs font-bold font-mono text-slate-800 mt-1">
-                        {qcScore}/100
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
-                        Catatan Pemeriksaan
-                      </label>
-                      <textarea
-                        rows={3}
-                        placeholder="cth: Keyboard normal, speaker jernih, suhu idle 45 C pasca repasting."
-                        value={qcNotes}
-                        onChange={(e) => setQcNotes(e.target.value)}
-                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-accent"
-                      />
-                    </div>
-                  </div>
+                   <div>
+                     <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">
+                       Catatan Pemeriksaan
+                     </label>
+                     <textarea
+                       rows={3}
+                       placeholder="cth: Keyboard normal, speaker jernih, suhu idle 45 C pasca repasting."
+                       value={qcNotes}
+                       onChange={(e) => setQcNotes(e.target.value)}
+                       className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-accent"
+                     />
+                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => void runAction('qc-rework', () => completeServiceQC(ticket.id, qcScore, qcNotes, false))}
-                      disabled={!!pendingAction || !canRepair || qcNotes.trim().length < 2 || !ticket.qcChecklist?.length}
-                      className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs py-2 rounded-lg cursor-pointer border border-rose-200"
+                      onClick={() => void runAction('qc-rework', () => completeServiceQC(ticket.id, qcNotes, ticket.qcChecklist))}
+                       disabled={
+                         !!pendingAction ||
+                         !canRepair ||
+                         qcNotes.trim().length < 2 ||
+                         !ticket.qcChecklist?.length ||
+                         ticket.qcChecklist.every((item) => item.passed)
+                       }
+                       title={
+                         ticket.qcChecklist?.length && ticket.qcChecklist.every((item) => item.passed)
+                           ? 'Tandai minimal satu pemeriksaan gagal untuk mengirim tiket ke rework.'
+                           : undefined
+                       }
+                       className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs py-2 rounded-lg cursor-pointer border border-rose-200"
                     >
                       Rework (Gagal QC)
                     </button>
@@ -1220,23 +1191,20 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       disabled={
                          !!pendingAction ||
                          !canRepair ||
-                         qcScore < 80 ||
-                        qcNotes.trim().length < 2 ||
+                         qcNotes.trim().length < 2 ||
                         !ticket.qcChecklist?.length ||
                         ticket.qcChecklist.some((item) => !item.passed)
                       }
                       title={
-                        qcScore < 80
-                          ? 'Skor QC minimal 80.'
-                          : qcNotes.trim().length < 2
-                            ? 'Catatan pemeriksaan wajib diisi.'
-                            : !ticket.qcChecklist?.length
-                              ? 'Simpan checklist QC terlebih dahulu.'
-                              : ticket.qcChecklist.some((item) => !item.passed)
-                                ? 'Semua pemeriksaan QC harus lulus.'
-                                : ''
+                        qcNotes.trim().length < 2
+                          ? 'Catatan pemeriksaan wajib diisi.'
+                          : !ticket.qcChecklist?.length
+                            ? 'Simpan checklist QC terlebih dahulu.'
+                            : ticket.qcChecklist.some((item) => !item.passed)
+                              ? 'Semua pemeriksaan QC harus lulus.'
+                              : ''
                       }
-                      onClick={() => void runAction('qc-pass', () => completeServiceQC(ticket.id, qcScore, qcNotes, true))}
+                      onClick={() => void runAction('qc-pass', () => completeServiceQC(ticket.id, qcNotes, ticket.qcChecklist))}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs py-2 rounded-lg cursor-pointer"
                     >
                       Lolos QC (Selesai)
@@ -1383,19 +1351,28 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               showToast('Pilih spare part terlebih dahulu.', 'error');
                               return;
                             }
-                            const partProd = products.find((p) => p.id === selectedSparepartId);
-                            if (!partProd) return;
-                            const warehouseId = Object.keys(partProd.warehouseStock || {})[0];
-                            if (!warehouseId) {
-                              showToast('Gudang spare part belum ditentukan.', 'error');
-                              return;
-                            }
-                            await requestServicePart(ticket.id, {
+                             const partProd = products.find((p) => p.id === selectedSparepartId);
+                             if (!partProd || !Number.isInteger(sparepartQty) || sparepartQty < 1) {
+                               showToast('Jumlah spare part harus bilangan bulat minimal 1.', 'error');
+                               return;
+                             }
+                             const warehouseId = warehouses.find(
+                               (warehouse) =>
+                                 warehouse.tenantId === currentTenantId &&
+                                 warehouse.branchId === ticket.branchId &&
+                                 Number(partProd.warehouseStock?.[warehouse.id] || 0) >= sparepartQty
+                             )?.id;
+                             if (!warehouseId) {
+                               showToast('Stok spare part pada gudang cabang tidak mencukupi.', 'error');
+                               return;
+                             }
+                            const updated = await requestServicePart(ticket.id, {
                                 productId: selectedSparepartId,
                                 warehouseId,
                                 quantity: sparepartQty,
                                 serialNumber: sparepartSN || undefined,
                               });
+                              if (updated) onDetailUpdated?.(updated);
                               setSelectedSparepartId('');
                               setSparepartQty(1);
                               setSparepartSN('');
@@ -1415,15 +1392,18 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 </div>
               )}
 
-              <ServicePartsLedger
-                ticket={ticket}
-                onCancelPart={async (part) => {
-                  if (!part.id) {
+               <ServicePartsLedger
+                 ticket={ticket}
+                 canCancel={canRepair && !isTicketLocked}
+                 onCancelPart={async (part) => {
+                  const reservationId = part.reservationId || part.requestId || part.id;
+                  if (!reservationId) {
                     showToast('ID reservasi spare part tidak tersedia.', 'error');
                     return;
                   }
                   try {
-                    await cancelServicePart(ticket.id, part.id);
+                    const updated = await cancelServicePart(ticket.id, reservationId);
+                    if (updated) onDetailUpdated?.(updated);
                     showToast(`Reservasi ${part.name} dibatalkan.`, 'success');
                   } catch (error: any) {
                     showToast(error?.message || 'Gagal membatalkan spare part.', 'error');
@@ -1445,8 +1425,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     </label>
                     <select
                       value={ticket.status}
-                      onChange={(e) => {
-                        const newStatus = e.target.value as ServiceStatus;
+                       onChange={(e) => {
+                         if (!canRepair) return;
+                         const newStatus = e.target.value as ServiceStatus;
                         void runAction('manual-status', () =>
                           updateServiceStatus(
                             ticket.id,
@@ -1455,8 +1436,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           )
                         );
                       }}
-                      disabled={!!pendingAction}
-                      className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent"
+                       disabled={!!pendingAction || !canRepair}
+                       className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value={ticket.status}>Status saat ini: {ticket.status}</option>
                       {(SERVICE_TRANSITIONS[ticket.status] || [])
@@ -1486,14 +1467,15 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   {ticket.status === ServiceStatus.DIAGNOSA && (
                     <div className="space-y-2">
                       <button
-                        onClick={() =>
-                          runAction('submit-estimate', () => updateServiceStatus(
+                         disabled={!!pendingAction || !canRepair}
+                         onClick={() =>
+                           runAction('submit-estimate', () => updateServiceStatus(
                              ticket.id,
                              ServiceStatus.MENUGGU_APPROVAL,
                              'Teknisi merumuskan estimasi biaya dan menunggu persetujuan pelanggan.'
                            ))
                         }
-                        className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
+                         className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Ajukan Estimasi Biaya ke Pelanggan
                       </button>
@@ -1557,12 +1539,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   {ticket.status === ServiceStatus.SEDANG_DIKERJAKAN && (
                     <button
                       onClick={() => void runAction('enter-qc', async () => {
-                        await updateServiceStatus(
-                          ticket.id,
-                          ServiceStatus.QC,
-                          'Unit masuk pemeriksaan quality control.'
-                        );
-                        setQcScore(ticket.qcScore ?? 0);
+                         await updateServiceStatus(
+                           ticket.id,
+                           ServiceStatus.QC,
+                           'Unit masuk pemeriksaan quality control.'
+                         );
                          setQcNotes(ticket.qcNotes ?? '');
                        })}
                       className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1.5"

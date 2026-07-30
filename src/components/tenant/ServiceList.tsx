@@ -77,8 +77,8 @@ export const ServiceList: React.FC<any> = (props) => {
     partOrderSupplier,
     partOrderTicket,
     previewReceptionTicket,
+    publicBaseUrl,
     qcNotes,
-    qcScore,
     qcView,
     renderTenantWaTemplate,
     requestPartMode,
@@ -132,7 +132,6 @@ export const ServiceList: React.FC<any> = (props) => {
     setPartOrderTicket,
     setPreviewReceptionTicket,
     setQcNotes,
-    setQcScore,
     setRequestPartMode,
     setRequestedPartId,
     setRequestedPartQty,
@@ -274,10 +273,12 @@ export const ServiceList: React.FC<any> = (props) => {
       group: operationalFilter === 'ALL' ? undefined : operationalFilter,
       technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
       sla: slaFilter === 'all' ? undefined : slaFilter,
+      to: dateRangeFilter === 'all' ? undefined : new Date().toISOString().slice(0, 10),
+      from: dateRangeFilter === 'all' ? undefined : new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000).toISOString().slice(0, 10),
       sort: srvSort, limit: 15, offset: (page - 1) * 15,
     }).then((result) => { if (!cancelled) setServicePage(result); }).catch((error) => { if (!cancelled) showToast(error.message, 'error'); }), srvSearchQuery ? 250 : 0);
     return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [apiFetch, page, operationalFilter, technicianFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, showToast]);
+  }, [apiFetch, page, operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, showToast]);
   React.useEffect(() => {
     const readQuery = () => {
       const filters = readFilters();
@@ -337,7 +338,7 @@ export const ServiceList: React.FC<any> = (props) => {
   const totalPages = servicePage ? Math.ceil(servicePage.total / servicePage.limit) : Math.ceil(filteredServices.length / 15);
   const paginatedServices = servicePage?.data || filteredServices.slice((page - 1) * 15, page * 15);
   const downloadCsv = async () => {
-    const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, sort: srvSort });
+    const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, from: dateRangeFilter === 'all' ? undefined : new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000).toISOString().slice(0, 10), to: dateRangeFilter === 'all' ? undefined : new Date().toISOString().slice(0, 10), sort: srvSort });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'daftar_servis_saas.csv';
@@ -362,26 +363,20 @@ export const ServiceList: React.FC<any> = (props) => {
       {/* Row KPI Info */}
       <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 dark:text-zinc-400">
         {(() => {
-          const qcTickets = tenantServices.filter((s) => typeof s.qcScore === 'number');
-          const avgQcScore = qcTickets.length
-            ? Math.round(qcTickets.reduce((sum, s) => sum + Number(s.qcScore), 0) / qcTickets.length)
-            : 0;
-          const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
+           const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
           const slaBreaches = active.filter(
             (s) =>
               s.createdAt &&
               now.getTime() - new Date(s.createdAt).getTime() > slaHours * 3600_000
           ).length;
-          const techCount = qcTickets.reduce((acc, s) => {
+           const techCount = active.reduce((acc, s) => {
             const k = s.assignedTechId || 'unassigned';
             acc.add(k);
             return acc;
           }, new Set<string>());
           return (
             <>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 font-bold">
-                QC: {avgQcScore}%
-              </span>
+
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 font-bold">
                 SLA: {servicePage?.kpi?.overdue ?? slaBreaches}
               </span>
@@ -438,8 +433,9 @@ export const ServiceList: React.FC<any> = (props) => {
           />
           {srvSearchQuery && (
             <button
-              onClick={() => setSrvSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+               onClick={() => setSrvSearchQuery('')}
+               aria-label="Hapus pencarian"
+               className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <X className="w-3 h-3 text-slate-400" />
             </button>
@@ -447,6 +443,7 @@ export const ServiceList: React.FC<any> = (props) => {
         </div>
         <select
           value={srvSort}
+          aria-label="Urutkan tiket servis"
           onChange={(e) => setSrvSort(e.target.value as any)}
           className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-all shadow-sm cursor-pointer"
         >
@@ -503,7 +500,7 @@ export const ServiceList: React.FC<any> = (props) => {
       {/* Service List */}
       <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="max-h-[650px] overflow-y-auto">
-          {filteredServices.length === 0 ? (
+           {paginatedServices.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-zinc-500">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mb-4">
                 <Search className="w-7 h-7 text-slate-300 dark:text-zinc-600" />
@@ -518,7 +515,7 @@ export const ServiceList: React.FC<any> = (props) => {
                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">{paginatedServices.map((s) => {
                  const customer = customers.find((c) => c.id === s.customerId);
                  const overdue = s.estimatedCompletionDate && new Date(s.estimatedCompletionDate) < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
-                 return <tr key={s.id} tabIndex={0} onClick={() => { setViewingServiceTicketId(s.id); setManualDiagNotes(s.techDiagnosis || ''); setManualDiagCost(String(Number(s.estimatedCost) || 0)); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setViewingServiceTicketId(s.id); } }} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800/50 focus:outline-none focus:bg-indigo-50 dark:focus:bg-indigo-950/20"><td className="p-3" onClick={(e) => e.stopPropagation()}><input aria-label={`Pilih tiket ${s.ticketNo}`} type="checkbox" checked={selectedServiceIds.includes(s.id)} onChange={() => setSelectedServiceIds(selectedServiceIds.includes(s.id) ? selectedServiceIds.filter((id) => id !== s.id) : [...selectedServiceIds, s.id])} /></td><td className="p-3"><p className="font-mono font-bold text-indigo-600">#{s.ticketNo}</p><p className="text-xs font-semibold">{customer?.name || 'Umum'} · {s.deviceName}</p></td><td className="p-3 text-xs">{SERVICE_STATUS_META[s.status]?.label || s.status}</td><td className="p-3 text-xs font-semibold text-slate-600 dark:text-zinc-300">{NEXT_STEP[s.status]?.label || 'Tidak ada tindakan'}</td><td className={`p-3 text-xs ${overdue ? 'font-bold text-rose-600' : ''}`}>{s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—'}</td></tr>;
+                 return <tr key={s.id} tabIndex={0} onClick={() => { setViewingServiceTicketId(s.id); setManualDiagNotes(s.techDiagnosis || ''); setManualDiagCost(String(Number(s.estimatedCost) || 0)); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setViewingServiceTicketId(s.id); } }} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800/50 focus:outline-none focus:bg-indigo-50 dark:focus:bg-indigo-950/20"><td className="p-3" onClick={(e) => e.stopPropagation()}><input aria-label={`Pilih tiket ${s.ticketNo}`} type="checkbox" checked={selectedServiceIds.includes(s.id)} onChange={() => setSelectedServiceIds(selectedServiceIds.includes(s.id) ? selectedServiceIds.filter((id) => id !== s.id) : [...selectedServiceIds, s.id])} /></td><td className="p-3">{s.publicTrackingToken ? <a href={`${publicBaseUrl}/?tracking=${encodeURIComponent(s.publicTrackingToken)}`} target="_blank" rel="noreferrer" className="font-mono font-bold text-indigo-600 hover:underline" onClick={(event) => event.stopPropagation()} aria-label={`Buka tracking publik tiket ${s.ticketNo}`}>#{s.ticketNo}</a> : <span className="font-mono font-bold text-slate-500" aria-label={`Tracking publik tiket ${s.ticketNo} belum tersedia`}>#{s.ticketNo}</span>}<p className="text-xs font-semibold">{customer?.name || 'Umum'} · {s.deviceName}</p></td><td className="p-3 text-xs">{SERVICE_STATUS_META[s.status]?.label || s.status}</td><td className="p-3 text-xs font-semibold text-slate-600 dark:text-zinc-300">{NEXT_STEP[s.status]?.label || 'Tidak ada tindakan'}</td><td className={`p-3 text-xs ${overdue ? 'font-bold text-rose-600' : ''}`}>{s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—'}</td></tr>;
                })}</tbody>
              </table>
              <div className="divide-y divide-slate-100 dark:divide-zinc-800 md:hidden">
@@ -584,7 +581,8 @@ export const ServiceList: React.FC<any> = (props) => {
                     <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
-                        checked={selectedServiceIds.includes(s.id)}
+                         aria-label={`Pilih tiket ${s.ticketNo}`}
+                         checked={selectedServiceIds.includes(s.id)}
                         onChange={() => {
                           if (selectedServiceIds.includes(s.id)) {
                             setSelectedServiceIds(selectedServiceIds.filter((id) => id !== s.id));
@@ -604,9 +602,16 @@ export const ServiceList: React.FC<any> = (props) => {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-extrabold text-[11px] text-indigo-600 dark:text-indigo-400">
-                          #{s.ticketNo}
-                        </span>
+{s.publicTrackingToken ? <a
+                            href={`${publicBaseUrl}/?tracking=${encodeURIComponent(s.publicTrackingToken)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-mono font-extrabold text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                            onClick={(event) => event.stopPropagation()}
+                            aria-label={`Buka tracking publik tiket ${s.ticketNo}`}
+                          >
+                            #{s.ticketNo}
+                          </a> : <span className="font-mono font-extrabold text-[11px] text-slate-500" aria-label={`Tracking publik tiket ${s.ticketNo} belum tersedia`}>#{s.ticketNo}</span>}
                         <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 truncate">
                           {customer?.name || 'Umum'}
                         </span>

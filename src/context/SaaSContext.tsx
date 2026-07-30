@@ -248,9 +248,9 @@ interface SaaSContextType {
   requestServicePart: (
     id: string,
     part: { productId: string; warehouseId: string; quantity: number; serialNumber?: string }
-  ) => Promise<void>;
-  cancelServicePart: (id: string, partId: string) => Promise<void>;
-  patchServiceWork: (id: string, updates: Record<string, any>) => Promise<void>;
+  ) => Promise<ServiceTicket | undefined>;
+  cancelServicePart: (id: string, partId: string) => Promise<ServiceTicket | undefined>;
+  patchServiceWork: (id: string, updates: Record<string, any>) => Promise<ServiceTicket | undefined>;
   addApprovedAdditionalCost: (
     id: string,
     data: {
@@ -280,7 +280,7 @@ interface SaaSContextType {
     signatureName?: string,
     signatureText?: string
   ) => Promise<void>;
-  completeServiceQC: (id: string, score: number, notes: string, passed: boolean) => Promise<void>;
+  completeServiceQC: (id: string, notes: string, checklist?: ServiceTicket['qcChecklist']) => Promise<ServiceTicket | undefined>;
   handoverServiceDevice: (
     id: string,
     paymentMethod: PaymentMethod,
@@ -2851,11 +2851,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       method: 'POST',
       body: JSON.stringify(body),
     });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || 'Workflow servis gagal.');
-    const ticket = (payload.data.ticket || payload.data) as ServiceTicket;
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.error || 'Workflow servis gagal.');
+    const data = payload?.data;
+    const ticket = (data?.ticket || data) as ServiceTicket | undefined;
+    if (!ticket?.id) throw new Error('Respons workflow servis tidak valid.');
     applyServerServiceTicket(ticket);
-    return payload.data;
+    return data;
   };
 
   const requestServicePart = async (
@@ -2870,6 +2872,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || 'Gagal menambahkan spare part.');
     applyServerServiceTicket(payload.data.ticket);
+    return payload.data.ticket as ServiceTicket;
   };
 
   const cancelServicePart = async (id: string, partId: string) => {
@@ -2880,12 +2883,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || 'Gagal membatalkan spare part.');
     applyServerServiceTicket(payload.data.ticket);
+    return payload.data.ticket as ServiceTicket;
   };
 
   const patchServiceWork = async (id: string, updates: Record<string, any>) => {
     if (!isBackendConfigured()) {
       await updateServiceTicket(id, updates);
-      return;
+      return undefined;
     }
     const response = await apiFetch(`/api/services/${id}/work-metadata`, {
       method: 'PATCH',
@@ -2894,6 +2898,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || 'Gagal memperbarui pekerjaan servis.');
     applyServerServiceTicket(payload.data);
+    return payload.data as ServiceTicket;
   };
 
   const addApprovedAdditionalCost = async (
@@ -3030,17 +3035,21 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const completeServiceQC = async (id: string, score: number, notes: string, passed: boolean) => {
+  const completeServiceQC = async (
+    id: string,
+    notes: string,
+    checklistOverride?: ServiceTicket['qcChecklist']
+  ) => {
+    const ticket = services.find((item) => item.id === id);
+    const checklist = checklistOverride || ticket?.qcChecklist || [];
+    const passed = checklist.length > 0 && checklist.every((item) => item.passed);
     if (isBackendConfigured()) {
-      const ticket = services.find((item) => item.id === id);
-      await runServiceWorkflow(id, 'qc', {
-        score,
+      const result = await runServiceWorkflow(id, 'qc', {
         notes,
-        passed,
-        checklist: ticket?.qcChecklist || [],
+        checklist,
         photos: ticket?.qcPhotos || [],
       });
-      return;
+      return (result.ticket || result) as ServiceTicket;
     }
     setServices((prev) =>
       prev.map((s) => {
@@ -3048,14 +3057,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const nextStatus = passed ? ServiceStatus.SELESAI : ServiceStatus.REWORK;
           const updated = {
             ...s,
-            qcScore: score,
             qcNotes: notes,
             status: nextStatus,
             timeline: [
               ...s.timeline,
               {
                 status: ServiceStatus.QC,
-                note: `Quality Control Score: ${score}/100. Status: ${passed ? 'PASSED' : 'REWORK'}`,
+                note: `Quality Control ${passed ? 'PASSED' : 'REWORK'}.`,
                 timestamp: new Date().toISOString(),
                 operator: currentUser.name,
               },
@@ -3066,7 +3074,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
               triggerCustomerNotification(
                 updated,
                 nextStatus,
-                `Quality Control Score: ${score}/100. ${notes}`
+                `Quality Control: ${notes}`
               ),
             50
           );
@@ -3075,7 +3083,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return s;
       })
     );
-    addLog('Quality Control Audit', `QC untuk servis ID ${id}. Score: ${score}`, 'SERVICE');
+    addLog('Quality Control Audit', `QC untuk servis ID ${id}.`, 'SERVICE');
   };
 
   const handoverServiceDevice = async (

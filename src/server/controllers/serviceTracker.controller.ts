@@ -3,6 +3,11 @@ import { logger } from '../../lib/logger.js';
 import { z } from 'zod';
 import { serviceApprovalTransition } from '../../domain/serviceWorkflow.js';
 
+const publicTicketLookupSchema = z.object({
+  ticketNo: z.string().trim().min(3).max(40),
+  phoneLast4: z.string().regex(/^\d{4}$/),
+});
+
 const portalApprovalSchema = z
   .object({
     ticketId: z.string().uuid(),
@@ -54,45 +59,11 @@ function publicTicketRow(row: any) {
 function portalTicketRow(row: any) {
   return {
     ...publicTicketRow(row),
+    ticketId: row.id,
     estimatedCost: Number(row.estimatedCost || 0),
     downPayment: Number(row.downPayment || 0),
   };
 }
-
-export const getPublicTicketStatus = async (req: any, res: any) => {
-  // Ticket numbers contain slashes (e.g. TKT/2607/000029) which Express
-  // can't capture fully via :ticketNo param in a sub-router.
-  // Use originalUrl to extract the full ticket number.
-  const url = req.originalUrl || '';
-  const statusIdx = url.indexOf('/status/');
-  let ticketNo = '';
-  if (statusIdx !== -1) {
-    ticketNo = url.substring(statusIdx + 8); // length of "/status/"
-  }
-  ticketNo = ticketNo.split('?')[0]; // remove query params
-  if (!ticketNo) ticketNo = String(req.params.ticketNo || '').trim();
-  const tenantId = req.hostTenant?.id;
-  if (!ticketNo) return res.status(400).json({ error: 'Missing ticket number.' });
-  if (!tenantId || !UUID_PATTERN.test(tenantId))
-    return res.status(404).json({ error: 'Service ticket not found' });
-  try {
-    const result = await dbQuery(
-      `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
-        s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
-        s.estimated_cost AS "estimatedCost",s.down_payment AS "downPayment",
-        s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
-        s.created_at AS "createdAt",c.name AS "customerName"
-       FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
-       WHERE UPPER(s.ticket_no)=UPPER($1) AND s.tenant_id=$2 AND s.deleted_at IS NULL LIMIT 1`,
-      [ticketNo, tenantId]
-    );
-    if (!result.rows[0]) return res.status(404).json({ error: 'Service ticket not found' });
-    res.json(publicTicketRow(result.rows[0]));
-  } catch (error: any) {
-    logger.error({ err: error.message }, 'Public ticket status lookup failed');
-    res.status(500).json({ error: 'Layanan pelacakan tiket sedang tidak tersedia.' });
-  }
-};
 
 export const getPublicTicketByToken = async (req: any, res: any) => {
   const token = req.params.token;
@@ -121,6 +92,30 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
   } catch (error: any) {
     logger.error({ err: error.message }, 'Public ticket token lookup failed');
     res.status(500).json({ error: 'Layanan pelacakan tiket sedang tidak tersedia.' });
+  }
+};
+
+export const getPublicTicketByNumber = async (req: any, res: any) => {
+  const parsed = publicTicketLookupSchema.safeParse(req.body);
+  const tenantId = req.hostTenant?.id;
+  if (!parsed.success) return res.status(422).json({ error: 'Nomor tiket dan 4 digit terakhir nomor HP wajib diisi.' });
+  if (!tenantId || !UUID_PATTERN.test(tenantId)) return res.status(404).json({ error: 'Service ticket not found' });
+  try {
+    const result = await dbQuery(
+      `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
+        s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
+        s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
+        s.created_at AS "createdAt",c.name AS "customerName"
+       FROM service_tickets s JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
+       WHERE UPPER(s.ticket_no)=UPPER($1) AND RIGHT(regexp_replace(c.phone,'[^0-9]','','g'),4)=$2
+         AND s.tenant_id=$3 AND s.deleted_at IS NULL LIMIT 1`,
+      [parsed.data.ticketNo, parsed.data.phoneLast4, tenantId]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Service ticket not found' });
+    return res.json(publicTicketRow(result.rows[0]));
+  } catch (error: any) {
+    logger.error({ err: error.message }, 'Public ticket number lookup failed');
+    return res.status(500).json({ error: 'Layanan pelacakan tiket sedang tidak tersedia.' });
   }
 };
 
@@ -160,20 +155,22 @@ export const verifyWarrantyQr = async (req: any, res: any) => {
 };
 
 export const getPortalTicketDetail = async (req: any, res: any) => {
-  const { ticketId, token } = req.body;
-  if (!ticketId || !token) return res.status(400).json({ error: 'Missing parameters.' });
+  const ticketId = String(req.body?.ticketId || '');
+  const token = String(req.body?.token || '');
+  if (!UUID_PATTERN.test(ticketId) || !UUID_PATTERN.test(token))
+    return res.status(422).json({ error: 'Parameter portal tidak valid.' });
   const tenantId = req.hostTenant?.id;
   if (!tenantId) return res.status(404).json({ error: 'Tenant not found.' });
   try {
     const result = await dbQuery(
-      `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
+      `SELECT s.id,s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
         s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
         s.estimated_cost AS "estimatedCost",s.down_payment AS "downPayment",
         s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
         s.created_at AS "createdAt",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
-       WHERE s.ticket_no=$1 AND s.public_tracking_token=$2 AND s.tenant_id=$3 AND s.deleted_at IS NULL LIMIT 1`,
-      [ticketId, token, tenantId]
+       WHERE s.id=$1 AND s.public_tracking_token=$2 AND s.tenant_id=$3 AND s.deleted_at IS NULL LIMIT 1`,
+       [ticketId, token, tenantId]
     );
     if (!result.rows[0])
       return res.status(404).json({ error: 'Tiket tidak ditemukan atau token tidak valid.' });

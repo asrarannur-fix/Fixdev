@@ -7,10 +7,34 @@ interface ChecklistItem {
 
 interface ServiceIntakeChecklistProps {
   items?: ChecklistItem[];
+  editable?: boolean;
+  onSave?: (items: ChecklistItem[]) => Promise<void>;
 }
 
-export const ServiceIntakeChecklist: React.FC<ServiceIntakeChecklistProps> = ({ items = [] }) => {
+export const ServiceIntakeChecklist: React.FC<ServiceIntakeChecklistProps> = ({
+  items = [],
+  editable = false,
+  onSave,
+}) => {
+  const [draft, setDraft] = React.useState(items);
+  const [pending, setPending] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => setDraft(items), [items]);
   if (!items.length) return null;
+
+  const save = async () => {
+    if (!onSave || pending) return;
+    setPending(true);
+    setError('');
+    try {
+      await onSave(draft);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Gagal menyimpan checklist masuk.');
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/40 p-3.5 shadow-md dark:border-zinc-800/40">
@@ -20,15 +44,20 @@ export const ServiceIntakeChecklist: React.FC<ServiceIntakeChecklistProps> = ({ 
         Checklist Masuk
       </h4>
       <div className="relative mt-2 grid grid-cols-1 gap-1.5">
-        {items.map((item, index) => (
-          <div key={`${item.name}-${index}`} className="flex items-center justify-between border-b border-slate-50 py-1 text-xs last:border-0">
+        {draft.map((item, index) => (
+          <label key={`${item.name}-${index}`} className="flex items-center justify-between border-b border-slate-50 py-1 text-xs last:border-0">
             <span className="text-slate-600">{item.name}</span>
-            <span className={`rounded-lg px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase ${item.checked ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-rose-200 bg-rose-50 text-rose-700'}`}>
-              {item.checked ? 'OK' : 'BELUM DIPERIKSA'}
-            </span>
-          </div>
+            <input
+              type="checkbox"
+              checked={item.checked}
+              disabled={!editable || pending}
+              onChange={() => setDraft((current) => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, checked: !entry.checked } : entry))}
+            />
+          </label>
         ))}
       </div>
+      {error && <p role="alert" className="relative mt-2 text-xs text-rose-600">{error}</p>}
+      {editable && <button type="button" disabled={pending} onClick={() => void save()} className="relative mt-3 w-full rounded-lg bg-cyan-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{pending ? 'Menyimpan…' : 'Simpan Checklist'}</button>}
     </section>
   );
 };

@@ -69,6 +69,10 @@ export function isModuleLocked(modId: string, tenant: Tenant): boolean {
   return !features.includes(requiredFeature);
 }
 
+export function isSubTabFeatureAllowed(modId: string, subId: string, tenant: Tenant): boolean {
+  return modId !== "services" || subId !== "rental" || getEffectiveFeatures(tenant).includes("RENTAL");
+}
+
 export function getRequiredTierForModule(modId: string): "PRO" | "ENTERPRISE" | "" {
   if (modId === "accounting" || modId === "hr" || modId === "crm") return "PRO";
   if (modId === "fraud") return "ENTERPRISE";

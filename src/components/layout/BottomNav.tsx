@@ -17,9 +17,9 @@ interface BottomNavProps {
 
 const ITEMS = [
   { id: 'overview', label: 'Beranda', icon: LayoutDashboard },
-  { id: 'operasional', label: 'Operasional', icon: Wrench },
-  { id: 'kasir', label: 'Kasir', icon: ShoppingBag },
-  { id: 'pelanggan', label: 'Pelanggan', icon: Users },
+  { id: 'services', label: 'Servis', icon: Wrench },
+  { id: 'pos', label: 'Kasir', icon: ShoppingBag },
+  { id: 'crm', label: 'Pelanggan', icon: Users },
   { id: 'settings', label: 'Setelan', icon: Settings },
 ];
 

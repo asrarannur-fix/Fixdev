@@ -17,6 +17,7 @@ export interface CreatePOSInput {
   paymentDetails?: string | null;
   notes?: string | null;
   splitPayments?: Array<{ method: string; amount: number }> | null;
+  clientRequestId?: string;
 }
 
 export interface POSTransactionResult {
@@ -129,6 +130,16 @@ export async function processPOSTransaction(
     parsed: CreatePOSInput;
   }
 ): Promise<POSTransactionResult> {
+  if (parsed.clientRequestId) {
+    const existing = await client.query(
+      `SELECT id, invoice_no as "invoiceNo", grand_total as "grandTotal", created_at as "timestamp", items
+       FROM pos_transactions
+       WHERE tenant_id=$1 AND branch_id=$2 AND client_request_id=$3`,
+      [tenantId, branchId, parsed.clientRequestId]
+    );
+    if (existing.rows[0]) return existing.rows[0];
+  }
+
   // Cari shift aktif
   const shiftRes = await client.query(
     `SELECT id FROM pos_shifts WHERE tenant_id=$1 AND branch_id=$2 AND cashier_id=$3 AND status='OPEN' ORDER BY opened_at DESC LIMIT 1`,
@@ -188,14 +199,16 @@ export async function processPOSTransaction(
   const items: any[] = [];
   for (const i of parsed.items) {
     let price = 0;
+    let unitCost = 0;
     let productName = i.name || 'Item';
     if (i.productId) {
       const prodRes = await client.query(
-        `SELECT name, sell_price FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
+        `SELECT name, sell_price, purchase_cost FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
         [i.productId, tenantId]
       );
       if (prodRes.rows.length > 0) {
         price = Number(prodRes.rows[0].sell_price) || 0;
+        unitCost = Number(prodRes.rows[0].purchase_cost) || 0;
         productName = prodRes.rows[0].name;
       }
     } else {
@@ -210,6 +223,7 @@ export async function processPOSTransaction(
       name: productName,
       quantity: qty,
       unitPrice: price,
+      unitCost,
       discount: disc,
       tax: 0,
       total: lineSub - disc,
@@ -272,6 +286,19 @@ export async function processPOSTransaction(
   const taxAmount = Math.round((base * taxRate) / 100);
   const grandTotal = base + taxAmount;
 
+  if (parsed.depositUsed && !parsed.customerId) {
+    throw Object.assign(new Error('Customer wajib dipilih untuk pembayaran deposit.'), { status: 422 });
+  }
+  if (parsed.depositUsed && parsed.customerId) {
+    const customerRes = await client.query(
+      `SELECT id FROM customers WHERE id=$1 AND tenant_id=$2 FOR UPDATE`,
+      [parsed.customerId, tenantId]
+    );
+    if (customerRes.rows.length === 0) {
+      throw Object.assign(new Error('Pelanggan tidak ditemukan untuk tenant ini.'), { status: 422 });
+    }
+  }
+
   // Handle payments
   const depositUsed = Math.min(grandTotal, Math.max(0, Number(parsed.depositUsed) || 0));
   const cashDue = Math.max(0, grandTotal - depositUsed);
@@ -317,8 +344,8 @@ export async function processPOSTransaction(
     `INSERT INTO pos_transactions
      (tenant_id, branch_id, shift_id, invoice_no, customer_id, items, subtotal,
       discount_amount, tax_amount, grand_total, payment_method, amount_paid,
-      change_amount, deposit_used, payment_details, notes, is_refunded, posted_to_ledger, status)
-     VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,FALSE,FALSE,'COMPLETED')
+      change_amount, deposit_used, payment_details, notes, client_request_id, is_refunded, posted_to_ledger, status)
+      VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,FALSE,FALSE,'COMPLETED')
      RETURNING id, invoice_no as "invoiceNo", grand_total as "grandTotal", created_at as "timestamp"`,
     [
       tenantId,
@@ -337,6 +364,7 @@ export async function processPOSTransaction(
       depositUsed,
       parsed.paymentDetails || null,
       parsed.notes || null,
+      parsed.clientRequestId || null,
     ]
   );
   const txId = txRes.rows[0].id;
@@ -410,11 +438,7 @@ export async function processPOSTransaction(
       let totalCogs = 0;
       for (const item of items) {
         if (item.productId) {
-          const costRes = await client.query(
-            `SELECT purchase_cost FROM products WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
-            [item.productId, tenantId]
-          );
-          totalCogs += (Number(costRes.rows[0]?.purchase_cost) || 0) * item.quantity;
+          totalCogs += (Number(item.unitCost) || 0) * item.quantity;
         }
       }
       if (totalCogs > 0) {
@@ -444,17 +468,14 @@ export async function processPOSTransaction(
 
   // Pelacakan penggunaan deposit via tabel audit customer_deposits
   if (depositUsed > 0 && parsed.customerId) {
-    // Validasi pelanggan ada dan milik tenant ini SEBELUM mengubah data
-    // balances. Without this, a wrong/foreign customerId makes the UPDATE a
-    // silent no-op (0 rows), so deposit is consumed but loyalty is never added.
-    const custCheck = await client.query(
-      `SELECT id FROM customers WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
-      [parsed.customerId, tenantId]
+    const debit = await client.query(
+      `UPDATE customers
+       SET store_credit = store_credit - $1, loyalty_points = loyalty_points + floor($2 / 10000)
+       WHERE id = $3 AND tenant_id = $4 AND store_credit >= $1`,
+      [depositUsed, grandTotal, parsed.customerId, tenantId]
     );
-    if (custCheck.rows.length === 0) {
-      throw Object.assign(new Error('Pelanggan tidak ditemukan untuk tenant ini.'), {
-        status: 422,
-      });
+    if (debit.rowCount !== 1) {
+      throw Object.assign(new Error('Saldo deposit pelanggan tidak mencukupi.'), { status: 422 });
     }
     await client.query(
       `INSERT INTO customer_deposits
@@ -464,11 +485,7 @@ export async function processPOSTransaction(
          $6)`,
       [tenantId, parsed.customerId, branchId, txId, depositUsed, `Pakai deposit untuk ${invoiceNo}`]
     );
-    await client.query(
-      `UPDATE customers SET store_credit = store_credit - $1, loyalty_points = loyalty_points + floor($2 / 10000)
-       WHERE id = $3 AND tenant_id = $4`,
-      [depositUsed, grandTotal, parsed.customerId, tenantId]
-    );
+
   }
 
   // Audit log
