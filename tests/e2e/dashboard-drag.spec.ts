@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = process.env.TEST_BASE_URL || 'http://127.0.0.1:3001';
-const EMAIL = process.env.TEST_OWNER_EMAIL || 'asrar@mail.com';
-const PASS = process.env.TEST_OWNER_PASSWORD || '778877';
+const BASE = process.env.TEST_BASE_URL;
+const EMAIL = process.env.TEST_OWNER_EMAIL;
+const PASS = process.env.TEST_OWNER_PASSWORD;
+
+if (!BASE || !EMAIL || !PASS) {
+  throw new Error('TEST_BASE_URL, TEST_OWNER_EMAIL, and TEST_OWNER_PASSWORD are required for E2E tests.');
+}
 
 test.describe('Dashboard Widget Drag-and-Drop', () => {
   test.beforeEach(async ({ page }) => {

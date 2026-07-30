@@ -34,6 +34,8 @@ const serverEnvSchema = z.object({
   DOTENV_CONFIG_PATH: z.string().optional(),
   EMAIL_HOST: z.string().optional(),
   EMAIL_PORT: z.coerce.number().int().positive().optional(),
+  STORAGE_PROVIDER: z.enum(['local']).default('local'),
+  FILE_UPLOAD_DIR: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

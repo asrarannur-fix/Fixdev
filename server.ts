@@ -10,11 +10,13 @@ dotenv.config({
   override: true,
 });
 import { validateEnv } from "./src/lib/envSchema.js";
+import { validateStorage } from "./src/server/lib/storage.js";
 import { loginSchema, registerSchema, passwordChangeSchema, onboardingSchema, upgradeTrialSchema } from "./src/lib/validationSchemas.js";
 import { validateSchema } from "./src/middleware/validateSchema.js";
 
 try {
   validateEnv();
+  validateStorage();
 } catch (err: any) {
   console.error(`[ENV_VALIDATION] ${err.message}`);
   process.exit(1);
