@@ -463,6 +463,13 @@ function sendError(res: Response, error: any) {
   });
 }
 
+function logServiceOperation(req: Request, operation: string, outcome: 'success' | 'rejected' | 'failed', startedAt: number, details: Record<string, unknown> = {}) {
+  const fields = { operation, outcome, statusCode: outcome === 'success' ? 200 : Number(details.statusCode) || 500, durationMs: Date.now() - startedAt, tenantId: req.tenantId, branchId: req.branchId, ...details };
+  if (outcome === 'failed') logger.error(fields, '[service] operation failed');
+  else if (outcome === 'rejected') logger.warn(fields, '[service] operation rejected');
+  else logger.info(fields, '[service] operation completed');
+}
+
 export async function createServicePhotoUpload(req: Request, res: Response) {
   const contentType = String(req.body?.contentType || '');
   const sizeBytes = Number(req.body?.sizeBytes);
@@ -511,6 +518,7 @@ export async function deleteServicePhoto(req: Request, res: Response) {
 }
 
 export async function uploadServicePhoto(req: Request, res: Response) {
+  const startedAt = Date.now();
   const fileName = path.basename(req.params.fileName || '');
   const contentType = String(req.headers['content-type'] || '').split(';')[0];
   const conditionId = typeof req.query.conditionId === 'string' ? req.query.conditionId : '';
@@ -545,10 +553,15 @@ export async function uploadServicePhoto(req: Request, res: Response) {
       );
       return updated.rows[0];
     });
+    logServiceOperation(req, 'photo_upload', 'success', startedAt, { bytes: req.body.length });
     return res.status(200).json({ data: ticket, photoUrl: `/api/services/${req.params.id}/photos/${fileName}` });
   } catch (error: any) {
     await fs.unlink(target).catch(() => undefined);
-    if (error.code === 'EEXIST') return res.status(409).json({ error: 'Foto sudah diunggah.' });
+    if (error.code === 'EEXIST') {
+      logServiceOperation(req, 'photo_upload', 'rejected', startedAt, { statusCode: 409, reason: 'duplicate_file' });
+      return res.status(409).json({ error: 'Foto sudah diunggah.' });
+    }
+    logServiceOperation(req, 'photo_upload', 'failed', startedAt, { statusCode: Number(error.status) || 500, errorCode: error.code || 'unknown' });
     return sendError(res, error);
   }
 }
@@ -630,6 +643,7 @@ export async function getServiceTicket(req: Request, res: Response) {
 }
 
 export async function transitionServiceTicket(req: Request, res: Response) {
+  const startedAt = Date.now();
   const parsed = transitionSchema.safeParse(req.body);
   if (!parsed.success) return res.status(422).json({ error: 'Status atau catatan tidak valid.' });
   const ticketId = req.params.id;
@@ -686,8 +700,10 @@ export async function transitionServiceTicket(req: Request, res: Response) {
       await appendEvent(client, req, current, to, parsed.data.note);
       return finalTicket(client, req);
     });
+    logServiceOperation(req, 'workflow_transition', 'success', startedAt, { toStatus: parsed.data.status });
     res.json({ data: ticket });
   } catch (error: any) {
+    logServiceOperation(req, 'workflow_transition', error.status === 409 ? 'rejected' : 'failed', startedAt, { statusCode: Number(error.status) || 500, reason: error.status === 409 ? 'workflow_conflict' : 'exception' });
     sendError(res, error);
   }
 }

@@ -37,6 +37,23 @@ export async function getServiceTickets(
   };
 }
 
+export async function exportServiceTickets(
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  params: Record<string, string | number | undefined> = {}
+): Promise<Blob> {
+  const query = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .map(([key, value]) => [key, String(value)])
+  );
+  const response = await apiFetch(`${SERVICE_ENDPOINT}/export.csv${query.size ? `?${query}` : ''}`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.error || 'Gagal mengekspor daftar tiket.');
+  }
+  return response.blob();
+}
+
 export async function getServiceTicket(
   apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   id: string

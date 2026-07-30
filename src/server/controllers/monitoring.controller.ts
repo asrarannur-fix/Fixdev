@@ -7,7 +7,7 @@ export async function platformHealthHandler(req: Request, res: Response) {
   const startedAt = Date.now();
 
   try {
-    const [result, billing, outbox, backups, incidents] = await Promise.all([
+    const [result, billing, outbox, backups, incidents, serviceWorkflow] = await Promise.all([
       dbQuery(
         `SELECT
           (SELECT COUNT(*)::int FROM tenants) AS tenant_count,
@@ -25,6 +25,10 @@ export async function platformHealthHandler(req: Request, res: Response) {
       dbQuery(`SELECT COUNT(*) FILTER (WHERE status='OPEN')::int AS open,
         COUNT(*) FILTER (WHERE status='OPEN' AND severity='CRITICAL')::int AS critical FROM platform_incidents`)
         .catch(() => ({ rows: [{ open: 0, critical: 0 }] } as any)),
+      dbQuery(`SELECT COUNT(*) FILTER (WHERE deleted_at IS NULL AND status NOT IN ('SELESAI','DIAMBIL'))::int AS active,
+        COUNT(*) FILTER (WHERE deleted_at IS NULL AND status NOT IN ('SELESAI','DIAMBIL') AND created_at < NOW() - INTERVAL '48 hours')::int AS overdue,
+        COUNT(*) FILTER (WHERE deleted_at IS NULL AND status='QC')::int AS awaiting_qc FROM service_tickets`)
+        .catch(() => ({ rows: [{ active: 0, overdue: 0, awaiting_qc: 0 }] } as any)),
     ]);
     const elapsedMs = Date.now() - startedAt;
     const counts = result.rows[0] || {};
@@ -48,6 +52,7 @@ export async function platformHealthHandler(req: Request, res: Response) {
         notificationOutbox: { status: outboxStatus, failed: Number(outbox.rows[0]?.failed || 0), pending: Number(outbox.rows[0]?.pending || 0), lastSentAt: outbox.rows[0]?.last_sent_at || null },
         backup: backups.rows[0] ? { status: backups.rows[0].status === "FAILED" ? "degraded" : "ok", lastJobAt: backups.rows[0].completed_at || backups.rows[0].created_at } : { status: "unknown", message: "Belum ada riwayat snapshot terukur." },
         incidents: { status: incidentStatus, open: Number(incidents.rows[0]?.open || 0), critical: Number(incidents.rows[0]?.critical || 0) },
+        serviceWorkflow: { status: Number(serviceWorkflow.rows[0]?.overdue || 0) > 0 ? "degraded" : "ok", slaHours: 48, active: Number(serviceWorkflow.rows[0]?.active || 0), overdue: Number(serviceWorkflow.rows[0]?.overdue || 0), awaitingQc: Number(serviceWorkflow.rows[0]?.awaiting_qc || 0) },
       },
     });
   } catch {

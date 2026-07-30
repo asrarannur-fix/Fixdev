@@ -26,9 +26,9 @@ export default defineConfig({
   ...(process.env.TEST_E2E_SERVER === '1'
     ? {
         webServer: {
-          command: 'npm run dev',
+          command: 'NODE_ENV=test DOTENV_CONFIG_PATH=/dev/null npm run dev',
           url: baseURL,
-          reuseExistingServer: true,
+          reuseExistingServer: !process.env.CI,
           timeout: 60 * 1000,
         },
       }

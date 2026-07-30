@@ -4,7 +4,7 @@ import { ServiceDetailModal } from './ServiceDetailModal';
 import { ServiceStatus, UserRole } from '../../types';
 import { NEXT_STEP, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../domain/serviceWorkflow';
 import { Pagination } from './services/Pagination';
-import { csvCell } from '../../lib/api/services';
+import { exportServiceTickets, getServiceTickets, ServiceTicketList } from '../../lib/api/services';
 import {
   PlusCircle,
   FileText,
@@ -186,7 +186,8 @@ export const ServiceList: React.FC<any> = (props) => {
     cancelServicePart,
     patchServiceWork,
     createServicePartOrder,
-    addApprovedAdditionalCost,
+     addApprovedAdditionalCost,
+     apiFetch,
   } = props;
 
   const filterStorageKey = `fixdev_service_list_filters_${currentUser?.id || activeTenantId || 'default'}`;
@@ -203,6 +204,7 @@ export const ServiceList: React.FC<any> = (props) => {
     };
   };
   const [page, setPage] = React.useState(1);
+  const [servicePage, setServicePage] = React.useState<ServiceTicketList | null>(null);
   const [operationalFilter, setOperationalFilter] = React.useState(() => readFilters().group);
   const [technicianFilter, setTechnicianFilter] = React.useState(() => readFilters().tech);
   const [dateRangeFilter, setDateRangeFilter] = React.useState(() => readFilters().range);
@@ -265,6 +267,18 @@ export const ServiceList: React.FC<any> = (props) => {
 
   React.useEffect(() => setPage(1), [operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter]);
   React.useEffect(() => {
+    let cancelled = false;
+    const timeout = window.setTimeout(() => getServiceTickets(apiFetch, {
+      q: srvSearchQuery.trim() || undefined,
+      status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
+      group: operationalFilter === 'ALL' ? undefined : operationalFilter,
+      technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
+      sla: slaFilter === 'all' ? undefined : slaFilter,
+      sort: srvSort, limit: 15, offset: (page - 1) * 15,
+    }).then((result) => { if (!cancelled) setServicePage(result); }).catch((error) => { if (!cancelled) showToast(error.message, 'error'); }), srvSearchQuery ? 250 : 0);
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+  }, [apiFetch, page, operationalFilter, technicianFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, showToast]);
+  React.useEffect(() => {
     const readQuery = () => {
       const filters = readFilters();
       setOperationalFilter(filters.group);
@@ -320,14 +334,10 @@ export const ServiceList: React.FC<any> = (props) => {
       const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return srvSort === 'oldest' ? diff : -diff;
     });
-  const totalPages = Math.ceil(filteredServices.length / 15);
-  const paginatedServices = filteredServices.slice((page - 1) * 15, page * 15);
-  const downloadCsv = () => {
-    const rows = [
-      ['Ticket No', 'Device', 'Customer', 'Status', 'Price'],
-      ...filteredServices.map((s) => [s.ticketNo, s.deviceName, customers.find((c) => c.id === s.customerId)?.name || '-', s.status, s.estimatedCost || 0]),
-    ];
-    const blob = new Blob([`\ufeff${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}`], { type: 'text/csv;charset=utf-8' });
+  const totalPages = servicePage ? Math.ceil(servicePage.total / servicePage.limit) : Math.ceil(filteredServices.length / 15);
+  const paginatedServices = servicePage?.data || filteredServices.slice((page - 1) * 15, page * 15);
+  const downloadCsv = async () => {
+    const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, sort: srvSort });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'daftar_servis_saas.csv';
@@ -373,7 +383,10 @@ export const ServiceList: React.FC<any> = (props) => {
                 QC: {avgQcScore}%
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 font-bold">
-                SLA: {slaBreaches}
+                SLA: {servicePage?.kpi?.overdue ?? slaBreaches}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 font-bold">
+                Aktif: {servicePage?.kpi?.active ?? active.length}
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 font-bold">
                 Teknisi: {techCount.size}

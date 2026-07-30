@@ -30,6 +30,12 @@ describe('service list query contract', () => {
     expect(controller).toContain("'[service] tickets deleted'");
   });
 
+  it('logs safe workflow and upload outcomes', () => {
+    expect(controller).toContain("logServiceOperation(req, 'workflow_transition'");
+    expect(controller).toContain("logServiceOperation(req, 'photo_upload'");
+    expect(controller).toContain("reason: 'duplicate_file'");
+  });
+
   it('persists uploaded photos under locked ticket with audit and file rollback', () => {
     expect(controller).toContain('const locked = await lockedTicket(client, req);');
     expect(controller).toContain('SERVICE_PHOTO_UPLOADED');

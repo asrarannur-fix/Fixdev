@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { csvCell, getServiceStatusEvents, getServiceTicket, getServiceTickets, patchServiceTicketScope, SERVICE_ENDPOINT, uploadServicePhoto } from './services';
+import { csvCell, exportServiceTickets, getServiceStatusEvents, getServiceTicket, getServiceTickets, patchServiceTicketScope, SERVICE_ENDPOINT, uploadServicePhoto } from './services';
 
 describe('service API helpers', () => {
   it('uses encoded canonical detail endpoint and unwraps ticket', async () => {
@@ -20,6 +20,12 @@ describe('service API helpers', () => {
       data: [{ id: 'ticket-1' }], total: 1, limit: 25, offset: 50,
     });
     expect(apiFetch).toHaveBeenCalledWith(`${SERVICE_ENDPOINT}?q=laptop&limit=25&offset=50`);
+  });
+
+  it('exports filtered tickets as a blob', async () => {
+    const apiFetch = vi.fn().mockResolvedValue(new Response('csv', { status: 200 }));
+    await expect(exportServiceTickets(apiFetch, { q: 'laptop', limit: 50 })).resolves.toBeInstanceOf(Blob);
+    expect(apiFetch).toHaveBeenCalledWith(`${SERVICE_ENDPOINT}/export.csv?q=laptop&limit=50`);
   });
 
   it('uses detail and status-history error contracts', async () => {

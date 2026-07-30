@@ -709,8 +709,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
           <>
             <ServiceList
               {...{
-                activeTenantId,
-                activeWaModal,
+                 activeTenantId,
+                 apiFetch,
+                 activeWaModal,
                 additionalCostAmount,
                 additionalCostApprovedBy,
                 additionalCostDescription,

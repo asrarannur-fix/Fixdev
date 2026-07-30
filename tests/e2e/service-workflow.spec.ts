@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 const TEST_BASE_URL = process.env.TEST_BASE_URL || 'http://127.0.0.1:3001';
-const OWNER_EMAIL = process.env.TEST_OWNER_EMAIL || 'devtes1@mail.com';
-const OWNER_PASSWORD = process.env.TEST_OWNER_PASSWORD || '778877';
+const OWNER_EMAIL = process.env.TEST_OWNER_EMAIL;
+const OWNER_PASSWORD = process.env.TEST_OWNER_PASSWORD;
+
+if (!OWNER_EMAIL || !OWNER_PASSWORD) {
+  throw new Error('TEST_OWNER_EMAIL and TEST_OWNER_PASSWORD are required for E2E tests.');
+}
 
 test.describe('Service workflow workspace', () => {
   test.beforeEach(async ({ page, context }) => {
