@@ -33,7 +33,7 @@ import {
   updateServiceIntakeChecklist,
   updateServiceQcDraft,
 } from '../controllers/serviceWorkflow.controller.js';
-import { requireValidTenant, requireServiceTicketTenant } from '../middleware/tenant.middleware.js';
+import { requireServiceReceivableTenant, requireValidTenant, requireServiceTicketTenant } from '../middleware/tenant.middleware.js';
 
 const router = express.Router();
 

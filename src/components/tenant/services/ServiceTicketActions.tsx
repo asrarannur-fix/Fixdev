@@ -42,6 +42,7 @@ const stepGradients = [
   'from-emerald-400 to-green-500',
   'from-violet-400 to-purple-500',
   'from-slate-400 to-gray-500',
+  'from-rose-400 to-pink-500',
 ];
 
 export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
@@ -227,7 +228,13 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
 
       {/* Handover Confirmation Dialog */}
       {showHandoverConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="handover-title"
+          aria-describedby="handover-desc"
+        >
           <div className="relative overflow-hidden w-80 rounded-2xl shadow-2xl">
             <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-400 to-red-400" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-white/10" />
@@ -237,8 +244,8 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-black text-white">Konfirmasi Ambil Unit</h3>
-                  <p className="mt-1 text-[11px] text-white/80">
+                  <h3 id="handover-title" className="text-sm font-black text-white">Konfirmasi Ambil Unit</h3>
+                  <p id="handover-desc" className="mt-1 text-[11px] text-white/80">
                     Tandai tiket ini sebagai <strong>diambil</strong> oleh pemilik? Pastikan unit sudah diserahkan dan pembayaran lunas.
                   </p>
                 </div>

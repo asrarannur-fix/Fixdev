@@ -143,14 +143,14 @@ export const serviceApprovalTransition = (approved: boolean) => ({
 
 // Workflow steps for ServiceTicketActions component
 export const WORKFLOW_STEPS = [
-  { status: ServiceStatus.DIAGNOSA, label: 'Diagnosa' },
-  { status: ServiceStatus.ESTIMATE_PENDING, label: 'Estimasi' },
-  { status: ServiceStatus.MENUGGU_APPROVAL, label: 'Menunggu Persetujuan' },
-  { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan' },
-  { status: ServiceStatus.QC, label: 'QC/Testing' },
-  { status: ServiceStatus.SELESAI, label: 'Selesai' },
-  { status: ServiceStatus.SIAP_DIAMBIL, label: 'Siap Diambil' },
-  { status: ServiceStatus.DIAMBIL, label: 'Diambil' },
+  { status: ServiceStatus.DIAGNOSA, label: 'Diagnosa', tone: 'amber' },
+  { status: ServiceStatus.ESTIMATE_PENDING, label: 'Estimasi', tone: 'amber' },
+  { status: ServiceStatus.MENUGGU_APPROVAL, label: 'Menunggu Persetujuan', tone: 'amber' },
+  { status: ServiceStatus.SEDANG_DIKERJAKAN, label: 'Proses Perbaikan', tone: 'indigo' },
+  { status: ServiceStatus.QC, label: 'QC/Testing', tone: 'teal' },
+  { status: ServiceStatus.SELESAI, label: 'Selesai', tone: 'emerald' },
+  { status: ServiceStatus.SIAP_DIAMBIL, label: 'Siap Diambil', tone: 'emerald' },
+  { status: ServiceStatus.DIAMBIL, label: 'Diambil', tone: 'teal' },
 ];
 
 // Next step guidance banner for ServiceDetailModal
