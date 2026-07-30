@@ -202,8 +202,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        setViewingServiceTicketId(null);
-        return;
+         closeDetail();
+         return;
       }
       if (event.key !== 'Tab' || !dialogRef.current) return;
       const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((element) => !element.hasAttribute('disabled'));

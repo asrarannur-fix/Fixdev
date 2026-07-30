@@ -192,18 +192,25 @@ export const ServiceList: React.FC<any> = (props) => {
   const filterStorageKey = `fixdev_service_list_filters_${currentUser?.id || activeTenantId || 'default'}`;
   const readFilters = () => {
     const params = new URLSearchParams(window.location.search);
-    const saved = !params.has('tech') && !params.has('range') && !params.has('sla')
-      ? JSON.parse(localStorage.getItem(filterStorageKey) || '{}')
-      : {};
+    let saved: { tech?: string; range?: string; sla?: string } = {};
+    if (!params.has('tech') && !params.has('range') && !params.has('sla')) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(filterStorageKey) || '{}');
+        if (parsed && typeof parsed === 'object') saved = parsed;
+      } catch {
+        localStorage.removeItem(filterStorageKey);
+      }
+    }
     return {
       group: params.get('group') || 'ALL',
       tech: params.get('tech') || saved.tech || 'ALL',
-      range: params.get('range') || saved.range || 'all',
+      range: ['today', '7d', '30d'].includes(params.get('range') || saved.range || '') ? (params.get('range') || saved.range) : 'all',
       sla: params.get('sla') || saved.sla || 'all',
     };
   };
   const [page, setPage] = React.useState(1);
   const [servicePage, setServicePage] = React.useState<ServiceTicketList | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
   const [operationalFilter, setOperationalFilter] = React.useState(() => readFilters().group);
   const [technicianFilter, setTechnicianFilter] = React.useState(() => readFilters().tech);
   const [dateRangeFilter, setDateRangeFilter] = React.useState(() => readFilters().range);
@@ -340,12 +347,16 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
   const totalPages = servicePage ? Math.ceil(servicePage.total / servicePage.limit) : Math.ceil(filteredServices.length / 15);
   const paginatedServices = servicePage?.data || filteredServices.slice((page - 1) * 15, page * 15);
   const downloadCsv = async () => {
-    const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)), to: dateRangeFilter === 'all' ? undefined : localDate(new Date()), sort: srvSort });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'daftar_servis_saas.csv';
-    link.click();
-    URL.revokeObjectURL(link.href);
+    try {
+      const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)), to: dateRangeFilter === 'all' ? undefined : localDate(new Date()), sort: srvSort });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'daftar_servis_saas.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (error: any) {
+      showToast(error?.message || 'Gagal mengekspor tiket.', 'error');
+    }
   };
 
   return (
@@ -461,6 +472,7 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
               currentUserPermissions.includes('action-services-delete-ticket')) && (
               <button
                 onClick={async () => {
+                  if (deleting) return;
                   if (
                     await showConfirm({
                       title: 'Hapus Tiket Massal',
@@ -469,10 +481,17 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
                       type: 'danger',
                     })
                   ) {
-                    const count = selectedServiceIds.length;
-                     await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
-                    setSelectedServiceIds([]);
-                    showToast(`${count} tiket berhasil dihapus.`, 'success');
+                     const count = selectedServiceIds.length;
+                     setDeleting(true);
+                     try {
+                       await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
+                       setSelectedServiceIds([]);
+                       showToast(`${count} tiket berhasil dihapus.`, 'success');
+                     } catch (error: any) {
+                       showToast(error?.message || 'Gagal menghapus tiket.', 'error');
+                     } finally {
+                       setDeleting(false);
+                     }
                   }
                 }}
                 className="px-3 py-2 text-[10px] font-bold bg-gradient-to-r from-rose-500 to-red-500 text-white rounded-xl hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
@@ -677,6 +696,7 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
               currentUserPermissions.includes('action-services-delete-ticket')) && (
               <button
                 onClick={async () => {
+                  if (deleting) return;
                   if (
                     await showConfirm({
                       title: 'Hapus Tiket Massal',
@@ -685,10 +705,17 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
                       type: 'danger',
                     })
                   ) {
-                    const count = selectedServiceIds.length;
-                     await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
-                    setSelectedServiceIds([]);
-                    showToast(`${count} tiket dihapus.`, 'success');
+                     const count = selectedServiceIds.length;
+                     setDeleting(true);
+                     try {
+                       await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
+                       setSelectedServiceIds([]);
+                       showToast(`${count} tiket dihapus.`, 'success');
+                     } catch (error: any) {
+                       showToast(error?.message || 'Gagal menghapus tiket.', 'error');
+                     } finally {
+                       setDeleting(false);
+                     }
                   }
                 }}
                 className="px-3 py-1.5 text-[10px] font-bold bg-gradient-to-r from-rose-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all"

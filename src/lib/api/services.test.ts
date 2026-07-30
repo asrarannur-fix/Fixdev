@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { bulkDeleteServiceTickets, csvCell, exportServiceTickets, getServiceStatusEvents, getServiceTicket, getServiceTickets, patchServiceTicketScope, SERVICE_ENDPOINT, uploadServicePhoto } from './services';
+
+const serviceList = readFileSync(new URL('../../components/tenant/ServiceList.tsx', import.meta.url), 'utf8');
 
 describe('service API helpers', () => {
   it('uses encoded canonical detail endpoint and unwraps ticket', async () => {
@@ -82,6 +85,12 @@ describe('service API helpers', () => {
 
     await expect(uploadServicePhoto(prepareFailure, 'ticket-1', file)).rejects.toThrow('Upload ditolak.');
     await expect(uploadServicePhoto(putFailure, 'ticket-1', file)).rejects.toThrow('Berkas rusak.');
+  });
+
+  it('guards corrupted filters and reports destructive action failures', () => {
+    expect(serviceList).toContain('localStorage.removeItem(filterStorageKey)');
+    expect(serviceList).toContain("showToast(error?.message || 'Gagal menghapus tiket.', 'error')");
+    expect(serviceList).toContain("showToast(error?.message || 'Gagal mengekspor tiket.', 'error')");
   });
 
   it('escapes CSV fields and neutralizes spreadsheet formulas', () => {

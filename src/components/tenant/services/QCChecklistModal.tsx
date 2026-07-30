@@ -96,7 +96,7 @@ export const QCChecklistModal: React.FC<{
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave(items.map(({ label, checked }) => ({ criteria: label, passed: checked })));
+       await onSave(items.map(({ label, checked }) => ({ criteria: label, passed: checked })));
     } catch (err) {
       console.error('Failed to save QC checklist:', err);
       // Error already surfaced by parent component

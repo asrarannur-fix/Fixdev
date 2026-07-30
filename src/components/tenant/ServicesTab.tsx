@@ -828,7 +828,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 statusFilter,
                 stopCamera,
                 tenantObj,
-                 tenantServices: fetchedService ? serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? serviceTickets.map((ticket) => ticket.id === fetchedService.id ? { ...fetchedService, ...ticket } : ticket) : [...serviceTickets, fetchedService] : serviceTickets,
+                 tenantServices: fetchedService ? serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? serviceTickets.map((ticket) => ticket.id === fetchedService.id ? { ...ticket, ...fetchedService } : ticket) : [...serviceTickets, fetchedService] : serviceTickets,
                  detailLoading,
                  detailError,
                  onDetailUpdated: setFetchedService,
