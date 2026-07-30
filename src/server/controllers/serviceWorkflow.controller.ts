@@ -1012,22 +1012,6 @@ export async function createServicePartOrder(req: Request, res: Response) {
       .json({ error: 'Data permintaan spare part tidak valid.', details: parsed.error.flatten() });
   try {
     const result = await dbTransaction(async (client) => {
-      const duplicate = await client.query(
-        'SELECT * FROM service_part_orders WHERE tenant_id=$1 AND idempotency_key=$2',
-        [req.tenantId, parsed.data.idempotencyKey]
-      );
-      if (duplicate.rows[0]) {
-        if (duplicate.rows[0].ticket_id !== req.params.id) {
-          const error: any = new Error('Idempotency key sudah digunakan untuk tiket lain.');
-          error.status = 409;
-          throw error;
-        }
-        return {
-          ticket: await finalTicket(client, req),
-          order: duplicate.rows[0],
-          idempotent: true,
-        };
-      }
       const ticket = await lockedTicket(client, req);
       if (!['DIAGNOSA', 'SEDANG_DIKERJAKAN', 'REWORK'].includes(ticket.status)) {
         const error: any = new Error(
@@ -1038,7 +1022,8 @@ export async function createServicePartOrder(req: Request, res: Response) {
       }
       const order = await client.query(
         `INSERT INTO service_part_orders(tenant_id,ticket_id,idempotency_key,part_name,quantity,reason,supplier_name,estimated_cost,estimated_arrival_date,cost_approved,note,created_by)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+          ON CONFLICT (tenant_id,idempotency_key) DO NOTHING RETURNING *`,
         [
           req.tenantId,
           ticket.id,
@@ -1054,6 +1039,18 @@ export async function createServicePartOrder(req: Request, res: Response) {
           req.authActor?.userId,
         ]
       );
+      if (!order.rows[0]) {
+        const duplicate = await client.query(
+          'SELECT * FROM service_part_orders WHERE tenant_id=$1 AND idempotency_key=$2',
+          [req.tenantId, parsed.data.idempotencyKey]
+        );
+        if (duplicate.rows[0]?.ticket_id !== ticket.id) {
+          const error: any = new Error('Idempotency key sudah digunakan untuk tiket lain.');
+          error.status = 409;
+          throw error;
+        }
+        return { ticket: await finalTicket(client, req), order: duplicate.rows[0], idempotent: true };
+      }
       await client.query(
         'UPDATE service_tickets SET repair_end_time=NOW(),updated_at=NOW() WHERE id=$1 AND tenant_id=$2',
         [ticket.id, req.tenantId]
@@ -1155,10 +1152,12 @@ export async function receiveServicePartOrder(req: Request, res: Response) {
         `${parsed.data.productId}:${parsed.data.warehouseId}`,
       ]);
       const product = await client.query(
-        `SELECT p.name,p.sell_price,COALESCE(ps.quantity,0)::float stock FROM products p
-         LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
-         WHERE p.id=$1 AND p.tenant_id=$3 LIMIT 1`,
-        [parsed.data.productId, parsed.data.warehouseId, req.tenantId]
+        'SELECT name,sell_price FROM products WHERE id=$1 AND tenant_id=$2',
+        [parsed.data.productId, req.tenantId]
+      );
+      const stock = await client.query(
+        'SELECT quantity::float AS stock FROM product_stock WHERE product_id=$1 AND warehouse_id=$2 FOR UPDATE',
+        [parsed.data.productId, parsed.data.warehouseId]
       );
       const reserved = await client.query(
         `SELECT COALESCE(SUM(quantity),0)::float quantity FROM service_parts
@@ -1167,7 +1166,7 @@ export async function receiveServicePartOrder(req: Request, res: Response) {
       );
       if (
         !product.rows[0] ||
-        Number(product.rows[0].stock) - Number(reserved.rows[0].quantity) < Number(order.quantity)
+        Number(stock.rows[0]?.stock || 0) - Number(reserved.rows[0].quantity) < Number(order.quantity)
       ) {
         const error: any = new Error('Stok part yang tiba belum mencukupi setelah reservasi aktif.');
         error.status = 409;
@@ -1188,8 +1187,8 @@ export async function receiveServicePartOrder(req: Request, res: Response) {
         ]
       );
       await client.query(
-        "UPDATE service_part_orders SET status='RESERVED',product_id=$1,warehouse_id=$2,updated_at=NOW() WHERE id=$3",
-        [parsed.data.productId, parsed.data.warehouseId, order.id]
+        "UPDATE service_part_orders SET status='RESERVED',product_id=$1,warehouse_id=$2,updated_at=NOW() WHERE id=$3 AND tenant_id=$4 AND ticket_id=$5",
+        [parsed.data.productId, parsed.data.warehouseId, order.id, req.tenantId, ticket.id]
       );
       await appendEvent(
         client,
@@ -1343,27 +1342,29 @@ export async function requestServicePart(req: Request, res: Response) {
         throw error;
       }
       await requireTicketWarehouse(client, ticket, parsed.data.warehouseId);
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+        `${parsed.data.productId}:${parsed.data.warehouseId}`,
+      ]);
       const product = await client.query(
-        `SELECT p.id,p.name,p.sell_price,p.purchase_cost,COALESCE(ps.quantity,0)::float AS stock
-           FROM products p LEFT JOIN product_stock ps ON ps.product_id=p.id AND ps.warehouse_id=$2
-          WHERE p.id=$1 AND p.tenant_id=$3 LIMIT 1`,
-        [parsed.data.productId, parsed.data.warehouseId, req.tenantId]
+        'SELECT id,name,sell_price,purchase_cost FROM products WHERE id=$1 AND tenant_id=$2',
+        [parsed.data.productId, req.tenantId]
+      );
+      const stock = await client.query(
+        'SELECT quantity::float AS stock FROM product_stock WHERE product_id=$1 AND warehouse_id=$2 FOR UPDATE',
+        [parsed.data.productId, parsed.data.warehouseId]
       );
       if (!product.rows[0]) {
         const error: any = new Error('Produk tidak ditemukan.');
         error.status = 404;
         throw error;
       }
-      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
-        `${parsed.data.productId}:${parsed.data.warehouseId}`,
-      ]);
       const reserved = await client.query(
         `SELECT COALESCE(SUM(quantity),0)::float AS quantity
            FROM service_parts
           WHERE tenant_id=$1 AND product_id=$2 AND warehouse_id=$3 AND status='RESERVED'`,
         [req.tenantId, parsed.data.productId, parsed.data.warehouseId]
       );
-      const availableStock = Number(product.rows[0].stock) - Number(reserved.rows[0].quantity);
+      const availableStock = Number(stock.rows[0]?.stock || 0) - Number(reserved.rows[0].quantity);
       if (availableStock < parsed.data.quantity) {
         const error: any = new Error(
           'Stok spare part tersedia tidak mencukupi setelah reservasi aktif.'
@@ -1404,7 +1405,7 @@ export async function requestServicePart(req: Request, res: Response) {
       );
       return {
         ticket: await finalTicket(client, req),
-        availableStock: Number(product.rows[0].stock),
+        availableStock: Number(stock.rows[0]?.stock || 0),
       };
     });
     res.json({ data });
@@ -1736,10 +1737,15 @@ export async function handoverServiceTicket(req: Request, res: Response) {
             ticket.ticketNo,
           ]
         );
-        await client.query(
-          "UPDATE service_parts SET status='USED',consumed_at=NOW(),updated_at=NOW() WHERE id=$1",
-          [part.id]
+        const consumed = await client.query(
+          "UPDATE service_parts SET status='USED',consumed_at=NOW(),updated_at=NOW() WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status='RESERVED'",
+          [part.id, req.tenantId, ticket.id]
         );
+        if (consumed.rowCount !== 1) {
+          const error: any = new Error(`Reservasi ${part.name} sudah berubah.`);
+          error.status = 409;
+          throw error;
+        }
       }
       const dueAt =
         parsed.data.paymentMethod === 'TEMPO'

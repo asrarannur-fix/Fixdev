@@ -45,6 +45,13 @@ describe('service list query contract', () => {
     expect(controller).toContain('RETURNING ${ticketSelect()}');
   });
 
+  it('serializes spare-part reservations and scopes stock mutations', () => {
+    expect(controller).toContain('SELECT quantity::float AS stock FROM product_stock WHERE product_id=$1 AND warehouse_id=$2 FOR UPDATE');
+    expect(controller).toContain("ON CONFLICT (tenant_id,idempotency_key) DO NOTHING");
+    expect(controller).toContain("WHERE id=$3 AND tenant_id=$4 AND ticket_id=$5");
+    expect(controller).toContain("WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status='RESERVED'");
+  });
+
   it('serves only photos registered on tenant and branch scoped ticket', () => {
     expect(controller).toContain('SELECT initial_photos, qc_photos FROM service_tickets WHERE id=$1 AND tenant_id=$2 AND branch_id=$3');
     expect(controller).toContain('if (!registered) return res.status(404).end();');

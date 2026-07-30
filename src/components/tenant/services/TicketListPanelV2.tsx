@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight, Eye, Printer, MessageCircle } from 'lucide-react';
 import { ServiceStatus } from '../../../types';
+import { SERVICE_STATUS_META } from '../../../domain/serviceWorkflow';
 import { Pill } from '../../ui/kit';
 
 const STATUS_TONE: Record<string, string> = {
@@ -12,6 +13,10 @@ const STATUS_TONE: Record<string, string> = {
   [ServiceStatus.DIAMBIL]: 'teal',
   [ServiceStatus.RUSAK]: 'rose',
 };
+
+// Fallback ke SERVICE_STATUS_META agar semua status punya tone (tidak hanya 7 di atas)
+const toneFor = (status: string): string =>
+  STATUS_TONE[status] || SERVICE_STATUS_META[status as ServiceStatus]?.tone || 'slate';
 
 export const TicketListPanelV2: React.FC<{
   repairs: any[];
@@ -118,7 +123,7 @@ export const TicketListPanelV2: React.FC<{
                   )}
                 </td>
                 <td className="px-6 py-4">
-                  <Pill tone={(STATUS_TONE[ticket.status] || 'slate') as any}>{ticket.status}</Pill>
+                  <Pill tone={(toneFor(ticket.status) || 'slate') as any}>{ticket.status}</Pill>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button className="text-slate-400 hover:text-accent">

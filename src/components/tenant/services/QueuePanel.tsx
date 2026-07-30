@@ -1,17 +1,8 @@
 import React from 'react';
 import { ListChecks, Clock } from 'lucide-react';
 import { ServiceStatus } from '../../../types';
+import { SERVICE_STATUS_META } from '../../../domain/serviceWorkflow';
 import { Pill } from '../../ui/kit';
-
-const STATUS_LABEL: Record<string, string> = {
-  [ServiceStatus.DITERIMA]: 'Diterima',
-  [ServiceStatus.DIAGNOSA]: 'Diagnosa',
-  [ServiceStatus.MENUGGU_APPROVAL]: 'Approval',
-  [ServiceStatus.SEDANG_DIKERJAKAN]: 'Dikerjakan',
-  [ServiceStatus.SELESAI]: 'Selesai',
-  [ServiceStatus.DIAMBIL]: 'Diambil',
-  [ServiceStatus.RUSAK]: 'Rusak',
-};
 
 const STATUS_TONE: Record<string, string> = {
   [ServiceStatus.DITERIMA]: 'blue',
@@ -22,6 +13,12 @@ const STATUS_TONE: Record<string, string> = {
   [ServiceStatus.DIAMBIL]: 'teal',
   [ServiceStatus.RUSAK]: 'rose',
 };
+
+// Fallback ke SERVICE_STATUS_META agar semua status punya tone + label
+const toneFor = (status: string): string =>
+  STATUS_TONE[status] || SERVICE_STATUS_META[status as ServiceStatus]?.tone || 'slate';
+const labelFor = (status: string): string =>
+  SERVICE_STATUS_META[status as ServiceStatus]?.label || status;
 
 export const QueuePanel: React.FC<{
   repairs?: any[];
@@ -67,7 +64,7 @@ export const QueuePanel: React.FC<{
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono font-bold text-slate-400">#{ticket.ticketNo}</span>
-                  <Pill tone={(STATUS_TONE[ticket.status] || 'slate') as any}>{STATUS_LABEL[ticket.status] || ticket.status}</Pill>
+                  <Pill tone={(toneFor(ticket.status) || 'slate') as any}>{labelFor(ticket.status) || ticket.status}</Pill>
                 </div>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{ticket.deviceName} - {ticket.customerName}</p>
               </div>

@@ -14,18 +14,25 @@ interface ServiceTicketHeaderProps {
   onClose: () => void;
 }
 
-const statusGradients: Record<string, string> = {
-  DITERIMA: 'from-sky-400 via-blue-500 to-indigo-500',
-  ANTRIAN: 'from-sky-400 via-blue-500 to-indigo-500',
-  DIAGNOSA: 'from-amber-400 via-orange-400 to-red-400',
-  MENUGGU_APPROVAL: 'from-blue-400 via-indigo-400 to-violet-400',
-  SEDANG_DIKERJAKAN: 'from-cyan-400 via-teal-400 to-emerald-400',
-  MENUGGU_SPAREPART: 'from-violet-400 via-purple-400 to-fuchsia-400',
-  REWORK: 'from-orange-400 via-red-400 to-pink-400',
-  QC: 'from-teal-400 via-cyan-400 to-sky-400',
-  SELESAI: 'from-emerald-400 via-green-400 to-teal-400',
-  SIAP_DIAMBIL: 'from-emerald-400 via-green-400 to-teal-400',
-  DIAMBIL: 'from-slate-400 via-gray-400 to-zinc-400',
+// tone -> gradient (derived from SERVICE_STATUS_META.tone, not hardcoded per-status)
+const TONE_GRADIENT: Record<string, string> = {
+  slate: 'from-slate-400 via-gray-400 to-zinc-400',
+  blue: 'from-sky-400 via-blue-500 to-indigo-500',
+  sky: 'from-sky-400 via-blue-500 to-indigo-500',
+  cyan: 'from-cyan-400 via-sky-400 to-blue-400',
+  teal: 'from-teal-400 via-cyan-400 to-sky-400',
+  emerald: 'from-emerald-400 via-green-400 to-teal-400',
+  green: 'from-emerald-400 via-green-400 to-teal-400',
+  lime: 'from-lime-400 via-green-400 to-emerald-400',
+  amber: 'from-amber-400 via-orange-400 to-red-400',
+  orange: 'from-orange-400 via-red-400 to-pink-400',
+  violet: 'from-violet-400 via-purple-400 to-fuchsia-400',
+  purple: 'from-purple-400 via-violet-400 to-indigo-400',
+  fuchsia: 'from-fuchsia-400 via-pink-400 to-rose-400',
+  pink: 'from-pink-400 via-rose-400 to-red-400',
+  rose: 'from-rose-400 via-red-400 to-pink-400',
+  red: 'from-red-400 via-rose-400 to-pink-400',
+  indigo: 'from-indigo-400 via-blue-400 to-violet-400',
 };
 
 export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
@@ -38,7 +45,9 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
   onPrintWarranty,
   onClose,
 }) => {
-  const gradient = statusGradients[ticket.status] || 'from-indigo-400 via-purple-400 to-violet-400';
+  const gradient =
+    TONE_GRADIENT[SERVICE_STATUS_META[ticket.status as ServiceStatus]?.tone || 'slate'] ||
+    'from-indigo-400 via-purple-400 to-violet-400';
 
   return (
     <div className="sticky top-0 z-20 overflow-hidden">

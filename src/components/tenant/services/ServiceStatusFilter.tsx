@@ -2,6 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { ServiceStatus, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../../domain/serviceWorkflow';
 import { Check, X, AlertCircle, Filter as FilterIcon } from 'lucide-react';
 
+// tone string -> Tailwind bg class (SERVICE_STATUS_META.tone is not a CSS color)
+const TONE_BG: Record<string, string> = {
+  slate: 'bg-slate-400',
+  blue: 'bg-blue-500',
+  sky: 'bg-sky-500',
+  cyan: 'bg-cyan-500',
+  teal: 'bg-teal-500',
+  emerald: 'bg-emerald-500',
+  green: 'bg-green-500',
+  lime: 'bg-lime-500',
+  amber: 'bg-amber-500',
+  orange: 'bg-orange-500',
+  violet: 'bg-violet-500',
+  purple: 'bg-purple-500',
+  fuchsia: 'bg-fuchsia-500',
+  pink: 'bg-pink-500',
+  rose: 'bg-rose-500',
+  red: 'bg-red-500',
+  indigo: 'bg-indigo-500',
+};
+
 interface ServiceStatusFilterProps {
   selectedStatus: string | 'ALL';
   onStatusChange: (status: string | 'ALL') => void;
@@ -73,7 +94,7 @@ export const ServiceStatusFilter: React.FC<ServiceStatusFilterProps> = ({
                       : 'hover:bg-gray-100'
                   }`}
                 >
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: meta?.tone || '#3b82f6' }} />
+                  <span className={`w-3 h-3 rounded-full ${TONE_BG[meta?.tone || 'slate'] || 'bg-slate-400'}`} />
                   {meta?.label || value}
                   {selectedStatus === value && <Check className="ml-auto h-4 w-4" />}
                 </button>
