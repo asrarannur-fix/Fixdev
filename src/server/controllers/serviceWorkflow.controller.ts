@@ -510,6 +510,15 @@ export async function uploadServicePhoto(req: Request, res: Response) {
   if (conditionId && !/^[\w-]{1,200}$/.test(conditionId)) return res.status(422).json({ error: 'Kondisi foto tidak valid.' });
   const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
   try {
+    await dbTransaction(async (client) => {
+      const locked = await lockedTicket(client, req);
+      const capturedConditions = Array.isArray(locked.capturedConditions) ? locked.capturedConditions : [];
+      if (conditionId && !capturedConditions.some((condition: any) => condition?.id === conditionId)) {
+        const error: any = new Error('Kondisi tiket tidak ditemukan.');
+        error.status = 422;
+        throw error;
+      }
+    });
     await storage.write(objectPath, req.body);
     const ticket = await dbTransaction(async (client) => {
       const locked = await lockedTicket(client, req);
@@ -557,7 +566,7 @@ export async function getServicePhoto(req: Request, res: Response) {
       [req.params.id, req.tenantId, req.branchId]
     );
     const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
-    const registered = [...(ticket.rows[0]?.initial_photos || []), ...(ticket.rows[0]?.qc_photos || [])].some((photo: unknown) => photo === objectPath || path.basename(String(photo)) === fileName);
+    const registered = [...(ticket.rows[0]?.initial_photos || []), ...(ticket.rows[0]?.qc_photos || [])].includes(objectPath);
     if (!registered) return res.status(404).end();
     res.type(fileName.endsWith('.png') ? 'png' : 'jpg').send(await storage.read(objectPath));
   } catch (error: any) {

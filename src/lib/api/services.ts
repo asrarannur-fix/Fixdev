@@ -54,6 +54,20 @@ export async function exportServiceTickets(
   return response.blob();
 }
 
+export async function bulkDeleteServiceTickets(
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  ids: string[]
+): Promise<string[]> {
+  const response = await apiFetch(`${SERVICE_ENDPOINT}/bulk`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error || 'Gagal menghapus tiket.');
+  return Array.isArray(payload?.data?.deletedIds) ? payload.data.deletedIds : [];
+}
+
 export async function getServiceTicket(
   apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   id: string

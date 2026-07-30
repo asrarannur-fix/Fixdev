@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { csvCell, exportServiceTickets, getServiceStatusEvents, getServiceTicket, getServiceTickets, patchServiceTicketScope, SERVICE_ENDPOINT, uploadServicePhoto } from './services';
+import { bulkDeleteServiceTickets, csvCell, exportServiceTickets, getServiceStatusEvents, getServiceTicket, getServiceTickets, patchServiceTicketScope, SERVICE_ENDPOINT, uploadServicePhoto } from './services';
 
 describe('service API helpers', () => {
   it('uses encoded canonical detail endpoint and unwraps ticket', async () => {
@@ -20,6 +20,12 @@ describe('service API helpers', () => {
       data: [{ id: 'ticket-1' }], total: 1, limit: 25, offset: 50,
     });
     expect(apiFetch).toHaveBeenCalledWith(`${SERVICE_ENDPOINT}?q=laptop&limit=25&offset=50`);
+  });
+
+  it('deletes selected tickets through scoped bulk endpoint', async () => {
+    const apiFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { deletedIds: ['ticket-1'] } }), { status: 200 }));
+    await expect(bulkDeleteServiceTickets(apiFetch, ['ticket-1'])).resolves.toEqual(['ticket-1']);
+    expect(apiFetch).toHaveBeenCalledWith(`${SERVICE_ENDPOINT}/bulk`, expect.objectContaining({ method: 'DELETE', body: JSON.stringify({ ids: ['ticket-1'] }) }));
   });
 
   it('exports filtered tickets as a blob', async () => {

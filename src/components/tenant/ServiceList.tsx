@@ -4,7 +4,7 @@ import { ServiceDetailModal } from './ServiceDetailModal';
 import { ServiceStatus, UserRole } from '../../types';
 import { NEXT_STEP, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../domain/serviceWorkflow';
 import { Pagination } from './services/Pagination';
-import { exportServiceTickets, getServiceTickets, ServiceTicketList } from '../../lib/api/services';
+import { bulkDeleteServiceTickets, exportServiceTickets, getServiceTickets, ServiceTicketList } from '../../lib/api/services';
 import {
   PlusCircle,
   FileText,
@@ -264,17 +264,19 @@ export const ServiceList: React.FC<any> = (props) => {
     { key: 'pickup', label: 'Ready Pickup', value: siapDiambil, gradient: 'from-emerald-400 via-green-400 to-teal-500' },
   ];
 
+  const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   React.useEffect(() => setPage(1), [operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter]);
   React.useEffect(() => {
     let cancelled = false;
+    setServicePage(null);
     const timeout = window.setTimeout(() => getServiceTickets(apiFetch, {
       q: srvSearchQuery.trim() || undefined,
       status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
       group: operationalFilter === 'ALL' ? undefined : operationalFilter,
       technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
       sla: slaFilter === 'all' ? undefined : slaFilter,
-      to: dateRangeFilter === 'all' ? undefined : new Date().toISOString().slice(0, 10),
-      from: dateRangeFilter === 'all' ? undefined : new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000).toISOString().slice(0, 10),
+to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
+       from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)),
       sort: srvSort, limit: 15, offset: (page - 1) * 15,
     }).then((result) => { if (!cancelled) setServicePage(result); }).catch((error) => { if (!cancelled) showToast(error.message, 'error'); }), srvSearchQuery ? 250 : 0);
     return () => { cancelled = true; window.clearTimeout(timeout); };
@@ -338,7 +340,7 @@ export const ServiceList: React.FC<any> = (props) => {
   const totalPages = servicePage ? Math.ceil(servicePage.total / servicePage.limit) : Math.ceil(filteredServices.length / 15);
   const paginatedServices = servicePage?.data || filteredServices.slice((page - 1) * 15, page * 15);
   const downloadCsv = async () => {
-    const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, from: dateRangeFilter === 'all' ? undefined : new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000).toISOString().slice(0, 10), to: dateRangeFilter === 'all' ? undefined : new Date().toISOString().slice(0, 10), sort: srvSort });
+    const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)), to: dateRangeFilter === 'all' ? undefined : localDate(new Date()), sort: srvSort });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'daftar_servis_saas.csv';
@@ -468,11 +470,7 @@ export const ServiceList: React.FC<any> = (props) => {
                     })
                   ) {
                     const count = selectedServiceIds.length;
-                    await Promise.all(
-                      selectedServiceIds.map((id) =>
-                        updateServiceTicket(id, { deletedAt: new Date().toISOString() } as any)
-                      )
-                    );
+                     await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
                     setSelectedServiceIds([]);
                     showToast(`${count} tiket berhasil dihapus.`, 'success');
                   }
@@ -683,11 +681,7 @@ export const ServiceList: React.FC<any> = (props) => {
                     })
                   ) {
                     const count = selectedServiceIds.length;
-                    await Promise.all(
-                      selectedServiceIds.map((id) =>
-                        updateServiceTicket(id, { deletedAt: new Date().toISOString() } as any)
-                      )
-                    );
+                     await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
                     setSelectedServiceIds([]);
                     showToast(`${count} tiket dihapus.`, 'success');
                   }

@@ -44,6 +44,10 @@ describe('service status event routes', () => {
     expect(workflowRoutes).toContain("router.delete('/:id/photos/:fileName'");
     expect(workflowController).toContain("flag: 'wx'");
     expect(workflowController).toContain('validPhotoSignature');
+    expect(workflowController).toContain('].includes(objectPath)');
+    expect(workflowController.indexOf('await lockedTicket(client, req)')).toBeLessThan(
+      workflowController.indexOf('await storage.write(objectPath, req.body)')
+    );
   });
 
   it('validates storage locations through tenant-scoped module records', () => {
