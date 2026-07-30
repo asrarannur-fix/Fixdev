@@ -1571,7 +1571,10 @@ export async function settleServiceReceivable(req: Request, res: Response) {
         'SELECT id FROM service_receivable_payments WHERE tenant_id=$1 AND receivable_id=$2 AND idempotency_key=$3',
         [req.tenantId, item.id, parsed.data.idempotencyKey]
       );
-      if (duplicate.rows[0]) return { receivable: item, idempotent: true };
+      if (duplicate.rows[0]) {
+        const current = await client.query('SELECT * FROM service_receivables WHERE id=$1 AND tenant_id=$2 AND branch_id=$3', [item.id, req.tenantId, item.branch_id]);
+        return { receivable: current.rows[0], idempotent: true };
+      }
       const remaining = Number(item.amount) - Number(item.paid_amount);
       if (parsed.data.amount > remaining) {
         const error: any = new Error('Pelunasan melebihi sisa piutang.');

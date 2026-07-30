@@ -42,7 +42,7 @@ export const serviceReceptionSchema = z.object({
         z.object({
           id: z.string().trim().min(1).max(100),
           category: z.string().trim().min(1).max(100),
-          url: z.string().trim().regex(/^tenant\/[0-9a-f-]+\/service\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png)$/i).max(255),
+          url: z.literal(''),
           timestamp: z.string().datetime(),
         })
       )

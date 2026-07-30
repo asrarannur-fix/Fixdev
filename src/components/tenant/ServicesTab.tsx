@@ -561,13 +561,12 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const url = canvas.toDataURL('image/jpeg');
-      const newPhoto = {
-        id: `photo-${Date.now()}`,
-        category: selectedCaptureCategory,
-        url: url,
-        timestamp: new Date().toLocaleString(),
-      };
+       const newPhoto = {
+         id: `photo-${Date.now()}`,
+         category: selectedCaptureCategory,
+         url: canvas.toDataURL('image/jpeg'),
+         timestamp: new Date().toISOString(),
+       };
       setNewSrvCapturedConditions((prev) => [...prev, newPhoto]);
       showToast('Foto kondisi fisik berhasil diambil!', 'success');
     }

@@ -90,6 +90,7 @@ router.post('/:id/qc', requireServiceTicketTenant, requireRoles('OWNER', 'ADMIN'
 // Settlements
 router.post(
   '/receivables/:receivableId/settlements',
+  requireServiceReceivableTenant,
   requireRoles('OWNER', 'ADMIN', 'CS', 'SUPER_ADMIN'),
   settleServiceReceivable
 );

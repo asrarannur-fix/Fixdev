@@ -322,7 +322,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       physicalCondition: newSrvPhysicalCondition,
       screenLockPin: newSrvScreenLock,
       estimatedCompletionDate: newSrvEstCompletion,
-      capturedConditions: newSrvCapturedConditions,
+       capturedConditions: newSrvCapturedConditions.map(({ id, category, timestamp }) => ({ id, category, url: '', timestamp })),
       dynamicFields: Object.keys(newSrvDynamicSpecs).length > 0 ? newSrvDynamicSpecs : undefined,
       storageLocationId: newSrvStorageLocId || undefined,
       customerData,

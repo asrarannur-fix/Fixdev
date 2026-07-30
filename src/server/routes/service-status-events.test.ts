@@ -69,6 +69,7 @@ describe('service status event routes', () => {
   });
 
   it('registers bulk delete before ticket detail', () => {
+    expect(workflowRoutes).toContain("requireServiceReceivableTenant");
     expect(workflowRoutes.indexOf("router.delete(\n  '/bulk'")).toBeLessThan(
       workflowRoutes.indexOf("router.get('/:id'")
     );
