@@ -110,7 +110,7 @@ export const Button: React.FC<BtnProps> = ({
   </button>
 );
 
-export type PillTone = "blue" | "purple" | "amber" | "emerald" | "teal" | "rose" | "slate" | "indigo" | "sky";
+export type PillTone = "blue" | "purple" | "amber" | "emerald" | "teal" | "rose" | "slate" | "indigo" | "sky" | "orange" | "violet" | "pink";
 
 const PILL_TONES: Record<PillTone, string> = {
   blue: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50",
@@ -121,6 +121,9 @@ const PILL_TONES: Record<PillTone, string> = {
   teal: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900/50",
   rose: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/50",
   sky: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900/50",
+  orange: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900/50",
+  violet: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/50",
+  pink: "bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-900/50",
   slate: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
 };
 

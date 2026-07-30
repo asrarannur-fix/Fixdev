@@ -6,7 +6,6 @@ import { Pill } from '../../ui/kit';
 
 const STATUS_TONE: Record<string, string> = {
   [ServiceStatus.DITERIMA]: 'blue',
-  [ServiceStatus.DIAGNOSA]: 'purple',
   [ServiceStatus.MENUGGU_APPROVAL]: 'amber',
   [ServiceStatus.SEDANG_DIKERJAKAN]: 'indigo',
   [ServiceStatus.SELESAI]: 'emerald',
