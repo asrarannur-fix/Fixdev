@@ -14,7 +14,7 @@ test.describe('Dashboard Widget Drag-and-Drop', () => {
     await page.getByLabel('Alamat email').fill(EMAIL);
     await page.getByLabel('Password').fill(PASS);
     await page.locator('form').getByRole('button', { name: 'Masuk' }).click();
-    await page.waitForURL('**/tenant/**', { timeout: 10000 });
+    await page.waitForURL((url) => url.pathname === '/', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
   });
 

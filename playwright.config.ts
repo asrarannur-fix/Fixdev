@@ -4,6 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/api/class-testoptions
  */
 const baseURL = process.env.TEST_BASE_URL || 'http://127.0.0.1:3001';
+const port = new URL(baseURL).port || '80';
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -26,7 +27,7 @@ export default defineConfig({
   ...(process.env.TEST_E2E_SERVER === '1'
     ? {
         webServer: {
-          command: 'NODE_ENV=test DOTENV_CONFIG_PATH=/dev/null npm run dev',
+          command: `NODE_ENV=test PORT=${port} DEV_PORT=${port} DOTENV_CONFIG_PATH=/dev/null npm run dev`,
           url: baseURL,
           reuseExistingServer: !process.env.CI,
           timeout: 60 * 1000,
