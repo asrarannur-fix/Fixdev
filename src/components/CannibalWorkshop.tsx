@@ -82,7 +82,7 @@ export const CannibalWorkshop: React.FC = () => {
   const [harvestLogs, setHarvestLogs] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem(
-        `saas_cannibal_logs_${currentTenantId}`,
+        `saas_cannibal_logs_${currentTenantId ?? "default"}`,
       );
       return saved
         ? JSON.parse(saved)
@@ -104,7 +104,7 @@ export const CannibalWorkshop: React.FC = () => {
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem(
-        `saas_cannibal_logs_${currentTenantId}`,
+        `saas_cannibal_logs_${currentTenantId ?? "default"}`,
       );
       if (saved) {
         setHarvestLogs(JSON.parse(saved));
@@ -173,7 +173,9 @@ export const CannibalWorkshop: React.FC = () => {
       return;
     }
 
-    const tenantWhs = warehouses.filter((w) => w.tenantId === currentTenantId);
+    const tenantWhs = (warehouses ?? []).filter(
+      (w) => w.tenantId === currentTenantId,
+    );
     const saleWarehouse =
       tenantWhs.find((w) => w.branchId === currentBranchId) || tenantWhs[0];
     if (!saleWarehouse) {
