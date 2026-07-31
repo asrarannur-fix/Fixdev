@@ -71,10 +71,11 @@ import { HandoverPanel } from './services/HandoverPanel';
 import { ServiceCostCalculator } from './ServiceCostCalculator';
 import { ServiceList } from './ServiceList';
 import { ServiceReceptionWizard } from './ServiceReceptionWizard';
+import { QCChecklistModal } from './services/QCChecklistModal';
 import { StorageLocation } from '../../types';
 import { renderTenantWaTemplate } from '../../utils/waTemplate';
 import { useServiceReception } from '../../hooks/useServiceReception';
-import { getServiceStatusEvents, getServiceTicket } from '../../lib/api/services';
+import { getServiceStatusEvents, getServiceTicket, patchServiceTicketScope } from '../../lib/api/services';
 import {
   Tenant,
   Branch,
@@ -381,6 +382,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const [showScreenLock, setShowScreenLock] = useState<boolean>(false);
   // Quality control states
   const [qcNotes, setQcNotes] = useState<string>('');
+  const [qcTicket, setQcTicket] = useState<ServiceTicket | null>(null);
   // Technician assignment
   const [autoAssignReason, setAutoAssignReason] = useState<string | null>(null);
   const [custOpen, setCustOpen] = useState<boolean>(false);
@@ -598,6 +600,18 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
       showToast('Tidak ada staf tersedia untuk ditugaskan!', 'error');
     }
   };
+  const openQcChecklist = (ticket: ServiceTicket) => {
+    setQcTicket(ticket);
+    setQcNotes('');
+  };
+  const saveQcChecklist = async (checklist: { criteria: string; passed: boolean }[]) => {
+    if (!qcTicket) return;
+    const updated = await patchServiceTicketScope(apiFetch, qcTicket.id, 'qc-draft', { checklist });
+    setQcTicket(updated);
+    setFetchedService((current) => (current?.id === updated.id ? { ...current, ...updated } : current));
+    setQcTicket(null);
+    showToast('Checklist QC berhasil disimpan.', 'success');
+  };
   const completeServiceQC = async (
     ticketId: string,
     notes: string,
@@ -737,8 +751,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 microSearch,
                 microTicket,
                 microUnitPrice,
-                openManualEstimateWhatsApp,
-                openMicroComponentModal,
+                 openManualEstimateWhatsApp,
+                 openMicroComponentModal,
+                 openQcChecklist,
                 partOrderCost,
                 partOrderCostApproved,
                 partOrderEta,
@@ -833,9 +848,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 statusFilter,
                 stopCamera,
                 tenantObj,
-                 tenantServices: fetchedService ? serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? serviceTickets.map((ticket) => ticket.id === fetchedService.id ? { ...ticket, ...fetchedService } : ticket) : [...serviceTickets, fetchedService] : serviceTickets,
+                 tenantServices: fetchedService ? serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? serviceTickets.map((ticket) => ticket.id === fetchedService.id ? { ...ticket, timeline: fetchedService.timeline, initialChecklist: fetchedService.initialChecklist ?? ticket.initialChecklist, qcChecklist: fetchedService.qcChecklist ?? ticket.qcChecklist } : ticket) : [...serviceTickets, fetchedService] : serviceTickets,
                  detailLoading,
                  detailError,
+                 storageLocations,
                  onDetailUpdated: setFetchedService,
                   updateServiceStatus,
                 videoRef,
@@ -859,9 +875,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 cancelServicePart,
                 patchServiceWork,
                 createServicePartOrder,
-                addApprovedAdditionalCost,
-              }}
-            />
+                  addApprovedAdditionalCost,
+                }}
+             />
           </>
         )}
         {/* Subtab: NEW TICKET WIZARD */}
@@ -930,8 +946,8 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
               autoAssignReason,
               newSrvStorageLocId,
               setNewSrvStorageLocId,
-              getStorageLocations: () => storageLocations,
-              activeTenantId,
+               storageLocations,
+               activeTenantId,
               currentBranchId,
               newSrvChecklist,
               setNewSrvChecklist,
@@ -1009,6 +1025,14 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         {/* Subtab: WARRANTY & CLAIMS */}
         {localSubTab === 'warranty-claims' && <WarrantyClaims />}
       </div>
+      {qcTicket && (
+        <QCChecklistModal
+          ticket={qcTicket}
+          initialChecklist={qcTicket.qcChecklist}
+          onClose={() => setQcTicket(null)}
+          onSave={saveQcChecklist}
+        />
+      )}
       <DocumentPrintouts
         showSpkPrintout={showSpkPrintout}
         setShowSpkPrintout={setShowSpkPrintout}

@@ -172,9 +172,19 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
       const Html5Qrcode = (await import("html5-qrcode")).Html5Qrcode;
       const scanner = new Html5Qrcode("qr-scanner-element");
 
-      const onSuccess = (decodedText: string) => {
-        const ticketNo = decodedText.match(/ticket=([^&]+)/)?.[1] || decodedText;
-        const match = tenantServices.find((s) => s.ticketNo === ticketNo);
+       const onSuccess = (decodedText: string) => {
+         let ticketNo = decodedText;
+         let trackingToken = '';
+         try {
+           const url = new URL(decodedText, window.location.origin);
+           ticketNo = url.searchParams.get('ticket') || '';
+           trackingToken = url.searchParams.get('tracking') || '';
+         } catch {
+           ticketNo = decodedText;
+         }
+         const match = tenantServices.find((s) =>
+           trackingToken ? s.publicTrackingToken === trackingToken : s.ticketNo === ticketNo
+         );
         if (match) {
           setScanResult(ticketNo);
           setSelectedTicketId(match.id);
@@ -203,16 +213,17 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
   }, [tenantServices, setSelectedTicketId, showToast]);
 
   // Aktivasi Cetak Thermal Roll
-  const triggerThermalPrintAnimation = () => {
+  const triggerThermalPrintAnimation = async () => {
     if (!selectedTicket) return;
     setIsThermalPrinting(true);
     setThermalPrintedOutput(false);
-
-    setTimeout(() => {
-      setIsThermalPrinting(false);
+    try {
+      await handleDirectPrintLabel(selectedTicket, businessName);
       setThermalPrintedOutput(true);
       playBeep();
-    }, 1800);
+    } finally {
+      setIsThermalPrinting(false);
+    }
   };
 
   return (
@@ -231,7 +242,7 @@ export const ServiceTrackerQr: React.FC<ServiceTrackerQrProps> = ({
         </div>
 
         {/* Tab Selection Switcher */}
-        <div className="flex bg-slate-100 dark:bg-zinc-900 p-0.5 rounded-xl text-xs font-black border border-slate-200/40 dark:border-zinc-800">
+        <div className="flex bg-slate-100 dark:bg-zinc-900 p-0.5 rounded-xl text-xs font-black border border-slate-200/40 dark:border-zinc-800 overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab("print")}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${

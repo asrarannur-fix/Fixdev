@@ -307,7 +307,7 @@ export function useServiceTrackerQr(
     return `${Math.max(30, wmm)}mm ${Math.max(20, hmm)}mm`;
   };
 
-  const handleDirectPrintLabel = (ticket: ServiceTicket, businessName = tenantName) => {
+  const handleDirectPrintLabel = async (ticket: ServiceTicket, businessName = tenantName) => {
     const qrUrl = getTrackingUrl(ticket);
     const dateStr = ticket.createdAt
       ? new Date(ticket.createdAt).toLocaleDateString('id-ID', {
@@ -337,21 +337,16 @@ export function useServiceTrackerQr(
         <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || 'Scan untuk lihat status servis')}</div>
       </body></html>
     `;
-    void printJobAsync({
+    const result = await printJobAsync({
       title: 'Service Label',
       html: printDoc,
       printConfig,
       documentType: 'service_label',
       documentId: ticket.id,
       qrPayload: qrUrl,
-    }).then((result) =>
-      showToast(
-        result.ok
-          ? 'Label servis dikirim ke printer.'
-          : result.error || 'Cetak label servis gagal.',
-        result.ok ? 'success' : 'error'
-      )
-    ).catch((error) => showToast(error?.message || 'Cetak label servis gagal.', 'error'));
+    });
+    if (!result.ok) throw new Error(result.error || 'Cetak label servis gagal.');
+    showToast('Label servis dikirim ke printer.', 'success');
   };
 
   return {

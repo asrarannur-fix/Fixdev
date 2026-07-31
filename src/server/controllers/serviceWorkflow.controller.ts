@@ -484,16 +484,19 @@ export async function deleteServicePhoto(req: Request, res: Response) {
   if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName)) return res.status(404).end();
   try {
     const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
-    await storage.delete(objectPath);
     const result = await dbQuery(
       `UPDATE service_tickets SET initial_photos=COALESCE(initial_photos,'[]'::jsonb)-$1, qc_photos=COALESCE(qc_photos,'[]'::jsonb)-$1, updated_at=NOW()
-       WHERE id=$2 AND tenant_id=$3 AND branch_id=$4 AND deleted_at IS NULL`,
+       WHERE id=$2 AND tenant_id=$3 AND branch_id=$4 AND deleted_at IS NULL
+       RETURNING id`,
       [objectPath, req.params.id, req.tenantId, req.branchId]
     );
+    if (!result.rows[0]) return res.status(404).end();
+    await storage.delete(objectPath).catch((error: any) => {
+      if (error.code !== 'ENOENT') logger.error({ err: error.message, tenantId: req.tenantId, ticketId: req.params.id, objectPath }, '[service-photo] storage delete failed');
+    });
     logger.info({ tenantId: req.tenantId, ticketId: req.params.id, objectPath, rows: result.rowCount }, '[service-photo] deleted');
     return res.status(204).end();
   } catch (error: any) {
-    if (error.code === 'ENOENT') return res.status(404).end();
     return sendError(res, error);
   }
 }
@@ -1186,19 +1189,26 @@ export async function receiveServicePartOrder(req: Request, res: Response) {
           parsed.data.serialNumber || null,
         ]
       );
-      await client.query(
-        "UPDATE service_part_orders SET status='RESERVED',product_id=$1,warehouse_id=$2,updated_at=NOW() WHERE id=$3 AND tenant_id=$4 AND ticket_id=$5",
-        [parsed.data.productId, parsed.data.warehouseId, order.id, req.tenantId, ticket.id]
-      );
-      await appendEvent(
-        client,
-        req,
-        ticket,
-        'SEDANG_DIKERJAKAN',
-        `${order.part_name} telah tiba dan direservasi. Pengerjaan dilanjutkan.`,
-        { partOrderId: order.id }
-      );
-      return { ticket: await finalTicket(client, req), order: { ...order, status: 'RESERVED' } };
+       await client.query(
+         "UPDATE service_part_orders SET status='RESERVED',product_id=$1,warehouse_id=$2,updated_at=NOW() WHERE id=$3 AND tenant_id=$4 AND ticket_id=$5",
+         [parsed.data.productId, parsed.data.warehouseId, order.id, req.tenantId, ticket.id]
+       );
+       const activeOrders = await client.query(
+         `SELECT COUNT(*)::int AS total FROM service_part_orders
+          WHERE tenant_id=$1 AND ticket_id=$2 AND status NOT IN ('RESERVED','CANCELLED')`,
+         [req.tenantId, ticket.id]
+       );
+       if (!activeOrders.rows[0]?.total) {
+         await appendEvent(
+           client,
+           req,
+           ticket,
+           'SEDANG_DIKERJAKAN',
+           `${order.part_name} telah tiba dan direservasi. Pengerjaan dilanjutkan.`,
+           { partOrderId: order.id }
+         );
+       }
+       return { ticket: await finalTicket(client, req), order: { ...order, status: 'RESERVED' } };
     });
     res.json({ data: result });
   } catch (error: any) {
@@ -1460,15 +1470,15 @@ export async function patchServiceWorkMetadata(req: Request, res: Response) {
   try {
     const ticket = await dbTransaction(async (client) => {
       const current = await lockedTicket(client, req);
-      if (['DIAMBIL', 'DIBATALKAN', 'TIDAK_BISA_DIPERBAIKI', 'CUSTOMER_TIDAK_MERESPON', 'BARANG_TIDAK_DIAMBIL', 'RUSAK'].includes(current.status)) {
-        const error: any = new Error('Metadata pekerjaan tidak dapat diubah pada status terminal.');
+      if (['QC', 'SELESAI', 'DIAMBIL', 'DIBATALKAN', 'TIDAK_BISA_DIPERBAIKI', 'CUSTOMER_TIDAK_MERESPON', 'BARANG_TIDAK_DIAMBIL', 'RUSAK'].includes(current.status)) {
+        const error: any = new Error('Metadata pekerjaan tidak dapat diubah setelah QC.');
         error.status = 409;
         throw error;
       }
       if (parsed.data.assignedTechId) {
         const technician = await client.query(
           `SELECT u.id FROM users u JOIN user_branches ub ON ub.user_id=u.id
-           WHERE u.id=$1 AND u.tenant_id=$2 AND u.role='TEKNISI' AND ub.branch_id=$3 LIMIT 1`,
+           WHERE u.id=$1 AND u.tenant_id=$2 AND u.role='TEKNISI' AND u.is_active=TRUE AND ub.branch_id=$3 LIMIT 1`,
           [parsed.data.assignedTechId, req.tenantId, current.branchId]
         );
         if (!technician.rows[0]) {

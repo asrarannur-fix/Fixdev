@@ -10,9 +10,11 @@ import {
   FileText,
   ChevronRight,
   Trash2,
-  Search,
-  X,
-} from 'lucide-react';
+   Search,
+   X,
+   AlertCircle,
+   RefreshCw,
+ } from 'lucide-react';
 
 const GradientCard: React.FC<{
   children: React.ReactNode;
@@ -210,8 +212,10 @@ export const ServiceList: React.FC<any> = (props) => {
     };
   };
   const [page, setPage] = React.useState(1);
-  const [servicePage, setServicePage] = React.useState<ServiceTicketList | null>(null);
-  const [deleting, setDeleting] = React.useState(false);
+   const [servicePage, setServicePage] = React.useState<ServiceTicketList | null>(null);
+   const [serviceListError, setServiceListError] = React.useState<string | null>(null);
+   const [reloadKey, setReloadKey] = React.useState(0);
+   const [deleting, setDeleting] = React.useState(false);
   const [operationalFilter, setOperationalFilter] = React.useState(() => readFilters().group);
   const [technicianFilter, setTechnicianFilter] = React.useState(() => readFilters().tech);
   const [dateRangeFilter, setDateRangeFilter] = React.useState(() => readFilters().range);
@@ -274,23 +278,23 @@ export const ServiceList: React.FC<any> = (props) => {
 
   const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   React.useEffect(() => setPage(1), [operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter]);
-  React.useEffect(() => {
-    let cancelled = false;
-    setServicePage(null);
-    const timeout = window.setTimeout(() => getServiceTickets(apiFetch, {
-      q: srvSearchQuery.trim() || undefined,
-      status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
-      group: operationalFilter === 'ALL' ? undefined : operationalFilter,
-      technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
-      sla: slaFilter === 'all' ? undefined : slaFilter,
-to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
+   React.useEffect(() => {
+     let cancelled = false;
+     setServiceListError(null);
+     const timeout = window.setTimeout(() => getServiceTickets(apiFetch, {
+       q: srvSearchQuery.trim() || undefined,
+       status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
+       group: operationalFilter === 'ALL' ? undefined : operationalFilter,
+       technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
+       sla: slaFilter === 'all' ? undefined : slaFilter,
+       to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
        from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)),
-      tenantId: currentTenantId || activeTenantId || undefined,
-      branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined,
-      sort: srvSort, limit: 15, offset: (page - 1) * 15,
-    }).then((result) => { if (!cancelled) setServicePage(result); }).catch((error) => { if (!cancelled) showToast(error.message, 'error'); }), srvSearchQuery ? 250 : 0);
-    return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [apiFetch, page, operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, showToast, currentTenantId, activeTenantId, currentBranchId, tenantObj?.branchId, tenantObj?.currentBranchId]);
+       tenantId: currentTenantId || activeTenantId || undefined,
+       branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined,
+       sort: srvSort, limit: 15, offset: (page - 1) * 15,
+     }).then((result) => { if (!cancelled) setServicePage(result); }).catch((error) => { if (!cancelled) setServiceListError(error.message); }), srvSearchQuery ? 250 : 0);
+     return () => { cancelled = true; window.clearTimeout(timeout); };
+   }, [apiFetch, page, operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, currentTenantId, activeTenantId, currentBranchId, tenantObj?.branchId, tenantObj?.currentBranchId, reloadKey]);
   React.useEffect(() => {
     const readQuery = () => {
       const filters = readFilters();
@@ -487,9 +491,11 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
                      const count = selectedServiceIds.length;
                      setDeleting(true);
                      try {
-                       await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
-                       setSelectedServiceIds([]);
-                       showToast(`${count} tiket berhasil dihapus.`, 'success');
+                        const deletedIds = await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
+                        if (deletedIds.length !== count) throw new Error('Sebagian tiket gagal dihapus. Muat ulang daftar.');
+                        setSelectedServiceIds([]);
+                        setReloadKey((key) => key + 1);
+                        showToast(`${count} tiket berhasil dihapus.`, 'success');
                      } catch (error: any) {
                        showToast(error?.message || 'Gagal menghapus tiket.', 'error');
                      } finally {
@@ -518,8 +524,17 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
       </div>
 
       {/* Service List */}
-      <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="max-h-[650px] overflow-y-auto">
+       <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden relative min-h-[400px]">
+         {serviceListError ? (
+           <div className="flex flex-col items-center justify-center py-16 text-rose-500">
+             <AlertCircle className="w-8 h-8 mb-3" />
+             <p className="text-sm font-bold">{serviceListError}</p>
+             <button onClick={() => setReloadKey((key) => key + 1)} className="mt-4 px-4 py-2 bg-rose-100 text-rose-700 text-xs font-bold rounded-xl hover:bg-rose-200 transition-colors">Coba Lagi</button>
+           </div>
+         ) : !servicePage && !filteredServices.length ? (
+           <div className="flex items-center justify-center py-32"><RefreshCw className="w-8 h-8 text-indigo-300 animate-spin" /></div>
+         ) : (
+           <div className="max-h-[650px] overflow-y-auto">
            {paginatedServices.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-zinc-500">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mb-4">
@@ -685,7 +700,8 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
              </>
            )}
          </div>
-         <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} itemsPerPage={15} />
+         )}
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} itemsPerPage={15} />
       </div>
 
       {/* Floating bulk action bar */}
@@ -695,37 +711,7 @@ to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
             {selectedServiceIds.length} terpilih
           </span>
           <div className="flex items-center gap-2">
-            {(currentUser?.role === UserRole.OWNER ||
-              currentUserPermissions.includes('action-services-delete-ticket')) && (
-              <button
-                onClick={async () => {
-                  if (deleting) return;
-                  if (
-                    await showConfirm({
-                      title: 'Hapus Tiket Massal',
-                      message: `Yakin hapus ${selectedServiceIds.length} tiket?`,
-                      confirmLabel: 'Ya',
-                      type: 'danger',
-                    })
-                  ) {
-                     const count = selectedServiceIds.length;
-                     setDeleting(true);
-                     try {
-                       await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
-                       setSelectedServiceIds([]);
-                       showToast(`${count} tiket dihapus.`, 'success');
-                     } catch (error: any) {
-                       showToast(error?.message || 'Gagal menghapus tiket.', 'error');
-                     } finally {
-                       setDeleting(false);
-                     }
-                  }
-                }}
-                className="px-3 py-1.5 text-[10px] font-bold bg-gradient-to-r from-rose-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all"
-              >
-                Hapus
-              </button>
-            )}
+
             <button
               onClick={() => setSelectedServiceIds([])}
               className="px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all"

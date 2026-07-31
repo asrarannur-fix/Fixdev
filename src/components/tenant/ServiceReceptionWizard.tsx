@@ -130,8 +130,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     autoAssignReason,
     newSrvStorageLocId,
     setNewSrvStorageLocId,
-    getStorageLocations,
-    activeTenantId,
+     storageLocations = [],
+     activeTenantId,
     currentBranchId,
     newSrvChecklist,
     setNewSrvChecklist,
@@ -414,7 +414,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Kategori Perangkat
@@ -447,7 +447,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="relative">
                 <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Nama Perangkat
@@ -491,7 +491,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               </button>
               {showMoreDetails && (
                 <div className="px-4 pb-4 pt-2 space-y-3 border-t border-slate-200">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                         Serial Number (SN)
@@ -572,7 +572,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
                   Kondisi Fisik Perangkat
@@ -829,8 +829,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   className="w-full text-xs px-3 py-2 border border-amber-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
                 >
                   <option value="">-- Tentukan setelah penerimaan --</option>
-                  {getStorageLocations(activeTenantId || '')
-                    .filter(
+                   {([] as any[])
+                     .filter(
                       (loc) =>
                         loc.type === 'UNIT_SERVICE' &&
                         (!currentBranchId || loc.branchId === currentBranchId)
@@ -895,7 +895,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-[11px] max-h-60 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] max-h-60 overflow-y-auto pr-1">
                 {Object.entries(newSrvChecklist).map(([name, checked]) => (
                   <label
                     key={name}
@@ -1070,7 +1070,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       <label className="block text-[9px] font-semibold text-slate-400 uppercase">
                         Foto Terlampir ({newSrvCapturedConditions.length})
                       </label>
-                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
                         {newSrvCapturedConditions.map((cap) => (
                           <div
                             key={cap.id}

@@ -5083,7 +5083,41 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       'SECURITY',
       'HIGH'
     );
+    // INTEGRASI HR: otomatis buat Employee terkait agar modul Tim/HR terhubung
+    try {
+      const empId = 'emp-' + generateUUID().slice(0, 8);
+      const newEmp: Employee = {
+        id: empId,
+        tenantId: userData.tenantId,
+        branchId: (userData.branchIds && userData.branchIds[0]) ? userData.branchIds[0] : currentBranchId,
+        userId: id,
+        name: userData.name,
+        position: roleLabelSafe(userData.role),
+        division: 'Operasional',
+        contractStatus: 'PERMANENT',
+        basicSalary: 0,
+        email: userData.email,
+        phone: '',
+        attendanceHistory: [],
+        leaves: [],
+      };
+      setEmployees((prev) => [...prev, newEmp]);
+      if (isBackendConfigured()) {
+        try { syncModuleRecord('employees', empId, newEmp, 'insert'); } catch (e) { console.warn('emp sync', e); }
+      }
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, employeeId: empId } : u)));
+      addLog('HR Link', 'Staff ' + userData.name + ' otomatis terhubung ke data Karyawan (HR).', 'SYSTEM');
+    } catch (err) { console.warn('Auto-create employee gagal', err); }
   };
+
+  const roleLabelSafe = (role: UserRole): string => {
+    const map: Record<string, string> = {
+      SUPER_ADMIN: 'Super Admin', OWNER: 'Pemilik', ADMIN: 'Admin', MANAJER: 'Manajer',
+      KASIR: 'Kasir', TEKNISI: 'Teknisi', HR: 'HR', STAFF: 'Staff',
+    };
+    return map[role] || 'Staff';
+  };
+
 
   const deleteUser = async (userId: string) => {
     try {

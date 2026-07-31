@@ -207,7 +207,7 @@ export async function createServiceReception(req: Request, res: Response) {
 
       if (input.service.assignedTechId) {
         const technician = await client.query(
-          `SELECT u.id FROM users u JOIN user_branches ub ON ub.user_id=u.id WHERE u.id=$1 AND u.tenant_id=$2 AND u.role='TEKNISI' AND ub.branch_id=$3 LIMIT 1`,
+          `SELECT u.id FROM users u JOIN user_branches ub ON ub.user_id=u.id WHERE u.id=$1 AND u.tenant_id=$2 AND u.role='TEKNISI' AND u.is_active=TRUE AND ub.branch_id=$3 LIMIT 1`,
           [input.service.assignedTechId, tenantId, input.branchId]
         );
         if (!technician.rows[0]) {

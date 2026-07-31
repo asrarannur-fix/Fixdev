@@ -24,6 +24,7 @@ import {
   Briefcase,
   Users,
   UserRound,
+  UserCheck,
   ShieldAlert,
   Store,
   Banknote,
@@ -576,6 +577,17 @@ export const RBACManager: React.FC = () => {
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     Aktif
                   </span>
+                  {user.employeeId ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700" title="Data karyawan HR sudah terhubung">
+                      <UserCheck className="h-2.5 w-2.5" />
+                      Terhubung HR
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700" title="Belum ada data karyawan di modul HR">
+                      <UserRound className="h-2.5 w-2.5" />
+                      Belum HR
+                    </span>
+                  )}
                   <button
                     onClick={() => openEdit(user)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-all hover:border-indigo-200 hover:bg-accent-lighter hover:text-accent"

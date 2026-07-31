@@ -67,8 +67,8 @@ export const QCChecklistModal: React.FC<{
     );
     if (!initialChecklist.length) return all;
     return all.map(item => {
-      const found = initialChecklist.find(c => c.id === item.id);
-      return found ? { ...item, checked: !!found.checked, notes: found.notes ?? '' } : item;
+      const found = initialChecklist.find(c => c.id === item.id || c.criteria === item.label);
+      return found ? { ...item, checked: !!(found.checked ?? found.passed), notes: found.notes ?? '' } : item;
     });
   };
 

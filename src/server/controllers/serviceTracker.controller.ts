@@ -252,18 +252,25 @@ export const approvePortalTicket = async (req: any, res: any) => {
           JSON.stringify({ ticketId, fromStatus: ticket.status, toStatus: nextStatus }),
         ]
       );
-      const customer = await client.query(
-        'SELECT name,phone FROM customers WHERE id=$1 AND tenant_id=$2',
-        [ticket.customer_id, tenantId]
-      );
-      const settings = await client.query('SELECT settings FROM tenants WHERE id=$1', [tenantId]);
-      if (customer.rows[0]?.phone && settings.rows[0]?.settings?.waConfig?.sendingMethod !== 'MANUAL') {
-        await client.query(
-          `INSERT INTO whatsapp_queue(tenant_id,recipient_name,recipient_phone,type,message,status,ticket_id,event_id,scheduled_time)
-           VALUES($1,$2,$3,'SERVICE_UPDATE',$4,'PENDING',$5,$6,NOW())`,
-          [tenantId, customer.rows[0].name, customer.rows[0].phone, note, ticket.id, event.rows[0].id]
+      await client.query('SAVEPOINT portal_notification');
+      try {
+        const customer = await client.query(
+          'SELECT name,phone FROM customers WHERE id=$1 AND tenant_id=$2',
+          [ticket.customer_id, tenantId]
         );
-      }
+        const settings = await client.query('SELECT settings FROM tenants WHERE id=$1', [tenantId]);
+        if (customer.rows[0]?.phone && settings.rows[0]?.settings?.waConfig?.sendingMethod !== 'MANUAL') {
+          await client.query(
+            `INSERT INTO whatsapp_queue(tenant_id,recipient_name,recipient_phone,type,message,status,ticket_id,event_id,scheduled_time)
+             VALUES($1,$2,$3,'SERVICE_UPDATE',$4,'PENDING',$5,$6,NOW())`,
+            [tenantId, customer.rows[0].name, customer.rows[0].phone, note, ticket.id, event.rows[0].id]
+          );
+        }
+        } catch (error: any) {
+          await client.query('ROLLBACK TO SAVEPOINT portal_notification');
+          logger.error({ err: error.message, tenantId, ticketId }, 'Portal approval notification failed');
+        }
+      await client.query('RELEASE SAVEPOINT portal_notification');
       return { message: approved ? 'Estimasi berhasil disetujui.' : 'Estimasi ditolak.' };
     });
     res.json(result);

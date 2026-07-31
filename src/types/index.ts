@@ -359,6 +359,7 @@ export interface User {
   role: UserRole;
   tenantId?: string; // Empty if Super Admin
   branchIds: string[]; // User can belong to multiple branches
+  employeeId?: string; // Link to HR Employee record (if this user is also an employee)
   permissions: string[];
   loginHistory: { ip: string; device: string; timestamp: string }[];
   activeSessions: UserSession[];
@@ -377,6 +378,7 @@ export interface Warehouse {
   id: string;
   tenantId: string;
   branchId: string;
+  userId?: string; // Link to login User (RBAC) if this employee has a system account
   name: string;
   location: string;
 }
@@ -836,6 +838,7 @@ export interface StorageLocation {
   id: string;
   tenantId: string;
   branchId: string;
+  userId?: string; // Link to login User (RBAC) if this employee has a system account
   name: string; // Contoh: "Rak A - Layar"
   code: string; // Contoh: "RAK-A1"
   type: 'SPAREPART' | 'UNIT_SERVICE';
@@ -947,6 +950,7 @@ export interface WorkShift {
   id: string;
   tenantId: string;
   branchId: string;
+  userId?: string; // Link to login User (RBAC) if this employee has a system account
   name: string;
   startTime: string; // "08:00"
   endTime: string; // "17:00"
@@ -959,6 +963,7 @@ export interface Employee {
   id: string;
   tenantId: string;
   branchId: string;
+  userId?: string; // Link to login User (RBAC) if this employee has a system account
   name: string;
   position: string;
   division: string;

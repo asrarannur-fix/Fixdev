@@ -45,10 +45,26 @@ describe('service API helpers', () => {
     await expect(getServiceStatusEvents(failedHistory, 'ticket-1')).rejects.toThrow('Gagal memuat riwayat tiket.');
   });
 
-  it('patches scoped checklist endpoint and unwraps ticket', async () => {
-    const apiFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { id: 'ticket-1' } }), { status: 200 }));
-    await expect(patchServiceTicketScope(apiFetch, 'ticket-1', 'qc-draft', { notes: 'Passed' })).resolves.toEqual({ id: 'ticket-1' });
-    expect(apiFetch).toHaveBeenCalledWith(`${SERVICE_ENDPOINT}/ticket-1/qc-draft`, expect.objectContaining({ method: 'PATCH' }));
+  it('sends complete QC draft payload to encoded scoped endpoint', async () => {
+    const apiFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { id: 'ticket-1', status: 'QC' } }), { status: 200 }));
+    const draft = {
+      notes: 'Speaker masih pecah',
+      checklist: [{ item: 'Speaker', passed: false }],
+      photos: ['tenant/tenant-1/service/ticket-1/photo.jpg'],
+    };
+
+    await expect(patchServiceTicketScope(apiFetch, 'ticket/1', 'qc-draft', draft)).resolves.toEqual({ id: 'ticket-1', status: 'QC' });
+    expect(apiFetch).toHaveBeenCalledWith(`${SERVICE_ENDPOINT}/ticket%2F1/qc-draft`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    });
+  });
+
+  it('surfaces QC draft API rejection without returning stale ticket data', async () => {
+    const apiFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'Draft QC hanya dapat diubah pada tahap QC.' }), { status: 409 }));
+
+    await expect(patchServiceTicketScope(apiFetch, 'ticket-1', 'qc-draft', { notes: 'Passed' })).rejects.toThrow('Draft QC hanya dapat diubah pada tahap QC.');
   });
 
   it('requests upload URL then uploads photo bytes', async () => {
