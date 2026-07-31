@@ -238,9 +238,10 @@ export const requireTenantScope = async (req: Request, res: Response, next: Next
     }
   }
 
-  if (!req.authActor?.tenantId || requestedTenant !== req.authActor.tenantId) {
+  const resolvedTenant = requestedTenant || req.authActor?.tenantId || '';
+  if (!req.authActor?.tenantId || resolvedTenant !== req.authActor.tenantId) {
     logger.warn(
-      { authTenant: req.authActor?.tenantId, requestedTenant, userId: req.authActor?.userId },
+      { authTenant: req.authActor?.tenantId, requestedTenant, resolvedTenant, userId: req.authActor?.userId },
       'Cross-tenant access attempt blocked'
     );
     return res.status(403).json({ error: 'Access to this tenant is forbidden.' });
