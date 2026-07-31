@@ -79,6 +79,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
   const [ticketNo, setTicketNo] = useState('');
   const [phoneLast4, setPhoneLast4] = useState('');
   const [searchedTicket, setSearchedTicket] = useState<any | null>(null);
+  const [trackingToken, setTrackingToken] = useState<string | null>(null);
+  const [approvalPending, setApprovalPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [signerName, setSignerName] = useState('');
   const [signerText, setSignerText] = useState('');
@@ -256,6 +258,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
       : undefined;
 
     if (foundLocal) {
+      setTrackingToken(trackingToken || foundLocal.publicTrackingToken || null);
       setSearchedTicket(foundLocal);
       triggerToast(`🎉 Sukses melacak tiket #${foundLocal.ticketNo}!`, 'success');
       playBeep(880, 0.12);
@@ -278,9 +281,10 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
           : '/api/service-tracking/ticket',
         trackingToken ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketNo: trimmed, phoneLast4 }) }
       );
-      const data = await readJsonResponse<{ id?: string; ticketNo: string; deviceName: string; deviceBrandModel: string; status: string; customerApprovalStatus: string; estimatedCost: number; downPayment: number; timeline: any; customerNameObscured: string; warrantyMonths: number; warrantyEndsAt: Date }>(response, 'Service Tracking API');
+      const data = await readJsonResponse<{ id?: string; ticketId?: string; ticketNo: string; deviceName: string; deviceBrandModel: string; status: string; customerApprovalStatus: string; estimatedCost: number; downPayment: number; timeline: any; customerNameObscured: string; warrantyMonths: number; warrantyEndsAt: Date }>(response, 'Service Tracking API');
+      setTrackingToken(trackingToken || null);
       setSearchedTicket({
-        id: data.id || 'temp-srv-id',
+        id: data.id || data.ticketId || 'temp-srv-id',
         ticketNo: data.ticketNo,
         deviceName: data.deviceName,
         deviceBrandModel: data.deviceBrandModel,
@@ -1333,43 +1337,56 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           </div>
                         </div>
 
-                        <div className="flex gap-2 pt-2">
-                          <button
+                         <div className="flex gap-2 pt-2">
+                           <button
+                             disabled={approvalPending || !trackingToken}
+
                             type="button"
-                            onClick={() => {
-                              approveServiceEstimate(
-                                searchedTicket.id,
-                                false,
-                                signerName || 'Pelanggan',
-                                signerText || 'DITOLAK'
-                              );
-                              triggerToast('Surat penawaran ditolak secara resmi.', 'warning');
-                              setSearchedTicket(null);
-                              setSignerName('');
-                              setSignerText('');
-                            }}
+                             onClick={async () => {
+                               setApprovalPending(true);
+                               try {
+                                 const response = await fetch('/api/service-tracking/portal-approve', {
+                                   method: 'POST',
+                                   headers: { 'Content-Type': 'application/json' },
+                                   body: JSON.stringify({ ticketId: searchedTicket.id, token: trackingToken, approved: false, signer: signerName || 'Pelanggan', reason: signerText || 'DITOLAK' }),
+                                 });
+                                 await readJsonResponse(response, 'Service Approval API');
+                                 triggerToast('Surat penawaran ditolak secara resmi.', 'warning');
+                                 setSearchedTicket(null);
+                                 setSignerName('');
+                                 setSignerText('');
+                               } catch (error) {
+                                 triggerToast(error instanceof Error ? error.message : 'Gagal menolak estimasi.', 'error');
+                               } finally {
+                                 setApprovalPending(false);
+                               }
+                             }}
                             className="flex-1 bg-white dark:bg-zinc-900 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-700 dark:text-rose-400 font-semibold text-xs py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/40 cursor-pointer flex items-center justify-center gap-1.5"
                           >
                             <ThumbsDown className="w-3.5 h-3.5" /> Tolak Estimasi
                           </button>
                           <button
                             type="button"
-                            disabled={!signerName.trim() || !signerText.trim()}
-                            onClick={() => {
-                              approveServiceEstimate(
-                                searchedTicket.id,
-                                true,
-                                signerName,
-                                signerText
-                              );
-                              triggerToast(
-                                `Estimasi disetujui digital oleh ${signerName}!`,
-                                'success'
-                              );
-                              setSearchedTicket(null);
-                              setSignerName('');
-                              setSignerText('');
-                            }}
+                             disabled={approvalPending || !trackingToken || !signerName.trim() || !signerText.trim()}
+                             onClick={async () => {
+                               setApprovalPending(true);
+                               try {
+                                 const response = await fetch('/api/service-tracking/portal-approve', {
+                                   method: 'POST',
+                                   headers: { 'Content-Type': 'application/json' },
+                                   body: JSON.stringify({ ticketId: searchedTicket.id, token: trackingToken, approved: true, signer: signerName, signature: signerText }),
+                                 });
+                                 await readJsonResponse(response, 'Service Approval API');
+                                 triggerToast(`Estimasi disetujui digital oleh ${signerName}!`, 'success');
+                                 setSearchedTicket(null);
+                                 setSignerName('');
+                                 setSignerText('');
+                               } catch (error) {
+                                 triggerToast(error instanceof Error ? error.message : 'Gagal menyetujui estimasi.', 'error');
+                               } finally {
+                                 setApprovalPending(false);
+                               }
+                             }}
                             className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 rounded-xl cursor-pointer flex items-center justify-center gap-1.5 shadow-md disabled:opacity-40"
                           >
                             <ThumbsUp className="w-3.5 h-3.5" /> Setujui & Mulai Reparasi

@@ -14,6 +14,7 @@ const portalApprovalSchema = z
     token: z.string().uuid(),
     approved: z.boolean(),
     signer: z.string().trim().min(2).max(120),
+    signature: z.string().trim().max(500).optional(),
     reason: z.string().trim().min(3).max(500).optional(),
   })
   .superRefine((data, ctx) => {
@@ -40,6 +41,7 @@ function obscureName(name?: string): string {
 
 function publicTicketRow(row: any) {
   return {
+    ticketId: row.id,
     ticketNo: row.ticketNo,
     deviceName: row.deviceName,
     deviceBrandModel: row.deviceBrandModel,
@@ -77,7 +79,7 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
   }
   try {
     const result = await dbQuery(
-      `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
+      `SELECT s.id,s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
         s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
         s.estimated_cost AS "estimatedCost",s.down_payment AS "downPayment",
         s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
@@ -88,7 +90,7 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
     );
     if (!result.rows[0] || (req.hostTenant && result.rows[0].tenantId !== req.hostTenant.id))
       return res.status(404).json({ error: 'Service ticket not found' });
-    res.json(publicTicketRow(result.rows[0]));
+    res.set('Cache-Control', 'no-store').json(publicTicketRow(result.rows[0]));
   } catch (error: any) {
     logger.error({ err: error.message }, 'Public ticket token lookup failed');
     res.status(500).json({ error: 'Layanan pelacakan tiket sedang tidak tersedia.' });
@@ -184,7 +186,7 @@ export const getPortalTicketDetail = async (req: any, res: any) => {
 export const approvePortalTicket = async (req: any, res: any) => {
   const parsed = portalApprovalSchema.safeParse(req.body);
   if (!parsed.success) return res.status(422).json({ error: 'Data persetujuan tidak valid.' });
-  const { ticketId, token, approved, signer, reason } = parsed.data;
+  const { ticketId, token, approved, signer, signature, reason } = parsed.data;
   const tenantId = req.hostTenant?.id;
   if (!tenantId) return res.status(404).json({ error: 'Tenant not found.' });
   try {
@@ -215,16 +217,17 @@ export const approvePortalTicket = async (req: any, res: any) => {
         },
       ];
       await client.query(
-        `UPDATE service_tickets SET status=$1,customer_approval_status=$2,provisional_signature_name=$3,
-          provisional_approved_at=$4,timeline=$5::jsonb,updated_at=NOW() WHERE id=$6 AND tenant_id=$7`,
+`UPDATE service_tickets SET status=$1,customer_approval_status=$2,provisional_signature_name=$3,
+           provisional_signature=$4,provisional_approved_at=$5,timeline=$6::jsonb,updated_at=NOW() WHERE id=$7 AND tenant_id=$8`,
         [
           nextStatus,
           approval.approvalStatus,
-          signer,
-          approved ? new Date() : null,
-          JSON.stringify(timeline),
-          ticketId,
-          tenantId,
+           signer,
+           signature || null,
+           approved ? new Date() : null,
+           JSON.stringify(timeline),
+           ticketId,
+           tenantId,
         ]
       );
       const event = await client.query(

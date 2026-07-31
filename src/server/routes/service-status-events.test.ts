@@ -20,6 +20,10 @@ const receptionController = readFileSync(
   new URL('../controllers/serviceReception.controller.ts', import.meta.url),
   'utf8'
 );
+const trackerController = readFileSync(
+  new URL('../controllers/serviceTracker.controller.ts', import.meta.url),
+  'utf8'
+);
 const migrationScript = readFileSync(
   new URL('../../../scripts/migrate.ts', import.meta.url),
   'utf8'
@@ -28,6 +32,15 @@ const databaseController = readFileSync(
   new URL('../controllers/database.controller.ts', import.meta.url),
   'utf8'
 );
+
+describe('service portal contracts', () => {
+  it('returns ticket identity and stores declared portal signature', () => {
+    expect(trackerController).toContain('ticketId: row.id');
+    expect(trackerController).toContain('provisional_signature=$4');
+    expect(trackerController).toContain('signature: z.string()');
+    expect(trackerController).toContain("Cache-Control");
+  });
+});
 
 describe('service status event routes', () => {
   it('exposes status history as read-only and tenant-scoped', () => {
