@@ -223,7 +223,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     readUrl();
     window.addEventListener('popstate', readUrl);
     return () => window.removeEventListener('popstate', readUrl);
-  }, [serviceTickets]);
+  }, []);
   useEffect(() => {
     const id = viewingServiceTicketId;
     if (!id) {
@@ -580,10 +580,27 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   };
   const runAutoAssign = () => {
     const techs = employees.filter(
-      (emp: any) => emp.role === 'TEKNISI' || emp.position?.toLowerCase().includes('teknisi')
+      (emp: any) =>
+        emp.tenantId === activeTenantId &&
+        (!currentBranchId || emp.branchId === currentBranchId) &&
+        emp.isActive !== false &&
+        (emp.role === 'TEKNISI' || emp.position?.toLowerCase().includes('teknisi'))
     );
     if (techs.length > 0) {
-      const selected = techs[Math.floor(Math.random() * techs.length)];
+      const activeStatuses = new Set([
+        ServiceStatus.DITERIMA,
+        ServiceStatus.ANTRIAN,
+        ServiceStatus.DIAGNOSA,
+        ServiceStatus.SEDANG_DIKERJAKAN,
+        ServiceStatus.MENUGGU_SPAREPART,
+        ServiceStatus.MENUGGU_PART_ORDER,
+        ServiceStatus.QC,
+        ServiceStatus.REWORK,
+      ]);
+      const selected = [...techs].sort((a, b) =>
+        serviceTickets.filter((ticket) => ticket.assignedTechId === a.id && activeStatuses.has(ticket.status)).length -
+        serviceTickets.filter((ticket) => ticket.assignedTechId === b.id && activeStatuses.has(ticket.status)).length
+      )[0];
       setNewSrvTechId(selected.id);
       setAutoAssignReason(
         `Sistem otomatis memilih ${selected.name} karena memiliki beban kerja paling ringan saat ini.`
@@ -848,7 +865,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                 statusFilter,
                 stopCamera,
                 tenantObj,
-                 tenantServices: fetchedService ? serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? serviceTickets.map((ticket) => ticket.id === fetchedService.id ? { ...ticket, timeline: fetchedService.timeline, initialChecklist: fetchedService.initialChecklist ?? ticket.initialChecklist, qcChecklist: fetchedService.qcChecklist ?? ticket.qcChecklist } : ticket) : [...serviceTickets, fetchedService] : serviceTickets,
+                 tenantServices: fetchedService ? serviceTickets.some((ticket) => ticket.id === fetchedService.id) ? serviceTickets.map((ticket) => ticket.id === fetchedService.id ? { ...ticket, ...fetchedService } : ticket) : [...serviceTickets, fetchedService] : serviceTickets,
                  detailLoading,
                  detailError,
                  storageLocations,

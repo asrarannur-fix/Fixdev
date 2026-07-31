@@ -1062,7 +1062,7 @@ export async function createServicePartOrder(req: Request, res: Response) {
         client,
         req,
         ticket,
-        'MENUGGU_SPAREPART',
+        ticket.status === 'DIAGNOSA' ? 'MENUGGU_PART_ORDER' : 'MENUGGU_SPAREPART',
         `Pengerjaan ditunda menunggu ${parsed.data.partName} x${parsed.data.quantity}${parsed.data.estimatedArrivalDate ? `, estimasi tiba ${parsed.data.estimatedArrivalDate}` : ''}.`,
         { partOrderId: order.rows[0].id }
       );
@@ -1681,7 +1681,7 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
-      if (!['SELESAI', 'MENUGGU_PEMBAYARAN', 'SIAP_DIAMBIL'].includes(ticket.status)) {
+      if (!['SELESAI', 'SIAP_DIAMBIL'].includes(ticket.status)) {
         const error: any = new Error(
           `Handover tidak dapat dilakukan pada status ${ticket.status}.`
         );

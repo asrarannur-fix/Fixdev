@@ -100,50 +100,56 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
 
   // === AUTO-SAVE DRAFT FORM PENERIMAAN (persist saat pindah tab) ===
   const SRV_DRAFT = `fixdev_srv_draft_v1_${activeTenantId || 'unknown'}_${currentBranchId || 'unknown'}`;
+  const hydratedDraftKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SRV_DRAFT);
-      if (!raw) return;
-      const d = JSON.parse(raw);
-      setShowNewSrvCustForm(d.showNewSrvCustForm ?? false);
-      setNewSrvCustName(d.newSrvCustName ?? '');
-      setNewSrvCustPhone(d.newSrvCustPhone ?? '');
-      setNewSrvCustEmail(d.newSrvCustEmail ?? '');
-      setNewSrvCustAddress(d.newSrvCustAddress ?? '');
-      setNewSrvCustomer(d.newSrvCustomer ?? '');
-      setNewSrvEstCompletion(d.newSrvEstCompletion ?? '');
-      setNewSrvDevice(d.newSrvDevice ?? '');
-      setNewSrvBrand(d.newSrvBrand ?? '');
-      setNewSrvSerial(d.newSrvSerial ?? '');
-      setNewSrvWarranty(d.newSrvWarranty ?? 3);
-      setNewSrvDownPayment(d.newSrvDownPayment ?? '0');
-      setNewSrvDownPaymentMethod(
-        ['CASH', 'BANK_TRANSFER', 'QRIS'].includes(d.newSrvDownPaymentMethod)
-          ? d.newSrvDownPaymentMethod
-          : 'CASH'
-      );
-      setNewSrvIsCheckOnly(d.newSrvIsCheckOnly ?? false);
-      setNewSrvPhysicalCondition(d.newSrvPhysicalCondition ?? 'Mulus / Normal Wear');
-      setNewSrvScreenLock('');
-      setNewSrvComplaint(d.newSrvComplaint ?? '');
-      setNewSrvCategory(d.newSrvCategory ?? 'Smartphone');
-      setNewSrvDynamicSpecs(d.newSrvDynamicSpecs ?? {});
-      setNewSrvAccessories(d.newSrvAccessories ?? []);
-      setNewSrvCustomAccessories(d.newSrvCustomAccessories ?? '');
-      setNewSrvStorageLocId(d.newSrvStorageLocId ?? '');
-      setNewSrvCapturedConditions(d.newSrvCapturedConditions ?? []);
-      setNewSrvIsOutsourced(d.newSrvIsOutsourced ?? false);
-      setNewSrvOutsourcedVendor(d.newSrvOutsourcedVendor ?? '');
-      setNewSrvOutsourcingCost(d.newSrvOutsourcingCost ?? '');
-      setNewSrvTechId(d.newSrvTechId ?? '');
-      setNewSrvChecklist(d.newSrvChecklist ?? {});
-      setCustQuery(d.custQuery ?? '');
+      if (raw) {
+        const d = JSON.parse(raw);
+        setShowNewSrvCustForm(d.showNewSrvCustForm ?? false);
+        setNewSrvCustName(d.newSrvCustName ?? '');
+        setNewSrvCustPhone(d.newSrvCustPhone ?? '');
+        setNewSrvCustEmail(d.newSrvCustEmail ?? '');
+        setNewSrvCustAddress(d.newSrvCustAddress ?? '');
+        setNewSrvCustomer(d.newSrvCustomer ?? '');
+        setNewSrvEstCompletion(d.newSrvEstCompletion ?? '');
+        setNewSrvDevice(d.newSrvDevice ?? '');
+        setNewSrvBrand(d.newSrvBrand ?? '');
+        setNewSrvSerial(d.newSrvSerial ?? '');
+        setNewSrvWarranty(d.newSrvWarranty ?? 3);
+        setNewSrvDownPayment(d.newSrvDownPayment ?? '0');
+        setNewSrvDownPaymentMethod(
+          ['CASH', 'BANK_TRANSFER', 'QRIS'].includes(d.newSrvDownPaymentMethod)
+            ? d.newSrvDownPaymentMethod
+            : 'CASH'
+        );
+        setNewSrvIsCheckOnly(d.newSrvIsCheckOnly ?? false);
+        setNewSrvPhysicalCondition(d.newSrvPhysicalCondition ?? 'Mulus / Normal Wear');
+        setNewSrvScreenLock('');
+        setNewSrvComplaint(d.newSrvComplaint ?? '');
+        setNewSrvCategory(d.newSrvCategory ?? 'Smartphone');
+        setNewSrvDynamicSpecs(d.newSrvDynamicSpecs ?? {});
+        setNewSrvAccessories(Array.isArray(d.newSrvAccessories) ? d.newSrvAccessories : []);
+        setNewSrvCustomAccessories(d.newSrvCustomAccessories ?? '');
+        setNewSrvStorageLocId(d.newSrvStorageLocId ?? '');
+        setNewSrvCapturedConditions(Array.isArray(d.newSrvCapturedConditions) ? d.newSrvCapturedConditions : []);
+        setNewSrvIsOutsourced(d.newSrvIsOutsourced ?? false);
+        setNewSrvOutsourcedVendor(d.newSrvOutsourcedVendor ?? '');
+        setNewSrvOutsourcingCost(d.newSrvOutsourcingCost ?? '');
+        setNewSrvTechId(d.newSrvTechId ?? '');
+        setNewSrvChecklist(typeof d.newSrvChecklist === 'object' && d.newSrvChecklist !== null ? d.newSrvChecklist : {});
+        setCustQuery(d.custQuery ?? '');
+      }
     } catch {
       /* abaikan draft rusak */
+    } finally {
+      hydratedDraftKeyRef.current = SRV_DRAFT;
     }
   }, [SRV_DRAFT, setShowNewSrvCustForm]);
 
   useEffect(() => {
+    if (hydratedDraftKeyRef.current !== SRV_DRAFT) return;
     const d = {
       showNewSrvCustForm,
       newSrvCustName,
@@ -337,6 +343,8 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
       let previewTicket = createdTicket;
       setJustCreatedTicket(createdTicket);
       setPreviewReceptionTicket(createdTicket);
+      
+      let allPhotosUploaded = true;
       for (const condition of newSrvCapturedConditions) {
         if (condition.uploaded) continue;
         try {
@@ -347,15 +355,24 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
           setJustCreatedTicket(previewTicket);
           setPreviewReceptionTicket(previewTicket);
         } catch (error: any) {
-          throw new Error(
-            `Tiket berhasil dibuat, tetapi foto ${condition.category} gagal diunggah: ${error?.message || 'Gagal mengunggah foto.'}`,
-            { cause: error }
-          );
+          allPhotosUploaded = false;
+          showToast(`Tiket berhasil dibuat, tetapi foto ${condition.category} gagal diunggah: ${error?.message}`, 'error');
         }
       }
+      
+      if (!allPhotosUploaded) {
+        setIsSubmittingReception(false);
+        // Hapus tiket yang tertunda upload dari draft
+        try {
+          localStorage.removeItem(SRV_DRAFT);
+        } catch { /* ignore */ }
+        return; 
+      }
+
       newSrvCapturedConditions.forEach((condition) => URL.revokeObjectURL(condition.url));
       receptionIdempotencyKeyRef.current = crypto.randomUUID();
       setReceptionErrors({});
+      setJustCreatedTicket(null);
       setNewSrvCustomer('');
       setShowNewSrvCustForm(false);
       setNewSrvCustName('');

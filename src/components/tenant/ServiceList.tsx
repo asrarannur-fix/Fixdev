@@ -355,12 +355,23 @@ export const ServiceList: React.FC<any> = (props) => {
   const paginatedServices = servicePage?.data || filteredServices.slice((page - 1) * 15, page * 15);
   const downloadCsv = async () => {
     try {
-      const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, group: operationalFilter === 'ALL' ? undefined : operationalFilter, technician: technicianFilter === 'ALL' ? undefined : technicianFilter, sla: slaFilter === 'all' ? undefined : slaFilter, from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)), to: dateRangeFilter === 'all' ? undefined : localDate(new Date()), sort: srvSort });
+      const blob = await exportServiceTickets(apiFetch, {
+        q: srvSearchQuery.trim() || undefined,
+        status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
+        group: operationalFilter === 'ALL' ? undefined : operationalFilter,
+        technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
+        sla: slaFilter === 'all' ? undefined : slaFilter,
+        from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)),
+        to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
+        sort: srvSort,
+        tenantId: currentTenantId || activeTenantId || undefined,
+        branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined,
+      });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = 'daftar_servis_saas.csv';
       link.click();
-      URL.revokeObjectURL(link.href);
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     } catch (error: any) {
       showToast(error?.message || 'Gagal mengekspor tiket.', 'error');
     }

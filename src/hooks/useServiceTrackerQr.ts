@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ServiceTicket } from '../types';
+import { getServiceTicket } from '../lib/api/services';
 import { useToast } from '../components/ui/Toast';
 import { usePrintConfig } from './usePrintConfig';
 import { useSaaS } from '../context/SaaSContext';
@@ -62,8 +63,17 @@ export function useServiceTrackerQr(
       setSyncMessage('Token tracking tiket belum tersedia.');
       return;
     }
-    setSyncStatus('success');
-    setSyncMessage('Link tracking sudah aktif dan memakai data tiket terbaru.');
+    setSyncStatus('syncing');
+    setSyncMessage('Memuat data terbaru...');
+    try {
+      const updated = await getServiceTicket(apiFetch, ticket.id);
+      setSelectedTicket(updated);
+      setSyncStatus('success');
+      setSyncMessage('Link tracking sudah aktif dan memakai data tiket terbaru.');
+    } catch (error: any) {
+      setSyncStatus('error');
+      setSyncMessage(error.message || 'Gagal memuat tiket terbaru.');
+    }
   };
 
   /**
@@ -76,7 +86,9 @@ export function useServiceTrackerQr(
 
   const getQrCodeUrl = (ticket: ServiceTicket) => {
     const trackingUrl = getTrackingUrl(ticket);
-    return trackingUrl ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(generateQrSvg(trackingUrl, 4, 2))}` : '';
+    if (!trackingUrl) return '';
+    const svg = generateQrSvg(trackingUrl, 4, 2).replace(/"/g, "'").replace(/#/g, '%23').replace(/</g, '%3C').replace(/>/g, '%3E');
+    return `data:image/svg+xml;charset=utf-8,${svg}`;
   };
 
   /**
@@ -84,8 +96,8 @@ export function useServiceTrackerQr(
    */
   const handlePrintReceipt = async (ticket: ServiceTicket, businessName = tenantName) => {
     const qrUrl = getTrackingUrl(ticket);
-    const dateStr = ticket.customerApprovalDate
-      ? new Date(ticket.customerApprovalDate).toLocaleDateString('id-ID', {
+    const dateStr = ticket.createdAt
+      ? new Date(ticket.createdAt).toLocaleDateString('id-ID', {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -100,7 +112,7 @@ export function useServiceTrackerQr(
     printDoc.innerHTML = `
       <html>
         <head>
-          <title>Nota Penerimaan & QR Lacak - ${ticket.ticketNo}</title>
+          <title>Nota Penerimaan & QR Lacak - ${escapeHtml(ticket.ticketNo)}</title>
            <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
             @page { size: ${getPrintPageSize(printConfig)}; margin: ${getPrintMargin(printConfig)}mm; }
@@ -225,18 +237,18 @@ export function useServiceTrackerQr(
             </div>
             <div class="row">
               <span class="label">Nama Perangkat:</span>
-              <span class="value">${ticket.deviceName}</span>
+              <span class="value">${escapeHtml(ticket.deviceName || '-')}</span>
             </div>
             <div class="row">
               <span class="label">Brand & Model:</span>
-              <span class="value">${ticket.deviceBrandModel || '-'}</span>
+              <span class="value">${escapeHtml(ticket.deviceBrandModel || '-')}</span>
             </div>
             ${
               printConfig?.printCustomerNotes !== false
                 ? `
               <div class="row">
                 <span class="label">Keluhan Utama:</span>
-                <span class="value">${ticket.customerComplaints}</span>
+                <span class="value">${escapeHtml(ticket.customerComplaints || '-')}</span>
               </div>
             `
                 : ''
@@ -254,14 +266,14 @@ export function useServiceTrackerQr(
             </div>
             <div class="row">
               <span class="label">Status Awal:</span>
-              <span class="value">${ticket.status}</span>
+              <span class="value">${escapeHtml(ticket.status)}</span>
             </div>
 
             ${
               printConfig?.printQrCode !== false
                 ? `
             <div class="qr-section">
-<div class="qr-placeholder">Scan untuk lacak status servis</div>
+<img class="qr-code" src="${getQrCodeUrl(ticket)}" alt="QR lacak servis" />
                 <div class="scan-instructions">Scan QR untuk lihat status servis.</div>
                 <div class="url-display">${escapeHtml(qrUrl)}</div>
             </div>`
@@ -333,7 +345,7 @@ export function useServiceTrackerQr(
         <div class="lbl-row"><span>Device:</span><span>${escapeHtml(ticket.deviceName || '-')}</span></div>
         <div class="lbl-row"><span>Masuk:</span><span>${escapeHtml(dateStr)}</span></div>
         ${printConfig?.printCustomerNotes !== false ? `<div class="lbl-row"><span>Keluhan:</span><span>${escapeHtml(ticket.customerComplaints || '-')}</span></div>` : ''}
-        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr"><div class="qr-placeholder">Scan untuk lacak status servis</div></div>` : ''}
+        ${printConfig?.labelShowQr !== false ? `<div class="lbl-qr"><img src="${getQrCodeUrl(ticket)}" alt="QR lacak servis" /></div>` : ''}
         <div class="lbl-foot">${escapeHtml(printConfig?.labelCustomText?.trim() || 'Scan untuk lihat status servis')}</div>
       </body></html>
     `;

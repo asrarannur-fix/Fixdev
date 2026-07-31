@@ -351,6 +351,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
               handoverPaymentMethod === PaymentMethod.TEMPO
                 ? parseInt(handoverTempoDays, 10)
                 : undefined,
+            checklist: handoverChecklist,
           };
 
            try {

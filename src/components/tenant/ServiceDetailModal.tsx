@@ -277,7 +277,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   const canRequestParts = PART_STATUSES.includes(ticket.status) && canRepair;
   const canHandover =
     isSuperAdmin ||
-    ['OWNER', 'ADMIN'].includes(currentUser?.role || '') ||
+    ['OWNER', 'ADMIN', 'CS'].includes(currentUser?.role || '') ||
     hasAnyPermission(currentUserPermissions, ['service_handover']);
   const isWorkPhase = WORK_STATUSES.includes(ticket.status);
   const isQcPhase = ticket.status === ServiceStatus.QC;
@@ -285,7 +285,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   const technician = employees.find((e) => e.id === ticket.assignedTechId);
 
   // Filter products that are spare parts / accessories
-  const tenantProducts = (products || []).filter((p: any) => p.tenantId === currentTenantId);
+  const effectiveTenantId = activeTenantId || currentTenantId;
+  const tenantProducts = (products || []).filter((p: any) => p.tenantId === effectiveTenantId);
   const sparepartsList = tenantProducts.filter(
     (p: any) => {
       const name = String(p.name || '').toLowerCase();
