@@ -2,16 +2,34 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { getStorage, safeStoragePath } from '../lib/storage.js';
 import type { Request, Response } from 'express';
-import { z } from 'zod';
 import { dbTransaction, dbQuery } from '../../lib/db.js';
 import { logger } from '../../lib/logger.js';
 import { ensureAccount, paymentDebitAccountCode } from '../lib/coa.js';
-import type { WhatsAppTemplate } from '../../types/index.js';
 import {
   SERVICE_TRANSITIONS as DOMAIN_SERVICE_TRANSITIONS,
   canServiceTransition,
   serviceApprovalTransition,
 } from '../../domain/serviceWorkflow.js';
+import {
+  partOrderSchema,
+  partOrderUpdateSchema,
+  partArrivalSchema,
+  additionalCostSchema,
+  transitionSchema,
+  diagnosisSchema,
+  photo,
+  approvalSchema,
+  intakeChecklistSchema,
+  qcDraftSchema,
+  qcSchema,
+  handoverSchema,
+  receivableSettlementSchema,
+  bulkDeleteSchema,
+  partSchema,
+  workMetadataSchema,
+} from './serviceWorkflow.schemas.js';
+import { queueNotification } from './serviceWorkflow.notifications.js';
+export { partOrderUpdateSchema } from './serviceWorkflow.schemas.js';
 
 export const SERVICE_TRANSITIONS: Record<string, string[]> = DOMAIN_SERVICE_TRANSITIONS;
 
@@ -40,64 +58,12 @@ export function calculateServiceInvoice(
   return { subtotal, taxAmount, total, downPaymentUsed, amountDue: total - downPaymentUsed };
 }
 
-const partOrderSchema = z.object({
-  partName: z.string().trim().min(2),
-  quantity: z.number().positive(),
-  reason: z.string().trim().min(3),
-  supplierName: z.string().trim().optional(),
-  estimatedCost: z.number().min(0).default(0),
-  estimatedArrivalDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value).optional(),
-  costApproved: z.boolean().default(false),
-  note: z.string().optional(),
-  idempotencyKey: z.string().trim().min(8),
-});
-const strictDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value);
-export const partOrderUpdateSchema = z.object({
-  status: z.enum(['APPROVED', 'ORDERED', 'SHIPPED', 'ARRIVED']).optional(),
-  supplierName: z.string().trim().min(1).optional(),
-  estimatedArrivalDate: strictDate.optional(),
-  note: z.string().trim().min(1).optional(),
-}).strict().refine((value) => Object.keys(value).length > 0, 'Pembaruan wajib berisi perubahan.');
-const partArrivalSchema = z.object({
-  productId: z.string().uuid(),
-  warehouseId: z.string().uuid(),
-  serialNumber: z.string().optional(),
-});
-
-const additionalCostSchema = z.object({
-  description: z.string().trim().min(3),
-  amount: z.number().positive(),
-  approvalMethod: z.enum(['WHATSAPP', 'PHONE', 'IN_PERSON']).default('WHATSAPP'),
-  approvedByName: z.string().trim().optional(),
-  note: z.string().trim().optional(),
-  proofName: z.string().trim().optional(),
-  idempotencyKey: z.string().trim().min(8),
-});
-
 export function calculateAdditionalCost(previousCost: number, amount: number) {
   const previous = Math.max(0, Number(previousCost) || 0);
   const additional = Math.max(0, Number(amount) || 0);
   return { previousCost: previous, additionalCost: additional, newCost: previous + additional };
 }
 
-const transitionSchema = z.object({ status: z.string().min(1), note: z.string().trim().min(3) });
-const diagnosisSchema = z.object({
-  diagnosis: z.string().trim().min(3),
-  estimatedCost: z.number().min(0),
-  parts: z
-    .array(
-      z.object({
-        productId: z.string().uuid(),
-        warehouseId: z.string().uuid().optional().nullable(),
-        name: z.string().trim().min(1),
-        quantity: z.number().int().positive(),
-        unitPrice: z.number().min(0).default(0),
-        serialNumber: z.string().optional(),
-      })
-    )
-    .default([]),
-});
-const photo = z.string().trim().regex(/^tenant\/[0-9a-f-]+\/service\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png)$/i).max(255);
 const SERVICE_PHOTO_BYTES = 5 * 1024 * 1024;
 const storage = getStorage();
 export const SERVICE_PHOTO_WRITE_MODE = "flag: 'wx'";
@@ -125,100 +91,6 @@ function validPhotoSignature(buffer: Buffer, contentType: string) {
     ? buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
     : contentType === 'image/jpeg' && buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
 }
-
-const approvalSchema = z.object({
-  approved: z.boolean(),
-  signatureName: z.string().trim().optional(),
-  signature: z.string().optional(),
-});
-const intakeChecklistSchema = z
-  .object({
-    checklist: z.array(z.object({ name: z.string().trim().min(1).max(200), checked: z.boolean() }).strict()).max(100),
-  })
-  .strict();
-const qcDraftSchema = z
-  .object({
-    notes: z.string().trim().max(5000).optional(),
-    checklist: z.array(z.object({ criteria: z.string().trim().min(1).max(200), passed: z.boolean() }).strict()).max(100).optional(),
-    photos: z.array(photo).max(20).optional(),
-  })
-  .strict()
-  .refine((value) => Object.keys(value).length > 0, 'Draft QC wajib berisi perubahan.');
-const qcSchema = z
-  .object({
-    notes: z.string().trim().min(2),
-    checklist: z
-      .array(z.object({ criteria: z.string().trim().min(1), passed: z.boolean() }))
-      .min(1),
-    photos: z.array(photo).max(20).default([]),
-  });
-const handoverSchema = z
-  .object({
-    paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'TEMPO']),
-    referenceNo: z.string().trim().max(200).optional(),
-    proofName: z.string().trim().max(255).regex(/^[A-Za-z0-9._-]+$/, 'Nama bukti pembayaran tidak valid.').optional(),
-    tempoDays: z.number().int().min(1).max(365).optional(),
-    checklist: z.object({
-      accessoriesReturned: z.literal(true),
-      customerChecked: z.literal(true),
-      invoiceReady: z.literal(true),
-      warrantyReady: z.literal(true),
-    }),
-    idempotencyKey: z.string().trim().min(8),
-  })
-  .superRefine((value, ctx) => {
-    if (value.paymentMethod === 'TEMPO' && !value.tempoDays) {
-      ctx.addIssue({ code: 'custom', path: ['tempoDays'], message: 'Termin tempo wajib diisi.' });
-    }
-    if (value.paymentMethod !== 'TEMPO' && value.tempoDays) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['tempoDays'],
-        message: 'Termin hanya berlaku untuk pembayaran tempo.',
-      });
-    }
-    if (!['CASH', 'TEMPO'].includes(value.paymentMethod) && !value.referenceNo && !value.proofName) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['referenceNo'],
-        message: 'Nomor referensi pembayaran wajib diisi.',
-      });
-    }
-  });
-const money = z.number().finite().min(0).max(1_000_000_000);
-const receivableSettlementSchema = z.object({
-  amount: money.positive(),
-  method: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET']),
-  referenceNo: z.string().trim().max(200).optional(),
-  idempotencyKey: z.string().trim().min(8).max(200),
-}).superRefine((value, ctx) => {
-  if (value.method !== 'CASH' && !value.referenceNo) {
-    ctx.addIssue({ code: 'custom', path: ['referenceNo'], message: 'Nomor referensi pembayaran wajib diisi.' });
-  }
-});
-const bulkDeleteSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(100) });
-const partSchema = z.object({
-  productId: z.string().uuid(),
-  warehouseId: z.string().uuid(),
-  quantity: z.number().int().positive(),
-  serialNumber: z.string().trim().optional(),
-});
-export const workMetadataSchema = z.object({
-  assignedTechId: z.string().uuid().nullable().optional(),
-  technicianNotes: z.string().optional(),
-  internalDiscussion: z.object({ text: z.string().trim().min(1).max(5000) }).optional(),
-  techPreChecklist: z
-    .array(z.object({ name: z.string().trim().min(1).max(200), checked: z.boolean() }))
-    .max(100)
-    .optional(),
-  techPostChecklist: z
-    .array(z.object({ name: z.string().trim().min(1).max(200), checked: z.boolean() }))
-    .max(100)
-    .optional(),
-  repairStartTime: z.string().datetime().nullable().optional(),
-  repairEndTime: z.string().datetime().nullable().optional(),
-  storageLocationId: z.string().uuid().nullable().optional(),
-});
 
 function ticketSelect(prefix = '') {
   return `${prefix}id, ${prefix}tenant_id AS "tenantId", ${prefix}branch_id AS "branchId", ${prefix}ticket_no AS "ticketNo",
@@ -345,87 +217,6 @@ async function appendEvent(
   }
   await client.query('RELEASE SAVEPOINT service_notification');
   return ticket;
-}
-
-function renderWaTemplate(template: string, ctx: Record<string, any>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => {
-    if (key in ctx && ctx[key] !== undefined && ctx[key] !== null) {
-      return String(ctx[key]);
-    }
-    return `{${key}}`;
-  });
-}
-
-async function getTenantWaTemplate(
-  client: any,
-  tenantId: string,
-  category: string
-): Promise<string | null> {
-  const result = await client.query(
-    `SELECT settings #>> '{waConfig,templates}' AS templates FROM tenants WHERE id = $1`,
-    [tenantId]
-  );
-  const raw = result.rows[0]?.templates;
-  if (!raw) return null;
-  let templates: WhatsAppTemplate[];
-  try {
-    templates = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  const match = templates.find((t) => t.category === category && t.content);
-  return match ? match.content : null;
-}
-
-async function queueNotification(
-  client: any,
-  tenantId: string,
-  ticket: any,
-  eventId: string,
-  message: string,
-  templateCategory = 'SERVICE_UPDATE',
-  extraContext: any = {}
-) {
-  const tenantSettings = await client.query(`SELECT settings FROM tenants WHERE id=$1`, [tenantId]);
-  const waConfig = tenantSettings.rows[0]?.settings?.waConfig;
-  if (waConfig?.sendingMethod === 'MANUAL') {
-    // If sending method is manual, do not queue system notifications
-    return;
-  }
-
-  const customer = await client.query(
-    'SELECT name,phone FROM customers WHERE id=$1 AND tenant_id=$2',
-    [ticket.customerId, tenantId]
-  );
-  if (!customer.rows[0]?.phone) return;
-
-  let finalMessage = message;
-  const template = await getTenantWaTemplate(client, tenantId, templateCategory);
-  if (template) {
-    const ctx: Record<string, any> = {
-      customer_name: customer.rows[0].name,
-      ticket_no: ticket.ticketNo,
-      ticket_status: extraContext.toStatus || ticket.status,
-      device_name: ticket.deviceName,
-      status_note: message,
-      ...extraContext.metadata,
-    };
-    finalMessage = renderWaTemplate(template, ctx);
-  }
-
-  await client.query(
-    `INSERT INTO whatsapp_queue (tenant_id,recipient_name,recipient_phone,type,message,status,ticket_id,event_id,scheduled_time)
-     VALUES ($1,$2,$3,$4,$5,'PENDING',$6,$7,NOW())`,
-    [
-      tenantId,
-      customer.rows[0].name,
-      customer.rows[0].phone,
-      templateCategory,
-      finalMessage,
-      ticket.id,
-      eventId,
-    ]
-  );
 }
 
 async function finalTicket(client: any, req: Request) {
@@ -577,61 +368,79 @@ export async function getServicePhoto(req: Request, res: Response) {
   }
 }
 
+function buildServiceTicketQuery(req: Request) {
+  const branchId = req.branchId || String(req.query.branchId || req.headers['x-branch-id'] || '');
+  const query = String(req.query.q || '').trim().slice(0, 200);
+  const status = String(req.query.status || '').trim();
+  const technician = String(req.query.technician || req.query.tech || '').trim();
+  const group = String(req.query.group || '').trim();
+  const sla = String(req.query.sla || '').trim();
+  const from = String(req.query.from || req.query.dateFrom || '').trim();
+  const to = String(req.query.to || req.query.dateTo || '').trim();
+  const sort = String(req.query.sort || 'newest');
+  const sortMap: Record<string, string> = { newest: 'st.created_at DESC', oldest: 'st.created_at ASC', cost_desc: 'st.estimated_cost DESC', cost_asc: 'st.estimated_cost ASC', urgent: 'st.estimated_completion_date ASC NULLS LAST, st.created_at ASC' };
+  const values: any[] = [req.tenantId, branchId];
+  const filters = ['st.tenant_id=$1', 'st.branch_id=$2', 'st.deleted_at IS NULL'];
+  const add = (sql: string, value: any) => { values.push(value); filters.push(sql.replace('$N', `$${values.length}`)); };
+  if (query) add(`(st.ticket_no ILIKE $N OR st.device_name ILIKE $N OR st.device_brand_model ILIKE $N OR c.name ILIKE $N)`, `%${query}%`);
+  if (status && status !== 'ALL') add('st.status=$N', status);
+  if (technician === 'unassigned') filters.push('st.assigned_tech_id IS NULL');
+  else if (technician && technician !== 'ALL') add('st.assigned_tech_id=$N', technician);
+  const groups: Record<string, string[]> = { diagnosis: ['DITERIMA', 'ANTRIAN'], approval: ['ESTIMATE_PENDING', 'MENUGGU_APPROVAL'], repair: ['SEDANG_DIKERJAKAN', 'REWORK'], qc: ['QC'], pickup: ['SIAP_DIAMBIL'] };
+  if (groups[group]) { values.push(groups[group]); filters.push(`st.status = ANY($${values.length})`); }
+  if (from) add('st.created_at >= $N::timestamptz', from);
+  if (to) add('st.created_at < ($N::date + INTERVAL \'1 day\')', to);
+  if (sla === 'overdue') filters.push("st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK')");
+  if (sla === 'on-track') filters.push("(st.created_at >= NOW() - INTERVAL '48 hours' OR st.status IN ('SELESAI','DIAMBIL'))");
+  return { where: filters.join(' AND '), values, sortSql: sortMap[sort] || sortMap.newest };
+}
+
+const CSV_TICKET_HEADER = ['Ticket No', 'Device', 'Customer', 'Status', 'Estimated Cost'];
+function csvCell(v: unknown) {
+  const s = String(v ?? '');
+  return `"${(/^[=+@-]/.test(s) ? `'${s}` : s).replaceAll('"', '""')}"`;
+}
+function csvRow(values: unknown[]) {
+  return values.map(csvCell).join(',');
+}
+
 export async function listServiceTickets(req: Request, res: Response) {
   try {
     const branchId = req.branchId || String(req.query.branchId || req.headers['x-branch-id'] || '');
     const limit = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
     const offset = Math.min(1_000_000, Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0));
-    const query = String(req.query.q || '').trim().slice(0, 200);
-    const status = String(req.query.status || '').trim();
-    const technician = String(req.query.technician || req.query.tech || '').trim();
-    const group = String(req.query.group || '').trim();
-    const sla = String(req.query.sla || '').trim();
-    const from = String(req.query.from || req.query.dateFrom || '').trim();
-    const to = String(req.query.to || req.query.dateTo || '').trim();
-    const sort = String(req.query.sort || 'newest');
-    const sortMap: Record<string, string> = { newest: 'st.created_at DESC', oldest: 'st.created_at ASC', cost_desc: 'st.estimated_cost DESC', cost_asc: 'st.estimated_cost ASC', urgent: 'st.estimated_completion_date ASC NULLS LAST, st.created_at ASC' };
-    const values: any[] = [req.tenantId, branchId];
-    const filters = ['st.tenant_id=$1', 'st.branch_id=$2', 'st.deleted_at IS NULL'];
-    const add = (sql: string, value: any) => { values.push(value); filters.push(sql.replace('$N', `$${values.length}`)); };
-    if (query) add(`(st.ticket_no ILIKE $N OR st.device_name ILIKE $N OR st.device_brand_model ILIKE $N OR c.name ILIKE $N)`, `%${query}%`);
-    if (status && status !== 'ALL') add('st.status=$N', status);
-    if (technician === 'unassigned') filters.push('st.assigned_tech_id IS NULL');
-    else if (technician && technician !== 'ALL') add('st.assigned_tech_id=$N', technician);
-    const groups: Record<string, string[]> = { diagnosis: ['DITERIMA', 'ANTRIAN'], approval: ['ESTIMATE_PENDING', 'MENUGGU_APPROVAL'], repair: ['SEDANG_DIKERJAKAN', 'REWORK'], qc: ['QC'], pickup: ['SIAP_DIAMBIL'] };
-    if (groups[group]) { values.push(groups[group]); filters.push(`st.status = ANY($${values.length})`); }
-    if (from) add('st.created_at >= $N::timestamptz', from);
-    if (to) add('st.created_at < ($N::date + INTERVAL \'1 day\')', to);
-    if (sla === 'overdue') filters.push("st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK')");
-    if (sla === 'on-track') filters.push("(st.created_at >= NOW() - INTERVAL '48 hours' OR st.status IN ('SELESAI','DIAMBIL'))");
-    const where = filters.join(' AND ');
+    const { where, values } = buildServiceTicketQuery(req);
     const base = `FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`;
     const countResult = await dbQuery(`SELECT COUNT(*)::int AS total ${base}`, values);
     const kpiResult = await dbQuery(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK'))::int AS active, COUNT(*) FILTER (WHERE st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK'))::int AS overdue, COALESCE(SUM(st.estimated_cost),0)::float AS estimated FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`, values);
-    const result = await dbQuery(`SELECT ${ticketSelect('st.')}, c.name AS "customerName" ${base} ORDER BY ${sortMap[sort] || sortMap.newest}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, limit, offset]);
+    const result = await dbQuery(`SELECT ${ticketSelect('st.')}, c.name AS "customerName" ${base} ORDER BY ${buildServiceTicketQuery(req).sortSql}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, limit, offset]);
     res.json({ data: result.rows, total: countResult.rows[0]?.total || 0, limit, offset, kpi: kpiResult.rows[0] || { total: 0, active: 0, overdue: 0, estimated: 0 } });
   } catch (error: any) { sendError(res, error); }
 }
 
 export async function exportServiceTickets(req: Request, res: Response) {
-  const original = req.query.limit;
-  const originalOffset = req.query.offset;
-  req.query.limit = '100';
-  req.query.offset = '0';
-  const json = res.json.bind(res);
-  res.json = (payload: any) => {
-    const cell = (v: unknown) => { const s = String(v ?? ''); return `"${(/^[=+@-]/.test(s) ? `'${s}` : s).replaceAll('"', '""')}"`; };
-    const rows = [['Ticket No', 'Device', 'Customer', 'Status', 'Estimated Cost'], ...(payload.data || []).map((s: any) => [s.ticketNo, s.deviceName, s.customerName, s.status, s.estimatedCost])];
-    res.type('text/csv').set('Content-Disposition', 'attachment; filename="service-tickets.csv"').send(`\ufeff${rows.map((r) => r.map(cell).join(',')).join('\r\n')}`);
-    return res;
-  };
   try {
-    await listServiceTickets(req, res);
-  } finally {
-    if (original === undefined) delete req.query.limit;
-    else req.query.limit = original;
-    if (originalOffset === undefined) delete req.query.offset;
-    else req.query.offset = originalOffset;
+    const { where, values, sortSql } = buildServiceTicketQuery(req);
+    const base = `FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`;
+    res.type('text/csv').set('Content-Disposition', 'attachment; filename="service-tickets.csv"');
+    res.write(`\ufeff${csvRow(CSV_TICKET_HEADER)}\r\n`);
+    const pageSize = 500;
+    let offset = 0;
+    while (true) {
+      const page = await dbQuery(
+        `SELECT st.ticket_no AS "ticketNo", st.device_name AS "deviceName", c.name AS "customerName", st.status, st.estimated_cost::float AS "estimatedCost" ${base} ORDER BY ${sortSql}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+        [...values, pageSize, offset]
+      );
+      if (!page.rows.length) break;
+      for (const s of page.rows) {
+        res.write(`${csvRow([s.ticketNo, s.deviceName, s.customerName, s.status, s.estimatedCost])}\r\n`);
+      }
+      offset += pageSize;
+      if (page.rows.length < pageSize) break;
+    }
+    res.end();
+  } catch (error: any) {
+    sendError(res, error);
   }
 }
 
@@ -1257,6 +1066,9 @@ export async function addApprovedAdditionalCost(req: Request, res: Response) {
       .json({ error: 'Data tambahan biaya tidak valid.', details: parsed.error.flatten() });
   try {
     const result = await dbTransaction(async (client) => {
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+        `${req.tenantId}:cost:${parsed.data.idempotencyKey}`,
+      ]);
       const duplicate = await client.query(
         'SELECT * FROM service_cost_adjustments WHERE tenant_id=$1 AND idempotency_key=$2 LIMIT 1',
         [req.tenantId, parsed.data.idempotencyKey]
@@ -1442,7 +1254,7 @@ export async function cancelServicePart(req: Request, res: Response) {
       const removed = await client.query(
         `UPDATE service_parts SET status='CANCELLED',updated_at=NOW()
          WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status IN ('REQUESTED','RESERVED')
-         RETURNING id, (quantity * unit_price)::float AS cost`,
+         RETURNING id, status, (quantity * unit_price)::float AS cost`,
         [req.params.partId, req.tenantId, ticket.id]
       );
       if (!removed.rows[0]) {
@@ -1450,8 +1262,8 @@ export async function cancelServicePart(req: Request, res: Response) {
         error.status = 404;
         throw error;
       }
-      // Roll back the cancelled part cost from the ticket's estimated_cost.
-      const cancelledCost = Number(removed.rows[0].cost) || 0;
+      // Only RESERVED parts were rolled into estimated_cost; REQUESTED (diagnosis) rows never were.
+      const cancelledCost = removed.rows[0].status === 'RESERVED' ? Number(removed.rows[0].cost) || 0 : 0;
       await client.query(
         `UPDATE service_tickets SET estimated_cost = GREATEST(0, COALESCE(estimated_cost,0) - $1), updated_at=NOW()
          WHERE id=$2 AND tenant_id=$3`,
@@ -1556,17 +1368,18 @@ export async function bulkDeleteServiceTickets(req: Request, res: Response) {
   const parsed = bulkDeleteSchema.safeParse(req.body);
   if (!parsed.success) return res.status(422).json({ error: 'Daftar tiket tidak valid.' });
   try {
+    const branchId = req.branchId || String(req.headers['x-branch-id'] || '');
     const result = await dbQuery(
       `UPDATE service_tickets SET deleted_at=NOW(),updated_at=NOW()
        WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL AND id=ANY($3::uuid[])
          AND NOT EXISTS (SELECT 1 FROM service_payments sp WHERE sp.tenant_id=service_tickets.tenant_id AND sp.ticket_id=service_tickets.id)
          AND NOT EXISTS (SELECT 1 FROM service_parts part WHERE part.tenant_id=service_tickets.tenant_id AND part.ticket_id=service_tickets.id AND part.status='USED')
        RETURNING id, initial_photos, qc_photos`,
-      [req.tenantId, req.branchId, parsed.data.ids]
+      [req.tenantId, branchId, parsed.data.ids]
     );
     const photoPaths = result.rows.flatMap((row) => [...(row.initial_photos || []), ...(row.qc_photos || [])]);
     const cleanedPhotos = await cleanupServicePhotos(photoPaths);
-    logger.info({ tenantId: req.tenantId, branchId: req.branchId, ticketCount: result.rowCount, photoCount: cleanedPhotos }, '[service] tickets deleted');
+    logger.info({ tenantId: req.tenantId, branchId, ticketCount: result.rowCount, photoCount: cleanedPhotos }, '[service] tickets deleted');
     res.json({ data: { deletedIds: result.rows.map((row) => row.id) } });
   } catch (error: any) {
     sendError(res, error);
@@ -1674,6 +1487,9 @@ export async function handoverServiceTicket(req: Request, res: Response) {
   }
   try {
     const result = await dbTransaction(async (client) => {
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+        `${req.tenantId}:handover:${parsed.data.idempotencyKey}`,
+      ]);
       const duplicate = await client.query(
         'SELECT id,ticket_id FROM service_payments WHERE tenant_id=$1 AND idempotency_key=$2',
         [req.tenantId, parsed.data.idempotencyKey]

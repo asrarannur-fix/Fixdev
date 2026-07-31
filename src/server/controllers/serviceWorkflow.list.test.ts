@@ -17,12 +17,16 @@ describe('service list query contract', () => {
     expect(controller).toContain('kpi: kpiResult.rows[0]');
   });
 
-  it('exports at most one page and neutralizes spreadsheet formulas', () => {
+  it('streams the full export and neutralizes spreadsheet formulas', () => {
     expect(controller).toContain("const from = String(req.query.from");
     expect(controller).toContain("const to = String(req.query.to");
-    expect(controller).toContain("req.query.limit = '100'");
+    expect(controller).toContain('const pageSize = 500');
     expect(controller).toContain('/^[=+@-]/.test(s)');
-    expect(controller).toContain("Content-Disposition");
+    expect(controller).toContain("set('Content-Disposition', 'attachment; filename=\"service-tickets.csv\"')");
+    expect(controller).toContain('res.write');
+    expect(controller).toContain('res.type(\'text/csv\')');
+    expect(controller).not.toContain("req.query.limit = '100'");
+    expect(controller).not.toContain('res.json = (payload');
   });
 
   it('cleans local service photos after ticket deletion and logs outcome', () => {

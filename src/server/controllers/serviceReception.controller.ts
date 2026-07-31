@@ -220,10 +220,17 @@ export async function createServiceReception(req: Request, res: Response) {
       const encryptedScreenLockPin = input.device.screenLockPin
         ? encryptScreenLockPin(input.device.screenLockPin)
         : null;
-      const sequence = await client.query("SELECT nextval('service_ticket_number_seq') AS value");
-      const sequenceValue = Number(sequence.rows[0].value);
       const now = new Date();
       const prefix = `TKT/${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}`;
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+        `${tenantId}:${prefix}`,
+      ]);
+      const lastNumber = await client.query(
+        `SELECT COALESCE(MAX(CAST(SUBSTRING(ticket_no FROM '[0-9]+$') AS int)), 0)::int AS value
+         FROM service_tickets WHERE tenant_id=$1 AND ticket_no LIKE $2`,
+        [tenantId, `${prefix}/%`]
+      );
+      const sequenceValue = Number(lastNumber.rows[0].value) + 1;
       const ticketNo = `${prefix}/${String(sequenceValue).padStart(6, '0')}`;
       const timeline = [
         {
