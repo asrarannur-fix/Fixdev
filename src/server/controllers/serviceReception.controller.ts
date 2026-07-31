@@ -232,16 +232,9 @@ export async function createServiceReception(req: Request, res: Response) {
       );
       const sequenceValue = Number(lastNumber.rows[0].value) + 1;
       const ticketNo = `${prefix}/${String(sequenceValue).padStart(6, '0')}`;
-      const timeline = [
-        {
-          status: 'DITERIMA',
-          note: input.service.isCheckOnly
-            ? 'Unit diterima untuk pengecekan dan diagnosis.'
-            : `Unit diterima${input.service.downPayment > 0 ? ` dengan DP Rp ${input.service.downPayment.toLocaleString('id-ID')}` : ''}.`,
-          timestamp: now.toISOString(),
-          operator: actor.email || actor.userId,
-        },
-      ];
+      const receptionNote = input.service.isCheckOnly
+        ? 'Unit diterima untuk pengecekan dan diagnosis.'
+        : `Unit diterima${input.service.downPayment > 0 ? ` dengan DP Rp ${input.service.downPayment.toLocaleString('id-ID')}` : ''}.`;
 
       const insertedTicket = await client.query(
         `INSERT INTO service_tickets (
@@ -250,12 +243,12 @@ export async function createServiceReception(req: Request, res: Response) {
           customer_approval_status, assigned_tech_id, warranty_months, is_outsourced,
           outsourced_vendor_id, outsourcing_cost, down_payment, is_check_only, device_category,
           accessories_left, custom_accessories, physical_condition, screen_lock_pin,
-           estimated_completion_date, captured_conditions, dynamic_fields, storage_location_id, timeline,
+           estimated_completion_date, captured_conditions, dynamic_fields, storage_location_id,
            reception_idempotency_key
          ) VALUES (
            gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'DITERIMA', $9::jsonb, $10::jsonb,
           'PENDING', $11, $12, $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21, $22,
-           $23, $24::jsonb, $25::jsonb, $26, $27::jsonb, $28
+           $23, $24::jsonb, $25::jsonb, $26, $27
          )
         RETURNING *, tenant_id AS "tenantId", branch_id AS "branchId", ticket_no AS "ticketNo",
           customer_id AS "customerId", device_name AS "deviceName", device_serial AS "deviceSerial",
@@ -288,7 +281,6 @@ export async function createServiceReception(req: Request, res: Response) {
           JSON.stringify(input.reception.capturedConditions),
           JSON.stringify(input.device.dynamicFields),
           input.reception.storageLocationId || null,
-          JSON.stringify(timeline),
           input.idempotencyKey,
         ]
       );
@@ -334,7 +326,7 @@ export async function createServiceReception(req: Request, res: Response) {
       await client.query(
         `INSERT INTO service_status_events (tenant_id, ticket_id, from_status, to_status, note, actor_user_id, metadata)
          VALUES ($1, $2, NULL, 'DITERIMA', $3, $4, '{}'::jsonb)`,
-        [tenantId, insertedTicket.rows[0].id, timeline[0].note, actor.userId]
+        [tenantId, insertedTicket.rows[0].id, receptionNote, actor.userId]
       );
 
       await client.query(

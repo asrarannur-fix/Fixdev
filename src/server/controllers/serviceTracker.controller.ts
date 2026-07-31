@@ -2,6 +2,7 @@ import { dbQuery, dbTransaction } from '../../lib/db.js';
 import { logger } from '../../lib/logger.js';
 import { z } from 'zod';
 import { serviceApprovalTransition } from '../../domain/serviceWorkflow.js';
+import { timelineAggregate } from './serviceWorkflow.timeline.js';
 
 const publicTicketLookupSchema = z.object({
   ticketNo: z.string().trim().min(3).max(40),
@@ -82,7 +83,8 @@ export const getPublicTicketByToken = async (req: any, res: any) => {
       `SELECT s.id,s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
         s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
         s.estimated_cost AS "estimatedCost",s.down_payment AS "downPayment",
-        s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
+        s.estimated_completion_date AS "estimatedCompletionDate",(SELECT COALESCE(jsonb_agg(jsonb_build_object('id', e.id, 'status', e.to_status, 'note', e.note, 'timestamp', e.created_at, 'operator', u.email) ORDER BY e.created_at ASC), '[]'::jsonb)
+        FROM service_status_events e LEFT JOIN users u ON u.id = e.actor_user_id WHERE e.ticket_id = s.id) AS timeline,s.updated_at AS "updatedAt",
         s.created_at AS "createdAt",s.tenant_id AS "tenantId",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
        WHERE s.public_tracking_token=$1 AND s.tenant_id=$2 AND s.deleted_at IS NULL LIMIT 1`,
@@ -106,7 +108,8 @@ export const getPublicTicketByNumber = async (req: any, res: any) => {
     const result = await dbQuery(
       `SELECT s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
         s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
-        s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
+        s.estimated_completion_date AS "estimatedCompletionDate",(SELECT COALESCE(jsonb_agg(jsonb_build_object('id', e.id, 'status', e.to_status, 'note', e.note, 'timestamp', e.created_at, 'operator', u.email) ORDER BY e.created_at ASC), '[]'::jsonb)
+        FROM service_status_events e LEFT JOIN users u ON u.id = e.actor_user_id WHERE e.ticket_id = s.id) AS timeline,s.updated_at AS "updatedAt",
         s.created_at AS "createdAt",c.name AS "customerName"
        FROM service_tickets s JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
        WHERE UPPER(s.ticket_no)=UPPER($1) AND RIGHT(regexp_replace(c.phone,'[^0-9]','','g'),4)=$2
@@ -168,7 +171,8 @@ export const getPortalTicketDetail = async (req: any, res: any) => {
       `SELECT s.id,s.ticket_no AS "ticketNo",s.device_name AS "deviceName",s.device_brand_model AS "deviceBrandModel",
         s.device_category AS "deviceCategory",s.status,s.customer_approval_status AS "customerApprovalStatus",
         s.estimated_cost AS "estimatedCost",s.down_payment AS "downPayment",
-        s.estimated_completion_date AS "estimatedCompletionDate",s.timeline,s.updated_at AS "updatedAt",
+        s.estimated_completion_date AS "estimatedCompletionDate",(SELECT COALESCE(jsonb_agg(jsonb_build_object('id', e.id, 'status', e.to_status, 'note', e.note, 'timestamp', e.created_at, 'operator', u.email) ORDER BY e.created_at ASC), '[]'::jsonb)
+        FROM service_status_events e LEFT JOIN users u ON u.id = e.actor_user_id WHERE e.ticket_id = s.id) AS timeline,s.updated_at AS "updatedAt",
         s.created_at AS "createdAt",c.name AS "customerName"
        FROM service_tickets s LEFT JOIN customers c ON c.id=s.customer_id AND c.tenant_id=s.tenant_id
        WHERE s.id=$1 AND s.public_tracking_token=$2 AND s.tenant_id=$3 AND s.deleted_at IS NULL LIMIT 1`,
@@ -192,7 +196,7 @@ export const approvePortalTicket = async (req: any, res: any) => {
   try {
     const result = await dbTransaction(async (client) => {
       const lock = await client.query(
-        `SELECT id,status,timeline,ticket_no,customer_id,device_name FROM service_tickets
+        `SELECT id,status,ticket_no,customer_id,device_name FROM service_tickets
          WHERE id=$1 AND public_tracking_token=$2 AND tenant_id=$3 AND deleted_at IS NULL FOR UPDATE`,
         [ticketId, token, tenantId]
       );
@@ -207,25 +211,15 @@ export const approvePortalTicket = async (req: any, res: any) => {
       const note = approved
         ? `Estimasi disetujui pelanggan: ${signer}`
         : `Estimasi ditolak pelanggan: ${reason}`;
-      const timeline = [
-        ...(ticket.timeline || []),
-        {
-          status: nextStatus,
-          note,
-          timestamp: new Date().toISOString(),
-          operator: 'Pelanggan (Portal)',
-        },
-      ];
       await client.query(
 `UPDATE service_tickets SET status=$1,customer_approval_status=$2,provisional_signature_name=$3,
-           provisional_signature=$4,provisional_approved_at=$5,timeline=$6::jsonb,updated_at=NOW() WHERE id=$7 AND tenant_id=$8`,
+           provisional_signature=$4,provisional_approved_at=$5,updated_at=NOW() WHERE id=$6 AND tenant_id=$7`,
         [
           nextStatus,
           approval.approvalStatus,
            signer,
            signature || null,
            approved ? new Date() : null,
-           JSON.stringify(timeline),
            ticketId,
            tenantId,
         ]

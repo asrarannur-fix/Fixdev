@@ -29,6 +29,7 @@ import {
   workMetadataSchema,
 } from './serviceWorkflow.schemas.js';
 import { queueNotification } from './serviceWorkflow.notifications.js';
+import { timelineAggregate } from './serviceWorkflow.timeline.js';
 export { partOrderUpdateSchema } from './serviceWorkflow.schemas.js';
 
 export const SERVICE_TRANSITIONS: Record<string, string[]> = DOMAIN_SERVICE_TRANSITIONS;
@@ -106,7 +107,7 @@ function ticketSelect(prefix = '') {
     ${prefix}tech_post_checklist AS "techPostChecklist", ${prefix}technician_notes AS "technicianNotes",
     ${prefix}repair_start_time AS "repairStartTime", ${prefix}repair_end_time AS "repairEndTime",
     ${prefix}qc_checklist AS "qcChecklist", ${prefix}qc_photos AS "qcPhotos", ${prefix}qc_notes AS "qcNotes", ${prefix}qc_status AS "qcStatus",
-    ${prefix}status, ${prefix}timeline, ${prefix}warranty_months AS "warrantyMonths", ${prefix}warranty_ends_at AS "warrantyEndsAt",
+    ${prefix}status, ${timelineAggregate(prefix)}, ${prefix}warranty_months AS "warrantyMonths", ${prefix}warranty_ends_at AS "warrantyEndsAt",
     ${prefix}down_payment::float AS "downPayment", ${prefix}payment_method AS "paymentMethod", ${prefix}payment_ref AS "paymentRef",
     ${prefix}payment_proof_name AS "paymentProofName", ${prefix}tempo_days AS "tempoDays", ${prefix}handover_at AS "handoverAt",
     ${prefix}invoice_id AS "invoiceId", ${prefix}public_tracking_token AS "publicTrackingToken", ${prefix}created_at AS "createdAt"`;
@@ -175,12 +176,12 @@ async function appendEvent(
     throw error;
   }
   const event = {
+    id: undefined,
     status: toStatus,
     note,
     timestamp: new Date().toISOString(),
     operator: req.authActor?.email || req.authActor?.userId || 'System',
   };
-  const timeline = [...(ticket.timeline || []), event];
   const inserted = await client.query(
     `INSERT INTO service_status_events (tenant_id,ticket_id,from_status,to_status,note,actor_user_id,metadata)
      VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb) RETURNING id`,
@@ -194,12 +195,13 @@ async function appendEvent(
       JSON.stringify(metadata),
     ]
   );
+  event.id = inserted.rows[0].id;
   await client.query(
-    `UPDATE service_tickets SET status=$1,timeline=$2::jsonb,updated_at=NOW() WHERE id=$3 AND tenant_id=$4 AND branch_id=$5`,
-    [toStatus, JSON.stringify(timeline), ticket.id, req.tenantId, ticket.branchId]
+    `UPDATE service_tickets SET status=$1,updated_at=NOW() WHERE id=$2 AND tenant_id=$3 AND branch_id=$4`,
+    [toStatus, ticket.id, req.tenantId, ticket.branchId]
   );
   ticket.status = toStatus;
-  ticket.timeline = timeline;
+  ticket.timeline = [...(ticket.timeline || []), event];
   await client.query('SAVEPOINT service_notification');
   try {
     await queueNotification(

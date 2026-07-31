@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { dbQuery, dbTransaction } from '../../lib/db.js';
+import { timelineAggregate } from './serviceWorkflow.timeline.js';
 
 const componentSchema = z.object({
   warehouseId: z.string().uuid(),
@@ -416,27 +417,20 @@ export async function consumeMicroComponent(req: Request, res: Response) {
         `SELECT u.id,u.component_id AS "componentId",p.name,u.quantity::float,u.unit_cost::float AS "unitCost",u.hpp_total::float AS "hppTotal",u.chargeable,u.unit_price::float AS "unitPrice",u.charge_total::float AS "chargeTotal",u.consumed_at AS "consumedAt" FROM micro_component_usages u JOIN micro_components mc ON mc.id=u.component_id JOIN products p ON p.id=mc.product_id WHERE u.tenant_id=$1 AND u.ticket_id=$2 ORDER BY u.consumed_at`,
         [req.tenantId, d.ticketId]
       );
+      const microNote = `Komponen mikro ${comp.product_name} × ${d.quantity} digunakan${d.chargeable ? ' dan ditagihkan' : ' sebagai bahan internal'}.`;
       await client.query(
-        "UPDATE service_tickets SET micro_component_usages=$1::jsonb,estimated_cost=estimated_cost+$2,timeline=COALESCE(timeline,'[]'::jsonb)||$3::jsonb,updated_at=NOW() WHERE id=$4 AND tenant_id=$5",
-        [
-          JSON.stringify(usages.rows),
-          charge,
-          JSON.stringify([
-            {
-              status: ticket.rows[0].status,
-              note: `Komponen mikro ${comp.product_name} × ${d.quantity} digunakan${d.chargeable ? ' dan ditagihkan' : ' sebagai bahan internal'}.`,
-              timestamp: new Date().toISOString(),
-              operator: 'Sistem',
-            },
-          ]),
-          d.ticketId,
-          req.tenantId,
-        ]
+        "UPDATE service_tickets SET micro_component_usages=$1::jsonb,estimated_cost=estimated_cost+$2,updated_at=NOW() WHERE id=$3 AND tenant_id=$4",
+        [JSON.stringify(usages.rows), charge, d.ticketId, req.tenantId]
+      );
+      await client.query(
+        `INSERT INTO service_status_events (tenant_id,ticket_id,from_status,to_status,note,actor_user_id,metadata)
+         VALUES ($1,$2,$3,$3,$4,$5,$6::jsonb)`,
+        [req.tenantId, d.ticketId, ticket.rows[0].status, microNote, req.authActor?.userId || null, JSON.stringify({ source: 'micro_component' })]
       );
       return { usage: usage.rows[0], ticketId, idempotent: false };
     });
     const ticket = await dbQuery(
-      `SELECT id,tenant_id AS "tenantId",branch_id AS "branchId",ticket_no AS "ticketNo",customer_id AS "customerId",device_name AS "deviceName",device_brand_model AS "deviceBrandModel",status,estimated_cost::float AS "estimatedCost",micro_component_usages AS "microComponentUsages",timeline,parts_used AS "partsUsed",warranty_months AS "warrantyMonths" FROM service_tickets WHERE id=$1 AND tenant_id=$2`,
+      `SELECT id,tenant_id AS "tenantId",branch_id AS "branchId",ticket_no AS "ticketNo",customer_id AS "customerId",device_name AS "deviceName",device_brand_model AS "deviceBrandModel",status,estimated_cost::float AS "estimatedCost",micro_component_usages AS "microComponentUsages",${timelineAggregate('')},parts_used AS "partsUsed",warranty_months AS "warrantyMonths" FROM service_tickets WHERE id=$1 AND tenant_id=$2`,
       [result.ticketId, req.tenantId]
     );
     const components = await dbQuery(
