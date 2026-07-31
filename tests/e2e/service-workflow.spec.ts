@@ -28,7 +28,12 @@ test.describe('Service workflow workspace', () => {
 
     await page.goto(`${TEST_BASE_URL}/tenant/${TENANT}/services`, { waitUntil: 'networkidle' });
     const search = page.getByPlaceholder('Cari tiket, nama, perangkat...');
-    if (await page.getByRole('button', { name: /Servis, buka menu/ }).isVisible()) {
+    if (await search.isVisible()) return;
+
+    const mobileService = page.getByRole('button', { name: 'Servis', exact: true });
+    if (await mobileService.isVisible()) {
+      await mobileService.click();
+    } else {
       await page.getByRole('button', { name: /Servis, buka menu/ }).click();
       await page.getByText('Daftar Servis', { exact: true }).click();
     }

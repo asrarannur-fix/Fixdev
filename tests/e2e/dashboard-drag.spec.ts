@@ -9,7 +9,8 @@ if (!BASE || !EMAIL || !PASS) {
 }
 
 test.describe('Dashboard Widget Drag-and-Drop', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Dashboard widget drag-and-drop is a desktop-only interaction.');
     await page.goto(BASE + '/login');
     await page.getByLabel('Alamat email').fill(EMAIL);
     await page.getByLabel('Password').fill(PASS);
