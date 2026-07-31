@@ -91,6 +91,7 @@ export const POSTab: React.FC<POSTabProps> = ({
   const [voucherCode, setVoucherCode] = useState('');
   const { showToast } = useToast();
 
+
 // Split payment validation
 const validateSplitPayment = (grandTotal: number): boolean => {
   if (!splitEnabled) return true;
@@ -142,6 +143,35 @@ const requireOpenShift = (action: string): boolean => {
 
   const effectiveProducts = tenantProducts ?? internalTenantProducts;
   const effectiveCart = posCart ?? internalCart;
+
+  // Hitung diskon voucher dari kode yang diketik (konsisten dgn backend)
+  const { vouchers } = useSaaS();
+  const matchedVoucher = React.useMemo(() => {
+    const code = (voucherCode || '').trim().toUpperCase();
+    if (!code) return null;
+    return vouchers.find(
+      (v) =>
+        v.code.toUpperCase() === code &&
+        v.isActive &&
+        new Date(v.validFrom) <= new Date() &&
+        new Date(v.validTo) >= new Date() &&
+        v.usageCount < v.usageLimit
+    );
+  }, [voucherCode, vouchers]);
+
+  const voucherDiscount = React.useMemo(() => {
+    if (!matchedVoucher) return 0;
+    const sub = effectiveCart.reduce(
+      (sum, item) => sum + (item.product.sellPrice || 0) * item.qty,
+      0
+    );
+    if (sub < (matchedVoucher.minTransaction || 0)) return 0;
+    const raw =
+      matchedVoucher.discountType === 'PERCENTAGE'
+        ? Math.round(sub * (Number(matchedVoucher.value) / 100))
+        : Number(matchedVoucher.value) || 0;
+    return raw;
+  }, [matchedVoucher, effectiveCart]);
   const effectiveDeposit = depositUsed || internalDeposit;
 
   const effectiveAddToCart =
@@ -198,12 +228,6 @@ const requireOpenShift = (action: string): boolean => {
         splitNominal: Number(splitAmount) || 0,
       });
     }
-    // Voucher deprecation guard: backend belum apply voucher discount,
-    // jadi beri tahu kasir bahwa potongan voucher perlu verifikasi manual.
-    if (voucherCode.trim()) {
-      showToast('Voucher terdeteksi — pastikan potongan sudah disetujui kasir.',
-        'warning');
-    }
     handlePOSCheckout(details, totalPaid);
     setSplitEnabled(false);
     setSplitAmount('');
@@ -255,8 +279,8 @@ const requireOpenShift = (action: string): boolean => {
     });
   };
 
-  const taxAmount = Math.max(0, (subtotal - discountAmount) * (taxRatePct / 100));
-  const grandTotal = Math.max(0, subtotal - discountAmount + taxAmount - effectiveDeposit);
+  const taxAmount = Math.max(0, (subtotal - discountAmount - voucherDiscount) * (taxRatePct / 100));
+  const grandTotal = Math.max(0, subtotal - discountAmount - voucherDiscount + taxAmount - effectiveDeposit);
 
   const handleHoldSale = async () => {
     if (effectiveCart.length === 0) {
@@ -555,6 +579,14 @@ const requireOpenShift = (action: string): boolean => {
                       <span>Deposit / Store Credit</span>
                       <span className="font-mono">
                         - Rp {effectiveDeposit.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {voucherDiscount > 0 && matchedVoucher && (
+                    <div className="flex justify-between text-fuchsia-600">
+                      <span>Voucher ({matchedVoucher.code})</span>
+                      <span className="font-mono">
+                        - Rp {voucherDiscount.toLocaleString()}
                       </span>
                     </div>
                   )}
