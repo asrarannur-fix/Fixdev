@@ -44,6 +44,7 @@ export const ServicePartsLedger: React.FC<ServicePartsLedgerProps> = ({ ticket, 
                   <button
                     type="button"
                     disabled={!canCancel}
+                    aria-label={`Batalkan ${part.name}`}
                     onClick={() => onCancelPart(part)}
                     className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded cursor-pointer transition-all inline-flex items-center disabled:cursor-not-allowed disabled:opacity-40"
                   >

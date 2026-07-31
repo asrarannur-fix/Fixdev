@@ -6,7 +6,7 @@ import { ensureAccount, paymentDebitAccountCode } from '../lib/coa.js';
 
 const optionalText = z.string().trim().optional().default('');
 const optionalDate = optionalText.refine(
-  (value) => !value || !Number.isNaN(Date.parse(value)),
+  (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value,
   'Tanggal tidak valid.'
 );
 
@@ -37,6 +37,7 @@ export const serviceReceptionSchema = z.object({
     checklist: z.array(z.object({ name: z.string(), checked: z.boolean() })).default([]),
     accessories: z.array(z.string()).default([]),
     customAccessories: optionalText,
+    initialPhotos: z.array(z.never()).max(0).default([]),
     capturedConditions: z
       .array(
         z.object({
@@ -262,9 +263,9 @@ export async function createServiceReception(req: Request, res: Response) {
           input.device.serial || null,
           input.device.brandModel || input.device.name,
           input.reception.complaint,
-          JSON.stringify(input.reception.checklist),
-          JSON.stringify(input.reception.capturedConditions),
-          input.service.assignedTechId || null,
+           JSON.stringify(input.reception.checklist),
+           JSON.stringify([]),
+           input.service.assignedTechId || null,
           input.service.warrantyMonths,
           input.outsourcing.enabled,
           input.outsourcing.vendorId || null,

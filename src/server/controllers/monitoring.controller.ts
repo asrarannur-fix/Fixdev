@@ -25,8 +25,8 @@ export async function platformHealthHandler(req: Request, res: Response) {
       dbQuery(`SELECT COUNT(*) FILTER (WHERE status='OPEN')::int AS open,
         COUNT(*) FILTER (WHERE status='OPEN' AND severity='CRITICAL')::int AS critical FROM platform_incidents`)
         .catch(() => ({ rows: [{ open: 0, critical: 0 }] } as any)),
-      dbQuery(`SELECT COUNT(*) FILTER (WHERE deleted_at IS NULL AND status NOT IN ('SELESAI','DIAMBIL'))::int AS active,
-        COUNT(*) FILTER (WHERE deleted_at IS NULL AND status NOT IN ('SELESAI','DIAMBIL') AND created_at < NOW() - INTERVAL '48 hours')::int AS overdue,
+      dbQuery(`SELECT COUNT(*) FILTER (WHERE deleted_at IS NULL AND status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK'))::int AS active,
+        COUNT(*) FILTER (WHERE deleted_at IS NULL AND status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK') AND created_at < NOW() - INTERVAL '48 hours')::int AS overdue,
         COUNT(*) FILTER (WHERE deleted_at IS NULL AND status='QC')::int AS awaiting_qc FROM service_tickets`)
         .catch(() => ({ rows: [{ active: 0, overdue: 0, awaiting_qc: 0 }] } as any)),
     ]);

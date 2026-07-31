@@ -267,25 +267,25 @@ interface SaaSContextType {
   updateServicePartOrder: (id: string, orderId: string, data: Record<string, any>) => Promise<any>;
   receiveServicePartOrder: (id: string, orderId: string, data: Record<string, any>) => Promise<any>;
   cancelServicePartOrder: (id: string, orderId: string) => Promise<any>;
-  updateServiceStatus: (id: string, status: ServiceStatus, note: string) => Promise<void>;
+  updateServiceStatus: (id: string, status: ServiceStatus, note: string) => Promise<ServiceTicket | undefined>;
   addServiceDiagnostic: (
     id: string,
     diagnosis: string,
     estCost: number,
     parts: any[]
-  ) => Promise<void>;
+  ) => Promise<ServiceTicket | undefined>;
   approveServiceEstimate: (
     id: string,
     approved: boolean,
     signatureName?: string,
     signatureText?: string
-  ) => Promise<void>;
+  ) => Promise<ServiceTicket | undefined>;
   completeServiceQC: (id: string, notes: string, checklist?: ServiceTicket['qcChecklist']) => Promise<ServiceTicket | undefined>;
   handoverServiceDevice: (
     id: string,
     paymentMethod: PaymentMethod,
-    details?: { refNo?: string; proofName?: string; tempoDays?: number }
-  ) => Promise<void>;
+    details?: { refNo?: string; proofName?: string; tempoDays?: number; checklist?: { accessoriesReturned: boolean; customerChecked: boolean; invoiceReady: boolean; warrantyReady: boolean } }
+  ) => Promise<ServiceTicket | undefined>;
   triggerCustomerNotification: (
     ticket: ServiceTicket,
     status: ServiceStatus,
@@ -2965,7 +2965,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateServiceStatus = async (id: string, status: ServiceStatus, note: string) => {
     if (!isBackendConfigured()) throw new Error('Perubahan status servis memerlukan backend aktif.');
-    await runServiceWorkflow(id, 'transition', { status, note });
+    const result = await runServiceWorkflow(id, 'transition', { status, note });
+    return (result.ticket || result) as ServiceTicket;
   };
 
   const addServiceDiagnostic = async (
@@ -2975,7 +2976,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     parts: any[]
   ) => {
     if (!isBackendConfigured()) throw new Error('Diagnosis servis memerlukan backend aktif.');
-    await runServiceWorkflow(id, 'diagnosis', { diagnosis, estimatedCost: estCost, parts });
+    const result = await runServiceWorkflow(id, 'diagnosis', { diagnosis, estimatedCost: estCost, parts });
+    return (result.ticket || result) as ServiceTicket;
   };
 
   const approveServiceEstimate = async (
@@ -2985,12 +2987,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signatureText?: string
   ) => {
     if (isBackendConfigured()) {
-      await runServiceWorkflow(id, 'approval', {
+      const result = await runServiceWorkflow(id, 'approval', {
         approved,
         signatureName,
         signature: signatureText,
       });
-      return;
+      return (result.ticket || result) as ServiceTicket;
     }
     setServices((prev) =>
       prev.map((s) => {
@@ -3106,7 +3108,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   ) => {
     if (isBackendConfigured()) {
-      await runServiceWorkflow(id, 'handover', {
+      const result = await runServiceWorkflow(id, 'handover', {
         paymentMethod,
         referenceNo: details?.refNo,
         proofName: details?.proofName,
@@ -3114,7 +3116,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checklist: details?.checklist,
         idempotencyKey: `handover-${id}`,
       });
-      return;
+      return (result.ticket || result) as ServiceTicket;
     }
     setServices((prev) =>
       prev.map((s) => {

@@ -1133,11 +1133,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                             </div>
                             <button
                               type="button"
-                              onClick={() =>
-                                setNewSrvCapturedConditions((prev) =>
-                                  prev.filter((x) => x.id !== cap.id)
-                                )
-                              }
+                               onClick={() => {
+                                 URL.revokeObjectURL(cap.url);
+                                 setNewSrvCapturedConditions((prev) => prev.filter((x) => x.id !== cap.id));
+                               }}
                               className="absolute top-1 right-1 p-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
                             >
                               <X className="w-2.5 h-2.5" />

@@ -41,6 +41,7 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
     ServiceStatus.DIBATALKAN,
   ],
   [ServiceStatus.MENUGGU_PART_ORDER]: [
+    ServiceStatus.DIAGNOSA,
     ServiceStatus.SEDANG_DIKERJAKAN,
     ServiceStatus.DIKIRIM_KE_VENDOR,
     ServiceStatus.DIBATALKAN,

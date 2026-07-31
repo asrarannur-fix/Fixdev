@@ -18,14 +18,14 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
   canRequestParts,
   canAddCost,
 }) => {
-  const activeStep = Math.max(0, WORKFLOW_STEPS.findIndex((step) => step.status === ticket.status));
+  const activeStep = WORKFLOW_STEPS.findIndex((step) => step.status === ticket.status);
 
   return (
     <div data-testid="service-actions" className="min-w-0 space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-200">Alur Servis</h4>
-          <span className="text-xs font-semibold text-slate-500">Tahap {activeStep + 1}/{WORKFLOW_STEPS.length}</span>
+          <span className="text-xs font-semibold text-slate-500">{activeStep >= 0 ? `Tahap ${activeStep + 1}/${WORKFLOW_STEPS.length}` : 'Di luar alur utama'}</span>
         </div>
         <div className="flex min-w-0 items-start overflow-x-auto pb-2">
           {WORKFLOW_STEPS.map((step, index) => (

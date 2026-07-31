@@ -92,7 +92,13 @@ export const ServiceList: React.FC<any> = (props) => {
 
   React.useEffect(() => setPage(1), [workflow, srvSearchQuery, srvSort, statusFilter, qcView, dateFrom, dateTo, slaFilter, assignedTech]);
   React.useEffect(() => {
+    const reload = () => setReloadKey((key) => key + 1);
+    window.addEventListener('service-ticket-updated', reload);
+    return () => window.removeEventListener('service-ticket-updated', reload);
+  }, []);
+  React.useEffect(() => {
     let cancelled = false;
+    setServicePage(null);
     setServiceListLoading(true);
     setServiceListError(null);
     const timeout = window.setTimeout(() => getServiceTickets(apiFetch, {
@@ -120,7 +126,7 @@ export const ServiceList: React.FC<any> = (props) => {
     setManualDiagCost(String(Number(ticket.estimatedCost) || 0));
   };
   const toggleTicket = (id: string) => setSelectedServiceIds(selectedServiceIds.includes(id) ? selectedServiceIds.filter((item) => item !== id) : [...selectedServiceIds, id]);
-  const resetFilters = () => { setWorkflow('ALL'); setSrvSearchQuery(''); if (setStatusFilter) { setStatusFilter('ALL'); } setDateFrom(''); setDateTo(''); setSlaFilter('ALL'); setAssignedTech('ALL'); };
+  const resetFilters = () => { setWorkflow('ALL'); setSrvSearchQuery(''); setSrvSort('urgent'); if (setStatusFilter) { setStatusFilter('ALL'); } setDateFrom(''); setDateTo(''); setSlaFilter('ALL'); setAssignedTech('ALL'); };
   const downloadCsv = async () => {
     try {
       const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, group: workflow === 'ALL' ? undefined : workflow, tenantId: currentTenantId || activeTenantId || undefined, branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined, sort: srvSort, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, from: dateFrom || undefined, to: dateTo || undefined, sla: slaFilter === 'ALL' ? undefined : slaFilter, technician: assignedTech === 'ALL' ? undefined : assignedTech });
@@ -141,6 +147,7 @@ export const ServiceList: React.FC<any> = (props) => {
   const canDelete = currentUser?.role === UserRole.OWNER || currentUserPermissions.includes('action-services-delete-ticket');
   const totalPages = servicePage ? Math.max(1, Math.ceil(servicePage.total / servicePage.limit)) : Math.max(1, Math.ceil(fallbackServices.length / 15));
   const allPageSelected = services.length > 0 && services.every((ticket) => selectedServiceIds.includes(ticket.id));
+  const activeFilterCount = [srvSearchQuery, workflow !== 'ALL', statusFilter !== 'ALL', assignedTech !== 'ALL', slaFilter !== 'ALL', dateFrom, dateTo].filter(Boolean).length;
 
   return <div className="mx-auto w-full max-w-screen-2xl space-y-4 rounded-xl bg-slate-50 px-3 py-3 text-slate-900 dark:bg-zinc-950 dark:text-zinc-100 sm:px-5 sm:py-4">
     <header className="flex flex-col gap-3 border-b border-slate-200 pb-4 dark:border-zinc-800 sm:flex-row sm:items-end sm:justify-between">
@@ -160,7 +167,7 @@ export const ServiceList: React.FC<any> = (props) => {
       <select value={slaFilter} aria-label="Filter SLA" onChange={(event) => setSlaFilter(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="ALL">SLA</option><option value="overdue">SLA overdue</option><option value="on-track">SLA aman</option></select>
       <input type="date" aria-label="Tanggal mulai" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
       <input type="date" aria-label="Tanggal akhir" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
-      {(workflow !== 'ALL' || statusFilter !== 'ALL' || assignedTech !== 'ALL' || slaFilter !== 'ALL' || dateFrom || dateTo) && <button onClick={resetFilters} className="min-h-11 rounded-lg border border-slate-300 px-3 text-xs font-semibold dark:border-zinc-700">Reset filter</button>}
+      {activeFilterCount > 0 && <button onClick={resetFilters} className="min-h-11 rounded-lg border border-slate-300 px-3 text-xs font-semibold dark:border-zinc-700">Reset {activeFilterCount} filter</button>}
     </section>
     <section className="relative overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900" aria-busy={serviceListLoading}>
       {serviceListLoading && <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-semibold text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-300"><RefreshCw className="size-4 animate-spin" />Memuat data terbaru…</div>}

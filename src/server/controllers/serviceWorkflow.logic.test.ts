@@ -74,4 +74,13 @@ describe('Spare part order schema validation', () => {
   it('allows partial update with only supplier name', () => {
     expect(partOrderUpdateSchema.safeParse({ supplierName: 'Toko ABC' }).success).toBe(true);
   });
+
+  it('rejects empty updates, empty strings, unknown fields, and invalid calendar dates', () => {
+    expect(partOrderUpdateSchema.safeParse({}).success).toBe(false);
+    expect(partOrderUpdateSchema.safeParse({ supplierName: ' ' }).success).toBe(false);
+    expect(partOrderUpdateSchema.safeParse({ note: ' ' }).success).toBe(false);
+    expect(partOrderUpdateSchema.safeParse({ unknown: true }).success).toBe(false);
+    expect(partOrderUpdateSchema.safeParse({ estimatedArrivalDate: '2026-02-30' }).success).toBe(false);
+    expect(partOrderUpdateSchema.safeParse({ estimatedArrivalDate: '2026-02-28' }).success).toBe(true);
+  });
 });

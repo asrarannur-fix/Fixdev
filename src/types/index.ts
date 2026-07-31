@@ -538,10 +538,14 @@ export interface ServiceTicket {
   techPostChecklist?: { criteria: string; passed: boolean }[];
   partsRequested?: {
     id: string;
-    sparepartId: string;
-    qty: number;
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
-    requestedAt: string;
+    productId: string;
+    warehouseId: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    serialNumber?: string;
+    status: 'REQUESTED' | 'RESERVED' | 'USED' | 'CANCELLED';
   }[];
   createdAt?: string;
   updatedAt?: string;

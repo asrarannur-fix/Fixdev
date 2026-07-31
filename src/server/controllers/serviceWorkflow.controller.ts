@@ -46,17 +46,18 @@ const partOrderSchema = z.object({
   reason: z.string().trim().min(3),
   supplierName: z.string().trim().optional(),
   estimatedCost: z.number().min(0).default(0),
-  estimatedArrivalDate: z.string().optional(),
+  estimatedArrivalDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value).optional(),
   costApproved: z.boolean().default(false),
   note: z.string().optional(),
   idempotencyKey: z.string().trim().min(8),
 });
+const strictDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value);
 export const partOrderUpdateSchema = z.object({
   status: z.enum(['APPROVED', 'ORDERED', 'SHIPPED', 'ARRIVED']).optional(),
-  supplierName: z.string().trim().optional(),
-  estimatedArrivalDate: z.string().optional(),
-  note: z.string().optional(),
-});
+  supplierName: z.string().trim().min(1).optional(),
+  estimatedArrivalDate: strictDate.optional(),
+  note: z.string().trim().min(1).optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, 'Pembaruan wajib berisi perubahan.');
 const partArrivalSchema = z.object({
   productId: z.string().uuid(),
   warehouseId: z.string().uuid(),
@@ -601,12 +602,12 @@ export async function listServiceTickets(req: Request, res: Response) {
     if (groups[group]) { values.push(groups[group]); filters.push(`st.status = ANY($${values.length})`); }
     if (from) add('st.created_at >= $N::timestamptz', from);
     if (to) add('st.created_at < ($N::date + INTERVAL \'1 day\')', to);
-    if (sla === 'overdue') filters.push("st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('SELESAI','DIAMBIL')");
+    if (sla === 'overdue') filters.push("st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK')");
     if (sla === 'on-track') filters.push("(st.created_at >= NOW() - INTERVAL '48 hours' OR st.status IN ('SELESAI','DIAMBIL'))");
     const where = filters.join(' AND ');
     const base = `FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`;
     const countResult = await dbQuery(`SELECT COUNT(*)::int AS total ${base}`, values);
-    const kpiResult = await dbQuery(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE st.status NOT IN ('SELESAI','DIAMBIL'))::int AS active, COUNT(*) FILTER (WHERE st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('SELESAI','DIAMBIL'))::int AS overdue, COALESCE(SUM(st.estimated_cost),0)::float AS estimated FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`, values);
+    const kpiResult = await dbQuery(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK'))::int AS active, COUNT(*) FILTER (WHERE st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK'))::int AS overdue, COALESCE(SUM(st.estimated_cost),0)::float AS estimated FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`, values);
     const result = await dbQuery(`SELECT ${ticketSelect('st.')}, c.name AS "customerName" ${base} ORDER BY ${sortMap[sort] || sortMap.newest}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, limit, offset]);
     res.json({ data: result.rows, total: countResult.rows[0]?.total || 0, limit, offset, kpi: kpiResult.rows[0] || { total: 0, active: 0, overdue: 0, estimated: 0 } });
   } catch (error: any) { sendError(res, error); }
@@ -1096,6 +1097,7 @@ export async function updateServicePartOrder(req: Request, res: Response) {
         ORDERED: ['SHIPPED', 'ARRIVED', 'CANCELLED'],
         SHIPPED: ['ARRIVED', 'CANCELLED'],
         ARRIVED: [],
+        RESERVED: [],
       };
       if (parsed.data.status && !transitions[existing.rows[0].status]?.includes(parsed.data.status)) {
         const error: any = new Error('Transisi status permintaan part tidak diizinkan.');
@@ -1135,7 +1137,7 @@ export async function receiveServicePartOrder(req: Request, res: Response) {
   try {
     const result = await dbTransaction(async (client) => {
       const ticket = await lockedTicket(client, req);
-      if (ticket.status !== 'MENUGGU_SPAREPART') {
+      if (!['MENUGGU_SPAREPART', 'MENUGGU_PART_ORDER'].includes(ticket.status)) {
         const error: any = new Error('Tiket tidak sedang menunggu spare part.');
         error.status = 409;
         throw error;
@@ -1225,12 +1227,21 @@ export async function cancelServicePartOrder(req: Request, res: Response) {
          WHERE id=$1 AND tenant_id=$2 AND ticket_id=$3 AND status NOT IN ('RESERVED','CANCELLED') RETURNING *`,
         [req.params.orderId, req.tenantId, ticket.id]
       );
-      if (!cancelled.rows[0]) {
-        const error: any = new Error('Permintaan tidak dapat dibatalkan.');
-        error.status = 409;
-        throw error;
-      }
-      return { ticket: await finalTicket(client, req), order: cancelled.rows[0] };
+       if (!cancelled.rows[0]) {
+         const error: any = new Error('Permintaan tidak dapat dibatalkan.');
+         error.status = 409;
+         throw error;
+       }
+       const activeOrders = await client.query(
+         `SELECT COUNT(*)::int AS total FROM service_part_orders
+          WHERE tenant_id=$1 AND ticket_id=$2 AND status NOT IN ('RESERVED','CANCELLED')`,
+         [req.tenantId, ticket.id]
+       );
+       if (!activeOrders.rows[0]?.total && ['MENUGGU_SPAREPART', 'MENUGGU_PART_ORDER'].includes(ticket.status)) {
+         const recoveryStatus = ticket.status === 'MENUGGU_PART_ORDER' ? 'DIAGNOSA' : 'SEDANG_DIKERJAKAN';
+         await appendEvent(client, req, ticket, recoveryStatus, 'Part order aktif terakhir dibatalkan; tiket dilanjutkan.');
+       }
+       return { ticket: await finalTicket(client, req), order: cancelled.rows[0] };
     });
     res.json({ data: result });
   } catch (error: any) {

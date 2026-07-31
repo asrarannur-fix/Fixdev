@@ -179,6 +179,12 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [fetchedService, setFetchedService] = useState<ServiceTicket | null>(null);
+  useEffect(() => {
+    setSelectedServiceIds([]);
+    setSelectedPartWarehouseId('');
+    setViewingServiceTicketId(null);
+    setFetchedService(null);
+  }, [activeTenantId, currentBranchId]);
   const updateUrl = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(window.location.search);
     Object.entries(updates).forEach(([key, value]) => {
@@ -232,10 +238,14 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
       return;
     }
     let cancelled = false;
+    setFetchedService(null);
     setDetailLoading(true);
     setDetailError(null);
     getServiceTicket(apiFetch, id)
       .then(async (ticket) => {
+        if (ticket.tenantId !== activeTenantId || (currentBranchId && ticket.branchId !== currentBranchId)) {
+          throw new Error('Tiket tidak tersedia pada tenant atau cabang aktif.');
+        }
         const timeline = await getServiceStatusEvents(apiFetch, id).catch(() => null);
         if (!cancelled) setFetchedService({ ...ticket, timeline: timeline ?? ticket.timeline });
       })
@@ -351,11 +361,12 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   const [sparepartSN, setSparepartSN] = useState<string>('');
   const approveServiceEstimate = async (ticketId: string, isApproved: boolean) => {
     try {
-      await approveServiceEstimateContext(ticketId, isApproved, currentUser?.name || 'Owner', '');
+      const ticket = await approveServiceEstimateContext(ticketId, isApproved, currentUser?.name || 'Owner', '');
       showToast(
         isApproved ? 'Estimasi biaya disetujui pelanggan!' : 'Estimasi biaya ditolak pelanggan!',
         isApproved ? 'success' : 'info'
       );
+      return ticket;
     } catch (error: any) {
       showToast(error?.message || 'Gagal memproses persetujuan estimasi.', 'error');
       throw error;
@@ -363,7 +374,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   };
   const updateServiceStatus = async (ticketId: string, status: ServiceStatus, note: string) => {
     try {
-      await updateServiceStatusContext(ticketId, status, note);
+      return await updateServiceStatusContext(ticketId, status, note);
     } catch (error: any) {
       showToast(error?.message || 'Gagal memperbarui status servis.', 'error');
       throw error;
@@ -607,13 +618,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         `Sistem otomatis memilih ${selected.name} karena memiliki beban kerja paling ringan saat ini.`
       );
       showToast(`Teknisi otomatis ditugaskan ke ${selected.name}`, 'success');
-    } else if (employees.length > 0) {
-      const selected = employees[0];
-      setNewSrvTechId(selected.id);
-      setAutoAssignReason(
-        `Sistem otomatis memilih ${selected.name} karena ketiadaan staf berdedikasi teknisi.`
-      );
-      showToast(`Staf ${selected.name} otomatis ditugaskan`, 'success');
     } else {
       showToast('Tidak ada staf tersedia untuk ditugaskan!', 'error');
     }
@@ -644,6 +648,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
           : 'Status diset ke Rework untuk perbaikan ulang.',
         passed ? 'success' : 'warning'
       );
+      return ticket;
     } catch (error: any) {
       showToast(error?.message || 'Gagal menyimpan hasil QC.', 'error');
       throw error;
@@ -655,11 +660,12 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     details: any
   ) => {
     try {
-      await handoverServiceDeviceContext(ticketId, paymentMethod, details);
+      const ticket = await handoverServiceDeviceContext(ticketId, paymentMethod, details);
       showToast(
         'Serah terima perangkat selesai. Pembayaran, ledger, stok, dan garansi tersinkron.',
         'success'
       );
+      return ticket;
     } catch (error: any) {
       showToast(error?.message || 'Gagal memproses serah terima perangkat.', 'error');
       throw error;
@@ -870,7 +876,10 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                  detailLoading,
                  detailError,
                  storageLocations,
-                 onDetailUpdated: setFetchedService,
+                  onDetailUpdated: (ticket: ServiceTicket) => {
+                    setFetchedService(ticket);
+                    window.dispatchEvent(new Event('service-ticket-updated'));
+                  },
                   updateServiceStatus,
                 videoRef,
                 viewingServiceTicketId,

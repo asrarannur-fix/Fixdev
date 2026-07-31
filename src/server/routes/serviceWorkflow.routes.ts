@@ -150,7 +150,7 @@ router.post(
   requestServicePart
 );
 router.post(
-  '/:id/cancel-part',
+  '/:id/cancel-part/:partId',
   requireServiceTicketTenant,
   requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'),
   cancelServicePart

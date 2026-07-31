@@ -198,7 +198,7 @@ export const approvePortalTicket = async (req: any, res: any) => {
       );
       const ticket = lock.rows[0];
       if (!ticket) throw { status: 404, message: 'Tiket tidak ditemukan atau token tidak valid.' };
-      if (ticket.status !== 'MENUGGU_APPROVAL') {
+      if (!['MENUGGU_APPROVAL', 'ESTIMATE_PENDING'].includes(ticket.status)) {
         throw { status: 409, message: 'Tiket tidak sedang menunggu persetujuan.' };
       }
        const approval = serviceApprovalTransition(approved);

@@ -73,11 +73,9 @@ import {
 const INTAKE_STATUSES: ServiceStatus[] = [
   ServiceStatus.DITERIMA,
   ServiceStatus.ANTRIAN,
-  ServiceStatus.DIAGNOSA,
 ];
 const WORK_STATUSES: ServiceStatus[] = [ServiceStatus.SEDANG_DIKERJAKAN, ServiceStatus.REWORK];
 const PART_STATUSES: ServiceStatus[] = [
-  ServiceStatus.DIAGNOSA,
   ServiceStatus.MENUGGU_APPROVAL,
   ServiceStatus.SEDANG_DIKERJAKAN,
   ServiceStatus.MENUGGU_SPAREPART,
@@ -169,7 +167,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     updateServiceStatus,
     videoRef,
      viewingServiceTicketId,
-     detailLoading,
+      storageLocations,
+      detailLoading,
       detailError,
       onDetailUpdated,
     } = props;
@@ -230,7 +229,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     return () => {
        document.removeEventListener('keydown', onKeyDown);
        stopCamera();
-       restoreFocusRef.current?.focus();
+        if (restoreFocusRef.current?.isConnected) restoreFocusRef.current.focus();
+        restoreFocusRef.current = null;
     };
   }, [viewingServiceTicketId, setViewingServiceTicketId]);
   const runAction = async (action: string, callback: () => Promise<void> | void) => {
@@ -246,18 +246,18 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   };
   if (!viewingServiceTicketId) return null;
   const ticket = tenantServices.find((s) => s.id === viewingServiceTicketId);
-   if (!ticket) {
-     return createPortal(
-       <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-900">
-           <h2 className="text-sm font-black text-slate-900 dark:text-white">{detailLoading ? 'Memuat tiket…' : 'Tiket tidak ditemukan'}</h2>
-           <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400" role={detailError ? 'alert' : undefined}>{detailError || (detailLoading ? 'Mengambil detail tiket terbaru.' : 'Data tiket sudah berubah atau tidak tersedia pada cabang aktif.')}</p>
-          <button type="button" onClick={closeDetail} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">Kembali ke daftar</button>
-        </div>
-      </div>,
-      document.body
-    );
-  }
+    if (detailLoading || detailError || !ticket) {
+      return createPortal(
+        <div role="dialog" aria-modal="true" aria-labelledby="service-detail-state-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+         <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-900">
+            <h2 id="service-detail-state-title" className="text-sm font-black text-slate-900 dark:text-white">{detailLoading ? 'Memuat tiket…' : 'Tiket tidak ditemukan'}</h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400" role={detailError ? 'alert' : undefined}>{detailError || (detailLoading ? 'Mengambil detail tiket terbaru.' : 'Data tiket sudah berubah atau tidak tersedia pada cabang aktif.')}</p>
+           <button type="button" onClick={closeDetail} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">Kembali ke daftar</button>
+         </div>
+       </div>,
+       document.body
+     );
+   }
   const currentUserPermissions: string[] = Array.isArray(props.currentUserPermissions)
     ? props.currentUserPermissions
     : Array.isArray(currentUser?.permissions)
@@ -272,6 +272,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     isSuperAdmin ||
     ['OWNER', 'ADMIN', 'TEKNISI'].includes(currentUser?.role || '') ||
     hasAnyPermission(currentUserPermissions, ['service', 'service_repair']);
+  const canApprove =
+    isSuperAdmin ||
+    ['OWNER', 'ADMIN'].includes(currentUser?.role || '') ||
+    hasAnyPermission(currentUserPermissions, ['service_approve']);
+  const canQc =
+    isSuperAdmin ||
+    ['OWNER', 'ADMIN', 'TEKNISI'].includes(currentUser?.role || '') ||
+    hasAnyPermission(currentUserPermissions, ['service_qc']);
   const isTicketLocked = LOCKED_STATUSES.includes(ticket.status);
   const editableIntake = INTAKE_STATUSES.includes(ticket.status) && canDiagnose;
   const canRequestParts = PART_STATUSES.includes(ticket.status) && canRepair;
@@ -319,8 +327,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-0 sm:p-4"
-      onClick={closeDetail}
-      role="dialog"
+       onClick={(event) => { if (event.target === event.currentTarget) closeDetail(); }}
+       role="dialog"
       aria-modal="true"
       aria-labelledby="service-detail-title"
     >
@@ -369,10 +377,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
             ))}
           </nav>
         </div>
-        {activeTab === 'summary' && <ServiceNextStepBanner status={ticket.status} />}
+         {activeTab === 'summary' && <ServiceNextStepBanner status={ticket.status} />}
 
-         <div id={`service-panel-${activeTab}`} role="tabpanel" aria-labelledby={`service-tab-${activeTab}`} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [6_button]:min-h-10 [6_input]:min-h-10 [6_select]:min-h-10">
-          {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
+          <div id={`service-panel-${activeTab}`} role="tabpanel" aria-labelledby={`service-tab-${activeTab}`} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [&_button]:min-h-10 [&_input]:min-h-10 [&_select]:min-h-10">
+           {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
           <div className={`space-y-3 border-slate-100 bg-gradient-to-b from-slate-50/80 to-zinc-100/50 px-3 py-3 dark:border-zinc-800 dark:from-zinc-900/80 dark:to-zinc-950/50 sm:px-5 ${['summary', 'intake', 'communication', 'history'].includes(activeTab) ? '' : 'hidden'}`}>
             {activeTab === 'summary' && <ServiceTicketSummary ticket={ticket} customer={customer} />}
 
@@ -436,7 +444,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                 {/* Storage Location Selector */}
                 {(() => {
-                  const storageLocs = getStorageLocations(activeTenantId || '').filter(
+                  const storageLocs = (storageLocations || getStorageLocations(activeTenantId || '')).filter(
                     (l) => l.type === 'UNIT_SERVICE'
                   );
                   return storageLocs.length > 0 ? (
@@ -500,14 +508,17 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500" />
                     Foto Masuk
                   </h4>
-                  <div className="relative rounded-xl overflow-hidden border border-white/30 shadow-sm">
-                    <img
-                       src={servicePhotoUrl(ticket.initialPhotos[0])}
-                       alt={`Kondisi awal ${ticket.deviceName}`}
-                       loading="lazy"
-                       decoding="async"
-                       className="w-full h-32 object-cover"
-                    />
+                  <div className="relative grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-white/30 shadow-sm">
+                    {ticket.initialPhotos.map((photo, index) => (
+                      <img
+                        key={`${photo}-${index}`}
+                        src={servicePhotoUrl(photo)}
+                        alt={`Kondisi awal ${ticket.deviceName} ${index + 1}`}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-32 object-cover"
+                      />
+                    ))}
                   </div>
                 </div>
               )}
@@ -786,7 +797,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                              className="w-full text-xs p-2 rounded-lg border border-slate-200"
                            >
                              <option value="">-- Pilih Gudang --</option>
-                             {warehouses.filter((warehouse) => warehouse.tenantId === currentTenantId && warehouse.branchId === ticket.branchId).map((warehouse) => (
+                             {warehouses.filter((warehouse) => warehouse.tenantId === effectiveTenantId && warehouse.branchId === (ticket.branchId || props.currentBranchId)).map((warehouse) => (
                                <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
                              ))}
                            </select>
@@ -956,81 +967,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                        <span className="w-1.5 h-4 bg-indigo-500 rounded-full" />
-                        Pre-Service (Kondisi Masuk)
-                      </div>
-                      <span className="text-xs font-mono font-bold text-accent bg-accent-lighter px-2 py-0.5 rounded">
-                        {ticket.initialChecklist
-                          ? ticket.initialChecklist.filter((x) => x.checked).length
-                          : 0}{' '}
-                        / {ticket.initialChecklist ? ticket.initialChecklist.length : 0} OK
-                      </span>
-                    </div>
-
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
-                      {ticket.initialChecklist && ticket.initialChecklist.length > 0 ? (
-                        ticket.initialChecklist.map((item, idx) => {
-                          return (
-                            <label
-                              key={idx}
-                              className={`flex items-center justify-between text-xs p-2 rounded-lg border select-none transition-all duration-200 ${
-                                item.checked
-                                  ? 'bg-emerald-50/40 border-emerald-100 text-emerald-800 font-medium'
-                                  : 'bg-white border-slate-200 text-slate-500'
-                              } ${editableIntake ? 'cursor-pointer hover:bg-slate-100' : 'cursor-not-allowed opacity-70'}`}
-                            >
-                              <div className="flex items-center gap-2 truncate">
-                                <input
-                                  type="checkbox"
-                                  checked={item.checked}
-                                  disabled={!editableIntake}
-                                  onChange={() => {
-                                    if (!editableIntake) return;
-                                    showToast('Checklist penerimaan hanya dapat diubah saat penerimaan tiket.', 'info');
-                                  }}
-                                  className="accent-emerald-600 h-3.5 w-3.5 rounded"
-                                />
-                                <span className="truncate">{item.name}</span>
-                              </div>
-                              <span
-                                className={`text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded-full ${
-                                  item.checked
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-rose-100 text-rose-800'
-                                }`}
-                              >
-                                {item.checked ? 'OK' : 'BELUM DIPERIKSA'}
-                              </span>
-                            </label>
-                          );
-                        })
-                      ) : (
-                        <div className="text-center py-6 text-slate-400 italic text-xs bg-white rounded-lg border border-dashed border-slate-200">
-                          <p>Checklist pre-service kosong.</p>
-                          <button
-                            disabled={!editableIntake}
-                            title={
-                              !editableIntake
-                                ? 'Checklist penerimaan dikunci setelah tahap diagnosis'
-                                : undefined
-                            }
-                            onClick={() => {
-                              if (!editableIntake) return;
-                               showToast('Checklist penerimaan dikelola saat pembuatan tiket.', 'info');
-                            }}
-                            className="mt-2 px-2.5 py-1 bg-accent text-white rounded text-xs font-bold hover:bg-accent-hover cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            Inisialisasi Checklist
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* QC is available only after the repair enters QC or returns for rework. */}
+                  <div className="grid grid-cols-1 gap-6">
+                   {/* QC is available only after the repair enters QC or returns for rework. */}
                   {ticket.status === 'QC' && (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -1171,9 +1109,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     </div>
                   )}
                 </div>
-
-
-              }
+              </div>}
 
               {/* QC Inline Form — inside ticket detail modal */}
               {activeTab === 'qc' && ticket.status === 'QC' && (
@@ -1203,10 +1139,13 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                    </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => void runAction('qc-rework', () => completeServiceQC(ticket.id, qcNotes, ticket.qcChecklist))}
+                       onClick={() => void runAction('qc-rework', async () => {
+                         const updated = await completeServiceQC(ticket.id, qcNotes, ticket.qcChecklist);
+                         if (updated) onDetailUpdated?.(updated);
+                       })}
                        disabled={
                          !!pendingAction ||
-                         !canRepair ||
+                         !canQc ||
                          qcNotes.trim().length < 2 ||
                          !ticket.qcChecklist?.length ||
                          ticket.qcChecklist.every((item) => item.passed)
@@ -1223,7 +1162,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     <button
                       disabled={
                          !!pendingAction ||
-                         !canRepair ||
+                         !canQc ||
                          qcNotes.trim().length < 2 ||
                         !ticket.qcChecklist?.length ||
                         ticket.qcChecklist.some((item) => !item.passed)
@@ -1237,7 +1176,10 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               ? 'Semua pemeriksaan QC harus lulus.'
                               : ''
                       }
-                      onClick={() => void runAction('qc-pass', () => completeServiceQC(ticket.id, qcNotes, ticket.qcChecklist))}
+                         onClick={() => void runAction('qc-pass', async () => {
+                           const updated = await completeServiceQC(ticket.id, qcNotes, ticket.qcChecklist);
+                           if (updated) onDetailUpdated?.(updated);
+                         })}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs py-2 rounded-lg cursor-pointer"
                     >
                       Lolos QC (Selesai)
@@ -1289,12 +1231,17 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               showToast('Catatan diagnosis wajib diisi.', 'error');
                               return;
                             }
-                            await addServiceDiagnostic(
-                                ticket.id,
-                                manualDiagNotes,
-                                estCost,
-                                ticket.partsRequested || ticket.partsUsed || []
-                              );
+                               if (!Number.isFinite(estCost) || estCost < 0) {
+                                 showToast('Estimasi biaya harus berupa angka tidak negatif.', 'error');
+                                 return;
+                               }
+                               const updated = await addServiceDiagnostic(
+                                 ticket.id,
+                                 manualDiagNotes,
+                                 estCost,
+                                 ticket.partsRequested || ticket.partsUsed || []
+                               );
+                               if (updated) onDetailUpdated?.(updated);
                               showToast(
                                 'Diagnosa teknis berhasil disimpan dan penawaran siap dikirim.',
                                 'success'
@@ -1362,13 +1309,16 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     <div className="space-y-2">
                       <button
                          disabled={!!pendingAction || !canRepair}
-                         onClick={() =>
-                           runAction('submit-estimate', () => updateServiceStatus(
+                           onClick={() =>
+                            void runAction('submit-estimate', async () => {
+                              const updated = await updateServiceStatus(
                              ticket.id,
                              ServiceStatus.MENUGGU_APPROVAL,
-                             'Teknisi merumuskan estimasi biaya dan menunggu persetujuan pelanggan.'
-                           ))
-                        }
+                              'Teknisi merumuskan estimasi biaya dan menunggu persetujuan pelanggan.'
+                              );
+                              if (updated) onDetailUpdated?.(updated);
+                            })
+                         }
                          className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Ajukan Estimasi Biaya ke Pelanggan
@@ -1414,14 +1364,20 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                       </button>
                       <div className="grid grid-cols-2 gap-2">
                         <button
-                          onClick={() => void runAction('approve-estimate', () => approveServiceEstimate(ticket.id, true))}
+                           onClick={() => void runAction('approve-estimate', async () => {
+                             const updated = await approveServiceEstimate(ticket.id, true);
+                             if (updated) onDetailUpdated?.(updated);
+                           })}
                           disabled={!!pendingAction}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                         >
                           Catat Disetujui Pelanggan
                         </button>
                         <button
-                          onClick={() => void runAction('reject-estimate', () => approveServiceEstimate(ticket.id, false))}
+                           onClick={() => void runAction('reject-estimate', async () => {
+                             const updated = await approveServiceEstimate(ticket.id, false);
+                             if (updated) onDetailUpdated?.(updated);
+                           })}
                           disabled={!!pendingAction}
                           className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                         >
@@ -1433,13 +1389,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
                   {ticket.status === ServiceStatus.SEDANG_DIKERJAKAN && (
                     <button
-                      onClick={() => void runAction('enter-qc', async () => {
-                         await updateServiceStatus(
+                         onClick={() => void runAction('enter-qc', async () => {
+                          const updated = await updateServiceStatus(
                            ticket.id,
                            ServiceStatus.QC,
-                           'Unit masuk pemeriksaan quality control.'
-                         );
-                         setQcNotes(ticket.qcNotes ?? '');
+                            'Unit masuk pemeriksaan quality control.'
+                          );
+                          if (updated) onDetailUpdated?.(updated);
+                          setQcNotes(updated?.qcNotes ?? ticket.qcNotes ?? '');
                        })}
                       className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center flex items-center justify-center gap-1.5"
                     >
@@ -1708,11 +1665,12 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                                 taxRate: tenantTaxRate,
 };
 
-                              await handoverServiceDevice(
-                                  ticket.id,
-                                  handoverPaymentMethod,
-                                  detailsObj
-                                );
+                               const updated = await handoverServiceDevice(
+                                   ticket.id,
+                                   handoverPaymentMethod,
+                                   detailsObj
+                                 );
+                               if (updated) onDetailUpdated?.(updated);
                                 // Only reset form after the API succeeds.
                                 setHandoverRefNo('');
                                 setHandoverProofName('');

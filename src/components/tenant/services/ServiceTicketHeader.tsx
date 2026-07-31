@@ -47,22 +47,25 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            onClick={onPrintSpk}
+<button
+             type="button"
+             onClick={onPrintSpk}
             className="px-3 py-1.5 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border border-slate-200 dark:border-zinc-700"
           >
             <Printer className="w-3.5 h-3.5" /> SPK
           </button>
           {['SELESAI', 'SIAP_DIAMBIL', 'DIAMBIL'].includes(ticket.status) && (
             <>
-              <button
-                onClick={onPrintInvoice}
+<button
+                 type="button"
+                 onClick={onPrintInvoice}
                 className="px-3 py-1.5 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border border-slate-200 dark:border-zinc-700"
               >
                 <FileText className="w-3.5 h-3.5" /> Invoice
               </button>
-              <button
-                onClick={onPrintWarranty}
+<button
+                 type="button"
+                 onClick={onPrintWarranty}
                 className="px-3 py-1.5 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border border-slate-200 dark:border-zinc-700"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> Garansi
