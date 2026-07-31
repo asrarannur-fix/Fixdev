@@ -181,6 +181,14 @@ const requireOpenShift = (action: string): boolean => {
       return;
     }
 
+    // Validasi total bayar cukup menutupi grandTotal (termasuk split)
+    if (totalPaid < grandTotal - 0.5) {
+      showToast(
+        `Pembayaran kurang. Total tagihan Rp ${grandTotal.toLocaleString('id-ID')}, dibayar Rp ${totalPaid.toLocaleString('id-ID')}.`,
+        'error'
+      );
+      return;
+    }
     if (voucherCode.trim()) {
       details = `VOUCHER:${voucherCode.trim()}`;
     }
@@ -189,6 +197,12 @@ const requireOpenShift = (action: string): boolean => {
         splitMethod: splitPaymentMethod,
         splitNominal: Number(splitAmount) || 0,
       });
+    }
+    // Voucher deprecation guard: backend belum apply voucher discount,
+    // jadi beri tahu kasir bahwa potongan voucher perlu verifikasi manual.
+    if (voucherCode.trim()) {
+      showToast('Voucher terdeteksi — pastikan potongan sudah disetujui kasir.',
+        'warning');
     }
     handlePOSCheckout(details, totalPaid);
     setSplitEnabled(false);
@@ -528,6 +542,22 @@ const requireOpenShift = (action: string): boolean => {
                       ).toLocaleString()}
                     </span>
                   </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-600">
+                      <span>Diskon</span>
+                      <span className="font-mono">
+                        - Rp {discountAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {effectiveDeposit > 0 && (
+                    <div className="flex justify-between text-indigo-600">
+                      <span>Deposit / Store Credit</span>
+                      <span className="font-mono">
+                        - Rp {effectiveDeposit.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-bold text-slate-800 text-sm border-t border-dashed border-slate-200 pt-2">
                     <span>Total Bayar</span>
                     <span className="font-mono text-blue-600">
