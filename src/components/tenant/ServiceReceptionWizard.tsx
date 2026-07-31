@@ -68,7 +68,6 @@ import {
 
 export const ServiceReceptionWizard: React.FC<any> = (props) => {
   const {
-    receptionProgress,
     receptionFormRef,
     handleCreateService,
     receptionErrors,
@@ -130,8 +129,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     autoAssignReason,
     newSrvStorageLocId,
     setNewSrvStorageLocId,
-     storageLocations = [],
-     activeTenantId,
+     storageLocations,
+      activeTenantId,
     currentBranchId,
     newSrvChecklist,
     setNewSrvChecklist,
@@ -166,13 +165,48 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     fieldError(k) ? 'figma-input border-red-400' : 'figma-input';
   const FieldError = ({ name }: { name: string }) =>
     fieldError(name) ? (
-      <p id={`reception-error-${name}`} role="alert" className="text-[10px] font-medium text-rose-600 mt-1">{fieldError(name)}</p>
+      <p id={`reception-error-${name}`} role="alert" className="mt-1 text-xs font-medium text-rose-600">{fieldError(name)}</p>
     ) : null;
+  const steps = ['Pelanggan', 'Unit', 'Pemeriksaan', 'Konfirmasi'];
+  const [currentStep, setCurrentStep] = React.useState(0);
+  const validateStep = (step: number) => {
+    if (step === 0 && !selectedReceptionCustomer && !(newSrvCustName.trim() && newSrvCustPhone.trim())) {
+      showToast('Pilih pelanggan atau isi data pelanggan baru.', 'error');
+      return false;
+    }
+    if (step === 1 && !newSrvDevice.trim()) {
+      showToast('Nama perangkat wajib diisi.', 'error');
+      return false;
+    }
+    if (step === 2 && !newSrvComplaint.trim()) {
+      showToast('Keluhan perangkat wajib diisi.', 'error');
+      return false;
+    }
+    return true;
+  };
+  const handleWizardSubmit = (event: React.FormEvent) => {
+    if (currentStep < steps.length - 1) {
+      event.preventDefault();
+      if (validateStep(currentStep)) setCurrentStep((step) => step + 1);
+    }
+  };
 
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-white/60 rounded-3xl ring-2 ring-accent/20 overflow-hidden">
-      <form ref={receptionFormRef} onSubmit={handleCreateService} className="p-3 sm:p-4 space-y-3">
-        <div className="flex items-center gap-3">
+    <div className="mx-auto w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-sm">
+       <form ref={receptionFormRef} onSubmit={(event) => currentStep === steps.length - 1 ? handleCreateService(event) : handleWizardSubmit(event)} className="space-y-4 p-3 [6_button]:min-h-10 [6_input]:min-h-10 [6_select]:min-h-10 sm:p-5 dark:bg-zinc-950 dark:text-zinc-100">
+        <div className="border-b border-slate-200 bg-white px-3 py-3 sm:px-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-white"><ClipboardList className="h-5 w-5" /></div>
+              <div><span className="text-sm font-bold text-slate-800">Penerimaan Servis</span><p className="text-xs text-slate-500">Langkah {currentStep + 1} dari {steps.length}: {steps[currentStep]}</p></div>
+            </div>
+            <span className="text-xs font-semibold text-accent">{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>
+          </div>
+          <div className="mt-3 flex gap-1" aria-label="Progress penerimaan">
+            {steps.map((step, index) => <div key={step} className="flex-1"><div className={`h-1.5 rounded-full ${index <= currentStep ? 'bg-accent' : 'bg-slate-200'}`} /><span className="mt-1 hidden text-[12px] text-slate-500 sm:block">{step}</span></div>)}
+          </div>
+        </div>
+        <div className="hidden">
           <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-accent text-white shadow-sm shadow-accent/15">
             <ClipboardList className="w-5 h-5" />
           </div>
@@ -183,29 +217,29 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
         </div>
         {Object.keys(receptionErrors).length > 0 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">
+            <p className="text-xs font-bold uppercase tracking-wider text-rose-700">
               Data wajib belum lengkap
             </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-[11px] text-rose-700">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-rose-700">
               {Object.values(receptionErrors).map((error) => (
                 <li key={String(error)}>{String(error)}</li>
               ))}
             </ul>
           </div>
         )}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_minmax(280px,340px)] gap-3 items-start">
-          {/* Left Column: Device & Customer Info */}
-          <div className="space-y-3 figma-card p-3.5">
-            <div className="figma-sub p-2.5">
-              <div className="figma-head">
-                <span className="figma-chip"><User /></span>
+          <div className="flex flex-col gap-3">
+          {currentStep === 0 && (
+            <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+              <div className="rounded-lg bg-slate-50 p-3">
+              <div className="mb-3 hidden">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm"><User className="h-4 w-4" /></span>
               </div>
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
                     Pelanggan <span className="text-rose-500">*</span>
                   </label>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Cari pelanggan lama atau daftarkan pelanggan baru.
                   </p>
                 </div>
@@ -217,7 +251,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       setCustQuery('');
                       setShowNewSrvCustForm(true);
                     }}
-                    className="text-[10px] font-bold text-accent hover:text-indigo-900"
+                    className="text-xs font-bold text-accent hover:text-indigo-900"
                   >
                     Ganti pelanggan
                   </button>
@@ -244,7 +278,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       </p>
                     </div>
                   </div>
-                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                  <span className="shrink-0 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
                     <CheckCircle2 className="w-3 h-3" /> Terpilih
                   </span>
                 </div>
@@ -253,10 +287,13 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   <div className="relative">
                     <div className="relative">
                       <SearchIcon className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={custQuery}
-                        placeholder="Cari nama / no. WhatsApp pelanggan..."
+                       <input
+                         type="text"
+                         value={custQuery}
+                         aria-label="Cari pelanggan"
+                         aria-expanded={custOpen}
+                         aria-controls="reception-customer-results"
+                         placeholder="Cari nama atau nomor WhatsApp pelanggan"
                         onFocus={() => setCustOpen(true)}
                         onBlur={() => setTimeout(() => setCustOpen(false), 150)}
                         onChange={(e) => {
@@ -267,7 +304,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       />
                     </div>
                     {custOpen && (
-                      <div className="absolute z-30 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-md shadow-slate-900/5">
+                       <div id="reception-customer-results" role="listbox" className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-md shadow-slate-900/5 dark:border-zinc-700 dark:bg-zinc-900">
                         {customers
                           .filter((c) =>
                             `${c.name} ${c.phone}`.toLowerCase().includes(custQuery.toLowerCase())
@@ -284,14 +321,14 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                                 setCustQuery(`${c.name} (${c.phone})`);
                                 setCustOpen(false);
                               }}
-                              className={`w-full text-left px-3 py-2 text-[11px] hover:bg-slate-50 border-b border-slate-50 flex items-center justify-between gap-2 ${
+                              className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-50 flex items-center justify-between gap-2 ${
                                 newSrvCustomer === c.id ? 'bg-accent-lighter/60' : ''
                               }`}
                             >
                               <span className="font-semibold text-slate-700 truncate">
                                 {c.name}
                               </span>
-                              <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                              <span className="font-mono text-xs text-slate-400 shrink-0">
                                 {c.phone}
                               </span>
                             </button>
@@ -311,7 +348,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                                 setShowNewSrvCustForm(true);
                                 setCustOpen(false);
                               }}
-                              className="w-full text-left px-3 py-2 text-[11px] font-bold text-accent hover:bg-accent-lighter border-b border-slate-100 flex items-center gap-1.5"
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-accent hover:bg-accent-lighter border-b border-slate-100 flex items-center gap-1.5"
                             >
                               <PlusCircle className="w-3.5 h-3.5" /> Tambah pelanggan baru: "
                               {custQuery.trim()}"
@@ -321,7 +358,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                           `${c.name} ${c.phone}`.toLowerCase().includes(custQuery.toLowerCase())
                         ).length === 0 &&
                           !custQuery.trim() && (
-                            <p className="px-3 py-2 text-[11px] text-slate-400">
+                            <p className="px-3 py-2 text-xs text-slate-400">
                               Ketik nama atau no. WhatsApp...
                             </p>
                           )}
@@ -334,7 +371,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   {showNewSrvCustForm && !newSrvCustomer && (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-indigo-100 bg-white p-3">
                       <div className="relative">
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                           Nama Pelanggan Baru *
                         </label>
                         <input
@@ -351,7 +388,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <FieldError name="customerName" />
                       </div>
                       <div className="relative">
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                           Nomor WhatsApp *
                         </label>
                         <input
@@ -371,7 +408,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <FieldError name="customerPhone" />
                       </div>
                       <div className="relative">
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                           Email
                         </label>
                         <input
@@ -384,7 +421,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                           Alamat
                         </label>
                         <input
@@ -399,7 +436,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   )}
                   {newSrvCustPhone && (
                     <p
-                      className={`mt-2 text-[10px] font-medium ${
+                      className={`mt-2 text-xs font-medium ${
                         isValidIndonesianPhone(newSrvCustPhone)
                           ? 'text-emerald-600'
                           : 'text-rose-600'
@@ -416,7 +453,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                   Kategori Perangkat
                 </label>
                 <select
@@ -435,7 +472,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                   Estimasi Selesai
                 </label>
                 <input
@@ -449,7 +486,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="relative">
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                   Nama Perangkat
                 </label>
                 <input
@@ -464,7 +501,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 <FieldError name="deviceName" />
               </div>
               <div className="relative">
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                   Brand / Model
                 </label>
                 <input
@@ -493,7 +530,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 <div className="px-4 pb-4 pt-2 space-y-3 border-t border-slate-200">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                         Serial Number (SN)
                       </label>
                       <input
@@ -505,7 +542,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                         Masa Garansi Bawaan
                       </label>
                       <select
@@ -527,7 +564,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
               <div>
-                <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                <label className="block text-xs font-mono text-slate-500 uppercase mb-1">
                   Uang Muka / DP (Rp)
                 </label>
                 <input
@@ -566,7 +603,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   />
                   <span>Hanya Cek / Estimasi Dulu</span>
                 </label>
-                <p className="text-[9px] text-slate-400 pl-6 mt-0.5">
+                <p className="text-xs text-slate-400 pl-6 mt-0.5">
                   Biaya ditentukan setelah diagnosa teknisi.
                 </p>
               </div>
@@ -574,7 +611,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                   Kondisi Fisik Perangkat
                 </label>
                 <select
@@ -590,28 +627,32 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                   PIN / Pola / Password Kunci Layar
                 </label>
                 <input
                   type={showScreenLock ? 'text' : 'password'}
-                  placeholder="PIN / Pola Layar (Opsional)"
+                  placeholder="Password tidak disimpan permanen"
                   value={newSrvScreenLock}
                   onChange={(e) => setNewSrvScreenLock(e.target.value)}
                   className="w-full text-xs px-3 py-2 pr-16 border border-slate-200 rounded-lg outline-none focus:border-accent transition-all font-mono font-medium"
+                  autoComplete="new-password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowScreenLock((visible) => !visible)}
-                  className="mt-1 text-[10px] font-semibold text-accent hover:text-indigo-800"
-                >
-                  {showScreenLock ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
-                </button>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-[10px] text-slate-400">PIN/Password hanya untuk perbaikan, otomatis terhapus setelah unit selesai</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowScreenLock((visible) => !visible)}
+                    className="text-xs font-semibold text-accent hover:text-indigo-800"
+                  >
+                    {showScreenLock ? 'Sembunyikan' : 'Tampilkan'}
+                  </button>
+                </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
+              <label className="block text-xs font-semibold text-slate-500 uppercase mb-0.5">
                 Keluhan Kerusakan / Kendala Perangkat
               </label>
               <textarea
@@ -642,7 +683,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               </button>
               {showAdvancedSpecs && (
                 <div className="px-4 pb-4 space-y-2.5 border-t border-slate-200 pt-3">
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-xs text-slate-400">
                     Lengkapi jika spesifikasi unit diketahui saat penerimaan.
                   </p>
                   <div className="grid grid-cols-2 gap-3 text-xs">
@@ -759,7 +800,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
 
                       return fields.map((f) => (
                         <div key={f.key} className="space-y-1">
-                          <label className="block text-[9.5px] font-semibold text-slate-500 uppercase">
+                          <label className="block text-xs font-semibold text-slate-500 uppercase">
                             {f.label}
                           </label>
                           <input
@@ -782,18 +823,18 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               )}
             </div>
 
-            <div className="space-y-2 figma-sub p-3">
-              <div className="figma-head">
-                <span className="figma-chip"><Wrench /></span>
+            <div className="rounded-lg bg-slate-50 p-3 space-y-3">
+              <div className="mb-3 hidden">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm"><Wrench className="h-4 w-4" /></span>
               </div>
               <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-semibold text-accent">
+                <label className="block text-xs font-semibold text-accent">
                   Tugaskan Teknisi
                 </label>
                 <button
                   type="button"
                   onClick={runAutoAssign}
-                  className="px-2.5 py-1 bg-accent hover:bg-accent-hover text-white text-[9px] font-bold font-mono uppercase rounded flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+                  className="px-2.5 py-1 bg-accent hover:bg-accent-hover text-white text-xs font-bold font-mono uppercase rounded flex items-center gap-1 cursor-pointer transition-all shadow-xs"
                 >
                   <CheckCircle className="w-2.5 h-2.5" /> Auto-Assign
                 </button>
@@ -814,13 +855,13 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 ))}
               </select>
               {autoAssignReason && (
-                <div className="text-[9.5px] text-indigo-800 leading-relaxed bg-white border border-indigo-200 p-2 rounded-lg font-medium shadow-xs">
+                <div className="text-xs text-indigo-800 leading-relaxed bg-white border border-indigo-200 p-2 rounded-lg font-medium shadow-xs">
                   {autoAssignReason}
                 </div>
               )}
 
               <div className="mt-3 pt-3 border-t border-indigo-100">
-                <label className="block text-[11px] font-semibold text-amber-800 mb-1">
+                <label className="block text-xs font-semibold text-amber-800 mb-1">
                   Lokasi Rak Unit
                 </label>
                 <select
@@ -829,8 +870,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   className="w-full text-xs px-3 py-2 border border-amber-200 rounded-lg bg-white outline-none focus:border-accent transition-all font-medium"
                 >
                   <option value="">-- Tentukan setelah penerimaan --</option>
-                   {([] as any[])
-                     .filter(
+                   {(storageLocations || [])
+                      .filter(
                       (loc) =>
                         loc.type === 'UNIT_SERVICE' &&
                         (!currentBranchId || loc.branchId === currentBranchId)
@@ -841,25 +882,26 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       </option>
                     ))}
                 </select>
-                <p className="text-[9.5px] text-amber-700 mt-1">
+                <p className="text-xs text-amber-700 mt-1">
                   Pilih rak/locker untuk unit fisik. Bisa diubah dari detail tiket.
                 </p>
               </div>
             </div>
-          </div>
+            </div>
+          )}
 
-          {/* Right Column: Checklist, Photos, and Outsourcing */}
-          <div className="space-y-2 figma-card p-3 xl:sticky xl:top-20">
-            <div className="figma-head">
-              <span className="figma-chip"><ListChecks /></span>
+          {currentStep === 2 && (
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="mb-3 hidden">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm"><ListChecks className="h-4 w-4" /></span>
             </div>
             {/* Checklist */}
-            <div className="figma-sub p-3 space-y-2.5">
+            <div className="rounded-lg bg-slate-50 p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-[11px] text-slate-600">
+                <p className="font-semibold text-xs text-slate-600">
                   Checklist Uji Fungsi & Kondisi Masuk:
                 </p>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-accent-lighter text-accent">
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-accent-lighter text-accent">
                   {Object.values(newSrvChecklist).filter(Boolean).length} /{' '}
                   {Object.keys(newSrvChecklist).length} OK
                 </span>
@@ -876,7 +918,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     });
                     setNewSrvChecklist(updated);
                   }}
-                  className="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-[10px] font-bold text-accent rounded cursor-pointer transition-all"
+                  className="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-accent rounded cursor-pointer transition-all"
                 >
                   ✓ Pilih Semua
                 </button>
@@ -889,13 +931,13 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     });
                     setNewSrvChecklist(updated);
                   }}
-                  className="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-[10px] font-bold text-rose-600 rounded cursor-pointer transition-all"
+                  className="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-rose-600 rounded cursor-pointer transition-all"
                 >
                   ✕ Kosongkan Semua
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] max-h-60 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                 {Object.entries(newSrvChecklist).map(([name, checked]) => (
                   <label
                     key={name}
@@ -923,11 +965,11 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Accessories Left Selection */}
-            <div className="figma-sub p-3 space-y-2.5">
-              <p className="font-semibold text-[11px] text-slate-600">
+            <div className="rounded-lg bg-slate-50 p-3 space-y-3">
+              <p className="font-semibold text-xs text-slate-600">
                 Aksesoris Titipan / Bawaan:
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                 {(
                   CATEGORY_CONFIGS[newSrvCategory as keyof typeof CATEGORY_CONFIGS] ||
                   CATEGORY_CONFIGS.Other
@@ -960,7 +1002,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 })}
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
+                <label className="block text-xs font-semibold text-slate-600 mb-0.5">
                   Aksesoris Tambahan Lainnya (Opsional)
                 </label>
                 <input
@@ -985,7 +1027,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     <Camera className="w-4 h-4 text-accent" />
                     <span>Foto Kondisi Unit</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     {newSrvCapturedConditions.length} foto tersimpan
                   </p>
                 </div>
@@ -995,13 +1037,13 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               </button>
               {showDocumentation && (
                 <div className="px-4 pb-4 space-y-3.5 border-t border-slate-100 pt-3">
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-xs text-slate-400">
                     Ambil foto kondisi kerusakan dengan kategori dan cap waktu.
                   </p>
 
                   {/* Select Photo Category */}
                   <div className="space-y-1">
-                    <label className="block text-[9.5px] font-semibold text-slate-500 uppercase">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase">
                       Kategori Kerusakan / Bagian
                     </label>
                     <select
@@ -1031,7 +1073,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <button
                           type="button"
                           onClick={capturePhoto}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                         >
                           <Camera className="w-3.5 h-3.5" /> Jepret Foto
                         </button>
@@ -1040,7 +1082,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                           onClick={() =>
                             showToast('Kamera tidak tersedia; gunakan upload foto nyata.', 'error')
                           }
-                          className="bg-slate-500 hover:bg-slate-600 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                          className="bg-slate-500 hover:bg-slate-600 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                           title="Demo dinonaktifkan di produksi"
                         >
                           <AlertCircle className="w-3.5 h-3.5" /> Demo dinonaktifkan
@@ -1048,7 +1090,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         <button
                           type="button"
                           onClick={stopCamera}
-                          className="border border-slate-700 hover:bg-slate-800 text-slate-300 text-[10px] font-semibold px-2 py-1.5 rounded-lg cursor-pointer"
+                          className="border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold px-2 py-1.5 rounded-lg cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" /> Tutup
                         </button>
@@ -1067,10 +1109,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                   {/* Captured Photos Gallery */}
                   {newSrvCapturedConditions.length > 0 && (
                     <div className="space-y-1.5">
-                      <label className="block text-[9px] font-semibold text-slate-400 uppercase">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase">
                         Foto Terlampir ({newSrvCapturedConditions.length})
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {newSrvCapturedConditions.map((cap) => (
                           <div
                             key={cap.id}
@@ -1082,10 +1124,10 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-x-0 bottom-0 bg-black/70 p-1 flex items-center justify-between">
-                              <span className="text-[7.5px] font-mono font-bold text-white uppercase truncate max-w-[100px]">
+                              <span className="text-xs font-mono font-bold text-white uppercase truncate max-w-[100px]">
                                 {cap.category}
                               </span>
-                              <span className="text-[7px] font-mono text-slate-300">
+                              <span className="text-xs font-mono text-slate-300">
                                 {cap.timestamp}
                               </span>
                             </div>
@@ -1110,7 +1152,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
             </div>
 
             {/* Outsourcing Section */}
-            <div className="figma-sub p-3 space-y-3">
+            <div className="rounded-lg bg-slate-50 p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -1123,7 +1165,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     Subkontrak ke Pihak Luar (Outsourced)?
                   </span>
                 </label>
-                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[8px] font-mono font-bold uppercase">
+                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-xs font-mono font-bold uppercase">
                   MAKLOON
                 </span>
               </div>
@@ -1131,7 +1173,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               {newSrvIsOutsourced && (
                 <div className="grid grid-cols-2 gap-3 pt-1 animate-fadeIn">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
+                    <label className="block text-xs font-semibold text-slate-600 mb-0.5">
                       Nama Vendor Rekanan
                     </label>
                     <input
@@ -1144,7 +1186,7 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
+                    <label className="block text-xs font-semibold text-slate-600 mb-0.5">
                       Estimasi Biaya Vendor (HPP)
                     </label>
                     <input
@@ -1160,20 +1202,30 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
               )}
             </div>
           </div>
+          )}
+          {currentStep === 3 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 space-y-2">
+              <p className="font-bold text-slate-800">Konfirmasi penerimaan</p>
+              <p>Pelanggan: {selectedReceptionCustomer?.name || newSrvCustName}</p>
+              <p>Unit: {newSrvDevice || '-'}</p>
+              <p>Keluhan: {newSrvComplaint || '-'}</p>
+              <p>PIN/password tidak tersimpan di draft perangkat ini.</p>
+            </div>
+          )}
         </div>
 
-        <div className="sticky bottom-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 bg-white/90 p-3 sm:px-4 rounded-2xl shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
-          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+        <div className="flex flex-col justify-between gap-3 rounded-b-2xl border-t border-slate-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:px-4">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
             <Save className="w-3.5 h-3.5 text-emerald-600" />
             <span>Perubahan tersimpan otomatis sebagai draft di perangkat ini.</span>
           </div>
           <div className="flex justify-end gap-2.5">
             <button
               type="button"
-              onClick={() => setActiveSubTab('list')}
+              onClick={() => currentStep > 0 ? setCurrentStep((step) => step - 1) : setActiveSubTab('list')}
               className="px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer transition-all"
             >
-              Batal
+              {currentStep > 0 ? 'Kembali' : 'Batal'}
             </button>
             <button
               type="submit"
@@ -1184,6 +1236,8 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" /> Menyimpan...
                 </>
+              ) : currentStep < steps.length - 1 ? (
+                <>Berikutnya <ChevronRight className="w-4 h-4" /></>
               ) : (
                 <>
                   <PlusCircle className="w-4 h-4" /> Daftarkan Unit & Buat SPK

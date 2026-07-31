@@ -38,21 +38,20 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
   const recipientPhone = normalizeIndonesianPhone(customer?.phone || '');
 
   return (
-   <div className="relative overflow-hidden border border-white/20 dark:border-zinc-800/40 rounded-2xl p-4 space-y-3.5 shadow-md">
-    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-green-500/5 to-teal-500/5" />
+   <div className="relative overflow-hidden bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3.5">
     <div className="relative flex items-center justify-between">
-      <h4 className="font-black text-[10px] text-emerald-700 dark:text-emerald-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
-        <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-green-500" />
+      <h4 className="font-black text-xs text-emerald-700 dark:text-emerald-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
+        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
         WhatsApp Customer Hub
       </h4>
-      <span className="text-[9px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full">
+      <span className="text-xs font-mono font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full">
         Manual Mode
       </span>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       <div className="space-y-1">
-        <label className="block text-[10px] font-mono text-slate-400 uppercase">Pilih Template Pesan</label>
+        <label className="block text-xs font-mono text-slate-400 uppercase">Pilih Template Pesan</label>
         <select
           onChange={(e) => {
             const val = e.target.value;
@@ -73,7 +72,7 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
             }
             setCustomWaMessageText(txt);
           }}
-          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent font-medium"
+          className="w-full text-xs px-2.5 py-1.5 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-300 rounded-md outline-none focus:border-accent font-medium"
         >
           <option value="intake">✓ Tanda Terima Unit Baru (Intake)</option>
           <option value="diagnose">✓ Diagnosa Selesai & Estimasi Biaya</option>
@@ -83,12 +82,12 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
       </div>
 
       <div className="md:col-span-2 space-y-1">
-        <label className="block text-[10px] font-mono text-slate-400 uppercase">Isi Pesan WhatsApp (Dapat Diedit Manual)</label>
+        <label className="block text-xs font-mono text-slate-400 uppercase">Isi Pesan WhatsApp (Dapat Diedit Manual)</label>
         <textarea
           rows={4}
           value={message}
           onChange={(e) => setCustomWaMessageText(e.target.value)}
-          className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-accent font-medium leading-relaxed font-mono"
+          className="w-full text-xs p-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-900 dark:text-zinc-300 rounded-lg outline-none focus:bg-white dark:focus:bg-zinc-800 focus:border-accent font-medium leading-relaxed font-mono"
         />
       </div>
     </div>

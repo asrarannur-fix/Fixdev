@@ -46,9 +46,9 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
 
   return (
     <div className="p-2.5 bg-white border border-slate-100 rounded-xl space-y-2 shadow-xs">
-      <h4 id={`service-camera-${ticket?.id || 'ticket'}`} className="font-bold text-[10px] text-slate-500 uppercase font-mono tracking-wider flex items-center justify-between">
+      <h4 id={`service-camera-${ticket?.id || 'ticket'}`} className="font-bold text-xs text-slate-500 uppercase font-mono tracking-wider flex items-center justify-between">
         <span>Foto ({capturedConditions?.length || 0})</span>
-        <span className="text-[8px] font-mono font-bold bg-amber-50 text-amber-700 border border-amber-100 px-1 py-0.5 rounded-md">
+        <span className="text-xs font-mono font-bold bg-amber-50 text-amber-700 border border-amber-100 px-1 py-0.5 rounded-md">
           Live Capture
         </span>
       </h4>
@@ -71,12 +71,12 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
           ))}
         </div>
       ) : (
-        <p className="text-[10px] text-slate-400 italic text-center">
+        <p className="text-xs text-slate-400 italic text-center">
           Belum ada foto rekam kondisi terlampir.
         </p>
       )}
 
-      {error && <p role="alert" className="text-[10px] text-rose-600">{error}</p>}
+      {error && <p role="alert" className="text-xs text-rose-600">{error}</p>}
       {/* Live Workstation Camera Trigger */}
       {cameraActive ? (
         <div className="border border-indigo-100 rounded-lg p-2 bg-slate-900 space-y-2" aria-labelledby={`service-camera-${ticket?.id || 'ticket'}`}>
@@ -92,7 +92,7 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
               type="button"
               onClick={() => void capture()}
               disabled={pending}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold py-1 rounded cursor-pointer"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1 rounded cursor-pointer"
             >
               Jepret
             </button>

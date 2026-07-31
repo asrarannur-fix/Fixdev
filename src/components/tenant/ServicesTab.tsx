@@ -506,6 +506,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     activeTenantId,
     currentTenantId,
     currentBranchId,
+    currentUserId: currentUser?.id,
     tenantObj,
     addServiceTicket,
     apiFetch,
@@ -727,7 +728,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   };
   return (
     <>
-      <div className="space-y-6" id="services-pane">
+      <div className="mx-auto w-full max-w-screen-2xl space-y-6" id="services-pane">
         {/* Subtab: LIST OF SERVICES */}
         {(localSubTab === 'list' || viewingServiceTicketId) && (
           <>

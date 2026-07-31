@@ -14,6 +14,7 @@ interface UseServiceReceptionDeps {
   activeTenantId: string | undefined;
   currentTenantId: string | undefined;
   currentBranchId: string | undefined;
+  currentUserId?: string;
   tenantObj: any;
   addServiceTicket: (t: any) => Promise<any>;
   apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -38,6 +39,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     activeTenantId,
     currentTenantId,
     currentBranchId,
+    currentUserId,
     tenantObj,
     addServiceTicket,
     apiFetch,

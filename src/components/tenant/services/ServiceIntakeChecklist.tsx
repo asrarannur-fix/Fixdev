@@ -39,7 +39,7 @@ export const ServiceIntakeChecklist: React.FC<ServiceIntakeChecklistProps> = ({
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/40 p-3.5 shadow-md dark:border-zinc-800/40">
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-teal-500/5 to-emerald-500/5" />
-      <h4 className="relative flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
+      <h4 className="relative flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
         <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500" />
         Checklist Masuk
       </h4>

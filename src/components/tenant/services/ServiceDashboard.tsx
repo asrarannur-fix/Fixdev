@@ -169,7 +169,7 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
           >
             <div className="flex items-center gap-2 mb-2">
               <Icon className={`w-4 h-4 ${color}`} />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {label}
               </span>
             </div>
@@ -210,7 +210,7 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
               return (
                 <div key={status} className="flex items-center gap-3">
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[status] ?? 'bg-slate-100 text-slate-600'}`}
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[status] ?? 'bg-slate-100 text-slate-600'}`}
                   >
                     {status}
                   </span>
@@ -242,7 +242,7 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
                     {count}
                   </span>
                 </div>
-                <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                <span className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
                   {level}
                 </span>
               </div>
@@ -261,7 +261,7 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
             <div className="text-2xl font-black text-accent">
               {total > 0 ? Math.round((completed / total) * 100) : 0}%
             </div>
-            <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
               Selesai
             </div>
           </div>
@@ -269,7 +269,7 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
             <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
               {total > 0 ? Math.round((open / total) * 100) : 0}%
             </div>
-            <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
               Terbuka
             </div>
           </div>
@@ -277,7 +277,7 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
             <div className="text-2xl font-black text-slate-700 dark:text-slate-300">
               {avgCost.toLocaleString('id-ID')}
             </div>
-            <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
               Est. Biaya Rata-rata
             </div>
           </div>
@@ -285,7 +285,7 @@ export const ServiceDashboard: React.FC<ServiceDashboardProps> = ({ tickets }) =
             <div className="text-2xl font-black text-violet-700 dark:text-violet-400">
               {warrantyClaims}
             </div>
-            <div className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mt-1">
               Klaim Garansi
             </div>
           </div>

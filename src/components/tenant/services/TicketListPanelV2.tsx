@@ -116,7 +116,7 @@ export const TicketListPanelV2: React.FC<{
                 </td>
                 <td className="px-6 py-4">
                   {ticket.priority && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
                       {ticket.priority}
                     </span>
                   )}

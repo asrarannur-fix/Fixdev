@@ -101,7 +101,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
       </div>
 
       <div className="space-y-1">
-        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
           Metode Pembayaran Pelunasan
         </label>
         <select
@@ -132,7 +132,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
       {handoverPaymentMethod === PaymentMethod.TEMPO && (
         <div className="space-y-2.5 animate-fadeIn">
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
               Termin Jatuh Tempo (Hari)
             </label>
             <select
@@ -147,7 +147,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
               <option value="60">60 Hari</option>
             </select>
           </div>
-          <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg text-[11px] text-amber-800 leading-relaxed shadow-3xs">
+          <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed shadow-3xs">
             📌 <strong>Informasi Piutang & Pinjaman</strong>: Penyerahan dengan
             status tempo akan mencatat piutang customer sebesar{" "}
             <strong>Rp {totalAmt.toLocaleString()}</strong> ke akun{" "}
@@ -161,7 +161,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
       {isRefOrProofRequired && (
         <div className="space-y-3 border-t border-slate-200/80 pt-3 animate-fadeIn">
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
               Nomor Referensi Transaksi <span className="text-rose-500 font-bold">*</span>
             </label>
             <input
@@ -175,7 +175,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
               Bukti Transfer (Upload / Seret File){" "}
               <span className="text-rose-500 font-bold">*</span>
             </label>
@@ -210,10 +210,10 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
                     if (file) setHandoverProofName(file.name);
                   }}
                 />
-                <p className="text-[11px] text-slate-500 font-medium">
+                <p className="text-xs text-slate-500 font-medium">
                   Klik untuk memilih atau seret file bukti transfer
                 </p>
-                <p className="text-[9px] text-slate-400 mt-0.5 font-mono">
+                <p className="text-xs text-slate-400 mt-0.5 font-mono">
                   Maks. File: 5MB (PNG, JPG, PDF)
                 </p>
               </div>
@@ -221,7 +221,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
           </div>
 
           {!isHandoverValid && (
-            <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg text-[10px] text-rose-600 font-medium leading-relaxed">
+            <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg text-xs text-rose-600 font-medium leading-relaxed">
               ⚠️ <strong>Validasi Gagal</strong>: Harap masukkan Nomor Referensi
               ATAU unggah file Bukti Transfer sebagai prasyarat status 'Unit
               Diambil'.
@@ -231,10 +231,10 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
       )}
 
       <div className="border border-amber-200 bg-amber-50/80 rounded-xl p-3 space-y-2">
-        <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="text-xs font-black text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
           <ListChecks className="w-3.5 h-3.5" /> Checklist Serah Terima Unit
         </p>
-        <p className="text-[9px] text-amber-700 leading-relaxed">
+        <p className="text-xs text-amber-700 leading-relaxed">
           Pastikan semua item berikut terpenuhi sebelum klik tombol handover.
         </p>
         {[
@@ -256,13 +256,13 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
               disabled={isFormLocked}
               className="mt-0.5 w-3.5 h-3.5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
             />
-            <span className="text-[10px] font-medium text-slate-600 group-hover:text-amber-800 transition-colors leading-tight">
+            <span className="text-xs font-medium text-slate-600 group-hover:text-amber-800 transition-colors leading-tight">
               {label}
             </span>
           </label>
         ))}
         {Object.values(handoverChecklist).some((v) => !v) && (
-          <div className="p-1.5 bg-amber-100/80 border border-amber-200 rounded-lg text-[9px] text-amber-700 font-medium">
+          <div className="p-1.5 bg-amber-100/80 border border-amber-200 rounded-lg text-xs text-amber-700 font-medium">
             ⚠️ Centang semua item sebelum menyelesaikan handover.
           </div>
         )}
@@ -270,10 +270,10 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-200/80 pt-3">
         <div className="bg-white border border-indigo-100 rounded-xl p-3 shadow-xs">
-          <p className="text-[10px] font-black text-accent uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <p className="text-xs font-black text-accent uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Receipt className="w-3.5 h-3.5" /> Preview Jurnal Otomatis
           </p>
-          <div className="space-y-1.5 text-[10px] font-mono text-slate-600">
+          <div className="space-y-1.5 text-xs font-mono text-slate-600">
             <div className="flex justify-between gap-3">
               <span>Debit {targetAccountLabel}</span>
               <strong>Rp {totalAmt.toLocaleString()}</strong>
@@ -289,10 +289,10 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
           </div>
         </div>
         <div className="bg-white border border-emerald-100 rounded-xl p-3 shadow-xs">
-          <p className="text-[10px] font-black text-emerald-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <p className="text-xs font-black text-emerald-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" /> Preview Garansi & Status
           </p>
-          <div className="space-y-1.5 text-[10px] font-mono text-slate-600">
+          <div className="space-y-1.5 text-xs font-mono text-slate-600">
             <div className="flex justify-between gap-3">
               <span>Status Tiket</span>
               <strong>DIAMBIL</strong>
@@ -310,7 +310,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
       </div>
 
       <div className="bg-white border border-amber-100 rounded-xl p-3 shadow-xs">
-        <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <p className="text-xs font-black text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <Package className="w-3.5 h-3.5" /> Preview Stok Sparepart Keluar
         </p>
         {partsImpact.length > 0 ? (
@@ -318,7 +318,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
             {partsImpact.map((part: any, idx: number) => (
               <div
                 key={`${part.productId || part.name}-${idx}`}
-                className="flex justify-between gap-3 text-[10px] font-mono text-slate-600"
+                className="flex justify-between gap-3 text-xs font-mono text-slate-600"
               >
                 <span className="truncate">
                   {part.name || part.productName || part.productId}
@@ -328,7 +328,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
             ))}
           </div>
         ) : (
-          <p className="text-[10px] text-slate-500">
+          <p className="text-xs text-slate-500">
             Tidak ada sparepart tercatat. Handover hanya membuat jurnal
             pendapatan, pembayaran, dan garansi.
           </p>
@@ -395,28 +395,28 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
         <div className="w-full border border-emerald-200 bg-emerald-50/80 rounded-xl p-3 space-y-3 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+              <p className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5" /> Dokumen Siap Dicetak
               </p>
-              <p className="text-[10px] text-emerald-700 mt-1 leading-relaxed">
+              <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
                 Unit sudah handover. Invoice pembayaran dan kartu garansi siap
                 diberikan ke customer.
               </p>
             </div>
-            <span className="text-[9px] font-mono font-bold bg-white text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-mono font-bold bg-white text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
               DIAMBIL
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               onClick={() => setShowInvoicePrintout(ticket.id)}
-              className="px-3 py-2 bg-white border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              className="px-3 py-2 bg-white border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
               <FileText className="w-3.5 h-3.5" /> Cetak Invoice Pembayaran
             </button>
             <button
               onClick={() => setShowWarrantyPrintout(ticket.id)}
-              className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-100 text-accent rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-100 text-accent rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
               <ShieldCheck className="w-3.5 h-3.5" /> Cetak Kartu Garansi
             </button>
@@ -424,7 +424,7 @@ export const HandoverPanel: React.FC<HandoverPanelProps> = ({
         </div>
       )}
 
-      <p className="text-[9px] text-slate-400 italic">
+      <p className="text-xs text-slate-400 italic">
         Gunakan tombol cetak SPK di pojok kanan atas untuk memprint tanda terima
         unit.
       </p>

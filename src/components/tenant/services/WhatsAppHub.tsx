@@ -80,17 +80,17 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl p-4 space-y-3.5 dark:text-zinc-300 dark:[&_select]:bg-zinc-950 dark:[&_select]:text-zinc-100 dark:[&_select]:border-zinc-800 dark:[&_textarea]:bg-zinc-900 dark:[&_textarea]:text-zinc-100 dark:[&_textarea]:border-zinc-800 dark:[&_.text-slate-600]:text-zinc-300 dark:[&_.hover\:bg-slate-50:hover]:bg-zinc-900">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="font-bold text-[10px] text-accent uppercase font-mono tracking-wider flex items-center gap-1.5">
+        <h4 className="font-bold text-xs text-accent uppercase font-mono tracking-wider flex items-center gap-1.5">
           <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp Customer Communication Hub
         </h4>
-        <span className="shrink-0 text-[9px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full">
+        <span className="shrink-0 text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full">
           Manual Link
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1">
-          <label className="block text-[10px] font-mono text-slate-400 uppercase">Pilih Template Pesan</label>
+          <label className="block text-xs font-mono text-slate-400 uppercase">Pilih Template Pesan</label>
           <select onChange={(event) => selectTemplate(event.target.value)} className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-md outline-none focus:border-accent font-medium">
             <option value="intake">Tanda Terima Unit Baru</option>
             <option value="diagnose">Diagnosa & Estimasi Biaya</option>
@@ -99,7 +99,7 @@ export const WhatsAppHub: React.FC<WhatsAppHubProps> = ({
           </select>
         </div>
         <div className="md:col-span-2 space-y-1">
-          <label className="block text-[10px] font-mono text-slate-400 uppercase">Isi Pesan WhatsApp (Dapat Diedit Manual)</label>
+          <label className="block text-xs font-mono text-slate-400 uppercase">Isi Pesan WhatsApp (Dapat Diedit Manual)</label>
           <textarea rows={4} value={customWaMessageText || getDefaultMessage()} onChange={(event) => setCustomWaMessageText(event.target.value)} className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-accent font-medium leading-relaxed font-mono" />
         </div>
       </div>

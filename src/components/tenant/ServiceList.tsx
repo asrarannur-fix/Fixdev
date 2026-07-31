@@ -5,736 +5,173 @@ import { ServiceStatus, UserRole } from '../../types';
 import { NEXT_STEP, SERVICE_STATUS_META, SERVICE_TERMINAL_STATUSES } from '../../domain/serviceWorkflow';
 import { Pagination } from './services/Pagination';
 import { bulkDeleteServiceTickets, exportServiceTickets, getServiceTickets, ServiceTicketList } from '../../lib/api/services';
-import {
-  PlusCircle,
-  FileText,
-  ChevronRight,
-  Trash2,
-   Search,
-   X,
-   AlertCircle,
-   RefreshCw,
- } from 'lucide-react';
-
-const GradientCard: React.FC<{
-  children: React.ReactNode;
-  gradient: string;
-  className?: string;
-}> = ({ children, gradient, className = '' }) => (
-  <div className={`relative overflow-hidden rounded-xl border border-white/20 dark:border-zinc-800/40 shadow-md shadow-slate-200/30 dark:shadow-zinc-900/30 hover:shadow-lg transition-all duration-300 ${className}`}>
-    <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10" />
-    <div className="absolute -top-6 -right-6 w-16 h-16 bg-white/10 rounded-full blur-xl" />
-    <div className="relative p-3">{children}</div>
-  </div>
-);
+import { AlertCircle, FileText, PlusCircle, RefreshCw, Search, Trash2, X } from 'lucide-react';
 
 export const ServiceList: React.FC<any> = (props) => {
   const {
-    activeTenantId,
-    additionalCostAmount,
-    additionalCostApprovedBy,
-    additionalCostDescription,
-    additionalCostMethod,
-    additionalCostNote,
-    additionalCostProof,
-    additionalCostTicket,
-    aiLoading,
-    aiResult,
-    approveServiceEstimate,
-    cameraActive,
-    completeServiceQC,
-    currentUserPermissions,
-    customWaMessageText,
-    filteredMicroComponents,
-    handleApplyAiRecommendation,
-    handlePrintReceptionReceipt,
-    handoverChecklist,
-    handoverPaymentMethod,
-    handoverProofName,
-    handoverRefNo,
-    handoverServiceDevice,
-    handoverTempoDays,
-    internalCommentText,
-    isSubTabAllowed,
-    justCreatedTicket,
-    liveTimerSeconds,
-    manualDiagCost,
-    manualDiagNotes,
-    microChargeable,
-    microNote,
-    microQty,
-    microSearch,
-    microTicket,
-    microUnitPrice,
-    openManualEstimateWhatsApp,
-    openMicroComponentModal,
-    partOrderCost,
-    partOrderCostApproved,
-    partOrderEta,
-    partOrderName,
-    partOrderNote,
-    partOrderQty,
-    partOrderReason,
-    partOrderSupplier,
-    partOrderTicket,
-    previewReceptionTicket,
-    publicBaseUrl,
-    qcNotes,
-    qcView,
-    renderTenantWaTemplate,
-    requestPartMode,
-    requestedPartId,
-     requestedPartQty,
-     selectedPartWarehouseId,
-     setSelectedPartWarehouseId,
-     warehouses,
-     savingAdditionalCost,
-    savingMicroUsage,
-    savingPartOrder,
-    selectedMicro,
-    selectedMicroId,
-    selectedServiceId,
-    selectedServiceIds,
-    selectedSparepartId,
-    setActiveSubTab,
-    setActiveWaModal,
-    setAdditionalCostAmount,
-    setAdditionalCostApprovedBy,
-    setAdditionalCostDescription,
-    setAdditionalCostMethod,
-    setAdditionalCostNote,
-    setAdditionalCostProof,
-    setAdditionalCostTicket,
-    setAiResult,
-    setCustomWaMessageText,
-    setHandoverChecklist,
-    setHandoverPaymentMethod,
-    setHandoverProofName,
-    setHandoverRefNo,
-    setHandoverTempoDays,
-    setInternalCommentText,
-    setJustCreatedTicket,
-    setManualDiagCost,
-    setManualDiagNotes,
-    setMicroChargeable,
-    setMicroNote,
-    setMicroQty,
-    setMicroSearch,
-    setMicroTicket,
-    setMicroUnitPrice,
-    setPartOrderCost,
-    setPartOrderCostApproved,
-    setPartOrderEta,
-    setPartOrderName,
-    setPartOrderNote,
-    setPartOrderQty,
-    setPartOrderReason,
-    setPartOrderSupplier,
-    setPartOrderTicket,
-    setPreviewReceptionTicket,
-    setQcNotes,
-    setRequestPartMode,
-    setRequestedPartId,
-    setRequestedPartQty,
-    setSavingAdditionalCost,
-    setSavingMicroUsage,
-    setSavingPartOrder,
-    setSelectedMicroId,
-    setSelectedServiceId,
-    setSelectedServiceIds,
-    setSelectedSparepartId,
-    setShowInvoicePrintout,
-    setShowProvisionalQuote,
-    setShowSpkPrintout,
-    setShowWarrantyPrintout,
-    setSparepartQty,
-    setSparepartSN,
-    setSrvSearchQuery,
-    setSrvSort,
-    setStatusFilter,
-    setViewingServiceTicketId,
-    showInvoicePrintout,
-    showProvisionalQuote,
-    showSpkPrintout,
-    showWarrantyPrintout,
-    sparepartQty,
-    sparepartSN,
-    srvSearchQuery,
-    srvSort,
-    startCamera,
-    statusFilter,
-    stopCamera,
-    tenantObj,
-    tenantServices,
-    updateServiceStatus,
-    videoRef,
-    viewingServiceTicketId,
-    currentUser,
-    showConfirm,
-    updateServiceTicket,
-    showToast,
-    customers,
-    employees,
-    products,
-    currentTenantId,
-    currentBranchId,
-    microComponentsLoading,
-    microComponentsError,
-    loadMicroComponents,
-    consumeMicroComponentForService,
-    addServiceDiagnostic,
-    requestServicePart,
-    cancelServicePart,
-    patchServiceWork,
-    createServicePartOrder,
-     addApprovedAdditionalCost,
-     apiFetch,
+    activeTenantId, apiFetch, currentBranchId, currentTenantId, currentUser, currentUserPermissions,
+    customers, employees, isSubTabAllowed, publicBaseUrl, qcView, setActiveSubTab,
+    setManualDiagCost, setManualDiagNotes, setSelectedServiceIds, setSrvSearchQuery, setSrvSort,
+    setViewingServiceTicketId, showConfirm, showToast, srvSearchQuery, srvSort, statusFilter, setStatusFilter,
+    tenantObj, tenantServices, viewingServiceTicketId, selectedServiceIds,
   } = props;
-
-  const filterStorageKey = `fixdev_service_list_filters_${currentUser?.id || activeTenantId || 'default'}`;
-  const readFilters = () => {
-    const params = new URLSearchParams(window.location.search);
-    let saved: { tech?: string; range?: string; sla?: string } = {};
-    if (!params.has('tech') && !params.has('range') && !params.has('sla')) {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(filterStorageKey) || '{}');
-        if (parsed && typeof parsed === 'object') saved = parsed;
-      } catch {
-        localStorage.removeItem(filterStorageKey);
-      }
-    }
-    return {
-      group: params.get('group') || 'ALL',
-      tech: params.get('tech') || saved.tech || 'ALL',
-      range: ['today', '7d', '30d'].includes(params.get('range') || saved.range || '') ? (params.get('range') || saved.range) : 'all',
-      sla: params.get('sla') || saved.sla || 'all',
-    };
-  };
   const [page, setPage] = React.useState(1);
-   const [servicePage, setServicePage] = React.useState<ServiceTicketList | null>(null);
-   const [serviceListError, setServiceListError] = React.useState<string | null>(null);
-   const [reloadKey, setReloadKey] = React.useState(0);
-   const [deleting, setDeleting] = React.useState(false);
-  const [operationalFilter, setOperationalFilter] = React.useState(() => readFilters().group);
-  const [technicianFilter, setTechnicianFilter] = React.useState(() => readFilters().tech);
-  const [dateRangeFilter, setDateRangeFilter] = React.useState(() => readFilters().range);
-  const [slaFilter, setSlaFilter] = React.useState(() => readFilters().sla);
+  const [servicePage, setServicePage] = React.useState<ServiceTicketList | null>(null);
+  const [serviceListError, setServiceListError] = React.useState<string | null>(null);
+  const [serviceListLoading, setServiceListLoading] = React.useState(true);
+  const [workflow, setWorkflow] = React.useState('ALL');
+  const [reloadKey, setReloadKey] = React.useState(0);
+  const [deleting, setDeleting] = React.useState(false);
+  const [dateFrom, setDateFrom] = React.useState('');
+  const [dateTo, setDateTo] = React.useState('');
+  const [slaFilter, setSlaFilter] = React.useState('ALL');
+  const [assignedTech, setAssignedTech] = React.useState('ALL');
+  const filterStorageKey = 'fixdev_srv_filters';
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    let saved: Record<string, string> = {};
+    try { saved = JSON.parse(localStorage.getItem(filterStorageKey) || '{}'); } catch (error) { localStorage.removeItem(filterStorageKey); }
+    const value = (key: string) => params.get(key) ?? saved[key];
+    const q = value('q'); if (q !== undefined) setSrvSearchQuery(q);
+    const sort = value('sort'); if (sort !== undefined) setSrvSort(sort);
+    const status = value('status'); if (status !== undefined && setStatusFilter) setStatusFilter(status);
+    const nextWorkflow = value('workflow'); if (nextWorkflow !== undefined) setWorkflow(nextWorkflow);
+    const from = value('dateFrom'); if (from !== undefined) setDateFrom(from);
+    const to = value('dateTo'); if (to !== undefined) setDateTo(to);
+    const sla = value('sla'); if (sla !== undefined) setSlaFilter(sla);
+    const tech = value('tech'); if (tech !== undefined) setAssignedTech(tech);
+  }, []);
+
+  React.useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    ['q', 'sort', 'status', 'workflow', 'dateFrom', 'dateTo', 'sla', 'tech'].forEach((key) => query.delete(key));
+    if (srvSearchQuery) query.set('q', srvSearchQuery);
+    if (srvSort !== 'urgent') query.set('sort', srvSort);
+    if (statusFilter !== 'ALL') query.set('status', statusFilter);
+    if (workflow !== 'ALL') query.set('workflow', workflow);
+    if (dateFrom) query.set('dateFrom', dateFrom);
+    if (dateTo) query.set('dateTo', dateTo);
+    if (slaFilter !== 'ALL') query.set('sla', slaFilter);
+    if (assignedTech !== 'ALL') query.set('tech', assignedTech);
+
+    const newUrl = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', newUrl);
+
+    localStorage.setItem(filterStorageKey, JSON.stringify({
+      q: srvSearchQuery, sort: srvSort, status: statusFilter, workflow, dateFrom, dateTo, sla: slaFilter, tech: assignedTech
+    }));
+  }, [srvSearchQuery, srvSort, statusFilter, workflow, dateFrom, dateTo, slaFilter, assignedTech]);
+
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const active = tenantServices.filter((s) => !SERVICE_TERMINAL_STATUSES.has(s.status));
-  const baruHariIni = tenantServices.filter((s) => {
-    const d = s.createdAt ? new Date(s.createdAt) : null;
-    return d && d >= todayStart;
-  }).length;
-  const menungguDiagnosa = tenantServices.filter(
-    (s) => s.status === ServiceStatus.DITERIMA || s.status === ServiceStatus.ANTRIAN
-  ).length;
-  const menungguApproval = tenantServices.filter(
-    (s) =>
-      s.status === ServiceStatus.MENUGGU_APPROVAL ||
-      s.status === ServiceStatus.ESTIMATE_PENDING
-  ).length;
-  const dikerjakan = tenantServices.filter(
-    (s) => s.status === ServiceStatus.SEDANG_DIKERJAKAN
-  ).length;
-  const qc = tenantServices.filter((s) => s.status === ServiceStatus.QC).length;
-  const selesai = tenantServices.filter((s) => s.status === ServiceStatus.SELESAI).length;
-  const siapDiambil = tenantServices.filter(
-    (s) => s.status === ServiceStatus.SIAP_DIAMBIL
-  ).length;
-  const diambil = tenantServices.filter(
-    (s) => s.status === ServiceStatus.DIAMBIL
-  ).length;
-  const terlambat = tenantServices.filter((s) => {
-    const est = s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate) : null;
-    return est && est < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
-  }).length;
-  const totalEstimasiBulanIni = Math.round(
-    tenantServices
-      .filter((s) => {
-        const d = s.createdAt ? new Date(s.createdAt) : null;
-        return d && d >= monthStart;
-      })
-      .reduce((n, t) => n + (Number(t.estimatedCost) || 0), 0)
-  );
-
-  const operationalGroups: Record<string, ServiceStatus[]> = {
+  const groups: Record<string, ServiceStatus[]> = {
     diagnosis: [ServiceStatus.DITERIMA, ServiceStatus.ANTRIAN],
     approval: [ServiceStatus.ESTIMATE_PENDING, ServiceStatus.MENUGGU_APPROVAL],
     repair: [ServiceStatus.SEDANG_DIKERJAKAN, ServiceStatus.REWORK],
     qc: [ServiceStatus.QC],
     pickup: [ServiceStatus.SIAP_DIAMBIL],
   };
-  const kpiItems = [
-    { key: 'diagnosis', label: 'Diagnosis', value: menungguDiagnosa, gradient: 'from-amber-400 via-orange-400 to-red-400' },
-    { key: 'approval', label: 'Approval', value: menungguApproval, gradient: 'from-orange-400 via-red-400 to-pink-400' },
-    { key: 'repair', label: 'Repair', value: dikerjakan + tenantServices.filter((s) => s.status === ServiceStatus.REWORK).length, gradient: 'from-blue-400 via-cyan-400 to-teal-400' },
-    { key: 'qc', label: 'QC', value: qc, gradient: 'from-teal-400 via-cyan-400 to-sky-500' },
-    { key: 'pickup', label: 'Ready Pickup', value: siapDiambil, gradient: 'from-emerald-400 via-green-400 to-teal-500' },
+  const fallbackServices = tenantServices.filter((ticket) => {
+    const query = srvSearchQuery.toLowerCase();
+    const customer = customers.find((item) => item.id === ticket.customerId);
+    return (!query || [ticket.ticketNo, ticket.deviceName, ticket.deviceBrandModel, customer?.name].some((value) => String(value || '').toLowerCase().includes(query))) &&
+      (workflow === 'ALL' || groups[workflow]?.includes(ticket.status));
+  });
+  const services = servicePage?.data ?? fallbackServices.slice((page - 1) * 15, page * 15);
+  const sourceServices = servicePage?.data ?? tenantServices;
+  const active = sourceServices.filter((ticket) => !SERVICE_TERMINAL_STATUSES.has(ticket.status));
+  const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
+  const overdue = active.filter((ticket) => ticket.createdAt && now.getTime() - new Date(ticket.createdAt).getTime() > slaHours * 3600_000).length;
+  const kpis = [
+    ['diagnosis', 'Diagnosis', sourceServices.filter((ticket) => groups.diagnosis.includes(ticket.status)).length],
+    ['approval', 'Approval', sourceServices.filter((ticket) => groups.approval.includes(ticket.status)).length],
+    ['repair', 'Perbaikan', sourceServices.filter((ticket) => groups.repair.includes(ticket.status)).length],
+    ['qc', 'QC', sourceServices.filter((ticket) => groups.qc.includes(ticket.status)).length],
+    ['pickup', 'Siap diambil', sourceServices.filter((ticket) => groups.pickup.includes(ticket.status)).length],
   ];
 
-  const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  React.useEffect(() => setPage(1), [operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter]);
-   React.useEffect(() => {
-     let cancelled = false;
-     setServiceListError(null);
-     const timeout = window.setTimeout(() => getServiceTickets(apiFetch, {
-       q: srvSearchQuery.trim() || undefined,
-       status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
-       group: operationalFilter === 'ALL' ? undefined : operationalFilter,
-       technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
-       sla: slaFilter === 'all' ? undefined : slaFilter,
-       to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
-       from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)),
-       tenantId: currentTenantId || activeTenantId || undefined,
-       branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined,
-       sort: srvSort, limit: 15, offset: (page - 1) * 15,
-     }).then((result) => { if (!cancelled) setServicePage(result); }).catch((error) => { if (!cancelled) setServiceListError(error.message); }), srvSearchQuery ? 250 : 0);
-     return () => { cancelled = true; window.clearTimeout(timeout); };
-   }, [apiFetch, page, operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, currentTenantId, activeTenantId, currentBranchId, tenantObj?.branchId, tenantObj?.currentBranchId, reloadKey]);
+  React.useEffect(() => setPage(1), [workflow, srvSearchQuery, srvSort, statusFilter, qcView, dateFrom, dateTo, slaFilter, assignedTech]);
   React.useEffect(() => {
-    const readQuery = () => {
-      const filters = readFilters();
-      setOperationalFilter(filters.group);
-      setTechnicianFilter(filters.tech);
-      setDateRangeFilter(filters.range);
-      setSlaFilter(filters.sla);
-    };
-    window.addEventListener('popstate', readQuery);
-    return () => window.removeEventListener('popstate', readQuery);
-  }, [filterStorageKey]);
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const filters = { group: operationalFilter, tech: technicianFilter, range: dateRangeFilter, sla: slaFilter };
-    Object.entries(filters).forEach(([key, value]) => value === 'ALL' || value === 'all' ? params.delete(key) : params.set(key, value));
-    localStorage.setItem(filterStorageKey, JSON.stringify({ tech: technicianFilter, range: dateRangeFilter, sla: slaFilter }));
-    const query = params.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
-  }, [operationalFilter, technicianFilter, dateRangeFilter, slaFilter, filterStorageKey]);
+    let cancelled = false;
+    setServiceListLoading(true);
+    setServiceListError(null);
+    const timeout = window.setTimeout(() => getServiceTickets(apiFetch, {
+      q: srvSearchQuery.trim() || undefined,
+      status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
+      group: workflow === 'ALL' ? undefined : workflow,
+      tenantId: currentTenantId || activeTenantId || undefined,
+      branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined,
+      sort: srvSort, limit: 15, offset: (page - 1) * 15,
+      from: dateFrom || undefined,
+      to: dateTo || undefined,
+      sla: slaFilter === 'ALL' ? undefined : slaFilter,
+      technician: assignedTech === 'ALL' ? undefined : assignedTech,
+    }).then((result) => {
+      if (!cancelled) { setServicePage(result); setServiceListLoading(false); }
+    }).catch((error) => {
+      if (!cancelled) { setServiceListError(error.message); setServiceListLoading(false); }
+    }), srvSearchQuery ? 250 : 0);
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+  }, [currentTenantId, activeTenantId, currentBranchId, tenantObj?.branchId, tenantObj?.currentBranchId, apiFetch, page, qcView, reloadKey, srvSearchQuery, srvSort, statusFilter, workflow, dateFrom, dateTo, slaFilter, assignedTech]);
 
-  const filteredServices = tenantServices
-    .filter((s) => {
-      const q = srvSearchQuery.toLowerCase();
-      const matchesQuery =
-        String(s.ticketNo || '').toLowerCase().includes(q) ||
-        String(s.deviceName || '').toLowerCase().includes(q) ||
-        String(s.deviceBrandModel || '').toLowerCase().includes(q) ||
-        (customers.find((c) => c.id === s.customerId)?.name || '').toLowerCase().includes(q);
-      const effectiveStatusFilter = qcView ? ServiceStatus.QC : statusFilter;
-      const matchesStatus = effectiveStatusFilter === 'ALL' || s.status === effectiveStatusFilter;
-      const matchesGroup = operationalFilter === 'ALL' || operationalGroups[operationalFilter]?.includes(s.status);
-      const matchesTechnician = technicianFilter === 'ALL' || (technicianFilter === 'unassigned' ? !s.assignedTechId : s.assignedTechId === technicianFilter);
-      const createdAt = s.createdAt ? new Date(s.createdAt) : null;
-      const rangeDays = dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''));
-      const rangeStart = dateRangeFilter === 'all' ? null : new Date(todayStart.getTime() - (rangeDays - 1) * 86400_000);
-      const matchesDate = !rangeStart || (createdAt && createdAt >= rangeStart);
-      const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
-      const overdue = Boolean(createdAt && !SERVICE_TERMINAL_STATUSES.has(s.status) && now.getTime() - createdAt.getTime() > slaHours * 3600_000);
-      const matchesSla = slaFilter === 'all' || (slaFilter === 'overdue' ? overdue : !overdue);
-      return matchesQuery && matchesStatus && matchesGroup && matchesTechnician && matchesDate && matchesSla;
-    })
-    .sort((a, b) => {
-      if (srvSort === 'urgent') {
-        const urgency = (ticket) => {
-          const estimate = ticket.estimatedCompletionDate ? new Date(ticket.estimatedCompletionDate).getTime() : Infinity;
-          return estimate < now.getTime() && !SERVICE_TERMINAL_STATUSES.has(ticket.status) ? estimate : Infinity;
-        };
-        const overdueDiff = urgency(a) - urgency(b);
-        if (overdueDiff) return overdueDiff;
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
-      if (srvSort === 'cost_desc') return Number(b.estimatedCost || 0) - Number(a.estimatedCost || 0);
-      if (srvSort === 'cost_asc') return Number(a.estimatedCost || 0) - Number(b.estimatedCost || 0);
-      const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      return srvSort === 'oldest' ? diff : -diff;
-    });
-  const totalPages = servicePage ? Math.ceil(servicePage.total / servicePage.limit) : Math.ceil(filteredServices.length / 15);
-  const paginatedServices = servicePage?.data || filteredServices.slice((page - 1) * 15, page * 15);
+  const openTicket = (ticket: any) => {
+    setViewingServiceTicketId(ticket.id);
+    setManualDiagNotes(ticket.techDiagnosis || '');
+    setManualDiagCost(String(Number(ticket.estimatedCost) || 0));
+  };
+  const toggleTicket = (id: string) => setSelectedServiceIds(selectedServiceIds.includes(id) ? selectedServiceIds.filter((item) => item !== id) : [...selectedServiceIds, id]);
+  const resetFilters = () => { setWorkflow('ALL'); setSrvSearchQuery(''); if (setStatusFilter) { setStatusFilter('ALL'); } setDateFrom(''); setDateTo(''); setSlaFilter('ALL'); setAssignedTech('ALL'); };
   const downloadCsv = async () => {
     try {
-      const blob = await exportServiceTickets(apiFetch, {
-        q: srvSearchQuery.trim() || undefined,
-        status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter,
-        group: operationalFilter === 'ALL' ? undefined : operationalFilter,
-        technician: technicianFilter === 'ALL' ? undefined : technicianFilter,
-        sla: slaFilter === 'all' ? undefined : slaFilter,
-        from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)),
-        to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
-        sort: srvSort,
-        tenantId: currentTenantId || activeTenantId || undefined,
-        branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined,
-      });
+      const blob = await exportServiceTickets(apiFetch, { q: srvSearchQuery.trim() || undefined, group: workflow === 'ALL' ? undefined : workflow, tenantId: currentTenantId || activeTenantId || undefined, branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined, sort: srvSort, status: qcView ? ServiceStatus.QC : statusFilter === 'ALL' ? undefined : statusFilter, from: dateFrom || undefined, to: dateTo || undefined, sla: slaFilter === 'ALL' ? undefined : slaFilter, technician: assignedTech === 'ALL' ? undefined : assignedTech });
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'daftar_servis_saas.csv';
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    } catch (error: any) {
-      showToast(error?.message || 'Gagal mengekspor tiket.', 'error');
-    }
+      link.href = URL.createObjectURL(blob); link.download = 'daftar_servis_saas.csv'; link.click();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch (error: any) { showToast(error?.message || 'Gagal mengekspor tiket.', 'error'); }
   };
+  const deleteSelected = async () => {
+    if (deleting || !await showConfirm({ title: 'Hapus Tiket Massal', message: `Apakah Anda yakin ingin menghapus ${selectedServiceIds.length} tiket terpilih secara permanen?`, confirmLabel: 'Ya, Hapus Permanen', type: 'danger' })) return;
+    setDeleting(true);
+    try {
+      const deletedIds = await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
+      if (deletedIds.length !== selectedServiceIds.length) throw new Error('Sebagian tiket gagal dihapus. Muat ulang daftar.');
+      setSelectedServiceIds([]); setReloadKey((key) => key + 1); showToast(`${deletedIds.length} tiket berhasil dihapus.`, 'success');
+    } catch (error: any) { showToast(error?.message || 'Gagal menghapus tiket.', 'error'); } finally { setDeleting(false); }
+  };
+  const canDelete = currentUser?.role === UserRole.OWNER || currentUserPermissions.includes('action-services-delete-ticket');
+  const totalPages = servicePage ? Math.max(1, Math.ceil(servicePage.total / servicePage.limit)) : Math.max(1, Math.ceil(fallbackServices.length / 15));
+  const allPageSelected = services.length > 0 && services.every((ticket) => selectedServiceIds.includes(ticket.id));
 
-  return (
-    <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 rounded-2xl p-4 space-y-4">
-      {/* KPI Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-        {kpiItems.map((item) => (
-          <button key={item.key} onClick={() => setOperationalFilter(item.key)} className="text-left">
-            <GradientCard gradient={item.gradient} className={operationalFilter === item.key ? 'ring-2 ring-indigo-400' : ''}>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-white/70">{item.label}</p>
-            <p className="text-lg font-black text-white drop-shadow-sm tracking-tight">{item.value}</p>
-            </GradientCard>
-          </button>
-         ))}
-      </div>
-
-      {/* Row KPI Info */}
-      <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 dark:text-zinc-400">
-        {(() => {
-           const slaHours = tenantObj?.settings?.serviceSettings?.slaHours || 48;
-          const slaBreaches = active.filter(
-            (s) =>
-              s.createdAt &&
-              now.getTime() - new Date(s.createdAt).getTime() > slaHours * 3600_000
-          ).length;
-           const techCount = active.reduce((acc, s) => {
-            const k = s.assignedTechId || 'unassigned';
-            acc.add(k);
-            return acc;
-          }, new Set<string>());
-          return (
-            <>
-
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 font-bold">
-                SLA: {servicePage?.kpi?.overdue ?? slaBreaches}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 font-bold">
-                Aktif: {servicePage?.kpi?.active ?? active.length}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 font-bold">
-                Teknisi: {techCount.size}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold">
-                Estimasi: Rp{totalEstimasiBulanIni.toLocaleString('id-ID')}
-              </span>
-            </>
-          );
-        })()}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1.5">
-        <button onClick={() => setOperationalFilter('ALL')} className={`rounded-lg px-3 py-2 text-[10px] font-bold ${operationalFilter === 'ALL' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300'}`}>Semua Operasional</button>
-        {kpiItems.map((item) => <button key={item.key} onClick={() => setOperationalFilter(item.key)} className={`rounded-lg px-3 py-2 text-[10px] font-bold ${operationalFilter === item.key ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300'}`}>{item.label}</button>)}
-        <select aria-label="Filter semua status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="ml-auto px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
-          <option value="ALL">Semua status</option>
-          {Object.entries(SERVICE_STATUS_META).map(([status, meta]) => <option key={status} value={status}>{meta.label}</option>)}
-        </select>
-        <select aria-label="Filter teknisi" value={technicianFilter} onChange={(e) => setTechnicianFilter(e.target.value)} className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
-          <option value="ALL">Semua teknisi</option>
-          <option value="unassigned">Belum ditugaskan</option>
-          {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}
-        </select>
-        <select aria-label="Filter rentang tanggal" value={dateRangeFilter} onChange={(e) => setDateRangeFilter(e.target.value)} className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
-          <option value="all">Semua tanggal</option>
-          <option value="today">Hari ini</option>
-          <option value="7d">7 hari</option>
-          <option value="30d">30 hari</option>
-        </select>
-        <select aria-label="Filter SLA" value={slaFilter} onChange={(e) => setSlaFilter(e.target.value)} className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl">
-          <option value="all">Semua SLA</option>
-          <option value="overdue">Terlambat</option>
-          <option value="on-track">Sesuai SLA</option>
-        </select>
-      </div>
-
-      {/* Search & Actions */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
-          <input
-            type="text"
-            aria-label="Cari tiket servis"
-            placeholder="Cari tiket, nama, perangkat..."
-            value={srvSearchQuery}
-            onChange={(e) => setSrvSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400/20 transition-all shadow-sm"
-          />
-          {srvSearchQuery && (
-            <button
-               onClick={() => setSrvSearchQuery('')}
-               aria-label="Hapus pencarian"
-               className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-            >
-              <X className="w-3 h-3 text-slate-400" />
-            </button>
-          )}
-        </div>
-        <select
-          value={srvSort}
-          aria-label="Urutkan tiket servis"
-          onChange={(e) => setSrvSort(e.target.value as any)}
-          className="px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-all shadow-sm cursor-pointer"
-        >
-           <option value="urgent">Urgent: overdue dulu</option>
-           <option value="newest">Terbaru</option>
-          <option value="oldest">Terlama</option>
-          <option value="cost_desc">Biaya Tinggi</option>
-          <option value="cost_asc">Biaya Rendah</option>
-        </select>
-        <div className="flex items-center gap-1.5">
-          {selectedServiceIds.length > 0 &&
-            (currentUser?.role === UserRole.OWNER ||
-              currentUserPermissions.includes('action-services-delete-ticket')) && (
-              <button
-                onClick={async () => {
-                  if (deleting) return;
-                  if (
-                    await showConfirm({
-                      title: 'Hapus Tiket Massal',
-                      message: `Apakah Anda yakin ingin menghapus ${selectedServiceIds.length} tiket terpilih secara permanen?`,
-                      confirmLabel: 'Ya, Hapus Permanen',
-                      type: 'danger',
-                    })
-                  ) {
-                     const count = selectedServiceIds.length;
-                     setDeleting(true);
-                     try {
-                        const deletedIds = await bulkDeleteServiceTickets(apiFetch, selectedServiceIds);
-                        if (deletedIds.length !== count) throw new Error('Sebagian tiket gagal dihapus. Muat ulang daftar.');
-                        setSelectedServiceIds([]);
-                        setReloadKey((key) => key + 1);
-                        showToast(`${count} tiket berhasil dihapus.`, 'success');
-                     } catch (error: any) {
-                       showToast(error?.message || 'Gagal menghapus tiket.', 'error');
-                     } finally {
-                       setDeleting(false);
-                     }
-                  }
-                }}
-                className="px-3 py-2 text-[10px] font-bold bg-gradient-to-r from-rose-500 to-red-500 text-white rounded-xl hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Hapus
-              </button>
-            )}
-          <button
-            onClick={downloadCsv}
-            className="px-3 py-2 text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <FileText className="w-3.5 h-3.5" /> CSV
-          </button>
-          <button
-            onClick={() => setActiveSubTab('new-ticket')}
-            className={`bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 hover:shadow-lg text-white font-extrabold text-[10px] px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md transition-all hover:scale-105 ${isSubTabAllowed('services', 'new-ticket') ? '' : 'hidden'}`}
-          >
-            <PlusCircle className="w-3.5 h-3.5" /> Terima Unit Baru
-          </button>
-        </div>
-      </div>
-
-      {/* Service List */}
-       <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden relative min-h-[400px]">
-         {serviceListError ? (
-           <div className="flex flex-col items-center justify-center py-16 text-rose-500">
-             <AlertCircle className="w-8 h-8 mb-3" />
-             <p className="text-sm font-bold">{serviceListError}</p>
-             <button onClick={() => setReloadKey((key) => key + 1)} className="mt-4 px-4 py-2 bg-rose-100 text-rose-700 text-xs font-bold rounded-xl hover:bg-rose-200 transition-colors">Coba Lagi</button>
-           </div>
-         ) : !servicePage && !filteredServices.length ? (
-           <div className="flex items-center justify-center py-32"><RefreshCw className="w-8 h-8 text-indigo-300 animate-spin" /></div>
-         ) : (
-           <div className="max-h-[650px] overflow-y-auto">
-           {paginatedServices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-zinc-500">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mb-4">
-                <Search className="w-7 h-7 text-slate-300 dark:text-zinc-600" />
-              </div>
-              <p className="text-sm font-bold">Tidak ada tiket ditemukan</p>
-              <p className="text-[11px] mt-1 opacity-60">Coba ubah filter atau kata kunci pencarian</p>
-            </div>
-           ) : (
-             <>
-             <table className="hidden md:table w-full text-left">
-               <thead className="bg-slate-50 dark:bg-zinc-800/60 text-[10px] uppercase tracking-wider text-slate-500"><tr><th className="p-3">Pilih</th><th className="p-3">Tiket</th><th className="p-3">Status</th><th className="p-3">Tindakan berikut</th><th className="p-3">Estimasi</th></tr></thead>
-               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">{paginatedServices.map((s) => {
-                 const customer = customers.find((c) => c.id === s.customerId);
-                 const overdue = s.estimatedCompletionDate && new Date(s.estimatedCompletionDate) < now && !SERVICE_TERMINAL_STATUSES.has(s.status);
-                 return <tr key={s.id} tabIndex={0} onClick={() => { setViewingServiceTicketId(s.id); setManualDiagNotes(s.techDiagnosis || ''); setManualDiagCost(String(Number(s.estimatedCost) || 0)); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setViewingServiceTicketId(s.id); } }} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800/50 focus:outline-none focus:bg-indigo-50 dark:focus:bg-indigo-950/20"><td className="p-3" onClick={(e) => e.stopPropagation()}><input aria-label={`Pilih tiket ${s.ticketNo}`} type="checkbox" checked={selectedServiceIds.includes(s.id)} onChange={() => setSelectedServiceIds(selectedServiceIds.includes(s.id) ? selectedServiceIds.filter((id) => id !== s.id) : [...selectedServiceIds, s.id])} /></td><td className="p-3">{s.publicTrackingToken ? <a href={`${publicBaseUrl}/?tracking=${encodeURIComponent(s.publicTrackingToken)}`} target="_blank" rel="noreferrer" className="font-mono font-bold text-indigo-600 hover:underline" onClick={(event) => event.stopPropagation()} aria-label={`Buka tracking publik tiket ${s.ticketNo}`}>#{s.ticketNo}</a> : <span className="font-mono font-bold text-slate-500" aria-label={`Tracking publik tiket ${s.ticketNo} belum tersedia`}>#{s.ticketNo}</span>}<p className="text-xs font-semibold">{customer?.name || 'Umum'} · {s.deviceName}</p></td><td className="p-3 text-xs">{SERVICE_STATUS_META[s.status]?.label || s.status}</td><td className="p-3 text-xs font-semibold text-slate-600 dark:text-zinc-300">{NEXT_STEP[s.status]?.label || 'Tidak ada tindakan'}</td><td className={`p-3 text-xs ${overdue ? 'font-bold text-rose-600' : ''}`}>{s.estimatedCompletionDate ? new Date(s.estimatedCompletionDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—'}</td></tr>;
-               })}</tbody>
-             </table>
-             <div className="divide-y divide-slate-100 dark:divide-zinc-800 md:hidden">
-               {paginatedServices.map((s) => {
-                const customer = customers.find((c) => c.id === s.customerId);
-                const technician = employees.find((e) => e.id === s.assignedTechId);
-                const initials = (customer?.name || 'U').charAt(0).toUpperCase();
-
-                const statusRail =
-                  s.status === ServiceStatus.SELESAI ||
-                  s.status === ServiceStatus.SIAP_DIAMBIL ||
-                  s.status === ServiceStatus.DIAMBIL
-                    ? 'from-emerald-500 to-teal-500'
-                    : s.status === ServiceStatus.REWORK
-                      ? 'from-orange-500 to-red-500'
-                      : s.status === ServiceStatus.DIAGNOSA
-                        ? 'from-amber-500 to-orange-500'
-                        : s.status === ServiceStatus.QC
-                          ? 'from-teal-500 to-cyan-500'
-                          : 'from-indigo-500 to-violet-500';
-
-                const tone = SERVICE_STATUS_META[s.status]?.tone || 'slate';
-                const badgeStyles: Record<string, string> = {
-                  slate: 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300',
-                  sky: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
-                  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
-                  cyan: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-400',
-                  amber: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-                  orange: 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400',
-                  indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400',
-                  fuchsia: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-400',
-                  teal: 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
-                  emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-                  violet: 'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400',
-                  pink: 'bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-400',
-                  rose: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
-                  red: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400',
-                  green: 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400',
-                  lime: 'bg-lime-100 text-lime-700 dark:bg-lime-950/40 dark:text-lime-400',
-                };
-
-                return (
-                  <div
-                    key={s.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      setViewingServiceTicketId(s.id);
-                      setManualDiagNotes(s.techDiagnosis || '');
-                      setManualDiagCost(String(Number(s.estimatedCost) || 0));
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        setViewingServiceTicketId(s.id);
-                        setManualDiagNotes(s.techDiagnosis || '');
-                        setManualDiagCost(String(Number(s.estimatedCost) || 0));
-                      }
-                    }}
-                    className={`group relative flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-all duration-200 cursor-pointer select-none ${
-                      viewingServiceTicketId === s.id ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''
-                    }`}
-                  >
-                    {/* Status Rail */}
-                    <div className={`w-1 h-10 rounded-full bg-gradient-to-b ${statusRail} shrink-0`} />
-
-                    {/* Checkbox */}
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                         aria-label={`Pilih tiket ${s.ticketNo}`}
-                         checked={selectedServiceIds.includes(s.id)}
-                        onChange={() => {
-                          if (selectedServiceIds.includes(s.id)) {
-                            setSelectedServiceIds(selectedServiceIds.filter((id) => id !== s.id));
-                          } else {
-                            setSelectedServiceIds([...selectedServiceIds, s.id]);
-                          }
-                        }}
-                        className="w-3.5 h-3.5 rounded border-slate-300 dark:border-zinc-600"
-                      />
-                    </div>
-
-                    {/* Avatar */}
-                    <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-xs font-black font-mono bg-gradient-to-br ${statusRail} text-white shadow-sm`}>
-                      {initials}
-                    </span>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-{s.publicTrackingToken ? <a
-                            href={`${publicBaseUrl}/?tracking=${encodeURIComponent(s.publicTrackingToken)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-mono font-extrabold text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline"
-                            onClick={(event) => event.stopPropagation()}
-                            aria-label={`Buka tracking publik tiket ${s.ticketNo}`}
-                          >
-                            #{s.ticketNo}
-                          </a> : <span className="font-mono font-extrabold text-[11px] text-slate-500" aria-label={`Tracking publik tiket ${s.ticketNo} belum tersedia`}>#{s.ticketNo}</span>}
-                        <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 truncate">
-                          {customer?.name || 'Umum'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">{s.deviceName}</span>
-                        {s.deviceBrandModel && (
-                          <span className="text-[9px] text-slate-400 dark:text-zinc-500 font-mono">
-                            {s.deviceBrandModel}
-                          </span>
-                        )}
-                      </div>
-                       <p className="mt-1 text-[9px] font-semibold text-indigo-500 dark:text-indigo-400 truncate">{NEXT_STEP[s.status]?.label || 'Tidak ada tindakan'}</p>
-                       <div className="flex items-center gap-2 mt-1 text-[8.5px] text-slate-400 dark:text-zinc-500 font-mono">
-                        {customer?.phone && <span>{customer.phone}</span>}
-                        {technician && (
-                          <span className="text-indigo-400 dark:text-indigo-300">
-                            {technician.name}
-                          </span>
-                        )}
-                        <span className="ml-auto">
-                          {new Date(s.createdAt).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                          })}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Status + Price */}
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className={`px-2.5 py-0.5 text-[9px] font-bold rounded-lg uppercase font-mono tracking-wide ${badgeStyles[tone] || badgeStyles.slate}`}>
-                        {SERVICE_STATUS_META[s.status]?.label || s.status}
-                      </span>
-                      <span className="font-black font-mono text-[11px] text-slate-700 dark:text-zinc-300 tabular-nums">
-                        Rp{Number(s.estimatedCost || 0).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-
-                    {/* Arrow */}
-                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-zinc-600 shrink-0 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                );
-               })}
-             </div>
-             </>
-           )}
-         </div>
-         )}
-          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} itemsPerPage={15} />
-      </div>
-
-      {/* Floating bulk action bar */}
-      {selectedServiceIds.length > 0 && (
-        <div className="sticky bottom-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-sm border border-slate-200 dark:border-zinc-800 rounded-2xl p-3 flex items-center justify-between shadow-xl">
-          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-            {selectedServiceIds.length} terpilih
-          </span>
-          <div className="flex items-center gap-2">
-
-            <button
-              onClick={() => setSelectedServiceIds([])}
-              className="px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all"
-            >
-              Batal
-            </button>
-          </div>
-        </div>
-      )}
-
-       <ServiceDetailModal {...props} />
-      <ServiceModals {...props} />
-    </div>
-  );
+  return <div className="mx-auto w-full max-w-screen-2xl space-y-4 rounded-xl bg-slate-50 px-3 py-3 text-slate-900 dark:bg-zinc-950 dark:text-zinc-100 sm:px-5 sm:py-4">
+    <header className="flex flex-col gap-3 border-b border-slate-200 pb-4 dark:border-zinc-800 sm:flex-row sm:items-end sm:justify-between">
+      <div><p className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-zinc-400">Operasional servis</p><h1 className="mt-1 text-2xl font-bold tracking-tight">Daftar Servis <span className="text-slate-500 dark:text-zinc-400">{servicePage?.total ?? tenantServices.length}</span></h1></div>
+      <div className="flex gap-2"><button onClick={downloadCsv} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-xs font-semibold dark:border-zinc-700"><FileText className="size-4" />CSV</button><button onClick={() => setActiveSubTab('new-ticket')} className={`inline-flex min-h-10 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white ${isSubTabAllowed('services', 'new-ticket') ? '' : 'hidden'}`}><PlusCircle className="size-4" />Terima unit</button></div>
+    </header>
+    <section aria-label="Ringkasan operasional" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      {kpis.map(([key, label, value]) => <button key={key} onClick={() => setWorkflow(workflow === key ? 'ALL' : String(key))} aria-pressed={workflow === key} className={`rounded-lg border p-3 text-left ${workflow === key ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/30' : 'border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'}`}><p className="text-xs font-medium text-slate-500 dark:text-zinc-400">{label}</p><p className="mt-1 text-xl font-bold tabular-nums">{value}</p></button>)}
+    </section>
+    <div className="flex flex-wrap gap-2 text-xs"><span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">SLA lewat: {servicePage?.kpi?.overdue ?? overdue}</span><span className="rounded-md border border-slate-200 bg-white px-2 py-1 font-semibold dark:border-zinc-800 dark:bg-zinc-900">Aktif: {servicePage?.kpi?.active ?? active.length}</span><span className="rounded-md border border-slate-200 bg-white px-2 py-1 font-semibold dark:border-zinc-800 dark:bg-zinc-900">Estimasi: Rp{Number(servicePage?.kpi?.estimated ?? sourceServices.reduce((sum, ticket) => sum + (Number(ticket.estimatedCost) || 0), 0)).toLocaleString('id-ID')}</span></div>
+    <section className="grid min-w-0 grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4" aria-label="Pencarian dan filter">
+      <div className="relative flex-1"><Search aria-hidden="true" className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" /><input value={srvSearchQuery} onChange={(event) => setSrvSearchQuery(event.target.value)} aria-label="Cari tiket servis" placeholder="Cari tiket, pelanggan, atau perangkat" className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-9 text-xs outline-none focus:border-indigo-600 dark:border-zinc-700 dark:bg-zinc-900" />{srvSearchQuery && <button onClick={() => setSrvSearchQuery('')} aria-label="Hapus pencarian" className="absolute right-3 top-1/2 -translate-y-1/2"><X className="size-4" /></button>}</div>
+      <select value={srvSort} aria-label="Urutkan tiket servis" onChange={(event) => setSrvSort(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="urgent">Urgent</option><option value="newest">Terbaru</option><option value="oldest">Terlama</option><option value="cost_desc">Biaya tertinggi</option><option value="cost_asc">Biaya terendah</option></select>
+      <select value={workflow} aria-label="Filter workflow" onChange={(event) => setWorkflow(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="ALL">Tahap alur kerja</option>{[['diagnosis', 'Diagnosis'], ['approval', 'Persetujuan'], ['repair', 'Perbaikan'], ['qc', 'QC'], ['pickup', 'Siap diambil']].map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+      <select value={statusFilter} aria-label="Filter status" onChange={(event) => setStatusFilter?.(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="ALL">Status</option>{Object.values(ServiceStatus).map((status) => <option key={status} value={status}>{SERVICE_STATUS_META[status]?.label || status}</option>)}</select>
+      <select value={assignedTech} aria-label="Filter teknisi" onChange={(event) => setAssignedTech(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="ALL">Teknisi</option><option value="unassigned">Belum ditugaskan</option>{employees.map((employee: any) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}</select>
+      <select value={slaFilter} aria-label="Filter SLA" onChange={(event) => setSlaFilter(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="ALL">SLA</option><option value="overdue">SLA overdue</option><option value="on-track">SLA aman</option></select>
+      <input type="date" aria-label="Tanggal mulai" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
+      <input type="date" aria-label="Tanggal akhir" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
+      {(workflow !== 'ALL' || statusFilter !== 'ALL' || assignedTech !== 'ALL' || slaFilter !== 'ALL' || dateFrom || dateTo) && <button onClick={resetFilters} className="min-h-11 rounded-lg border border-slate-300 px-3 text-xs font-semibold dark:border-zinc-700">Reset filter</button>}
+    </section>
+    <section className="relative overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900" aria-busy={serviceListLoading}>
+      {serviceListLoading && <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-semibold text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-300"><RefreshCw className="size-4 animate-spin" />Memuat data terbaru…</div>}
+      {serviceListError ? <div className="flex min-h-80 flex-col items-center justify-center p-6 text-center"><AlertCircle className="mb-3 size-8 text-rose-600" /><p className="text-sm font-semibold">{serviceListError}</p><button onClick={() => setReloadKey((key) => key + 1)} className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white dark:bg-white dark:text-zinc-900">Coba lagi</button></div> : services.length === 0 && !serviceListLoading ? <div className="flex min-h-80 flex-col items-center justify-center p-6 text-center"><Search className="mb-3 size-8 text-slate-400" /><p className="text-sm font-semibold">Tidak ada tiket ditemukan</p><p className="mt-1 text-xs text-slate-500">Ubah pencarian atau filter, atau terima unit baru.</p><div className="mt-4 flex gap-2"><button onClick={resetFilters} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold dark:border-zinc-700">Reset filter</button><button onClick={() => setActiveSubTab('new-ticket')} className={`rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white ${isSubTabAllowed('services', 'new-ticket') ? '' : 'hidden'}`}>Terima unit</button></div></div> : <>
+        <div className="hidden overflow-x-auto md:block"><table className="min-w-[980px] w-full text-left text-xs"><thead className="border-b border-slate-200 bg-slate-50 text-slate-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"><tr><th className="w-12 p-3"><input type="checkbox" aria-label="Pilih semua tiket halaman ini" checked={allPageSelected} onChange={() => setSelectedServiceIds(allPageSelected ? selectedServiceIds.filter((id) => !services.some((ticket) => ticket.id === id)) : Array.from(new Set([...selectedServiceIds, ...services.map((ticket) => ticket.id)])))} /></th><th className="p-3">Customer / device</th><th className="p-3">Status</th><th className="p-3">Teknisi</th><th className="p-3">SLA / umur</th><th className="p-3">Estimasi selesai</th><th className="p-3 text-right">Biaya</th><th className="p-3">Next action</th></tr></thead><tbody>{services.map((ticket) => { const customer = customers.find((item) => item.id === ticket.customerId); const technician = employees.find((item) => item.id === ticket.assignedTechId); const isOverdue = ticket.estimatedCompletionDate && new Date(ticket.estimatedCompletionDate) < now && !SERVICE_TERMINAL_STATUSES.has(ticket.status); return <tr key={ticket.id} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTicket(ticket); } }} onClick={() => openTicket(ticket)} className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-zinc-800 dark:hover:bg-zinc-800"><td className="p-3" onClick={(event) => event.stopPropagation()}><input type="checkbox" aria-label={`Pilih tiket ${ticket.ticketNo}`} checked={selectedServiceIds.includes(ticket.id)} onChange={() => toggleTicket(ticket.id)} /></td><td className="p-3"><p className="font-semibold">{customer?.name || 'Umum'} <a href={`${publicBaseUrl}/?tab=service&track=${encodeURIComponent(ticket.ticketNo)}`} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} className="font-mono text-indigo-600 hover:underline dark:text-indigo-400">#{ticket.ticketNo}</a></p><p className="mt-1 text-slate-500">{ticket.deviceName}{ticket.deviceBrandModel ? ` · ${ticket.deviceBrandModel}` : ''}</p></td><td className="p-3"><span className="rounded-md bg-slate-100 px-2 py-1 font-medium dark:bg-zinc-800">{SERVICE_STATUS_META[ticket.status]?.label || ticket.status}</span></td><td className="p-3">{technician?.name || 'Belum ditugaskan'}</td><td className={`p-3 ${isOverdue ? 'font-semibold text-rose-600' : ''}`}>{ticket.createdAt ? `${Math.max(0, Math.floor((now.getTime() - new Date(ticket.createdAt).getTime()) / 86400000))} hari` : '—'}</td><td className={`p-3 ${isOverdue ? 'font-semibold text-rose-600' : ''}`}>{ticket.estimatedCompletionDate ? new Date(ticket.estimatedCompletionDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—'}</td><td className="p-3 text-right font-semibold tabular-nums">Rp{Number(ticket.estimatedCost || 0).toLocaleString('id-ID')}</td><td className="p-3 font-medium">{NEXT_STEP[ticket.status]?.label || 'Tidak ada tindakan'}</td></tr>; })}</tbody></table></div>
+        <div className="divide-y divide-slate-200 md:hidden dark:divide-zinc-800">{services.map((ticket) => { const customer = customers.find((item) => item.id === ticket.customerId); const technician = employees.find((item) => item.id === ticket.assignedTechId); return <article key={ticket.id} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTicket(ticket); } }} onClick={() => openTicket(ticket)} className="cursor-pointer p-4 hover:bg-slate-50 dark:hover:bg-zinc-800"><div className="flex gap-3"><input type="checkbox" aria-label={`Pilih tiket ${ticket.ticketNo}`} checked={selectedServiceIds.includes(ticket.id)} onClick={(event) => event.stopPropagation()} onChange={() => toggleTicket(ticket.id)} /><div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><p className="font-semibold">{customer?.name || 'Umum'}</p><a href={`${publicBaseUrl}/?tab=service&track=${encodeURIComponent(ticket.ticketNo)}`} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} className="font-mono text-indigo-600 hover:underline dark:text-indigo-400">#{ticket.ticketNo}</a></div><p className="mt-1 text-xs text-slate-500">{ticket.deviceName}{ticket.deviceBrandModel ? ` · ${ticket.deviceBrandModel}` : ''}</p><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><span><b>Status:</b> {SERVICE_STATUS_META[ticket.status]?.label || ticket.status}</span><span><b>Teknisi:</b> {technician?.name || 'Belum ditugaskan'}</span><span><b>Selesai:</b> {ticket.estimatedCompletionDate ? new Date(ticket.estimatedCompletionDate).toLocaleDateString('id-ID') : '—'}</span><span><b>Biaya:</b> Rp{Number(ticket.estimatedCost || 0).toLocaleString('id-ID')}</span></div><p className="mt-3 text-xs font-semibold text-indigo-700 dark:text-indigo-300">{NEXT_STEP[ticket.status]?.label || 'Tidak ada tindakan'}</p></div></div></article>; })}</div>
+      </>}
+      {!serviceListError && services.length > 0 && <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} itemsPerPage={15} />}
+    </section>
+    {selectedServiceIds.length > 0 && <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-300 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg dark:border-zinc-700 dark:bg-zinc-900"><span className="text-xs font-semibold">{selectedServiceIds.length} tiket dipilih</span><div className="flex gap-2"><button onClick={() => setSelectedServiceIds([])} className="rounded-lg px-3 py-2 text-xs font-semibold">Batal</button>{canDelete && <button onClick={deleteSelected} disabled={deleting} className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"><Trash2 className="size-4" />{deleting ? 'Menghapus…' : 'Hapus'}</button>}</div></div>}
+    <ServiceDetailModal {...props} />
+    <ServiceModals {...props} />
+  </div>;
 };

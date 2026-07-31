@@ -22,7 +22,7 @@ const Badge: React.FC<{ variant: 'success' | 'warn' | 'danger' | 'muted'; childr
     muted:   'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
   };
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${map[variant]}`}>
+    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${map[variant]}`}>
       {children}
     </span>
   );
@@ -68,7 +68,7 @@ const WarrantyCard: React.FC<{
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-              <span className="text-[10px] font-mono text-slate-400">#{ticket.ticketNo}</span>
+              <span className="text-xs font-mono text-slate-400">#{ticket.ticketNo}</span>
               {badgeEl}
             </div>
             <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
@@ -86,7 +86,7 @@ const WarrantyCard: React.FC<{
               <div className={`text-xl font-black leading-none ${isExpired ? 'text-rose-600 dark:text-rose-400' : isCritical ? 'text-amber-600 dark:text-amber-400' : 'text-teal-600 dark:text-teal-400'}`}>
                 {Math.abs(days ?? 0)}
               </div>
-              <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mt-0.5">
                 {isExpired ? 'hari lalu' : 'hari lagi'}
               </div>
             </div>
@@ -97,8 +97,8 @@ const WarrantyCard: React.FC<{
         {!isExpired && !isClaim && (
           <div className="mb-3">
             <div className="flex justify-between mb-1">
-              <span className="text-[10px] text-slate-400">Sisa garansi</span>
-              <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">{pct}%</span>
+              <span className="text-xs text-slate-400">Sisa garansi</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{pct}%</span>
             </div>
             <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div
@@ -112,30 +112,30 @@ const WarrantyCard: React.FC<{
         {/* Info grid */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs border-t border-slate-100 dark:border-slate-800 pt-3">
           <div>
-            <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Selesai</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider mb-0.5">Selesai</p>
             <p className="font-semibold text-slate-700 dark:text-slate-300">{fmtDt(ticket.updatedAt)}</p>
           </div>
           <div>
-            <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Berakhir</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider mb-0.5">Berakhir</p>
             <p className="font-semibold text-slate-700 dark:text-slate-300">{fmtDt(ticket.warrantyExpiry)}</p>
           </div>
           <div>
-            <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Durasi</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider mb-0.5">Durasi</p>
             <p className="font-semibold text-slate-700 dark:text-slate-300">{ticket.warrantyDays ?? 30} hari</p>
           </div>
           <div>
-            <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Biaya</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider mb-0.5">Biaya</p>
             <p className="font-semibold text-emerald-600 dark:text-emerald-400">{fmtRp(ticket.estimatedCost)}</p>
           </div>
           {ticket.notes && (
             <div className="col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Catatan Perbaikan</p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider mb-0.5">Catatan Perbaikan</p>
               <p className="text-xs text-slate-600 dark:text-slate-400 italic line-clamp-2">{ticket.notes}</p>
             </div>
           )}
           {ticket.claimNote && (
             <div className="col-span-2 pt-2 border-t border-amber-100 dark:border-amber-900/30">
-              <p className="text-amber-600 dark:text-amber-400 text-[10px] uppercase tracking-wider mb-0.5">Alasan Klaim</p>
+              <p className="text-amber-600 dark:text-amber-400 text-xs uppercase tracking-wider mb-0.5">Alasan Klaim</p>
               <p className="text-xs text-amber-700 dark:text-amber-400 italic">{ticket.claimNote}</p>
             </div>
           )}
@@ -278,7 +278,7 @@ export const WarrantyPanel: React.FC<{
     <div className={`rounded-2xl border p-4 text-center ${color}`}>
       <div className="flex items-center justify-center gap-1.5 mb-1 opacity-70">{icon}</div>
       <div className="text-2xl font-black leading-none">{count}</div>
-      <div className="text-[11px] font-semibold mt-1 opacity-80">{label}</div>
+      <div className="text-xs font-semibold mt-1 opacity-80">{label}</div>
     </div>
   );
 

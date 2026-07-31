@@ -153,7 +153,7 @@ export const QCChecklistModal: React.FC<{
                 <span className={`text-sm font-black ${isGood ? 'text-emerald-600 dark:text-emerald-400' : rate >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   {rate}%
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isGood ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400'}`}>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isGood ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400'}`}>
                   {isGood ? '✓ LAYAK SERAH' : '⚠ PERLU CEK'}
                 </span>
               </div>
@@ -165,11 +165,11 @@ export const QCChecklistModal: React.FC<{
               />
             </div>
             <div className="flex gap-2 pt-0.5">
-              <button type="button" onClick={checkAll} className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
+              <button type="button" onClick={checkAll} className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
                 Tandai Semua OK
               </button>
               <span className="text-slate-300 dark:text-slate-600">·</span>
-              <button type="button" onClick={uncheckAll} className="text-[11px] font-semibold text-slate-400 hover:underline cursor-pointer">
+              <button type="button" onClick={uncheckAll} className="text-xs font-semibold text-slate-400 hover:underline cursor-pointer">
                 Reset Semua
               </button>
             </div>
@@ -198,7 +198,7 @@ export const QCChecklistModal: React.FC<{
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${gPass === gTotal ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${gPass === gTotal ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                       {gPass}/{gTotal}
                     </span>
                     {isCollapsed
@@ -233,11 +233,11 @@ export const QCChecklistModal: React.FC<{
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                             <button
                               onClick={e => { e.stopPropagation(); setNoteId(noteId === item.id ? null : item.id); }}
-                              className="text-[10px] font-semibold text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                              className="text-xs font-semibold text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
                             >
                               {item.notes ? '📝' : '+ catatan'}
                             </button>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full min-w-[2.5rem] text-center ${item.checked ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'}`}>
+                            <span className={`text-xs font-black px-2 py-0.5 rounded-full min-w-[2.5rem] text-center ${item.checked ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'}`}>
                               {item.checked ? 'OK' : 'FAIL'}
                             </span>
                           </div>

@@ -22,14 +22,14 @@ export const SparepartsLedger: React.FC<SparepartsLedgerProps> = ({
         <h4 className="font-bold text-xs uppercase tracking-wide text-slate-500">
           Spareparts Used Ledger
         </h4>
-        <span className="text-[10px] font-semibold text-slate-400">
+        <span className="text-xs font-semibold text-slate-400">
           {ticket.partsUsed?.length || 0} item
         </span>
       </div>
 
       {ticket.partsUsed && ticket.partsUsed.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-slate-200">
-          <table className="w-full text-[11px]">
+          <table className="w-full text-xs">
             <thead className="bg-slate-50 text-slate-500 font-semibold">
               <tr>
                 <th className="text-left px-2 py-1.5">Item</th>
@@ -73,13 +73,13 @@ export const SparepartsLedger: React.FC<SparepartsLedgerProps> = ({
           </table>
         </div>
       ) : (
-        <p className="text-[11px] text-slate-400 italic">
+        <p className="text-xs text-slate-400 italic">
           Belum ada sparepart yang dicatat untuk servis ini.
         </p>
       )}
 
       <div className="space-y-1 pt-1">
-        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
           Biaya Diagnosa Manual (Override)
         </label>
         <input

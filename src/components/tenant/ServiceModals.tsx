@@ -225,7 +225,7 @@ export const ServiceModals: React.FC<any> = (props) => {
           );
           return createPortal(
             <div className="fixed inset-0 z-[160] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-fadeIn" role="dialog" aria-modal="true" aria-labelledby="service-reception-preview-title">
-              <div className="bg-white rounded-3xl shadow-2xl border border-indigo-100 max-w-md w-full overflow-hidden">
+              <div className="w-full max-w-md overflow-hidden rounded-3xl border border-indigo-100 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="bg-accent text-white px-5 py-4">
                   <h3 id="service-reception-preview-title" className="font-extrabold text-sm">{preview.title}</h3>
                   <p className="text-[10px] text-indigo-100 mt-1">{preview.subtitle}</p>
@@ -269,7 +269,7 @@ export const ServiceModals: React.FC<any> = (props) => {
             aria-modal="true"
             aria-label="Cari komponen mikro"
           >
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[94vh] overflow-hidden flex flex-col">
+            <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-zinc-900">
               <div className="bg-slate-900 text-white px-5 py-4 flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-extrabold text-sm flex items-center gap-2">
@@ -289,7 +289,7 @@ export const ServiceModals: React.FC<any> = (props) => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="p-4 sm:p-5 overflow-y-auto grid grid-cols-1 lg:grid-cols-[1.35fr_.85fr] gap-5">
+              <div className="grid min-h-0 grid-cols-1 gap-5 overflow-y-auto p-4 sm:p-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,.85fr)]">
                 <section className="space-y-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
@@ -328,7 +328,7 @@ export const ServiceModals: React.FC<any> = (props) => {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[52vh] overflow-y-auto pr-1">
+                    <div className="grid grid-cols-1 gap-2 pr-1 sm:grid-cols-2">
                       {filteredMicroComponents.map((item) => {
                         const selected = item.id === selectedMicroId;
                         const low = item.stockQty <= item.minStock;

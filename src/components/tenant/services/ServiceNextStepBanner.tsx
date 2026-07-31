@@ -12,13 +12,11 @@ export const ServiceNextStepBanner: React.FC<ServiceNextStepBannerProps> = ({ st
   if (!step) return null;
 
   return (
-    <div data-testid="next-step-banner" className="relative mx-3 mt-3 flex items-start gap-2 overflow-hidden rounded-xl border border-white/30 px-3 py-2.5 shadow-md">
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-white/10" />
-      <ArrowRight className="relative mt-0.5 h-4 w-4 shrink-0 text-white" />
+    <div data-testid="next-step-banner" className="relative mx-3 mt-3 flex items-start gap-2 overflow-hidden rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-3 py-2.5">
+      <ArrowRight className="relative mt-0.5 h-4 w-4 shrink-0 text-slate-600 dark:text-zinc-300" />
       <div className="relative text-xs">
-        <p className="font-black text-white">Langkah Selanjutnya: {step.label}</p>
-        <p className="text-white/80">{step.hint}</p>
+        <p className="font-black text-slate-900 dark:text-zinc-100">Langkah Selanjutnya: {step.label}</p>
+        <p className="text-slate-600 dark:text-zinc-300">{step.hint}</p>
       </div>
     </div>
   );
