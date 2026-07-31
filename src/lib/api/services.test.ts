@@ -87,6 +87,12 @@ describe('service API helpers', () => {
     await expect(uploadServicePhoto(putFailure, 'ticket-1', file)).rejects.toThrow('Berkas rusak.');
   });
 
+  it('refreshes list when tenant or branch scope changes', () => {
+    expect(serviceList).toContain('tenantId: currentTenantId || activeTenantId || undefined');
+    expect(serviceList).toContain('branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined');
+    expect(serviceList).toContain('currentTenantId, activeTenantId, currentBranchId, tenantObj?.branchId, tenantObj?.currentBranchId');
+  });
+
   it('guards corrupted filters and reports destructive action failures', () => {
     expect(serviceList).toContain('localStorage.removeItem(filterStorageKey)');
     expect(serviceList).toContain("showToast(error?.message || 'Gagal menghapus tiket.', 'error')");

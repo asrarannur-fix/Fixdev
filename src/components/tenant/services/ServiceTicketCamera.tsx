@@ -17,6 +17,10 @@ interface ServiceTicketCameraProps {
   onCapture: () => Promise<void>;
 }
 
+const photoSrc = (ticketId: string, value: string) => value.startsWith('blob:') || value.startsWith('data:') || value.startsWith('http') || value.startsWith('/')
+  ? value
+  : `/api/services/${encodeURIComponent(ticketId)}/photos/${encodeURIComponent(value.split('/').pop() || '')}`;
+
 export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
   ticket,
   cameraActive,
@@ -56,7 +60,7 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
               key={cap.id}
               className="relative rounded-lg overflow-hidden border border-slate-200 h-16 group bg-slate-900"
             >
-              <img src={cap.url} alt={cap.category} className="w-full h-full object-cover" />
+              {cap.url && <img src={photoSrc(ticket.id, cap.url)} alt={cap.category} className="w-full h-full object-cover" />}
               <div className="absolute inset-x-0 bottom-0 bg-black/75 p-0.5 flex items-center justify-between">
                 <span className="text-[7px] font-mono font-bold text-white uppercase truncate max-w-[50px]">
                   {cap.category}

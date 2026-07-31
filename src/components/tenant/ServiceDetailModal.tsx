@@ -178,6 +178,13 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
       onDetailUpdated,
     } = props;
   const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const servicePhotoUrl = (value: unknown) => {
+    const photo = typeof value === 'string' ? value : '';
+    if (!photo || photo.startsWith('blob:') || photo.startsWith('data:') || photo.startsWith('http') || photo.startsWith('/')) return photo;
+    return `/api/services/${encodeURIComponent(viewingServiceTicketId || '')}/photos/${encodeURIComponent(photo.split('/').pop() || '')}`;
+  };
+  const [assigningTechId, setAssigningTechId] = React.useState<string | null>(null);
+  const assignmentRequestRef = React.useRef(0);
   const dialogRef = React.useRef<HTMLDivElement>(null);
    const restoreFocusRef = React.useRef<HTMLElement | null>(null);
    const closeDetail = () => {
@@ -346,8 +353,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </label>
                   <select
                     value={ticket.assignedTechId || ''}
-                     disabled={!canRepair || (
-                       [
+                     disabled={!!assigningTechId || !canRepair || (
+                        [
                         ServiceStatus.SELESAI,
                         ServiceStatus.SIAP_DIAMBIL,
                         ServiceStatus.DIAMBIL,
@@ -366,19 +373,23 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                     }
                     onChange={(e) => {
                       const selectedId = e.target.value;
-                      const techName =
-                        employees.find((emp) => emp.id === selectedId)?.name || 'Antrian Bebas';
+                       const techName =
+                         employees.find((emp) => emp.id === selectedId)?.name || 'Antrian Bebas';
+                       const requestId = ++assignmentRequestRef.current;
+                       setAssigningTechId(selectedId);
 
-                      void props.patchServiceWork(ticket.id, {
-                        assignedTechId: selectedId || null,
-                        internalDiscussion: {
-                          text: `Teknisi penanggung jawab diubah ke: ${techName}`,
-                        },
-                      }).then((updated: any) => {
-                        if (updated) onDetailUpdated?.(updated);
-                      }).catch((error: any) => {
-                        showToast(error?.message || 'Gagal mengubah teknisi.', 'error');
-                      });
+                       void props.patchServiceWork(ticket.id, {
+                         assignedTechId: selectedId || null,
+                         internalDiscussion: {
+                           text: `Teknisi penanggung jawab diubah ke: ${techName}`,
+                         },
+                       }).then((updated: any) => {
+                         if (requestId === assignmentRequestRef.current && updated) onDetailUpdated?.(updated);
+                       }).catch((error: any) => {
+                         if (requestId === assignmentRequestRef.current) showToast(error?.message || 'Gagal mengubah teknisi.', 'error');
+                       }).finally(() => {
+                         if (requestId === assignmentRequestRef.current) setAssigningTechId(null);
+                       });
                     }}
                     className="w-full text-xs px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg outline-none focus:border-accent font-semibold cursor-pointer text-slate-700"
                   >
@@ -459,7 +470,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                   </h4>
                   <div className="relative rounded-xl overflow-hidden border border-white/30 shadow-sm">
                     <img
-                       src={ticket.initialPhotos[0]}
+                       src={servicePhotoUrl(ticket.initialPhotos[0])}
                        alt={`Kondisi awal ${ticket.deviceName}`}
                        loading="lazy"
                        decoding="async"

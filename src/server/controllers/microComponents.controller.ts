@@ -341,6 +341,8 @@ export async function consumeMicroComponent(req: Request, res: Response) {
       if (!comp || !comp.is_active)
         throw httpError('Komponen tidak ditemukan atau sudah diarsipkan.', 404);
       const warehouseId = d.warehouseId || comp.warehouse_id;
+      if (warehouseId !== comp.warehouse_id)
+        throw httpError('Gudang komponen tidak sesuai dengan stok yang dipilih.', 409);
       const warehouse = await client.query(
         'SELECT id FROM warehouses WHERE id=$1 AND tenant_id=$2',
         [warehouseId, req.tenantId]

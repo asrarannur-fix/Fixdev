@@ -176,6 +176,7 @@ export const ServiceList: React.FC<any> = (props) => {
     employees,
     products,
     currentTenantId,
+    currentBranchId,
     microComponentsLoading,
     microComponentsError,
     loadMicroComponents,
@@ -284,10 +285,12 @@ export const ServiceList: React.FC<any> = (props) => {
       sla: slaFilter === 'all' ? undefined : slaFilter,
 to: dateRangeFilter === 'all' ? undefined : localDate(new Date()),
        from: dateRangeFilter === 'all' ? undefined : localDate(new Date(todayStart.getTime() - ((dateRangeFilter === 'today' ? 1 : Number(dateRangeFilter.replace('d', ''))) - 1) * 86400_000)),
+      tenantId: currentTenantId || activeTenantId || undefined,
+      branchId: currentBranchId || tenantObj?.branchId || tenantObj?.currentBranchId || undefined,
       sort: srvSort, limit: 15, offset: (page - 1) * 15,
     }).then((result) => { if (!cancelled) setServicePage(result); }).catch((error) => { if (!cancelled) showToast(error.message, 'error'); }), srvSearchQuery ? 250 : 0);
     return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [apiFetch, page, operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, showToast]);
+  }, [apiFetch, page, operationalFilter, technicianFilter, dateRangeFilter, slaFilter, qcView, srvSearchQuery, srvSort, statusFilter, showToast, currentTenantId, activeTenantId, currentBranchId, tenantObj?.branchId, tenantObj?.currentBranchId]);
   React.useEffect(() => {
     const readQuery = () => {
       const filters = readFilters();

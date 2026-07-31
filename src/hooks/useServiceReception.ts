@@ -7,6 +7,7 @@ import {
 } from '../utils/serviceReceptionUtils';
 import { CATEGORY_CONFIGS } from '../config/categoryConfigs';
 import { sanitizeServiceReceptionDraft } from '../utils/serviceReceptionDraft';
+import { uploadServicePhoto } from '../lib/api/services';
 
 interface UseServiceReceptionDeps {
   customers: any[];
@@ -15,6 +16,7 @@ interface UseServiceReceptionDeps {
   currentBranchId: string | undefined;
   tenantObj: any;
   addServiceTicket: (t: any) => Promise<any>;
+  apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   showNewSrvCustForm: boolean;
   setShowNewSrvCustForm: (v: boolean) => void;
@@ -38,6 +40,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     currentBranchId,
     tenantObj,
     addServiceTicket,
+    apiFetch,
     showToast,
     showNewSrvCustForm,
     setShowNewSrvCustForm,
@@ -138,7 +141,7 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
     } catch {
       /* abaikan draft rusak */
     }
-  }, []);
+  }, [SRV_DRAFT, setShowNewSrvCustForm]);
 
   useEffect(() => {
     const d = {
@@ -331,8 +334,26 @@ export function useServiceReception(deps: UseServiceReceptionDeps) {
 
     try {
       const createdTicket = await addServiceTicket(newTicket);
+      let previewTicket = createdTicket;
       setJustCreatedTicket(createdTicket);
       setPreviewReceptionTicket(createdTicket);
+      for (const condition of newSrvCapturedConditions) {
+        if (condition.uploaded) continue;
+        try {
+          previewTicket = await uploadServicePhoto(apiFetch, createdTicket.id, condition.blob, condition.id);
+          setNewSrvCapturedConditions((current) =>
+            current.map((item) => item.id === condition.id ? { ...item, uploaded: true } : item)
+          );
+          setJustCreatedTicket(previewTicket);
+          setPreviewReceptionTicket(previewTicket);
+        } catch (error: any) {
+          throw new Error(
+            `Tiket berhasil dibuat, tetapi foto ${condition.category} gagal diunggah: ${error?.message || 'Gagal mengunggah foto.'}`,
+            { cause: error }
+          );
+        }
+      }
+      newSrvCapturedConditions.forEach((condition) => URL.revokeObjectURL(condition.url));
       receptionIdempotencyKeyRef.current = crypto.randomUUID();
       setReceptionErrors({});
       setNewSrvCustomer('');

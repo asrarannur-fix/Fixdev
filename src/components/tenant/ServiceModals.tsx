@@ -183,6 +183,7 @@ export const ServiceModals: React.FC<any> = (props) => {
     setSelectedMicroId,
     apiFetch,
   } = props;
+  const microUsageKeyRef = React.useRef<string | null>(null);
   const sanitizedRecipientPhone = sanitizeWhatsAppPhone(String(activeWaModal?.phone || ''));
   const canSendWhatsApp = isValidIndonesianPhone(sanitizedRecipientPhone);
   const logManualWhatsApp = async (channel: string) => {
@@ -223,10 +224,10 @@ export const ServiceModals: React.FC<any> = (props) => {
             customer?.phone || '-'
           );
           return createPortal(
-            <div className="fixed inset-0 z-[160] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-fadeIn">
+            <div className="fixed inset-0 z-[160] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-fadeIn" role="dialog" aria-modal="true" aria-labelledby="service-reception-preview-title">
               <div className="bg-white rounded-3xl shadow-2xl border border-indigo-100 max-w-md w-full overflow-hidden">
                 <div className="bg-accent text-white px-5 py-4">
-                  <h3 className="font-extrabold text-sm">{preview.title}</h3>
+                  <h3 id="service-reception-preview-title" className="font-extrabold text-sm">{preview.title}</h3>
                   <p className="text-[10px] text-indigo-100 mt-1">{preview.subtitle}</p>
                 </div>
                 <div className="p-5 space-y-4">
@@ -491,6 +492,9 @@ export const ServiceModals: React.FC<any> = (props) => {
                             if (!microTicket) return;
                             setSavingMicroUsage(true);
                             try {
+                              const idempotencyKey =
+                                microUsageKeyRef.current || crypto.randomUUID();
+                              microUsageKeyRef.current = idempotencyKey;
                               await consumeMicroComponentForService(selectedMicro.id, {
                                 ticketId: microTicket.id,
                                 warehouseId: selectedMicro.warehouseId,
@@ -500,8 +504,9 @@ export const ServiceModals: React.FC<any> = (props) => {
                                   ? Number(microUnitPrice || 0)
                                   : undefined,
                                 note: microNote.trim() || undefined,
-                                idempotencyKey: `micro-${microTicket.id}-${selectedMicro.id}-${Date.now()}`,
+                                idempotencyKey,
                               });
+                              microUsageKeyRef.current = null;
                               showToast('Komponen tercatat dan stok diperbarui.', 'success');
                               setSelectedMicroId('');
                               setMicroQty(1);
@@ -528,11 +533,11 @@ export const ServiceModals: React.FC<any> = (props) => {
 
       {partOrderTicket &&
         createPortal(
-          <div className="fixed inset-0 z-[170] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[170] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="part-order-title">
             <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
               <div className="bg-accent text-white px-5 py-4 flex justify-between items-center">
                 <div>
-                  <h3 className="font-extrabold text-sm">Menunggu Spare Part</h3>
+                  <h3 id="part-order-title" className="font-extrabold text-sm">Menunggu Spare Part</h3>
                   <p className="text-[10px] text-indigo-100 mt-1">
                     Hentikan pengerjaan sementara dan catat kebutuhan part.
                   </p>
@@ -703,11 +708,11 @@ export const ServiceModals: React.FC<any> = (props) => {
 
       {additionalCostTicket &&
         createPortal(
-          <div className="fixed inset-0 z-[170] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[170] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="additional-cost-title">
             <div className="bg-white rounded-3xl shadow-2xl border border-amber-100 max-w-lg w-full overflow-hidden">
               <div className="bg-amber-500 text-white px-5 py-4 flex items-center justify-between">
                 <div>
-                  <h3 className="font-extrabold text-sm">Tambahan Biaya Sudah Disetujui</h3>
+                  <h3 id="additional-cost-title" className="font-extrabold text-sm">Tambahan Biaya Sudah Disetujui</h3>
                   <p className="text-[10px] text-amber-50 mt-1">
                     Catat persetujuan pelanggan tanpa menghentikan pengerjaan.
                   </p>

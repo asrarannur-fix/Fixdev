@@ -507,6 +507,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     currentBranchId,
     tenantObj,
     addServiceTicket,
+    apiFetch,
     showToast,
     showNewSrvCustForm,
     setShowNewSrvCustForm,
@@ -553,23 +554,28 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     }
     setCameraActive(false);
   };
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current) return;
     const canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 480;
     const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-       const newPhoto = {
-         id: `photo-${Date.now()}`,
-         category: selectedCaptureCategory,
-         url: canvas.toDataURL('image/jpeg'),
-         timestamp: new Date().toISOString(),
-       };
-      setNewSrvCapturedConditions((prev) => [...prev, newPhoto]);
-      showToast('Foto kondisi fisik berhasil diambil!', 'success');
+    if (!ctx) return;
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    if (!blob) {
+      showToast('Gagal menyiapkan foto kondisi fisik.', 'error');
+      return;
     }
+    const newPhoto = {
+      id: crypto.randomUUID(),
+      category: selectedCaptureCategory,
+      url: URL.createObjectURL(blob),
+      blob,
+      timestamp: new Date().toISOString(),
+    };
+    setNewSrvCapturedConditions((prev) => [...prev, newPhoto]);
+    showToast('Foto kondisi fisik berhasil diambil!', 'success');
   };
   const runAutoAssign = () => {
     const techs = employees.filter(
@@ -844,7 +850,8 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                  products,
                  publicBaseUrl,
                  currentTenantId,
-                microComponentsLoading,
+                 currentBranchId,
+                 microComponentsLoading,
                 microComponentsError,
                 loadMicroComponents,
                 consumeMicroComponentForService,

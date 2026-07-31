@@ -16,7 +16,7 @@ import {
 
 interface ServiceTicketActionsProps {
   ticket: { status: ServiceStatus };
-  onStatusChange: (status: ServiceStatus, note: string) => void;
+  onStatusChange: (status: ServiceStatus, note: string) => Promise<void> | void;
   onPartOrder: () => void;
   onAdditionalCost: () => void;
   onHandover?: () => void;
@@ -60,6 +60,17 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
   repairStartTime,
 }) => {
   const [showHandoverConfirm, setShowHandoverConfirm] = React.useState(false);
+  const [pendingStatus, setPendingStatus] = React.useState(false);
+
+  const changeStatus = async (status: ServiceStatus, note: string) => {
+    if (pendingStatus || status === ticket.status || !canTransition(ticket.status, status)) return;
+    setPendingStatus(true);
+    try {
+      await onStatusChange(status, note);
+    } finally {
+      setPendingStatus(false);
+    }
+  };
 
   const getActiveStepIndex = (st: ServiceStatus) => {
     const stepIndex = WORKFLOW_STEPS.findIndex((step) => step.status === st);
@@ -106,12 +117,11 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
                 <div key={idx} className="relative z-10 flex flex-1 flex-col items-center">
                   <button
                     type="button"
-                     disabled={!canChangeStatus || !canTransition(ticket.status, step.status)}
-                    onClick={() => {
-                       if (!canChangeStatus || !canTransition(ticket.status, step.status)) return;
-                      const note = `Status diperbarui via Visual Workflow ke: ${step.label}`;
-                      onStatusChange(step.status, note);
-                    }}
+                     disabled={pendingStatus || !canChangeStatus || step.status === ticket.status || !canTransition(ticket.status, step.status)}
+                     onClick={() => {
+                       if (!canChangeStatus) return;
+                       void changeStatus(step.status, `Status diperbarui via Visual Workflow ke: ${step.label}`);
+                     }}
                     className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all border-2 outline-none disabled:cursor-not-allowed disabled:opacity-40 ${
                       isCompleted
                         ? 'bg-white border-white text-emerald-600 shadow-lg shadow-white/30 scale-110'

@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import { useSaaS } from '../context/SaaSContext';
 import { readJsonResponse } from '../utils/apiResponse';
 import { ServiceStatus, CustomerSegment, PaymentMethod, Customer } from '../types';
+import { SERVICE_STATUS_META } from '../domain/serviceWorkflow';
 import jsQR from 'jsqr';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -128,6 +129,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
   const [messageInput, setMessageInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const autoSearchKeyRef = useRef<string | null>(null);
 
   // Resolve active tenant details
   const tenantId = searchedTicket?.tenantId || currentTenantId || '';
@@ -192,7 +194,12 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
       const matchingTickets = services.filter(
         (s) => s.customerId === activeCustomer.id && s.tenantId === activeCustomer.tenantId
       );
-      if (matchingTickets.length > 0 && !searchedTicket) {
+      if (
+        matchingTickets.length > 0 &&
+        (!searchedTicket ||
+          searchedTicket.customerId !== activeCustomer.id ||
+          searchedTicket.tenantId !== activeCustomer.tenantId)
+      ) {
         setTicketNo(matchingTickets[0].ticketNo);
         setSearchedTicket(matchingTickets[0]);
       }
@@ -294,7 +301,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
         downPayment: data.downPayment,
         timeline: data.timeline,
         provisionalSignatureName: data.customerNameObscured,
-        warrantyMonths: data.warrantyMonths || 3,
+        warrantyMonths: data.warrantyMonths,
         warrantyEndsAt: data.warrantyEndsAt,
       });
       triggerToast(`🎉 Berhasil melacak tiket online #${data.ticketNo}!`, 'success');
@@ -320,9 +327,13 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onBackToDashboar
     const trackingToken = params.get('tracking');
     const ticketParam = params.get('ticket');
     const subParam = params.get('sub');
-    if (trackingToken && subParam !== 'warranty-claim') {
+    if (subParam === 'warranty-claim') return;
+    const searchKey = trackingToken ? `tracking:${trackingToken}` : ticketParam ? `ticket:${ticketParam}` : null;
+    if (!searchKey || autoSearchKeyRef.current === searchKey) return;
+    autoSearchKeyRef.current = searchKey;
+    if (trackingToken) {
       performSearch('', trackingToken);
-    } else if (ticketParam && subParam !== 'warranty-claim') {
+    } else if (ticketParam) {
       setTicketNo(ticketParam);
       performSearch(ticketParam);
     }
@@ -653,7 +664,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
           let endsDate = s.warrantyEndsAt;
           if (!endsDate && s.status === ServiceStatus.SELESAI) {
             const base = s.updatedAt ? new Date(s.updatedAt) : new Date();
-            const dur = (s.warrantyMonths || 3) * 30 * 24 * 60 * 60 * 1000;
+            const dur = (s.warrantyMonths ?? 0) * 30 * 24 * 60 * 60 * 1000;
             endsDate = new Date(base.getTime() + dur).toISOString();
           }
           const isExpired = endsDate ? new Date(endsDate) < new Date() : true;
@@ -1208,7 +1219,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                                     : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400'
                                 }`}
                               >
-                                {ticket.status}
+                                {SERVICE_STATUS_META[ticket.status as ServiceStatus]?.label ?? ticket.status}
                               </span>
                             </div>
                             <h4 className="text-xs font-bold text-slate-800 dark:text-zinc-200 mt-1.5 truncate">
@@ -1236,7 +1247,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 text-[10px] font-bold font-mono px-2 py-0.5 rounded uppercase">
-                            Status: {searchedTicket.status}
+                            Status: {SERVICE_STATUS_META[searchedTicket.status as ServiceStatus]?.label ?? searchedTicket.status}
                           </span>
                           <span className="text-slate-400 dark:text-zinc-500 font-mono text-xs font-semibold">
                             Tiket: #{searchedTicket.ticketNo}
@@ -1403,10 +1414,10 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           Garansi Unit Purna Jual Aktif
                         </p>
                         <p className="text-emerald-800 dark:text-emerald-300 leading-relaxed font-medium">
-                          Garansi pengerjaan berlaku {searchedTicket.warrantyMonths || 3} bulan,
+                          Garansi pengerjaan berlaku {searchedTicket.warrantyMonths ?? 0} bulan,
                           berakhir pada:{' '}
                           <strong>
-                            {searchedTicket.warrantyEndsAt?.split('T')[0] || '2026-09-30'}
+                            {searchedTicket.warrantyEndsAt?.split('T')[0] ?? '—'}
                           </strong>
                           .
                         </p>
@@ -1568,7 +1579,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                           let endsDate = s.warrantyEndsAt;
                           if (!endsDate && s.status === ServiceStatus.SELESAI) {
                             const base = s.updatedAt ? new Date(s.updatedAt) : new Date();
-                            const dur = (s.warrantyMonths || 3) * 30 * 24 * 60 * 60 * 1000;
+                            const dur = (s.warrantyMonths ?? 0) * 30 * 24 * 60 * 60 * 1000;
                             endsDate = new Date(base.getTime() + dur).toISOString();
                           }
                           const isExpired = endsDate ? new Date(endsDate) < new Date() : true;
@@ -1587,7 +1598,7 @@ Bawa kuitansi fisik/cetak ini saat melakukan serah terima perangkat.
                                 </p>
                                 <p className="text-[10px] text-slate-400 font-mono">
                                   Berlaku:{' '}
-                                  {s.warrantyEndsAt?.split('T')[0] || '3 Bulan dari Selesai'}
+                                  {endsDate?.split('T')[0] ?? '—'}
                                 </p>
                               </div>
 
