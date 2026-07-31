@@ -183,7 +183,6 @@ export const RBACManager: React.FC = () => {
     'services-qc': 'Quality Control Perangkat',
     'services-rental': 'Manajemen Penyewaan Unit',
     'services-warranty-claims': 'Manajemen Klaim Garansi',
-    'services-knowledge-base': 'Katalog Solusi (Knowledge Base)',
     'pos-cashier': 'Buka Antarmuka Kasir POS',
     'pos-shifts': 'Manajemen Shift Kasir',
     'pos-history': 'Lihat Riwayat Penjualan POS',

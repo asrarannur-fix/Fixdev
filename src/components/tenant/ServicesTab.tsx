@@ -64,7 +64,6 @@ import { Button } from '../ui/Button';
 import { FieldServiceGps } from '../FieldServiceGps';
 import { DeviceRentalDashboard } from '../DeviceRentalDashboard';
 import { WarrantyClaims } from '../WarrantyClaims';
-import { KnowledgeBase } from '../KnowledgeBase';
 import { DocumentPrintouts } from './services/DocumentPrintouts';
 import { WhatsAppHub } from './services/WhatsAppHub';
 import { SparepartsLedger } from './services/SparepartsLedger';
@@ -964,12 +963,6 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
           />
         )}
         {/* QC sekarang tersedia langsung di modal detail tiket. */}
-        {/* Subtab: TOOLS & HELP */}
-        {localSubTab === 'knowledge-base' && (
-          <div className="h-[calc(100vh-140px)]">
-            <KnowledgeBase />
-          </div>
-        )}
         {/* Subtab: COST CALCULATOR & QUOTE GENERATOR */}
         {localSubTab === 'cost-calculator' && (
           <ServiceCostCalculator

@@ -38,6 +38,10 @@ export const createJournalEntrySchema = z.object({
       })
     )
     .min(2, { message: 'Jurnal minimal memiliki 2 baris (debit + kredit).' }),
+}).superRefine((value, ctx) => {
+  if (!value.lines.some((line) => line.debit > 0) || !value.lines.some((line) => line.credit > 0)) {
+    ctx.addIssue({ code: 'custom', path: ['lines'], message: 'Jurnal harus memiliki debit dan kredit lebih dari 0.' });
+  }
 });
 
 export const createCashTxSchema = z.object({
@@ -243,6 +247,7 @@ export const createJournalEntry = async (req: any, res: any) => {
 
       // Idempotency: reference_no uniqueness per tenant
       if (refNo) {
+        await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`journal:${tenantId}:${refNo}`]);
         const refCheck = await client.query(
           `SELECT id FROM journal_entries WHERE tenant_id = $1 AND reference_no = $2 LIMIT 1`,
           [tenantId, refNo]

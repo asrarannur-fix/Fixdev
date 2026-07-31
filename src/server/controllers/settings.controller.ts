@@ -324,7 +324,6 @@ const schemas = {
       autoReminderDays: z.number().int().min(0).max(365).optional(),
       stockLowThreshold: z.number().int().min(0).max(9999).optional(),
       enableTechnicianCommission: bool.optional(),
-      enableKnowledgeBase: bool.optional(),
       enableAutoReminder: bool.optional(),
       enableServiceModule: bool.optional(),
       enablePOSModule: bool.optional(),

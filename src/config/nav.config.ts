@@ -79,7 +79,6 @@ export const OPERATIONAL_MODULES: NavModule[] = [
     subtabs: [
       { id: "list", label: "Daftar Servis", icon: Wrench },
       { id: "new-ticket", label: "Penerimaan", icon: PlusCircle },
-      { id: "knowledge-base", label: "Knowledge Base", icon: BookOpen },
       { id: "cost-calculator", label: "Cost Calculator", icon: Calculator },
       { id: "field-service", label: "Field Service", icon: MapPin },
       { id: "rental", label: "Rental", icon: Car },

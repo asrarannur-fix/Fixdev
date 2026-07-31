@@ -167,6 +167,17 @@ export async function createPurchaseOrder(req: Request, res: Response) {
   }
   try {
     const result = await dbTransaction(async (client) => {
+      if (parsed.data.warehouseId) {
+        const warehouse = await client.query(
+          `SELECT id FROM warehouses WHERE id=$1 AND tenant_id=$2 AND ($3::uuid IS NULL OR branch_id=$3)`,
+          [parsed.data.warehouseId, req.tenantId, req.branchId || null]
+        );
+        if (!warehouse.rows[0]) {
+          const e: any = new Error('Gudang tidak valid untuk cabang ini.');
+          e.status = 422;
+          throw e;
+        }
+      }
       const total = parsed.data.items.reduce((s, i) => s + i.quantity * i.unitCost, 0);
       const poNo = await nextDocNo(client, req.tenantId!, 'purchase_orders', 'PO');
       const po = await client.query(
@@ -248,6 +259,9 @@ export async function receiveGoods(req: Request, res: Response) {
       // Idempotency: reject duplicate submissions (retry / double-click) that
       // would otherwise double-increment stock and double-post the journal.
       if (idemKey) {
+        await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+          `${tenantId}:goods-receipt:${idemKey}`,
+        ]);
         const dup = await client.query(
           `SELECT id, receipt_no AS "receiptNo" FROM goods_receipts WHERE tenant_id=$1 AND idempotency_key=$2 LIMIT 1`,
           [tenantId, idemKey]
@@ -265,8 +279,8 @@ export async function receiveGoods(req: Request, res: Response) {
 
       // Validate warehouse belongs to tenant
       const wh = await client.query(
-        `SELECT id FROM warehouses WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
-        [warehouseId, tenantId]
+        `SELECT id FROM warehouses WHERE id=$1 AND tenant_id=$2 AND ($3::uuid IS NULL OR branch_id=$3) LIMIT 1`,
+        [warehouseId, tenantId, req.branchId || null]
       );
       if (!wh.rows[0]) {
         const e: any = new Error('Gudang tidak valid untuk tenant ini.');
@@ -279,11 +293,19 @@ export async function receiveGoods(req: Request, res: Response) {
       let supplierId = parsed.data.supplierId || null;
       if (parsed.data.purchaseOrderId) {
         const poSup = await client.query(
-          `SELECT supplier_id FROM purchase_orders WHERE id=$1 AND tenant_id=$2 LIMIT 1`,
+          `SELECT supplier_id, warehouse_id, branch_id FROM purchase_orders WHERE id=$1 AND tenant_id=$2 FOR UPDATE`,
           [parsed.data.purchaseOrderId, tenantId]
         );
         if (!poSup.rows[0]) {
           const e: any = new Error('Purchase order tidak ditemukan untuk tenant ini.');
+          e.status = 422;
+          throw e;
+        }
+        if (
+          (poSup.rows[0].warehouse_id && poSup.rows[0].warehouse_id !== warehouseId) ||
+          (req.branchId && poSup.rows[0].branch_id && poSup.rows[0].branch_id !== req.branchId)
+        ) {
+          const e: any = new Error('Gudang atau cabang tidak sesuai dengan purchase order.');
           e.status = 422;
           throw e;
         }
@@ -307,8 +329,9 @@ export async function receiveGoods(req: Request, res: Response) {
 
       const gr = await client.query(
         `INSERT INTO goods_receipts (id, tenant_id, branch_id, purchase_order_id, warehouse_id, receipt_no, supplier_id, total_amount, payment_method, received_by, notes, idempotency_key)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         RETURNING id, receipt_no as "receiptNo", total_amount as "totalAmount"`,
+          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ON CONFLICT (tenant_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+          RETURNING id, receipt_no as "receiptNo", total_amount as "totalAmount"`,
         [
           tenantId,
           req.branchId || null,

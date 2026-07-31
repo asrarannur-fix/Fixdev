@@ -56,7 +56,7 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
       <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-xl" />
       <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/10 rounded-full blur-lg" />
 
-      <div className="relative flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+       <div className="relative flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="min-w-0 flex items-center gap-3">
           <span className="shrink-0 p-2.5 bg-white/20 backdrop-blur-sm rounded-xl text-white shadow-sm">
             <Wrench className="w-5 h-5" />
@@ -76,7 +76,7 @@ export const ServiceTicketHeader: React.FC<ServiceTicketHeaderProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={onPrintSpk}
             className="px-3 py-1.5 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-xl text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-all border border-white/20"

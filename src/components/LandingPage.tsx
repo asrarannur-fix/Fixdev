@@ -27,7 +27,7 @@ type BillingPlan = {
 };
 
 const modules = [
-  { icon: Wrench, title: "Servis", desc: "Kelola seluruh siklus servis dalam satu alur.", tone: "bg-indigo-50 text-indigo-600", features: ["Tiket & SPK", "Knowledge base", "Kalkulator biaya", "QC scoring", "Klaim garansi", "Field service", "Rental", "QR tracker"] },
+  { icon: Wrench, title: "Servis", desc: "Kelola seluruh siklus servis dalam satu alur.", tone: "bg-indigo-50 text-indigo-600", features: ["Tiket & SPK", "Kalkulator biaya", "QC scoring", "Klaim garansi", "Field service", "Rental", "QR tracker"] },
   { icon: Banknote, title: "POS & Pembayaran", desc: "Transaksi cepat dan pencatatan kas yang rapi.", tone: "bg-emerald-50 text-emerald-600", features: ["Kasir", "Shift kasir", "Riwayat transaksi", "Marketplace hub"] },
   { icon: Boxes, title: "Inventory", desc: "Kontrol persediaan lintas gudang dan cabang.", tone: "bg-amber-50 text-amber-600", features: ["Stok", "Transfer stok", "Lokasi gudang", "Trade-in", "Cannibal", "Sparepart kecil", "Aset", "Konsinyasi", "Purchase order"] },
   { icon: BarChart3, title: "Keuangan", desc: "Angka bisnis siap dibaca tanpa laporan manual.", tone: "bg-sky-50 text-sky-600", features: ["Chart of accounts", "Buku besar", "Laporan keuangan"] },

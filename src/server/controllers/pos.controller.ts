@@ -108,18 +108,6 @@ export const openShift = async (req: any, res: any) => {
   const { startingCash } = req.validatedBody;
 
   try {
-    // Check for existing open shift
-    const existing = await dbQuery(
-      `SELECT id FROM pos_shifts WHERE tenant_id=$1 AND branch_id=$2 AND status='OPEN' LIMIT 1`,
-      [tenantId, branchId]
-    );
-    if (existing.rows.length > 0) {
-      return res.status(409).json({
-        message: 'Shift kasir sudah dibuka. Tutup shift terlebih dahulu sebelum membuka yang baru.',
-        existingShiftId: existing.rows[0].id,
-      });
-    }
-
     const result = await dbQuery(
       `INSERT INTO pos_shifts (tenant_id, branch_id, cashier_id, starting_cash, status)
        VALUES ($1, $2, $3, $4, 'OPEN')
@@ -483,11 +471,14 @@ export const voidSale = async (req: any, res: any) => {
       for (const item of tx.items) {
         if (item.productId) {
           const restoreWarehouseId = item.warehouseId || defaultWarehouseId;
-          const stockRestore = await client.query(
-            `UPDATE product_stock SET quantity = quantity + $1
-             WHERE product_id=$2 AND warehouse_id=$3`,
-            [item.quantity, item.productId, restoreWarehouseId]
-          );
+           const stockRestore = await client.query(
+             `UPDATE product_stock ps SET quantity = ps.quantity + $1
+              FROM warehouses w, products p
+              WHERE ps.product_id=$2 AND ps.warehouse_id=$3
+                AND w.id=ps.warehouse_id AND w.tenant_id=$4 AND w.branch_id=$5
+                AND p.id=ps.product_id AND p.tenant_id=$4`,
+             [item.quantity, item.productId, restoreWarehouseId, tenantId, branchId]
+           );
           if (stockRestore.rowCount !== 1) {
             throw new Error(`Gagal mengembalikan stok ${item.name}. Data stok tidak ditemukan.`);
           }
@@ -891,9 +882,18 @@ export const posAnalytics = async (req: any, res: any) => {
   const { days } = req.query;
 
   try {
-    const result = await dbTransaction(async (client) => {
-      return getPOSAnalytics(client, tenantId, branchId, Number(days) || 30);
-    });
+    const client = await getPool().connect();
+    let result;
+    try {
+      await client.query('BEGIN READ ONLY');
+      result = await getPOSAnalytics(client, tenantId, branchId, Number(days) || 30);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
     res.json({ data: result });
   } catch (err: any) {
     res.status(500).json({ error: 'Operasi POS gagal diproses.' });

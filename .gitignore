@@ -58,3 +58,6 @@ src/mocks/sed*
 # TypeScript build artifacts
 *.tsbuildinfo
 *.map
+
+# Runtime logs (large, not source)
+logs/

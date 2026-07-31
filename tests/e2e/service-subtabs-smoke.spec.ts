@@ -36,7 +36,7 @@ test('service subtabs and safe controls work against dev data', async ({ page })
   const serviceMenu = page.getByRole('button', { name: /Servis, buka menu/ });
   if (await serviceMenu.count()) await serviceMenu.click();
 
-  const visibleTabs = ['Daftar Servis', 'Penerimaan', 'Knowledge Base', 'Cost Calculator', 'Field Service', 'Warranty'];
+  const visibleTabs = ['Daftar Servis', 'Penerimaan', 'Cost Calculator', 'Field Service', 'Warranty'];
   for (const label of visibleTabs) {
     const tab = page.getByRole('button', { name: label, exact: true });
     if (!(await tab.isVisible().catch(() => false))) continue;

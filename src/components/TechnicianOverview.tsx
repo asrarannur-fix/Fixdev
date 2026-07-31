@@ -8,7 +8,6 @@ import {
   Clock,
   AlertCircle,
   ArrowRight,
-  BookOpen,
   QrCode,
   Search,
   Battery,
@@ -33,13 +32,11 @@ import { ServiceStatus } from "../types";
 interface TechnicianOverviewProps {
   onViewTicket?: (ticketId: string) => void;
   onSetTab?: (tab: string, subTab?: string) => void;
-  onOpenKnowledgeBase?: () => void;
 }
 
 export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
   onViewTicket,
   onSetTab,
-  onOpenKnowledgeBase,
 }) => {
   const { showToast } = useToast();
   const {
@@ -394,17 +391,6 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
           </span>
         </button>
 
-        <button
-          onClick={() => onOpenKnowledgeBase && onOpenKnowledgeBase()}
-          className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 hover:border-rose-300 hover:shadow-md transition-all group"
-        >
-          <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all">
-            <BookOpen className="w-6 h-6" />
-          </div>
-          <span className="text-xs font-bold text-slate-700">
-            Skema & Panduan
-          </span>
-        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

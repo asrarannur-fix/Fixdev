@@ -205,6 +205,11 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
    };
    React.useEffect(() => {
     if (!viewingServiceTicketId) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+   }, [viewingServiceTicketId]);
+   React.useEffect(() => {
+    if (!viewingServiceTicketId) return;
     restoreFocusRef.current = document.activeElement as HTMLElement;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -312,7 +317,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex bg-slate-900/40"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-0 sm:p-4"
       onClick={closeDetail}
       role="dialog"
       aria-modal="true"
@@ -321,7 +326,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="flex h-[100dvh] w-full flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-white to-zinc-100 shadow-2xl dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950"
+        className="flex h-full max-h-[100dvh] sm:max-h-[90vh] w-full sm:rounded-2xl flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-white to-zinc-100 shadow-2xl dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -339,9 +344,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
         {/* Next-step guidance so the workflow is never "missed" */}
         <ServiceNextStepBanner status={ticket.status} />
 
-        <div className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
           {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
-          <div className="order-2 xl:order-1 xl:w-[30%] 2xl:w-[28%] border-r border-slate-100 dark:border-zinc-800 bg-gradient-to-b from-slate-50/80 to-zinc-100/50 dark:from-zinc-900/80 dark:to-zinc-950/50 p-3 lg:p-4 overflow-y-auto space-y-3">
+          <div className="order-2 border-r border-slate-100 bg-gradient-to-b from-slate-50/80 to-zinc-100/50 p-3 space-y-3 dark:border-zinc-800 dark:from-zinc-900/80 dark:to-zinc-950/50 lg:p-4 xl:order-1 xl:w-[30%] xl:overflow-y-auto xl:overscroll-contain 2xl:w-[28%]">
             <ServiceTicketSummary ticket={ticket} customer={customer} />
 
             <div className="relative overflow-hidden rounded-2xl border border-white/40 p-3 shadow-md dark:border-zinc-800/40">
@@ -521,7 +526,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
           </div>
 
           {/* RIGHT PANEL: Interactive Workstation */}
-          <div className="order-1 xl:order-2 xl:w-[70%] 2xl:w-[72%] p-3 lg:p-5 overflow-y-auto space-y-4 lg:space-y-5 flex flex-col justify-between">
+          <div className="order-1 flex flex-col justify-between space-y-4 p-3 lg:space-y-5 lg:p-5 xl:order-2 xl:w-[70%] xl:overflow-y-auto xl:overscroll-contain 2xl:w-[72%]">
             <div className="space-y-6">
               {/* Visual Repair Workflow Stepper */}
               <ServiceTicketActions

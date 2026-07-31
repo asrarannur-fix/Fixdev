@@ -131,6 +131,9 @@ export async function processPOSTransaction(
   }
 ): Promise<POSTransactionResult> {
   if (parsed.clientRequestId) {
+    await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+      `${tenantId}:${branchId}:${parsed.clientRequestId}`,
+    ]);
     const existing = await client.query(
       `SELECT id, invoice_no as "invoiceNo", grand_total as "grandTotal", created_at as "timestamp", items
        FROM pos_transactions
@@ -286,8 +289,10 @@ export async function processPOSTransaction(
   const taxAmount = Math.round((base * taxRate) / 100);
   const grandTotal = base + taxAmount;
 
-  if (parsed.depositUsed && !parsed.customerId) {
-    throw Object.assign(new Error('Customer wajib dipilih untuk pembayaran deposit.'), { status: 422 });
+  if ((parsed.depositUsed || parsed.paymentMethod === 'TEMPO') && !parsed.customerId) {
+    throw Object.assign(new Error('Customer wajib dipilih untuk pembayaran deposit atau TEMPO.'), {
+      status: 422,
+    });
   }
   if (parsed.depositUsed && parsed.customerId) {
     const customerRes = await client.query(
@@ -302,7 +307,10 @@ export async function processPOSTransaction(
   // Handle payments
   const depositUsed = Math.min(grandTotal, Math.max(0, Number(parsed.depositUsed) || 0));
   const cashDue = Math.max(0, grandTotal - depositUsed);
-  const amountPaid = Math.max(0, Number(parsed.amountPaid) || (depositUsed ? 0 : grandTotal));
+  const amountPaid = Math.max(
+    0,
+    parsed.amountPaid === undefined ? (depositUsed || parsed.paymentMethod === 'TEMPO' ? 0 : grandTotal) : Number(parsed.amountPaid)
+  );
   const changeAmount = Math.max(0, amountPaid - cashDue);
 
   // Validasi pembayaran cicilan
@@ -310,10 +318,10 @@ export async function processPOSTransaction(
   let splitTotal = 0;
   if (splitPayments && splitPayments.length > 0) {
     splitTotal = splitPayments.reduce((s, p) => s + Number(p.amount), 0);
-    if (Math.abs(splitTotal - grandTotal) > 1) {
+    if (Math.abs(splitTotal - cashDue) > 1) {
       throw Object.assign(
         new Error(
-          `Total split payment (Rp${splitTotal.toLocaleString('id-ID')}) tidak sesuai grand total (Rp${grandTotal.toLocaleString('id-ID')}).`
+          `Total split payment (Rp${splitTotal.toLocaleString('id-ID')}) tidak sesuai total yang harus dibayar (Rp${cashDue.toLocaleString('id-ID')}).`
         ),
         { status: 422 }
       );
@@ -323,6 +331,7 @@ export async function processPOSTransaction(
   // Jumlah efektif dibayar: saat pembayaran dicicil, jumlah yang benar-benar dibayar
   // is the sum of splits (also fixes the amountPaid stored for split sales).
   const effectivePaid = splitPayments && splitPayments.length > 0 ? splitTotal : amountPaid;
+  const appliedPayment = Math.min(effectivePaid, cashDue);
   // Hitung ulang kembalian terhadap jumlah efektif.
   const effectiveChange = Math.max(0, effectivePaid - cashDue);
   // Tolak pembayaran kurang pada penjualan non-kredit (TEMPO bisa menyisakan piutang).
@@ -332,12 +341,16 @@ export async function processPOSTransaction(
     });
   }
   const year = new Date().getFullYear();
-  await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [tenantId]);
+  await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+    `${tenantId}:invoice:${year}`,
+  ]);
   const seqRes = await client.query(
-    `SELECT COUNT(*)::int AS cnt FROM pos_transactions WHERE tenant_id=$2 AND EXTRACT(YEAR FROM created_at)=$1`,
-    [year, tenantId]
+    `SELECT COALESCE(MAX((regexp_match(invoice_no, '/(\\d+)$'))[1]::int), 0) + 1 AS next_no
+     FROM pos_transactions
+     WHERE tenant_id=$1 AND invoice_no LIKE $2`,
+    [tenantId, `INV/POS/${year}/%`]
   );
-  const invoiceNo = `INV/POS/${year}/${((seqRes.rows[0]?.cnt ?? 0) + 1).toString().padStart(5, '0')}`;
+  const invoiceNo = `INV/POS/${year}/${Number(seqRes.rows[0]?.next_no || 1).toString().padStart(5, '0')}`;
 
   // Insert transaction
   const txRes = await client.query(
@@ -402,9 +415,8 @@ export async function processPOSTransaction(
 
   // Accounting journal
   const netSales = subtotal - totalDisc;
-  const debitCode = paymentDebitAccountCode(parsed.paymentMethod);
-  const debitAcctId = await ensureAccount(client, tenantId, debitCode);
-  const salesAcctId = await ensureAccount(client, tenantId, '40100');
+   const debitCode = paymentDebitAccountCode(parsed.paymentMethod);
+   const salesAcctId = await ensureAccount(client, tenantId, '40100');
   const taxAcctId = await ensureAccount(client, tenantId, '20100');
   const hppAcctId = await ensureAccount(client, tenantId, '50100');
   const inventoryAcctId = await ensureAccount(client, tenantId, '10200');
@@ -417,11 +429,35 @@ export async function processPOSTransaction(
     );
     const journalId = journalRes.rows[0].id;
 
-    await client.query(
-      `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
-       VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
-      [journalId, debitAcctId, grandTotal]
-    );
+    if (depositUsed > 0) {
+      const depositAcctId = await ensureAccount(client, tenantId, '21000');
+      await client.query(
+        `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
+         VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
+        [journalId, depositAcctId, depositUsed]
+      );
+    }
+    if (appliedPayment > 0) {
+      const paidDebitAcctId = await ensureAccount(
+        client,
+        tenantId,
+        debitCode
+      );
+      await client.query(
+        `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
+         VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
+        [journalId, paidDebitAcctId, appliedPayment]
+      );
+    }
+    const receivableAmount = Math.max(0, cashDue - effectivePaid);
+    if (receivableAmount > 0) {
+      const receivableAcctId = await ensureAccount(client, tenantId, '10300');
+      await client.query(
+        `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
+         VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
+        [journalId, receivableAcctId, receivableAmount]
+      );
+    }
     await client.query(
       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
        VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
@@ -459,11 +495,14 @@ export async function processPOSTransaction(
     const dueAt = new Date(
       Date.now() + (Number(parsed.paymentDetails) || 30) * 86400000
     ).toISOString();
-    await client.query(
-      `INSERT INTO pos_receivables (id, tenant_id, branch_id, transaction_id, invoice_no, customer_id, amount, due_at, status)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, 'RECEIVABLE')`,
-      [tenantId, branchId, txId, invoiceNo, parsed.customerId || null, grandTotal, dueAt]
-    );
+    const receivableAmount = Math.max(0, cashDue - effectivePaid);
+    if (receivableAmount > 0) {
+      await client.query(
+        `INSERT INTO pos_receivables (id, tenant_id, branch_id, transaction_id, invoice_no, customer_id, amount, due_at, status)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, 'RECEIVABLE')`,
+        [tenantId, branchId, txId, invoiceNo, parsed.customerId, receivableAmount, dueAt]
+      );
+    }
   }
 
   // Pelacakan penggunaan deposit via tabel audit customer_deposits
@@ -713,11 +752,14 @@ export async function processPartialRefund(
           `Gudang tidak dikonfigurasi untuk produk ${origItem.name || origItem.productId}.`
         );
       }
-      const stockRestore = await client.query(
-        `UPDATE product_stock SET quantity = quantity + $1
-         WHERE product_id=$2 AND warehouse_id=$3`,
-        [ri.refundQuantity, origItem.productId, restoreWarehouseId]
-      );
+       const stockRestore = await client.query(
+         `UPDATE product_stock ps SET quantity = ps.quantity + $1
+          FROM warehouses w, products p
+          WHERE ps.product_id=$2 AND ps.warehouse_id=$3
+            AND w.id=ps.warehouse_id AND w.tenant_id=$4 AND w.branch_id=$5
+            AND p.id=ps.product_id AND p.tenant_id=$4`,
+         [ri.refundQuantity, origItem.productId, restoreWarehouseId, tenantId, branchId]
+       );
       if (stockRestore.rowCount !== 1) {
         throw new Error(
           `Gagal mengembalikan stok ${origItem.name || origItem.productId}. Data stok tidak ditemukan.`
@@ -746,17 +788,21 @@ export async function processPartialRefund(
   );
   const journalId = journalRes.rows[0].id;
 
-  const cashAcctId = await ensureAccount(client, tenantId, '10100');
-  const salesAcctId = await ensureAccount(client, tenantId, '40100');
+   const paymentAcctId = await ensureAccount(
+     client,
+     tenantId,
+     paymentDebitAccountCode(tx.paymentMethod)
+   );
+   const salesAcctId = await ensureAccount(client, tenantId, '40100');
   const taxAcctId = await ensureAccount(client, tenantId, '20100');
 
-  if (cashAcctId) {
-    await client.query(
-      `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
-       VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
-      [journalId, cashAcctId, netRefund]
-    );
-  }
+   if (paymentAcctId) {
+     await client.query(
+       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
+        VALUES (gen_random_uuid(), $1, $2, 0, $3)`,
+       [journalId, paymentAcctId, netRefund]
+     );
+   }
   if (salesAcctId) {
     await client.query(
       `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)

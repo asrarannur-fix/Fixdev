@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   Handshake,
-  AlertTriangle,
 } from 'lucide-react';
 
 interface ServiceTicketActionsProps {
@@ -59,7 +58,6 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
   slaSeconds = 48 * 3600,
   repairStartTime,
 }) => {
-  const [showHandoverConfirm, setShowHandoverConfirm] = React.useState(false);
   const [pendingStatus, setPendingStatus] = React.useState(false);
 
   const changeStatus = async (status: ServiceStatus, note: string) => {
@@ -101,7 +99,7 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
             </span>
           </div>
 
-          <div className="relative flex items-start justify-between px-1">
+          <div className="relative flex items-start justify-between overflow-x-auto pb-4 px-1">
             <div className="absolute left-6 right-6 top-4 z-0 h-1 rounded-full bg-white/20" />
             <div
               className="absolute left-6 top-4 z-0 h-1 rounded-full bg-white transition-all duration-500"
@@ -114,7 +112,7 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
               const gradient = stepGradients[idx] || stepGradients[0];
 
               return (
-                <div key={idx} className="relative z-10 flex flex-1 flex-col items-center">
+                <div key={idx} className="relative z-10 flex min-w-16 flex-1 flex-col items-center">
                   <button
                     type="button"
                      disabled={pendingStatus || !canChangeStatus || step.status === ticket.status || !canTransition(ticket.status, step.status)}
@@ -204,7 +202,7 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
               {canHandover && [ServiceStatus.SELESAI, ServiceStatus.MENUGGU_PEMBAYARAN, ServiceStatus.SIAP_DIAMBIL].includes(ticket.status) && (
                 <button
                   type="button"
-                  onClick={() => setShowHandoverConfirm(true)}
+                  onClick={() => onHandover?.()}
                   className="px-3 py-1.5 rounded-xl bg-white text-rose-600 text-[10px] font-black flex items-center gap-1.5 shadow-lg hover:shadow-xl transition-all"
                 >
                   <Handshake className="w-3.5 h-3.5" /> Ambil Unit
@@ -236,53 +234,6 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
         </div>
       </div>
 
-      {/* Handover Confirmation Dialog */}
-      {showHandoverConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="handover-title"
-          aria-describedby="handover-desc"
-        >
-          <div className="relative overflow-hidden w-80 rounded-2xl shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-400 to-red-400" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-white/10" />
-            <div className="relative p-5">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-white/20 rounded-xl text-white">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <h3 id="handover-title" className="text-sm font-black text-white">Konfirmasi Ambil Unit</h3>
-                  <p id="handover-desc" className="mt-1 text-[11px] text-white/80">
-                    Tandai tiket ini sebagai <strong>diambil</strong> oleh pemilik? Pastikan unit sudah diserahkan dan pembayaran lunas.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowHandoverConfirm(false)}
-                  className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold border border-white/20"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowHandoverConfirm(false);
-                    if (onHandover) onHandover();
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-white text-orange-600 text-[10px] font-black shadow-lg"
-                >
-                  Ya, Ambil Unit
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

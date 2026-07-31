@@ -15,20 +15,6 @@ import {
 
 export const SERVICE_TRANSITIONS: Record<string, string[]> = DOMAIN_SERVICE_TRANSITIONS;
 
-// Rate limiting: track last transition time per ticket
-const ticketTransitionTimes: Map<string, number> = new Map();
-const TRANSITION_COOLDOWN_MS = 5000; // 5 seconds cooldown per ticket
-
-function checkTransitionCooldown(ticketId: string): { ok: boolean; remainingMs?: number } {
-  const lastTime = ticketTransitionTimes.get(ticketId);
-  if (!lastTime) return { ok: true };
-  const elapsed = Date.now() - lastTime;
-  if (elapsed < TRANSITION_COOLDOWN_MS) {
-    return { ok: false, remainingMs: TRANSITION_COOLDOWN_MS - elapsed };
-  }
-  return { ok: true };
-}
-
 export function canTransition(from: string, to: string): boolean {
   return canServiceTransition(
     from as keyof typeof SERVICE_TRANSITIONS,
@@ -341,15 +327,22 @@ async function appendEvent(
   );
   ticket.status = toStatus;
   ticket.timeline = timeline;
-  await queueNotification(
-    client,
-    req.tenantId!,
-    ticket,
-    inserted.rows[0].id,
-    note,
-    templateCategory,
-    { toStatus, note, metadata }
-  );
+  await client.query('SAVEPOINT service_notification');
+  try {
+    await queueNotification(
+      client,
+      req.tenantId!,
+      ticket,
+      inserted.rows[0].id,
+      note,
+      templateCategory,
+      { toStatus, note, metadata }
+    );
+  } catch (error: any) {
+    await client.query('ROLLBACK TO SAVEPOINT service_notification');
+    logger.error({ err: error.message, tenantId: req.tenantId, ticketId: ticket.id }, '[service] notification queue failed');
+  }
+  await client.query('RELEASE SAVEPOINT service_notification');
   return ticket;
 }
 
@@ -655,13 +648,6 @@ export async function transitionServiceTicket(req: Request, res: Response) {
   const startedAt = Date.now();
   const parsed = transitionSchema.safeParse(req.body);
   if (!parsed.success) return res.status(422).json({ error: 'Status atau catatan tidak valid.' });
-  const ticketId = `${req.tenantId}:${req.branchId || String(req.headers['x-branch-id'] || '')}:${req.params.id}`;
-  const cooldown = checkTransitionCooldown(ticketId);
-  if (!cooldown.ok) {
-    return res.status(429).json({
-      error: `Tunggu ${Math.ceil(cooldown.remainingMs / 1000)} detik sebelum ubah status lagi.`,
-    });
-  }
   try {
     const ticket = await dbTransaction(async (client) => {
       const current = await lockedTicket(client, req);
@@ -706,7 +692,6 @@ export async function transitionServiceTicket(req: Request, res: Response) {
         throw error;
       }
       await appendEvent(client, req, current, to, parsed.data.note);
-      ticketTransitionTimes.set(ticketId, Date.now());
       return finalTicket(client, req);
     });
     logServiceOperation(req, 'workflow_transition', 'success', startedAt, { toStatus: parsed.data.status });

@@ -141,7 +141,6 @@ export const ModuleParameterConfig: React.FC = () => {
   );
   const [enableCRMModule, setEnableCRMModule] = useState(s('enableCRMModule', true));
   const [enableCustomerPortal, setEnableCustomerPortal] = useState(s('enableCustomerPortal', true));
-  const [enableKnowledgeBase, setEnableKnowledgeBase] = useState(s('enableKnowledgeBase', true));
 
   useEffect(() => {
     const settings = activeTenant?.settings;
@@ -189,7 +188,6 @@ export const ModuleParameterConfig: React.FC = () => {
     setEnableAccountingModule(gp('enableAccountingModule', true));
     setEnableCRMModule(gp('enableCRMModule', true));
     setEnableCustomerPortal(gp('enableCustomerPortal', true));
-    setEnableKnowledgeBase(gp('enableKnowledgeBase', true));
   }, [currentTenantId, activeTenant]);
 
   const handleSave = async () => {
@@ -244,7 +242,6 @@ export const ModuleParameterConfig: React.FC = () => {
             autoReminderDays: clamp(autoReminderDays, 0, 365),
             stockLowThreshold: clamp(stockLowThreshold, 0, 9999),
             enableTechnicianCommission,
-            enableKnowledgeBase,
             enableAutoReminder,
             enableServiceModule,
             enablePOSModule,
@@ -353,12 +350,6 @@ export const ModuleParameterConfig: React.FC = () => {
             onToggle={() => setEnableCustomerPortal(!enableCustomerPortal)}
             label="Portal Pelanggan"
             desc="Portal self-service untuk cek status servis"
-          />
-          <Switch
-            enabled={enableKnowledgeBase}
-            onToggle={() => setEnableKnowledgeBase(!enableKnowledgeBase)}
-            label="Skema & Panduan Teknis"
-            desc="Modul knowledge base dan dokumentasi teknis"
           />
         </div>
       </div>

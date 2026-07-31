@@ -146,7 +146,6 @@ export interface TenantSettings {
     autoReminderDays?: number;
     stockLowThreshold?: number;
     enableTechnicianCommission?: boolean;
-    enableKnowledgeBase?: boolean;
     enableAutoReminder?: boolean;
     enableServiceModule?: boolean;
     enablePOSModule?: boolean;

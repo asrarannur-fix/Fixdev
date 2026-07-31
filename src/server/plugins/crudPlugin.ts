@@ -26,6 +26,7 @@ export interface CrudResourceConfig {
   softDelete?: boolean;
   /** Read-only resources must use their dedicated business workflow. */
   readOnly?: boolean;
+  writableFields?: string[];
 }
 
 /**
@@ -34,16 +35,16 @@ export interface CrudResourceConfig {
  * from the client.
  */
 export const CRUD_RESOURCES: Record<string, CrudResourceConfig> = {
-  customers: { table: 'customers' },
-  products: { table: 'products' },
+  customers: { table: 'customers', writableFields: ['name', 'phone', 'email', 'address', 'notes'] },
+  products: { table: 'products', writableFields: ['name', 'sku', 'description', 'sell_price', 'purchase_cost', 'category', 'brand', 'unit', 'is_active'] },
   service_tickets: { table: 'service_tickets', readOnly: true },
-  warehouses: { table: 'warehouses' },
-  branches: { table: 'branches' },
-  coa_accounts: { table: 'coa_accounts', feature: 'ACCOUNTING' },
+  warehouses: { table: 'warehouses', writableFields: ['name', 'address', 'is_active'] },
+  branches: { table: 'branches', writableFields: ['name', 'address', 'phone', 'is_active'] },
+  coa_accounts: { table: 'coa_accounts', feature: 'ACCOUNTING', writableFields: ['code', 'name', 'type', 'is_group'] },
   journal_entries: { table: 'journal_entries', feature: 'ACCOUNTING', readOnly: true },
   pos_shifts: { table: 'pos_shifts', readOnly: true },
-  suppliers: { table: 'suppliers' },
-  module_records: { table: 'module_records' },
+  suppliers: { table: 'suppliers', writableFields: ['name', 'phone', 'email', 'address', 'notes'] },
+  module_records: { table: 'module_records', writableFields: ['module', 'record_id', 'payload'] },
 };
 
 const RESERVED_QUERY = new Set([
@@ -89,6 +90,15 @@ const resolveResource = async (
 const hasColumn = (cols: string[] | undefined, name: string) =>
   Boolean(cols && cols.includes(name));
 
+function sanitizeWritablePayload(cfg: CrudResourceConfig, payload: unknown, cols: string[]) {
+  const sanitized = sanitizePayloadForTable(cfg.table, payload, cols);
+  for (const key of Object.keys(sanitized)) {
+    if (!cfg.writableFields?.includes(key)) delete sanitized[key];
+    else if (sanitized[key] !== null && typeof sanitized[key] === 'object') sanitized[key] = JSON.stringify(sanitized[key]);
+  }
+  return sanitized;
+}
+
 const requireCrudPermission = (
   req: express.Request,
   res: express.Response,
@@ -124,7 +134,8 @@ const requireCrudPermission = (
 async function validateCrudPayload(
   req: express.Request,
   res: express.Response,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  index?: number
 ) {
   const table = req.crudCfg!.table;
   const tenantId = req.tenantId;
@@ -140,7 +151,7 @@ async function validateCrudPayload(
     payload[required] !== undefined &&
     !String(payload[required]).trim()
   ) {
-    res.status(422).json({ error: `${required === 'name' ? 'Nama' : required} wajib diisi.` });
+    res.status(422).json({ error: `${required === 'name' ? 'Nama' : required} wajib diisi.`, ...(index === undefined ? {} : { index }) });
     return false;
   }
   for (const field of ['sell_price', 'purchase_cost', 'stock_qty', 'opening_cash']) {
@@ -148,7 +159,7 @@ async function validateCrudPayload(
       payload[field] !== undefined &&
       (!Number.isFinite(Number(payload[field])) || Number(payload[field]) < 0)
     ) {
-      res.status(422).json({ error: `Nilai ${field} harus angka nol atau lebih.` });
+      res.status(422).json({ error: `Nilai ${field} harus angka nol atau lebih.`, ...(index === undefined ? {} : { index }) });
       return false;
     }
   }
@@ -166,7 +177,7 @@ async function validateCrudPayload(
     if (duplicate.rows[0]) {
       res
         .status(409)
-        .json({ error: `${uniqueField === 'sku' ? 'SKU' : 'Kode COA'} sudah digunakan.` });
+        .json({ error: `${uniqueField === 'sku' ? 'SKU' : 'Kode COA'} sudah digunakan.`, ...(index === undefined ? {} : { index }) });
       return false;
     }
   }
@@ -291,9 +302,11 @@ export async function createCrudBatch(req: express.Request, res: express.Respons
   if (items.length === 0 || items.length > 1000)
     return res.status(422).json({ error: 'Jumlah data import harus 1 sampai 1000 baris.' });
   const sanitizedItems: Record<string, unknown>[] = [];
-  for (const item of items) {
-    const sanitized = sanitizePayloadForTable(cfg.table, item, cols);
-    if (!(await validateCrudPayload(req, res, sanitized))) return;
+  for (const [index, item] of items.entries()) {
+    if (!item || typeof item !== 'object' || Array.isArray(item))
+      return res.status(422).json({ error: 'Data import tidak valid.', index });
+    const sanitized = sanitizeWritablePayload(cfg, item, cols);
+    if (!(await validateCrudPayload(req, res, sanitized, index))) return;
     if (hasColumn(cols, 'tenant_id') && req.tenantId) sanitized.tenant_id = req.tenantId;
     if (hasColumn(cols, 'branch_id') && req.branchId) sanitized.branch_id = req.branchId;
     sanitizedItems.push(sanitized);
@@ -322,7 +335,7 @@ export async function createCrud(req: express.Request, res: express.Response) {
   if (cfg.table === 'branches')
     return res.status(403).json({ error: 'Gunakan endpoint cabang khusus untuk membuat cabang.' });
   const tenantId = req.tenantId;
-  const sanitized = sanitizePayloadForTable(cfg.table, req.body || {}, cols);
+  const sanitized = sanitizeWritablePayload(cfg, req.body || {}, cols);
   if (!(await validateCrudPayload(req, res, sanitized))) return;
   if (hasColumn(cols, 'tenant_id') && tenantId) sanitized.tenant_id = tenantId;
   if (hasColumn(cols, 'branch_id') && req.branchId) sanitized.branch_id = req.branchId;
@@ -366,7 +379,7 @@ export async function updateCrud(req: express.Request, res: express.Response) {
   const cols = req.crudColumns!;
   if (cfg.readOnly)
     return res.status(403).json({ error: 'Data hanya dapat diubah melalui alur modul terkait.' });
-  const sanitized = sanitizePayloadForTable(cfg.table, req.body || {}, cols);
+  const sanitized = sanitizeWritablePayload(cfg, req.body || {}, cols);
   if (!(await validateCrudPayload(req, res, sanitized))) return;
   delete sanitized.id;
   delete sanitized.tenant_id;

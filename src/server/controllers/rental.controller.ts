@@ -407,6 +407,16 @@ export async function createDevice(req: Request, res: Response) {
     if (catalogCheck.rows.length === 0)
       return res.status(404).json({ error: 'Catalog item not found' });
 
+    const targetBranchId = data.branchId ?? branchId ?? null;
+    if (targetBranchId) {
+      const branchCheck = await dbQuery(
+        `SELECT id FROM branches WHERE id = $1 AND tenant_id = $2`,
+        [targetBranchId, tenantId]
+      );
+      if (branchCheck.rows.length === 0)
+        return res.status(422).json({ error: 'Branch not found for tenant' });
+    }
+
     const serialCheck = await dbQuery(
       `SELECT 1 FROM rental_devices WHERE tenant_id = $1 AND serial_number = $2`,
       [tenantId, data.serialNumber]
@@ -422,7 +432,7 @@ export async function createDevice(req: Request, res: Response) {
       [
         tenantId,
         data.catalogId,
-        data.branchId ?? branchId ?? null,
+          targetBranchId,
         data.serialNumber,
         data.imeiOrMac ?? null,
         data.condition ?? 'NEW',
@@ -458,6 +468,23 @@ export async function updateDevice(req: Request, res: Response) {
     } catch (err: unknown) {
       if (handleZodError(err, res)) return;
       throw err;
+    }
+
+    if (data.catalogId) {
+      const catalogCheck = await dbQuery(
+        `SELECT id FROM rental_device_catalog WHERE id = $1 AND tenant_id = $2`,
+        [data.catalogId, tenantId]
+      );
+      if (catalogCheck.rows.length === 0)
+        return res.status(422).json({ error: 'Catalog item not found for tenant' });
+    }
+    if (data.branchId) {
+      const branchCheck = await dbQuery(`SELECT id FROM branches WHERE id = $1 AND tenant_id = $2`, [
+        data.branchId,
+        tenantId,
+      ]);
+      if (branchCheck.rows.length === 0)
+        return res.status(422).json({ error: 'Branch not found for tenant' });
     }
 
     const fields: string[] = [];
@@ -727,8 +754,9 @@ export async function createContract(req: Request, res: Response) {
          FROM rental_devices d
          JOIN rental_device_catalog cat ON cat.id = d.catalog_id AND cat.tenant_id = d.tenant_id
          WHERE d.id = $1 AND d.tenant_id = $2 AND d.status = 'AVAILABLE'
+           AND ($3::uuid IS NULL OR d.branch_id = $3)
          FOR UPDATE OF d`,
-        [data.deviceId, tenantId]
+        [data.deviceId, tenantId, branchId ?? null]
       );
       if (deviceCheck.rows.length === 0) throw new Error('DEVICE_NOT_AVAILABLE');
 
@@ -739,9 +767,9 @@ export async function createContract(req: Request, res: Response) {
       const contractNumber = await generateContractNumber(client, tenantId);
       const contractResult = await client.query(
         `INSERT INTO rental_contracts
-         (tenant_id, contract_number, branch_id, customer_id, device_id, start_date, end_date,
-          duration_days, rate_per_day, total_rent_amount, deposit_amount, deposit_paid, status, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11, 'ACTIVE', $12)
+          (tenant_id, contract_number, branch_id, customer_id, device_id, start_date, end_date,
+           duration_days, rate_per_day, total_rent_amount, deposit_amount, deposit_paid, payment_status, status, notes)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, 'PENDING', 'ACTIVE', $12)
          RETURNING *`,
         [
           tenantId,
@@ -766,20 +794,6 @@ export async function createContract(req: Request, res: Response) {
         [data.deviceId, tenantId]
       );
       if (deviceUpdate.rowCount !== 1) throw new Error('DEVICE_NOT_AVAILABLE');
-
-      for (const [paymentType, amount] of [
-        ['RENT', totalRent],
-        ['DEPOSIT', depositAmount],
-      ] as const) {
-        if (amount > 0) {
-          await client.query(
-            `INSERT INTO rental_payments
-             (tenant_id, contract_id, payment_type, amount, payment_method, recorded_by)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [tenantId, newContract.id, paymentType, amount, data.paymentMethod, userId ?? null]
-          );
-        }
-      }
 
       await client.query(
         `INSERT INTO rental_contract_events (tenant_id, contract_id, event_type, description, metadata, user_id)
@@ -1082,12 +1096,25 @@ export async function createPayment(req: Request, res: Response) {
 
     const payment = await dbTransaction(async (client) => {
       const contractCheck = await client.query(
-        `SELECT status FROM rental_contracts WHERE id = $1 AND tenant_id = $2 FOR UPDATE`,
+        `SELECT status, total_rent_amount, deposit_amount FROM rental_contracts WHERE id = $1 AND tenant_id = $2 FOR UPDATE`,
         [data.contractId, tenantId]
       );
       if (contractCheck.rows.length === 0) throw new Error('CONTRACT_NOT_FOUND');
       if (['RETURNED', 'CANCELLED'].includes(contractCheck.rows[0].status))
         throw new Error('CONTRACT_CLOSED');
+      const contract = contractCheck.rows[0];
+      if (data.paymentType === 'RENT' || data.paymentType === 'DEPOSIT') {
+        const limit =
+          data.paymentType === 'RENT'
+            ? Number(contract.total_rent_amount)
+            : Number(contract.deposit_amount);
+        const paid = await client.query(
+          `SELECT COALESCE(SUM(amount), 0) AS amount FROM rental_payments WHERE contract_id=$1 AND tenant_id=$2 AND payment_type=$3`,
+          [data.contractId, tenantId, data.paymentType]
+        );
+        if (Number(paid.rows[0].amount) + data.amount > limit)
+          throw new Error('PAYMENT_OVERPAYMENT');
+      }
 
       const paymentResult = await client.query(
         `INSERT INTO rental_payments 
@@ -1110,6 +1137,12 @@ export async function createPayment(req: Request, res: Response) {
         await client.query(
           `UPDATE rental_contracts SET deposit_paid = deposit_paid + $1 WHERE id = $2 AND tenant_id = $3`,
           [data.amount, data.contractId, tenantId]
+        );
+      }
+      if (data.paymentType === 'RENT') {
+        await client.query(
+          `UPDATE rental_contracts SET payment_status = CASE WHEN (SELECT COALESCE(SUM(amount), 0) FROM rental_payments WHERE contract_id=$1 AND tenant_id=$2 AND payment_type='RENT') >= total_rent_amount THEN 'PAID' ELSE 'PARTIAL' END WHERE id=$1 AND tenant_id=$2`,
+          [data.contractId, tenantId]
         );
       }
 
@@ -1135,6 +1168,9 @@ export async function createPayment(req: Request, res: Response) {
     }
     if (err instanceof Error && err.message === 'CONTRACT_CLOSED') {
       return res.status(409).json({ error: 'Contract already closed' });
+    }
+    if (err instanceof Error && err.message === 'PAYMENT_OVERPAYMENT') {
+      return res.status(422).json({ error: 'Payment exceeds contract balance' });
     }
     logger.error({ err: err instanceof Error ? err.message : String(err) }, 'createPayment failed');
     res.status(500).json({ error: 'Gagal membuat data pembayaran.' });
