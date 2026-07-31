@@ -201,7 +201,7 @@ export const ServiceTicketActions: React.FC<ServiceTicketActionsProps> = ({
                 </>
               )}
 
-              {canHandover && ticket.status === ServiceStatus.SELESAI && (
+              {canHandover && [ServiceStatus.SELESAI, ServiceStatus.MENUGGU_PEMBAYARAN, ServiceStatus.SIAP_DIAMBIL].includes(ticket.status) && (
                 <button
                   type="button"
                   onClick={() => setShowHandoverConfirm(true)}

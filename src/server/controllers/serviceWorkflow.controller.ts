@@ -510,7 +510,7 @@ export async function uploadServicePhoto(req: Request, res: Response) {
   const fileName = path.basename(req.params.fileName || '');
   const contentType = String(req.headers['content-type'] || '').split(';')[0];
   const conditionId = typeof req.query.conditionId === 'string' ? req.query.conditionId : '';
-  if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName) || !Buffer.isBuffer(req.body) || req.body.length < 1 || req.body.length > SERVICE_PHOTO_BYTES || !validPhotoSignature(req.body, contentType))
+  if (!/^[0-9a-f-]+\.(jpg|png)$/i.test(fileName) || (contentType === 'image/jpeg' && !fileName.endsWith('.jpg')) || (contentType === 'image/png' && !fileName.endsWith('.png')) || !Buffer.isBuffer(req.body) || req.body.length < 1 || req.body.length > SERVICE_PHOTO_BYTES || !validPhotoSignature(req.body, contentType))
     return res.status(422).json({ error: 'File foto tidak valid.' });
   if (conditionId && !/^[\w-]{1,200}$/.test(conditionId)) return res.status(422).json({ error: 'Kondisi foto tidak valid.' });
   const objectPath = servicePhotoPath(req.tenantId!, req.params.id, fileName.replace(/\.(jpg|png)$/i, ''), fileName.endsWith('.png') ? 'png' : 'jpg');
@@ -1553,6 +1553,8 @@ export async function bulkDeleteServiceTickets(req: Request, res: Response) {
     const result = await dbQuery(
       `UPDATE service_tickets SET deleted_at=NOW(),updated_at=NOW()
        WHERE tenant_id=$1 AND branch_id=$2 AND deleted_at IS NULL AND id=ANY($3::uuid[])
+         AND NOT EXISTS (SELECT 1 FROM service_payments sp WHERE sp.tenant_id=service_tickets.tenant_id AND sp.ticket_id=service_tickets.id)
+         AND NOT EXISTS (SELECT 1 FROM service_parts part WHERE part.tenant_id=service_tickets.tenant_id AND part.ticket_id=service_tickets.id AND part.status='USED')
        RETURNING id, initial_photos, qc_photos`,
       [req.tenantId, req.branchId, parsed.data.ids]
     );
@@ -1573,8 +1575,8 @@ export async function settleServiceReceivable(req: Request, res: Response) {
     const result = await dbTransaction(async (client) => {
       const receivable = await client.query(
         `SELECT sr.*,st.ticket_no FROM service_receivables sr
-         JOIN service_tickets st ON st.id=sr.ticket_id AND st.tenant_id=sr.tenant_id AND st.branch_id=sr.branch_id
-         WHERE sr.id=$1 AND sr.tenant_id=$2 AND sr.branch_id=$3 FOR UPDATE`,
+          JOIN service_tickets st ON st.id=sr.ticket_id AND st.tenant_id=sr.tenant_id AND st.branch_id=sr.branch_id
+          WHERE sr.id=$1 AND sr.tenant_id=$2 AND sr.branch_id=$3 AND st.deleted_at IS NULL AND sr.status IN ('OPEN','PARTIAL') FOR UPDATE`,
         [req.params.receivableId, req.tenantId, req.branchId || req.headers['x-branch-id']]
       );
       if (!receivable.rows[0]) {

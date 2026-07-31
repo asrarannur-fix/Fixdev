@@ -45,6 +45,12 @@ describe('service list query contract', () => {
     expect(controller).toContain('RETURNING ${ticketSelect()}');
   });
 
+  it('protects service payment and photo lifecycle boundaries', () => {
+    expect(controller).toContain("st.deleted_at IS NULL AND sr.status IN ('OPEN','PARTIAL')");
+    expect(controller).toContain("AND NOT EXISTS (SELECT 1 FROM service_payments");
+    expect(controller).toContain("contentType === 'image/jpeg' && !fileName.endsWith('.jpg')");
+  });
+
   it('scopes QC photos to current ticket storage prefix', () => {
     expect(controller).toContain('function validTicketPhotos');
     expect(controller).toContain("'Foto QC tidak sesuai tiket aktif.'");
