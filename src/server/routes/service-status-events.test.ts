@@ -96,6 +96,7 @@ describe('migration runners', () => {
       expect(runner).toContain("RENAME COLUMN filename TO version");
       expect(runner).toContain('sha256');
       expect(runner).toContain('UPDATE schema_migrations SET checksum');
+      expect(runner).toContain("pg_advisory_");
     }
   });
 });

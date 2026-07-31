@@ -37,6 +37,7 @@ const files = fs
   .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 try {
   await client.query("BEGIN");
+  await client.query("SELECT pg_advisory_xact_lock(hashtext('fixdev_schema_migrations'))");
   await client.query(
     "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, checksum TEXT, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
   );

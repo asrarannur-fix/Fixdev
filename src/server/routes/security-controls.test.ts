@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const routes = readFileSync(new URL('./billing.routes.ts', import.meta.url), 'utf8');
 const auth = readFileSync(new URL('../controllers/auth.controller.ts', import.meta.url), 'utf8');
 const server = readFileSync(new URL('../../../server.ts', import.meta.url), 'utf8');
+const apiV1Routes = readFileSync(new URL('./apiV1.routes.ts', import.meta.url), 'utf8');
 const migrate = readFileSync(new URL('../../../scripts/migrate.ts', import.meta.url), 'utf8');
 
 describe('P0/P1 security controls', () => {
@@ -25,6 +26,11 @@ describe('P0/P1 security controls', () => {
     expect(auth).toContain("UPDATE auth_sessions SET revoked_at=now() WHERE user_id=$1");
     expect(auth).toContain("await c.query('BEGIN');");
     expect(auth).toContain("await c.query('COMMIT');");
+  });
+
+  it('scopes API v1 ticket and inventory routes to active tenant context', () => {
+    expect(apiV1Routes).toContain("router.get('/tickets', sanctumAuthMiddleware, requireTenantScope");
+    expect(apiV1Routes).toContain("router.get('/inventory', sanctumAuthMiddleware, requireTenantScope");
   });
 
   it('removes dangerous HTTP migration endpoint and hardens CLI profile checks', () => {

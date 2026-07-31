@@ -111,8 +111,8 @@ router.delete(
 );
 
 // 2. Service Ticketing
-router.get('/tickets', sanctumAuthMiddleware, checkAbilities(['tickets:read']), getTickets);
-router.get('/tickets/:id', sanctumAuthMiddleware, checkAbilities(['tickets:read']), getTicketById);
+router.get('/tickets', sanctumAuthMiddleware, requireTenantScope, checkAbilities(['tickets:read']), getTickets);
+router.get('/tickets/:id', sanctumAuthMiddleware, requireTenantScope, checkAbilities(['tickets:read']), getTicketById);
 router.all(
   ['/tickets', '/tickets/:id'],
   sanctumAuthMiddleware,
@@ -124,16 +124,18 @@ router.all(
 );
 
 // 3. Inventory Control
-router.get('/inventory', sanctumAuthMiddleware, checkAbilities(['inventory:read']), getInventory);
+router.get('/inventory', sanctumAuthMiddleware, requireTenantScope, checkAbilities(['inventory:read']), getInventory);
 router.get(
   '/inventory/:id',
   sanctumAuthMiddleware,
+  requireTenantScope,
   checkAbilities(['inventory:read']),
   getInventoryById
 );
 router.post(
   '/inventory',
   sanctumAuthMiddleware,
+  requireTenantScope,
   checkAbilities(['inventory:write']),
   validateBody(inventorySchema),
   createInventory
@@ -141,6 +143,7 @@ router.post(
 router.put(
   '/inventory/:id',
   sanctumAuthMiddleware,
+  requireTenantScope,
   checkAbilities(['inventory:write']),
   validateBody(inventoryUpdateSchema),
   updateInventory
@@ -148,6 +151,7 @@ router.put(
 router.delete(
   '/inventory/:id',
   sanctumAuthMiddleware,
+  requireTenantScope,
   checkAbilities(['inventory:write']),
   deleteInventory
 );

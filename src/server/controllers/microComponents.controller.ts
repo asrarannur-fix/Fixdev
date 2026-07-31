@@ -264,15 +264,16 @@ export async function adjustMicroComponentStock(req: Request, res: Response) {
       const movementQty = after - before;
       const ref = d.referenceNo || d.idempotencyKey;
       await client.query(
-        'INSERT INTO stock_movements(tenant_id,warehouse_id,product_id,type,quantity,quantity_change,reference_no,note) VALUES($1,$2,$3,$4,$5::numeric,$5::integer,$6,$7)',
+        'INSERT INTO stock_movements(tenant_id,warehouse_id,product_id,type,quantity,quantity_change,reference_no,note) VALUES($1,$2,$3,$4,$5::numeric,$6::integer,$7,$8)',
         [
           req.tenantId,
           d.warehouseId,
           comp.rows[0].product_id,
           d.mode === 'SET' ? 'ADJUSTMENT' : d.mode,
-          movementQty,
-          ref,
-          d.reason,
+           Math.abs(movementQty),
+           movementQty,
+           ref,
+           d.reason,
         ]
       );
       await client.query(

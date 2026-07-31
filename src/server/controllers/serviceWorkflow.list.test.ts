@@ -45,6 +45,12 @@ describe('service list query contract', () => {
     expect(controller).toContain('RETURNING ${ticketSelect()}');
   });
 
+  it('records micro stock movements with signed quantity and absolute amount', () => {
+    const micro = readFileSync(new URL('../controllers/microComponents.controller.ts', import.meta.url), 'utf8');
+    expect(micro).toContain('quantity_change,reference_no,note) VALUES($1,$2,$3,$4,$5::numeric,$6::integer,$7,$8)');
+    expect(micro).toContain('Math.abs(movementQty)');
+  });
+
   it('serializes spare-part reservations and scopes stock mutations', () => {
     expect(controller).toContain('SELECT quantity::float AS stock FROM product_stock WHERE product_id=$1 AND warehouse_id=$2 FOR UPDATE');
     expect(controller).toContain("ON CONFLICT (tenant_id,idempotency_key) DO NOTHING");

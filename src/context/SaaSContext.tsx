@@ -2377,6 +2377,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const impersonateTenant = (tenantId: string) => {
     const tenant = tenants.find((t) => t.id === tenantId);
     if (tenant) {
+      if (!isImpersonating) {
+        localStorage.setItem('saas_original_tenant_id', currentTenantId || '');
+        localStorage.setItem('saas_original_branch_id', currentBranchId || '');
+      }
       setCurrentTenantId(tenantId);
       localStorage.setItem('saas_curr_tenant_id', tenantId);
       const b = branches.filter((br) => br.tenantId === tenantId);
@@ -2397,14 +2401,18 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const exitImpersonate = () => {
+    const originalTenantId = localStorage.getItem('saas_original_tenant_id') || '';
+    const originalBranchId = localStorage.getItem('saas_original_branch_id') || '';
+    setCurrentTenantId(originalTenantId);
+    setCurrentBranchId(originalBranchId);
+    if (originalTenantId) localStorage.setItem('saas_curr_tenant_id', originalTenantId);
+    else localStorage.removeItem('saas_curr_tenant_id');
+    if (originalBranchId) localStorage.setItem('saas_curr_branch_id', originalBranchId);
+    else localStorage.removeItem('saas_curr_branch_id');
     localStorage.removeItem('saas_impersonation_session');
     localStorage.removeItem('saas_original_user');
     localStorage.removeItem('saas_original_tenant_id');
     localStorage.removeItem('saas_original_branch_id');
-    localStorage.removeItem('saas_curr_tenant_id');
-    localStorage.removeItem('saas_curr_branch_id');
-    setCurrentTenantId('');
-    setCurrentBranchId('');
     setIsImpersonating(false);
     addLog(
       'Exit Impersonation',
