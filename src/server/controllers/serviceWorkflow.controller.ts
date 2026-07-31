@@ -120,6 +120,11 @@ function servicePhotoPath(tenantId: string, ticketId: string, fileId: string, ex
   return `tenant/${tenantId}/service/${ticketId}/${fileId}.${extension}`;
 }
 
+function validTicketPhotos(values: string[], tenantId: string, ticketId: string) {
+  const prefix = `tenant/${tenantId}/service/${ticketId}/`;
+  return values.every((value) => value.startsWith(prefix) && photo.safeParse(value).success);
+}
+
 export const serviceLocalPath = safeStoragePath;
 
 async function cleanupServicePhotos(objectPaths: unknown[]) {
@@ -795,6 +800,11 @@ export async function updateServiceQcDraft(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
+      if (parsed.data.photos && !validTicketPhotos(parsed.data.photos, req.tenantId!, current.id)) {
+        const error: any = new Error('Foto QC tidak sesuai tiket aktif.');
+        error.status = 422;
+        throw error;
+      }
       await client.query(
         `UPDATE service_tickets SET qc_notes=COALESCE($1,qc_notes),qc_checklist=COALESCE($2::jsonb,qc_checklist),
          qc_photos=COALESCE($3::jsonb,qc_photos),updated_at=NOW()
@@ -961,6 +971,11 @@ export async function completeServiceQc(req: Request, res: Response) {
           `Hasil QC hanya dapat dicatat saat tiket berada di tahap QC (status saat ini: ${current.status}).`
         );
         error.status = 409;
+        throw error;
+      }
+      if (!validTicketPhotos(parsed.data.photos, req.tenantId!, current.id)) {
+        const error: any = new Error('Foto QC tidak sesuai tiket aktif.');
+        error.status = 422;
         throw error;
       }
       const passed = parsed.data.checklist.every((item) => item.passed);

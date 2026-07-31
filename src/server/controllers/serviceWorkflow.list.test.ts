@@ -45,6 +45,11 @@ describe('service list query contract', () => {
     expect(controller).toContain('RETURNING ${ticketSelect()}');
   });
 
+  it('scopes QC photos to current ticket storage prefix', () => {
+    expect(controller).toContain('function validTicketPhotos');
+    expect(controller).toContain("'Foto QC tidak sesuai tiket aktif.'");
+  });
+
   it('records micro stock movements with signed quantity and absolute amount', () => {
     const micro = readFileSync(new URL('../controllers/microComponents.controller.ts', import.meta.url), 'utf8');
     expect(micro).toContain('quantity_change,reference_no,note) VALUES($1,$2,$3,$4,$5::numeric,$6::integer,$7,$8)');

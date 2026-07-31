@@ -109,6 +109,12 @@ describe('service audit schema', () => {
     expect(sql).toContain('WHERE reception_idempotency_key IS NOT NULL');
   });
 
+  it('freezes terminal service ticket business fields', () => {
+    const sql = migration('071_service_terminal_integrity.sql');
+    expect(sql).toContain("to_jsonb(NEW) - ARRAY['updated_at','deleted_at']::text[]");
+    expect(sql).toContain('terminal service ticket is immutable');
+  });
+
   it('supports handover stock movement conflict target', () => {
     const sql = migration('019_service_schema_fixes.sql');
 
