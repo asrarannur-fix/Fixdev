@@ -21,11 +21,18 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
   setCustomWaMessageText,
   showToast,
 }) => {
+  const estimatedCost = Number(ticket.estimatedCost) || 0;
+  const approvalLink = `${publicBaseUrl}/?tab=service&sub=approve-quote&ticket=${encodeURIComponent(ticket.ticketNo)}`;
+  const statusNote = [ticket.diagnosis, ticket.notes].find((value) => typeof value === 'string' && value.trim())
+    || `Status terbaru: ${ticket.status}.`;
   const defaultMessage = renderTenantWaTemplate('SERVICE_UPDATE', {
     customer_name: customer?.name || 'Pelanggan',
     ticket_no: ticket.ticketNo,
     device_name: ticket.deviceName,
     ticket_status: ticket.status,
+    status_note: statusNote,
+    estimated_cost: estimatedCost,
+    approval_link: approvalLink,
   }) || `Halo *${customer?.name || 'Pelanggan'}*,\n\nUnit *${ticket.deviceName}* Anda telah terdaftar di sistem kami.`;
   const message = customWaMessageText || defaultMessage;
   const recipientPhone = normalizeIndonesianPhone(customer?.phone || '');
@@ -50,7 +57,7 @@ export const ServiceWhatsAppHub: React.FC<ServiceWhatsAppHubProps> = ({
           onChange={(e) => {
             const val = e.target.value;
             const estTotal = Number(ticket.estimatedCost) || 0;
-            const portalLink = publicBaseUrl + '/?tab=service&sub=approve-quote&ticket=' + ticket.ticketNo;
+            const portalLink = approvalLink;
             let txt: string;
             if (val === 'intake') {
               const ctx = { customer_name: customer?.name || 'Pelanggan', ticket_no: ticket.ticketNo, device_name: ticket.deviceName, ticket_status: 'DITERIMA', status_note: 'Unit telah terdaftar dan menunggu diagnosa.' };

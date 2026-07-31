@@ -1506,11 +1506,12 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                         onClick={() => {
                           const phone = normalizeIndonesianPhone(customer?.phone || '');
                           const est = Number(ticket.estimatedCost) || 0;
+                          const approvalLink = `${publicBaseUrl}/?tab=service&sub=approve-quote&ticket=${encodeURIComponent(ticket.ticketNo)}`;
                           const msg =
                             `Halo *${customer?.name || 'Pelanggan'}*, unit *${ticket.deviceName}* ` +
                             `(Tiket *${ticket.ticketNo}*) memerlukan perbaikan ` +
                             `dengan estimasi biaya *Rp ${est.toLocaleString('id-ID')}*. ` +
-                            `Silakan setujui estimasi melalui portal resmi kami. ` +
+                            `Silakan tinjau dan setujui estimasi melalui portal resmi kami:\n${approvalLink}\n\n` +
                             `Terima kasih.`;
                           window.open(
                             `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,
@@ -1534,14 +1535,14 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           disabled={!!pendingAction}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                         >
-                          Setujui Digital
+                          Catat Disetujui Pelanggan
                         </button>
                         <button
                           onClick={() => void runAction('reject-estimate', () => approveServiceEstimate(ticket.id, false))}
                           disabled={!!pendingAction}
                           className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 rounded-lg cursor-pointer text-center"
                         >
-                          Tolak / Cancel
+                          Catat Ditolak Pelanggan
                         </button>
                       </div>
                     </div>
