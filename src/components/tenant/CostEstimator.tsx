@@ -6,7 +6,7 @@ import { Wrench, AlertCircle, AlertTriangle, DollarSign, Clock, Package, CheckCi
 import { ServiceStatus } from "../../types";
 
 export const CostEstimator: React.FC = () => {
-  const { services, updateServiceTicket, currentTenantId } = useSaaS();
+  const { services, updateServiceTicket, approveServiceEstimate, currentTenantId } = useSaaS();
   const { showToast: toast } = useToast();
   const { confirm: showConfirm } = useConfirm();
 
@@ -109,19 +109,7 @@ export const CostEstimator: React.FC = () => {
       const ticket = services.find(t => t.id === selectedTicketId && t.tenantId === currentTenantId);
       if (!ticket) return;
 
-      const newStatus = approved ? ServiceStatus.SEDANG_DIKERJAKAN : ServiceStatus.APPROVAL_DITOLAK;
-
-      await updateServiceTicket(selectedTicketId, {
-        status: newStatus,
-        customerApprovalStatus: approved ? "APPROVED" : "REJECTED",
-        estimateApproved: approved,
-        timeline: [...(ticket.timeline || []), {
-          status: newStatus,
-          note: approved ? "Pelanggan menyetujui estimasi" : "Pelanggan menolak estimasi",
-          timestamp: new Date().toISOString(),
-          operator: "Pelanggan",
-        }],
-      });
+      await approveServiceEstimate(selectedTicketId, approved, "Pelanggan");
 
       setCostEstimateData((prev: any) => ({ ...prev, customerAcknowledged: approved }));
       toast(approved ? "Estimasi disetujui! Service dimulai." : "Estimasi ditolak pelanggan.", approved ? "success" : "warning");
