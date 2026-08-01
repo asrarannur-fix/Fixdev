@@ -2,7 +2,6 @@ import { dbQuery, dbTransaction } from '../../lib/db.js';
 import { logger } from '../../lib/logger.js';
 import { z } from 'zod';
 import { serviceApprovalTransition } from '../../domain/serviceWorkflow.js';
-import { timelineAggregate } from './serviceWorkflow.timeline.js';
 
 const publicTicketLookupSchema = z.object({
   ticketNo: z.string().trim().min(3).max(40),
