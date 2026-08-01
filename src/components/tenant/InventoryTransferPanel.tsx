@@ -34,7 +34,6 @@ import { ConsignmentManager } from '../ConsignmentManager';
 import { PurchaseManager } from '../PurchaseManager';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { StorageLocationManager, getStorageLocations } from './StorageLocationManager';
-import { InventoryStockPanel } from './InventoryStockPanel';
 
 import {
   InventoryProduct,
