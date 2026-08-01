@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { useSaaS } from "../../context/SaaSContext";
 import { useToast } from "../ui/Toast";
-import { useConfirm } from "../ui/ConfirmDialog";
 import { SmallPartsSearch } from "../SmallPartsSearch";
 import { TradeInCalculator } from "../TradeInCalculator";
 import { CannibalWorkshop } from "../CannibalWorkshop";
@@ -57,9 +56,7 @@ interface InventoryTabProps {
   updateInventoryProduct?: any;
   createInventoryTransfer?: any;
   updateInventoryTransferStatus?: any;
-  updateServiceTicket?: any;
   tenantWhs?: Warehouse[];
-  pendingPartRequests?: any[];
   currentBranchId?: string;
 }
 
@@ -74,13 +71,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   updateInventoryProduct,
   createInventoryTransfer,
   updateInventoryTransferStatus,
-  updateServiceTicket,
   tenantWhs = [],
-  pendingPartRequests = [],
   currentBranchId = "",
 }) => {
   const { showToast } = useToast();
-  const { confirm: showConfirm } = useConfirm();
   const { branches, products } = useSaaS();
 
   // Local state for add/edit product
@@ -222,7 +216,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   return (
     <>
       <div className="space-y-6" id="inventory-pane">
-        {(activeSubTab === "stock" || activeSubTab === "products" || activeSubTab === "") && <InventoryStockPanel {...{ addInventoryProduct, addProdBarcode, addProdBranchId, addProdCategory, addProdMinStock, addProdName, addProdPurchaseCost, addProdSellPrice, addProdSku, addProdStockQty, addProdStorageLocId, addProdUnit, addProdWarehouseId, branches, currentBranchId, currentTenantId, editProdMinStock, editProdName, editProdPurchaseCost, editProdSellPrice, editProdSku, editProdStorageLocId, editProdWarehouseStock, expandedProductIds, getBranchStock, isAddProductOpen, isEditProductOpen, pendingPartRequests, selectedEditProduct, setAddProdBarcode, setAddProdBranchId, setAddProdCategory, setAddProdMinStock, setAddProdName, setAddProdPurchaseCost, setAddProdSellPrice, setAddProdSku, setAddProdStockQty, setAddProdStorageLocId, setAddProdUnit, setAddProdWarehouseId, setEditProdMinStock, setEditProdName, setEditProdPurchaseCost, setEditProdSellPrice, setEditProdSku, setEditProdStockQty, setEditProdStorageLocId, setEditProdWarehouseStock, setExpandedProductIds, setIsAddProductOpen, setIsEditProductOpen, setSelectedEditProduct, showConfirm, showToast, tenantProducts, tenantWhs, updateInventoryProduct, updateServiceTicket, warehouses }} />}
+        {(activeSubTab === "stock" || activeSubTab === "products" || activeSubTab === "") && <InventoryStockPanel {...{ addInventoryProduct, addProdBarcode, addProdBranchId, addProdCategory, addProdMinStock, addProdName, addProdPurchaseCost, addProdSellPrice, addProdSku, addProdStockQty, addProdStorageLocId, addProdUnit, addProdWarehouseId, branches, currentBranchId, currentTenantId, editProdMinStock, editProdName, editProdPurchaseCost, editProdSellPrice, editProdSku, editProdStorageLocId, editProdWarehouseStock, expandedProductIds, getBranchStock, isAddProductOpen, isEditProductOpen, selectedEditProduct, setAddProdBarcode, setAddProdBranchId, setAddProdCategory, setAddProdMinStock, setAddProdName, setAddProdPurchaseCost, setAddProdSellPrice, setAddProdSku, setAddProdStockQty, setAddProdStorageLocId, setAddProdUnit, setAddProdWarehouseId, setEditProdMinStock, setEditProdName, setEditProdPurchaseCost, setEditProdSellPrice, setEditProdSku, setEditProdStockQty, setEditProdStorageLocId, setEditProdWarehouseStock, setExpandedProductIds, setIsAddProductOpen, setIsEditProductOpen, setSelectedEditProduct, showToast, tenantProducts, tenantWhs, updateInventoryProduct, warehouses }} />}
 
         {activeSubTab === "stock-transfer" && <InventoryTransferPanel {...{ activeSubTab, branches, bulkInputText, bulkTrfItems, createInventoryTransfer, currentTenantId, inventoryTransfers, products, selectedTrfFromWarehouse, selectedTrfIdForStepper, selectedTrfToWarehouse, setBulkInputText, setBulkTrfItems, setSelectedTrfFromWarehouse, setSelectedTrfIdForStepper, setSelectedTrfToWarehouse, setTrfNote, setTrfStatusNote, showToast, tenantProducts, trfNote, trfStatusNote, updateInventoryTransferStatus, warehouses }} />}
 

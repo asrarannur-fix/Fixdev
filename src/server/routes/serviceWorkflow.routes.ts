@@ -32,6 +32,7 @@ import {
   deleteServicePhoto,
   updateServiceIntakeChecklist,
   updateServiceQcDraft,
+  createServiceEstimate,
 } from '../controllers/serviceWorkflow.controller.js';
 import { requireServiceReceivableTenant, requireValidTenant, requireServiceTicketTenant } from '../middleware/tenant.middleware.js';
 
@@ -78,6 +79,12 @@ router.post(
 );
 
 // Approval & QC
+router.post(
+  '/:id/estimate',
+  requireServiceTicketTenant,
+  requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'),
+  createServiceEstimate
+);
 router.post(
   '/:id/approval',
   requireServiceTicketTenant,

@@ -274,6 +274,7 @@ interface SaaSContextType {
     estCost: number,
     parts: any[]
   ) => Promise<ServiceTicket | undefined>;
+  createServiceEstimate: (id: string, estimatedCost: number) => Promise<ServiceTicket | undefined>;
   approveServiceEstimate: (
     id: string,
     approved: boolean,
@@ -3000,6 +3001,35 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (result.ticket || result) as ServiceTicket;
   };
 
+  const createServiceEstimate = async (id: string, estimatedCost: number) => {
+    if (!isBackendConfigured()) {
+      setServices((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                estimatedCost,
+                customerApprovalStatus: 'PENDING' as const,
+                status: ServiceStatus.ESTIMATE_PENDING,
+                timeline: [
+                  ...(item.timeline || []),
+                  {
+                    status: ServiceStatus.ESTIMATE_PENDING,
+                    note: `Estimasi biaya dibuat: Rp ${estimatedCost.toLocaleString('id-ID')}`,
+                    timestamp: new Date().toISOString(),
+                    operator: currentUser.name,
+                  },
+                ],
+              }
+            : item
+        )
+      );
+      return;
+    }
+    const result = await runServiceWorkflow(id, 'estimate', { estimatedCost });
+    return (result.ticket || result) as ServiceTicket;
+  };
+
   const addServiceDiagnostic = async (
     id: string,
     diagnosis: string,
@@ -5321,6 +5351,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cancelServicePartOrder,
         updateServiceStatus,
         addServiceDiagnostic,
+        createServiceEstimate,
         approveServiceEstimate,
         completeServiceQC,
         handoverServiceDevice,

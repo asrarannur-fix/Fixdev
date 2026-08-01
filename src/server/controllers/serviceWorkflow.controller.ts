@@ -27,6 +27,7 @@ import {
   bulkDeleteSchema,
   partSchema,
   workMetadataSchema,
+  estimateSchema,
 } from './serviceWorkflow.schemas.js';
 import { queueNotification } from './serviceWorkflow.notifications.js';
 import { timelineAggregate } from './serviceWorkflow.timeline.js';
@@ -756,6 +757,48 @@ export async function approveServiceEstimate(req: Request, res: Response) {
     });
     res.json({ data: ticket });
   } catch (error: any) {
+    sendError(res, error);
+  }
+}
+
+export async function createServiceEstimate(req: Request, res: Response) {
+  const parsed = estimateSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(422).json({ error: 'Estimasi biaya tidak valid.' });
+  try {
+    const ticket = await dbTransaction(async (client) => {
+      const current = await lockedTicket(client, req);
+      if (!['DIAGNOSA', 'APPROVAL_DITOLAK'].includes(current.status)) {
+        const error: any = new Error(
+          `Estimasi hanya dapat dibuat pada status DIAGNOSA atau APPROVAL_DITOLAK (saat ini ${current.status}).`
+        );
+        error.status = 409;
+        throw error;
+      }
+      await client.query(
+        'UPDATE service_tickets SET estimated_cost=$1,customer_approval_status=$2,updated_at=NOW() WHERE id=$3 AND tenant_id=$4 AND branch_id=$5',
+        [parsed.data.estimatedCost, 'PENDING', current.id, req.tenantId, current.branchId]
+      );
+      await appendEvent(
+        client,
+        req,
+        current,
+        'ESTIMATE_PENDING',
+        `Estimasi biaya dibuat: Rp ${parsed.data.estimatedCost.toLocaleString('id-ID')}.`,
+        { estimatedCost: parsed.data.estimatedCost }
+      );
+      return finalTicket(client, req);
+    });
+    logServiceOperation(req, 'estimate_created', 'success', Date.now(), {
+      toStatus: 'ESTIMATE_PENDING',
+      estimatedCost: parsed.data.estimatedCost,
+    });
+    res.json({ data: ticket });
+  } catch (error: any) {
+    logServiceOperation(req, 'estimate_created', 'failed', Date.now(), {
+      statusCode: Number(error.status) || 500,
+      errorCode: error.code || 'unknown',
+    });
     sendError(res, error);
   }
 }

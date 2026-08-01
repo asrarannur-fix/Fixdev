@@ -6,7 +6,7 @@ import { Wrench, AlertCircle, AlertTriangle, DollarSign, Clock, Package, CheckCi
 import { ServiceStatus } from "../../types";
 
 export const CostEstimator: React.FC = () => {
-  const { services, updateServiceTicket, approveServiceEstimate, currentTenantId } = useSaaS();
+  const { services, updateServiceTicket, createServiceEstimate, approveServiceEstimate, currentTenantId } = useSaaS();
   const { showToast: toast } = useToast();
   const { confirm: showConfirm } = useConfirm();
 
@@ -55,16 +55,7 @@ export const CostEstimator: React.FC = () => {
 
       setCostEstimateData(estimateData);
 
-      await updateServiceTicket(selectedTicketId, {
-        status: ServiceStatus.ESTIMATE_PENDING,
-        estimatedCost: totalEstimatedCost,
-        timeline: [...(ticket.timeline || []), {
-          status: ServiceStatus.ESTIMATE_PENDING,
-          note: `Estimasi biaya dibuat: Rp ${totalEstimatedCost.toLocaleString('id-ID')}`,
-          timestamp: new Date().toISOString(),
-          operator: "Teknisi",
-        }],
-      });
+      await createServiceEstimate(selectedTicketId, totalEstimatedCost);
 
       toast(`Estimasi biaya berhasil dibuat! Rp ${totalEstimatedCost.toLocaleString('id-ID')}`, "success");
       setActiveTab("summary");

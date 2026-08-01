@@ -18,14 +18,12 @@ import {
   CheckCircle2,
   Trash2,
   X,
-  AlertCircle,
   Edit,
   Plus,
   Pencil,
 } from 'lucide-react';
 import { useSaaS } from '../../context/SaaSContext';
 import { useToast } from '../ui/Toast';
-import { useConfirm } from '../ui/ConfirmDialog';
 import { SmallPartsSearch } from '../SmallPartsSearch';
 import { TradeInCalculator } from '../TradeInCalculator';
 import { CannibalWorkshop } from '../CannibalWorkshop';
@@ -73,7 +71,6 @@ export const InventoryStockPanel: React.FC<any> = (props) => {
     getBranchStock,
     isAddProductOpen,
     isEditProductOpen,
-    pendingPartRequests,
     selectedEditProduct,
     setAddProdBarcode,
     setAddProdBranchId,
@@ -99,150 +96,14 @@ export const InventoryStockPanel: React.FC<any> = (props) => {
     setIsAddProductOpen,
     setIsEditProductOpen,
     setSelectedEditProduct,
-    showConfirm,
     showToast,
     tenantProducts,
     tenantWhs,
     updateInventoryProduct,
-    updateServiceTicket,
     warehouses,
   } = props;
   return (
     <div className="space-y-4">
-      {/* Technician Part Requests UI */}
-      {pendingPartRequests.length > 0 && (
-        <div className="bg-white border border-amber-200 rounded-xl shadow-sm overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-amber-100 bg-amber-50 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-xs text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-amber-600" /> Permintaan Part Baru dari Teknisi
-              </h3>
-              <p className="text-[10px] text-amber-700/70 mt-0.5">
-                Terdapat {pendingPartRequests.length} permintaan sparepart yang butuh persetujuan
-                Gudang/Frontdesk.
-              </p>
-            </div>
-          </div>
-          <div className="p-0">
-            <div className="responsive-table-container overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-mono border-b border-slate-100">
-                  <tr>
-                    <th className="px-4 py-3">Tiket / Teknisi</th>
-                    <th className="px-4 py-3">Sparepart Diminta</th>
-                    <th className="px-4 py-3">Qty</th>
-                    <th className="px-4 py-3 text-right">Aksi Gudang</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {pendingPartRequests.map((item, idx) => {
-                    const pProd = tenantProducts.find((p) => p.id === item.request.sparepartId);
-                    const currentStock = pProd ? getBranchStock(pProd) : 0;
-                    return (
-                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="font-bold text-slate-800">{item.ticket.ticketNo}</div>
-                          <div className="text-[10px] text-slate-500">{item.ticket.deviceName}</div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-slate-700">
-                            {pProd ? pProd.name : 'Unknown Part'}
-                          </div>
-                          <div className="text-[9px] font-mono text-slate-400">
-                            Stok Tersedia: {currentStock}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-mono font-bold">{item.request.qty}</td>
-                        <td className="px-4 py-3 text-right space-x-2">
-                          <button
-                            onClick={async () => {
-                              if (
-                                await showConfirm({
-                                  title: 'Tolak Permintaan Part',
-                                  message:
-                                    'Tolak permintaan part ini? Teknisi akan diberitahu bahwa part tidak tersedia.',
-                                  confirmLabel: 'Ya, Tolak',
-                                  type: 'warning',
-                                })
-                              ) {
-                                const updatedReqs = item.ticket.partsRequested.map((r: any) =>
-                                  r.id === item.request.id ? { ...r, status: 'REJECTED' } : r
-                                );
-                                updateServiceTicket(item.ticket.id, {
-                                  partsRequested: updatedReqs,
-                                });
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition-all"
-                          >
-                            Tolak
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (!pProd) {
-                                showToast('Part tidak valid.', 'error');
-                                return;
-                              }
-                              if (currentStock < item.request.qty) {
-                                showToast('Stok tidak mencukupi!', 'error');
-                                return;
-                              }
-                              if (
-                                await showConfirm({
-                                  title: 'Setujui Permintaan Part',
-                                  message: 'Setujui dan potong stok gudang sekarang?',
-                                  confirmLabel: 'Setujui & Potong Stok',
-                                })
-                              ) {
-                                // 1. Update request status
-                                const updatedReqs = item.ticket.partsRequested.map((r: any) =>
-                                  r.id === item.request.id ? { ...r, status: 'APPROVED' } : r
-                                );
-
-                                // 2. Add to partsUsed
-                                const newPartUsed = {
-                                  productId: pProd.id,
-                                  name: pProd.name,
-                                  quantity: item.request.qty,
-                                  unitPrice: pProd.sellPrice ?? 0,
-                                  totalPrice: (pProd.sellPrice ?? 0) * item.request.qty,
-                                };
-                                const currentPartsUsed = item.ticket.partsUsed || [];
-                                const newEstimatedCost =
-                                  item.ticket.estimatedCost + newPartUsed.totalPrice;
-
-                                updateServiceTicket(item.ticket.id, {
-                                  partsRequested: updatedReqs,
-                                  partsUsed: [...currentPartsUsed, newPartUsed],
-                                  estimatedCost: newEstimatedCost,
-                                });
-
-                                // 3. Deduct stock
-                                updateInventoryProduct(pProd.id, {
-                                  stockQty: pProd.stockQty - item.request.qty,
-                                });
-
-                                showToast(
-                                  'Permintaan disetujui, part ditambahkan ke tiket, dan stok berhasil dipotong!',
-                                  'success'
-                                );
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold shadow-xs transition-all"
-                          >
-                            Setujui & Potong Stok
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
           <div>

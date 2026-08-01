@@ -146,3 +146,6 @@ export const workMetadataSchema = z.object({
   repairEndTime: z.string().datetime().nullable().optional(),
   storageLocationId: z.string().uuid().nullable().optional(),
 });
+export const estimateSchema = z.object({
+  estimatedCost: z.number().finite().min(0).max(1_000_000_000),
+});

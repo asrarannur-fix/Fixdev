@@ -81,6 +81,14 @@ describe('service status event routes', () => {
     expect(workflowController).toContain("current.status !== 'QC'");
   });
 
+  it('exposes scoped estimate creation through the workflow router', () => {
+    expect(workflowRoutes).toContain("router.post(\n  '/:id/estimate'");
+    expect(workflowRoutes).toContain("createServiceEstimate");
+    expect(workflowController).toContain('ESTIMATE_PENDING');
+    expect(workflowController).toContain('Estimasi biaya dibuat: Rp ');
+    expect(workflowController).toContain("'DIAGNOSA', 'APPROVAL_DITOLAK'");
+  });
+
   it('registers bulk delete before ticket detail', () => {
     expect(workflowRoutes).toContain("requireServiceReceivableTenant");
     expect(workflowRoutes.indexOf("router.delete(\n  '/bulk'")).toBeLessThan(
