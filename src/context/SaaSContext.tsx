@@ -2562,8 +2562,39 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newTicket;
   };
 
-  const updateServiceTicket = async (_id: string, _updates: Partial<ServiceTicket>) => {
-    throw new Error('Direct service ticket mutation disabled; use scoped service workflow API.');
+  const updateServiceTicket = async (id: string, updates: Partial<ServiceTicket>) => {
+    const { timeline, status, ...data } = updates;
+    const previous = services.find((item) => item.id === id);
+    setServices((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...data,
+              ...(status ? { status } : {}),
+              ...(Array.isArray(timeline) && timeline.length > 0
+                ? { timeline: [...(item.timeline || []), ...timeline] }
+                : {}),
+            }
+          : item
+      )
+    );
+    if (!isBackendConfigured() || !status || !previous) return;
+    const note =
+      Array.isArray(timeline) && timeline.length > 0
+        ? String(timeline[timeline.length - 1]?.note || '')
+        : 'Status servis diperbarui.';
+    try {
+      await updateServiceStatus(id, status as ServiceStatus, note);
+      if (Object.keys(data).length > 0) {
+        setServices((prev) => prev.map((item) => (item.id === id ? { ...item, ...data } : item)));
+      }
+    } catch (error: any) {
+      console.warn(`[service] transition rejected for ${id}; reverting local status`, error?.message || error);
+      setServices((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, status: previous.status } : item))
+      );
+    }
   };
 
   const triggerCustomerNotification = (
