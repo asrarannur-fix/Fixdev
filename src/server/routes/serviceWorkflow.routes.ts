@@ -23,6 +23,7 @@ import {
   patchServiceWorkMetadata,
   handoverServiceTicket,
   settleServiceReceivable,
+  listServiceReceivables,
   getStatusEvents,
   bulkDeleteServiceTickets,
   createServicePhotoUpload,
@@ -95,6 +96,12 @@ router.patch('/:id/qc-draft', requireServiceTicketTenant, requireRoles('OWNER', 
 router.post('/:id/qc', requireServiceTicketTenant, requireRoles('OWNER', 'ADMIN', 'TEKNISI', 'SUPER_ADMIN'), completeServiceQc);
 
 // Settlements
+router.get(
+  '/:id/receivables',
+  requireServiceTicketTenant,
+  requireRoles('OWNER', 'ADMIN', 'CS', 'SUPER_ADMIN'),
+  listServiceReceivables
+);
 router.post(
   '/receivables/:receivableId/settlements',
   requireServiceReceivableTenant,

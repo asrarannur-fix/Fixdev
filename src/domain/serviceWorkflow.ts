@@ -32,6 +32,7 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
   ],
   [ServiceStatus.APPROVAL_DITOLAK]: [
     ServiceStatus.DIAGNOSA,
+    ServiceStatus.ESTIMATE_PENDING,
     ServiceStatus.MENUGGU_APPROVAL,
     ServiceStatus.DIBATALKAN,
   ],
@@ -70,7 +71,7 @@ export const SERVICE_TRANSITIONS: Record<ServiceStatus, ServiceStatus[]> = {
     ServiceStatus.DIAMBIL,
     ServiceStatus.KLAIM_GARANSI,
   ],
-  [ServiceStatus.MENUGGU_PEMBAYARAN]: [ServiceStatus.SIAP_DIAMBIL],
+  [ServiceStatus.MENUGGU_PEMBAYARAN]: [ServiceStatus.SIAP_DIAMBIL, ServiceStatus.DIAMBIL],
   [ServiceStatus.SIAP_DIAMBIL]: [ServiceStatus.DIAMBIL, ServiceStatus.BARANG_TIDAK_DIAMBIL],
   [ServiceStatus.DIAMBIL]: [],
   [ServiceStatus.DIBATALKAN]: [],

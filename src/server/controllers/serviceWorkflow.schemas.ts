@@ -83,7 +83,7 @@ export const handoverSchema = z
   .object({
     paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'QRIS', 'EDC', 'E_WALLET', 'TEMPO']),
     referenceNo: z.string().trim().max(200).optional(),
-    proofName: z.string().trim().max(255).regex(/^[A-Za-z0-9._-]+$/, 'Nama bukti pembayaran tidak valid.').optional(),
+    proofName: z.string().trim().max(255).regex(/^[\p{L}\p{N}._ -]+$/u, 'Nama bukti pembayaran tidak valid.').optional(),
     tempoDays: z.number().int().min(1).max(365).optional(),
     checklist: z.object({
       accessoriesReturned: z.literal(true),

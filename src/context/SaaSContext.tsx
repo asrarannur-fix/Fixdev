@@ -287,6 +287,8 @@ interface SaaSContextType {
     paymentMethod: PaymentMethod,
     details?: { refNo?: string; proofName?: string; tempoDays?: number; checklist?: { accessoriesReturned: boolean; customerChecked: boolean; invoiceReady: boolean; warrantyReady: boolean } }
   ) => Promise<ServiceTicket | undefined>;
+  listServiceReceivables: (id: string) => Promise<Array<{ id: string; status: string; amount: number; paidAmount: number; remaining: number; dueAt?: string }>>;
+  settleServiceReceivable: (receivableId: string, data: { amount: number; method: 'CASH' | 'BANK_TRANSFER' | 'QRIS' | 'EDC' | 'E_WALLET'; referenceNo?: string; idempotencyKey: string }) => Promise<any>;
   triggerCustomerNotification: (
     ticket: ServiceTicket,
     status: ServiceStatus,
@@ -296,7 +298,7 @@ interface SaaSContextType {
     tx: Omit<CashTransaction, 'id' | 'tenantId' | 'branchId' | 'timestamp' | 'operator'>
   ) => void;
 
-  checkInFieldService: (visitId: string, lat: number, lng: number, address: string) => void;
+  checkInFieldService: (visitId: string, lat: number, lng: number, address: string) => Promise<void>;
   checkOutFieldService: (
     visitId: string,
     lat: number,
@@ -2591,9 +2593,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setServices((prev) => prev.map((item) => (item.id === id ? { ...item, ...data } : item)));
       }
     } catch (error: any) {
-      console.warn(`[service] transition rejected for ${id}; reverting local status`, error?.message || error);
+      console.warn(`[service] transition rejected for ${id}; reverting local state`, error?.message || error);
       setServices((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, status: previous.status } : item))
+        prev.map((item) => (item.id === id ? { ...item, ...previous, status: previous.status } : item))
       );
     }
   };
@@ -3125,6 +3127,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const updated = {
             ...s,
             qcNotes: notes,
+            qcChecklist: checklist,
+            qcStatus: passed ? 'PASSED' : 'FAILED',
             status: nextStatus,
             timeline: [
               ...s.timeline,
@@ -3343,11 +3347,30 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  const listServiceReceivables = async (id: string) => {
+    if (!isBackendConfigured()) return [];
+    const response = await apiFetch(`/api/services/${id}/receivables`);
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.error || 'Gagal memuat piutang servis.');
+    return (payload?.data || []) as Array<{ id: string; status: string; amount: number; paidAmount: number; remaining: number; dueAt?: string }>;
+  };
+
+  const settleServiceReceivable = async (receivableId: string, data: { amount: number; method: 'CASH' | 'BANK_TRANSFER' | 'QRIS' | 'EDC' | 'E_WALLET'; referenceNo?: string; idempotencyKey: string }) => {
+    if (!isBackendConfigured()) throw new Error('Pelunasan piutang memerlukan koneksi server.');
+    const response = await apiFetch(`/api/services/receivables/${receivableId}/settlements`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.error || 'Gagal melunasi piutang servis.');
+    return payload?.data;
+  };
+
   // ==========================================
   // FIELD SERVICE ACTIONS
   // ==========================================
 
-  const checkInFieldService = (visitId: string, lat: number, lng: number, address: string) => {
+  const checkInFieldService = async (visitId: string, lat: number, lng: number, address: string) => {
     const linkedTicketId = fieldVisits.find((v) => v.id === visitId)?.serviceId;
     setFieldVisits((prev) =>
       prev.map((v) =>
@@ -3358,25 +3381,44 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
     // Jika visit terkait tiket servis, update status ke SEDANG_DIKERJAKAN
     if (linkedTicketId) {
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === linkedTicketId && s.status !== ServiceStatus.SEDANG_DIKERJAKAN
-            ? {
-                ...s,
-                status: ServiceStatus.SEDANG_DIKERJAKAN,
-                timeline: [
-                  ...(s.timeline || []),
-                  {
-                    status: ServiceStatus.SEDANG_DIKERJAKAN,
-                    note: `Teknisi check-in via Field Service GPS`,
-                    timestamp: new Date().toISOString(),
-                    operator: 'System',
-                  },
-                ],
-              }
-            : s
-        )
-      );
+      const target = services.find((s) => s.id === linkedTicketId);
+      const startAt = new Date().toISOString();
+      if (isBackendConfigured() && target && target.status !== ServiceStatus.SEDANG_DIKERJAKAN) {
+        try {
+          await runServiceWorkflow(linkedTicketId, 'transition', {
+            status: ServiceStatus.SEDANG_DIKERJAKAN,
+            note: 'Teknisi check-in via Field Service GPS.',
+          });
+          await patchServiceWork(linkedTicketId, { repairStartTime: startAt });
+        } catch (error: any) {
+          addLog(
+            'Field Service GPS Check-In',
+            `Gagal memulai pengerjaan tiket ${linkedTicketId}: ${error?.message || 'transisi ditolak'}`,
+            'SERVICE'
+          );
+        }
+      } else {
+        setServices((prev) =>
+          prev.map((s) =>
+            s.id === linkedTicketId && s.status !== ServiceStatus.SEDANG_DIKERJAKAN
+              ? {
+                  ...s,
+                  status: ServiceStatus.SEDANG_DIKERJAKAN,
+                  repairStartTime: startAt,
+                  timeline: [
+                    ...(s.timeline || []),
+                    {
+                      status: ServiceStatus.SEDANG_DIKERJAKAN,
+                      note: `Teknisi check-in via Field Service GPS`,
+                      timestamp: startAt,
+                      operator: 'System',
+                    },
+                  ],
+                }
+              : s
+          )
+        );
+      }
     }
     addLog(
       'Field Service GPS Check-In',
@@ -5355,6 +5397,8 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         approveServiceEstimate,
         completeServiceQC,
         handoverServiceDevice,
+        listServiceReceivables,
+        settleServiceReceivable,
         triggerCustomerNotification,
         addCashTransaction,
         checkInFieldService,

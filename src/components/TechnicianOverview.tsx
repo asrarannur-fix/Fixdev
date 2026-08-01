@@ -573,13 +573,19 @@ export const TechnicianOverview: React.FC<TechnicianOverviewProps> = ({
                         {!task.repairStartTime &&
                           task.status !== ServiceStatus.DIAGNOSA && (
                             <button
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                void updateServiceStatus(
-                                  task.id,
-                                  ServiceStatus.SEDANG_DIKERJAKAN,
-                                  'Pengerjaan dimulai oleh teknisi.'
-                                );
+                                try {
+                                  await patchServiceWork(task.id, {
+                                    repairStartTime: new Date().toISOString(),
+                                  });
+                                  showToast('Pengerjaan dimulai.', 'success');
+                                } catch (error: any) {
+                                  showToast(
+                                    error?.message || 'Gagal memulai pengerjaan.',
+                                    'error'
+                                  );
+                                }
                               }}
                               className="flex-1 sm:flex-none px-3 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-[10px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition"
                             >

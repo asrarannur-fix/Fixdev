@@ -74,9 +74,13 @@ const INTAKE_STATUSES: ServiceStatus[] = [
   ServiceStatus.DITERIMA,
   ServiceStatus.ANTRIAN,
 ];
+const DIAGNOSIS_STATUSES: ServiceStatus[] = [
+  ServiceStatus.DITERIMA,
+  ServiceStatus.ANTRIAN,
+  ServiceStatus.DIAGNOSA,
+];
 const WORK_STATUSES: ServiceStatus[] = [ServiceStatus.SEDANG_DIKERJAKAN, ServiceStatus.REWORK];
 const PART_STATUSES: ServiceStatus[] = [
-  ServiceStatus.MENUGGU_APPROVAL,
   ServiceStatus.SEDANG_DIKERJAKAN,
   ServiceStatus.MENUGGU_SPAREPART,
   ServiceStatus.REWORK,
@@ -97,7 +101,7 @@ const hasAnyPermission = (permissions: string[], keys: string[]) =>
   keys.some((key) => permissions.includes(key));
 
 export const ServiceDetailModal: React.FC<any> = (props) => {
-  const { publicBaseUrl, apiFetch } = useSaaS();
+  const { publicBaseUrl, apiFetch, listServiceReceivables, settleServiceReceivable } = useSaaS();
   const {
     activeTenantId,
     addServiceDiagnostic,
@@ -173,6 +177,9 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
       onDetailUpdated,
     } = props;
   const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const [receivables, setReceivables] = React.useState<Array<{ id: string; status: string; amount: number; paidAmount: number; remaining: number; dueAt?: string }>>([]);
+  const [receivableMethod, setReceivableMethod] = React.useState<'CASH' | 'BANK_TRANSFER' | 'QRIS' | 'EDC' | 'E_WALLET'>('CASH');
+  const [receivableReference, setReceivableReference] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('summary');
   React.useEffect(() => {
     setActiveTab('summary');
@@ -233,6 +240,23 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
         restoreFocusRef.current = null;
     };
   }, [viewingServiceTicketId, setViewingServiceTicketId]);
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!viewingServiceTicketId) {
+      setReceivables([]);
+      return;
+    }
+    void listServiceReceivables(viewingServiceTicketId)
+      .then((rows) => {
+        if (!cancelled) setReceivables(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setReceivables([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [viewingServiceTicketId]);
   const runAction = async (action: string, callback: () => Promise<void> | void) => {
     if (pendingAction) return;
     setPendingAction(action);
@@ -282,6 +306,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
     hasAnyPermission(currentUserPermissions, ['service_qc']);
   const isTicketLocked = LOCKED_STATUSES.includes(ticket.status);
   const editableIntake = INTAKE_STATUSES.includes(ticket.status) && canDiagnose;
+  const editableDiagnosis = DIAGNOSIS_STATUSES.includes(ticket.status) && canDiagnose;
   const canRequestParts = PART_STATUSES.includes(ticket.status) && canRepair;
   const canHandover =
     isSuperAdmin ||
@@ -382,9 +407,45 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
           <div id={`service-panel-${activeTab}`} role="tabpanel" aria-labelledby={`service-tab-${activeTab}`} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [&_button]:min-h-10 [&_input]:min-h-10 [&_select]:min-h-10">
            {/* LEFT PANEL: Ticket Meta Info, Checklist & Logs */}
           <div className={`space-y-3 border-slate-100 bg-gradient-to-b from-slate-50/80 to-zinc-100/50 px-3 py-3 dark:border-zinc-800 dark:from-zinc-900/80 dark:to-zinc-950/50 sm:px-5 ${['summary', 'intake', 'communication', 'history'].includes(activeTab) ? '' : 'hidden'}`}>
-            {activeTab === 'summary' && <ServiceTicketSummary ticket={ticket} customer={customer} />}
+             {activeTab === 'summary' && <ServiceTicketSummary ticket={ticket} customer={customer} />}
+             {activeTab === 'summary' && receivables.some((item) => item.status !== 'PAID' && item.remaining > 0) && (
+               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+                 <h3 className="text-xs font-black uppercase tracking-wider text-amber-900 dark:text-amber-200">Pelunasan Piutang Servis</h3>
+                 <div className="mt-3 space-y-3">
+                   {receivables.filter((item) => item.status !== 'PAID' && item.remaining > 0).map((item) => (
+                     <div key={item.id} className="rounded-xl border border-amber-200 bg-white p-3 dark:border-amber-900/50 dark:bg-zinc-900">
+                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                         <span className="font-bold text-slate-700 dark:text-zinc-200">Sisa Rp {item.remaining.toLocaleString('id-ID')}</span>
+                         <span className="text-slate-500">Jatuh tempo: {item.dueAt ? new Date(item.dueAt).toLocaleDateString('id-ID') : '-'}</span>
+                       </div>
+                       <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                         <select value={receivableMethod} onChange={(event) => setReceivableMethod(event.target.value as typeof receivableMethod)} className="rounded-lg border border-slate-200 bg-white px-3 text-xs dark:border-zinc-700 dark:bg-zinc-950">
+                           <option value="CASH">Tunai</option>
+                           <option value="BANK_TRANSFER">Transfer Bank</option>
+                           <option value="QRIS">QRIS</option>
+                           <option value="EDC">EDC</option>
+                           <option value="E_WALLET">E-Wallet</option>
+                         </select>
+                         <input value={receivableReference} onChange={(event) => setReceivableReference(event.target.value)} placeholder="Nomor referensi (non-tunai)" className="rounded-lg border border-slate-200 px-3 text-xs dark:border-zinc-700 dark:bg-zinc-950" />
+                         <button type="button" disabled={!!pendingAction || (receivableMethod !== 'CASH' && !receivableReference.trim())} onClick={() => void runAction(`receivable-${item.id}`, async () => {
+                           await settleServiceReceivable(item.id, {
+                             amount: item.remaining,
+                             method: receivableMethod,
+                             referenceNo: receivableReference.trim() || undefined,
+                             idempotencyKey: `service-receivable-${item.id}-${Date.now()}`,
+                           });
+                           setReceivables(await listServiceReceivables(ticket.id));
+                           setReceivableReference('');
+                           showToast('Piutang servis berhasil dilunasi.', 'success');
+                         })} className="rounded-lg bg-emerald-600 px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">Lunasi</button>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             )}
 
-            <div className="relative overflow-hidden rounded-2xl border border-white/40 p-3 shadow-md dark:border-zinc-800/40">
+             <div className="relative overflow-hidden rounded-2xl border border-white/40 p-3 shadow-md dark:border-zinc-800/40">
 
                 {/* Interactive Technician Assign / Change Dropdown */}
                 <div className="mt-3.5 pt-3 border-t border-slate-100 space-y-1">
@@ -748,8 +809,8 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                               disabled={
                                 !(
                                   [
-                                    ServiceStatus.DIAGNOSA,
                                     ServiceStatus.SEDANG_DIKERJAKAN,
+                                    ServiceStatus.MENUGGU_SPAREPART,
                                     ServiceStatus.REWORK,
                                   ] as ServiceStatus[]
                                 ).includes(ticket.status)
@@ -757,12 +818,12 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                           title={
                             !(
                               [
-                                ServiceStatus.DIAGNOSA,
                                 ServiceStatus.SEDANG_DIKERJAKAN,
+                                ServiceStatus.MENUGGU_SPAREPART,
                                 ServiceStatus.REWORK,
                               ] as ServiceStatus[]
                             ).includes(ticket.status)
-                              ? 'Sparepart hanya dapat diminta saat diagnosis atau pengerjaan'
+                              ? 'Sparepart hanya dapat diminta saat pengerjaan'
                               : undefined
                           }
                           className="flex-1 flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer group disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1188,7 +1249,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 </div>
               )}
 
-              {activeTab === 'work' && editableIntake && (
+              {activeTab === 'work' && editableDiagnosis && (
                 <div className="relative overflow-hidden border border-slate-200 p-4 rounded-2xl space-y-4 shadow-sm dark:border-zinc-800">
                     <div className="absolute inset-0 bg-slate-50 dark:bg-zinc-900" />
                     <h4 className="relative font-black text-xs text-slate-700 dark:text-zinc-200 uppercase font-mono tracking-wider flex items-center gap-1.5 border-b border-slate-200/50 dark:border-zinc-700/50 pb-2">

@@ -1431,6 +1431,24 @@ export async function bulkDeleteServiceTickets(req: Request, res: Response) {
   }
 }
 
+export async function listServiceReceivables(req: Request, res: Response) {
+  try {
+    const result = await dbQuery(
+      `SELECT sr.id, sr.status, sr.amount::float AS amount, sr.paid_amount::float AS "paidAmount",
+              (sr.amount - sr.paid_amount)::float AS remaining, sr.due_at AS "dueAt",
+              st.ticket_no AS "ticketNo"
+       FROM service_receivables sr
+       JOIN service_tickets st ON st.id=sr.ticket_id AND st.tenant_id=sr.tenant_id AND st.branch_id=sr.branch_id
+       WHERE sr.ticket_id=$1 AND sr.tenant_id=$2 AND sr.branch_id=$3 AND st.deleted_at IS NULL
+       ORDER BY sr.created_at DESC`,
+      [req.params.id, req.tenantId, req.branchId]
+    );
+    res.json({ data: result.rows });
+  } catch (error: any) {
+    sendError(res, error);
+  }
+}
+
 export async function settleServiceReceivable(req: Request, res: Response) {
   const parsed = receivableSettlementSchema.safeParse(req.body);
   if (!parsed.success)
@@ -1553,7 +1571,7 @@ export async function handoverServiceTicket(req: Request, res: Response) {
         error.status = 409;
         throw error;
       }
-      if (!['SELESAI', 'SIAP_DIAMBIL'].includes(ticket.status)) {
+      if (!['SELESAI', 'SIAP_DIAMBIL', 'MENUGGU_PEMBAYARAN'].includes(ticket.status)) {
         const error: any = new Error(
           `Handover tidak dapat dilakukan pada status ${ticket.status}.`
         );

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calculateServiceInvoice, calculateAdditionalCost, partOrderUpdateSchema } from './serviceWorkflow.controller';
+import { handoverSchema } from './serviceWorkflow.schemas';
 
 describe('Service workflow calculation logic', () => {
   it('calculates tax-exclusive invoice totals securely', () => {
@@ -82,5 +83,29 @@ describe('Spare part order schema validation', () => {
     expect(partOrderUpdateSchema.safeParse({ unknown: true }).success).toBe(false);
     expect(partOrderUpdateSchema.safeParse({ estimatedArrivalDate: '2026-02-30' }).success).toBe(false);
     expect(partOrderUpdateSchema.safeParse({ estimatedArrivalDate: '2026-02-28' }).success).toBe(true);
+  });
+});
+
+describe('Handover proof name validation', () => {
+  const base = {
+    paymentMethod: 'BANK_TRANSFER',
+    referenceNo: 'TRX-2026-001',
+    checklist: {
+      accessoriesReturned: true,
+      customerChecked: true,
+      invoiceReady: true,
+      warrantyReady: true,
+    },
+    idempotencyKey: 'handover-idem-key',
+  };
+
+  it('accepts proof names with spaces and unicode letters (e.g. uploaded file names)', () => {
+    expect(handoverSchema.safeParse({ ...base, proofName: 'Bukti Transfer.jpg' }).success).toBe(true);
+    expect(handoverSchema.safeParse({ ...base, proofName: 'Struk-ATM_2026.png' }).success).toBe(true);
+  });
+
+  it('still rejects path-traversal proof names', () => {
+    expect(handoverSchema.safeParse({ ...base, proofName: '../evil.png' }).success).toBe(false);
+    expect(handoverSchema.safeParse({ ...base, proofName: 'a/b.png' }).success).toBe(false);
   });
 });

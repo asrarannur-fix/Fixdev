@@ -89,6 +89,24 @@ describe('service status event routes', () => {
     expect(workflowController).toContain("'DIAGNOSA', 'APPROVAL_DITOLAK'");
   });
 
+  it('lets a rejected estimate be revised back to ESTIMATE_PENDING', () => {
+    expect(workflowController).toContain("'DIAGNOSA', 'APPROVAL_DITOLAK'");
+    const domain = readFileSync(new URL('../../domain/serviceWorkflow.ts', import.meta.url), 'utf8');
+    expect(domain).toContain('ServiceStatus.ESTIMATE_PENDING');
+  });
+
+  it('allows handover from SELESAI, SIAP_DIAMBIL, and MENUGGU_PEMBAYARAN', () => {
+    expect(workflowController).toContain("['SELESAI', 'SIAP_DIAMBIL', 'MENUGGU_PEMBAYARAN']");
+  });
+
+  it('exposes tenant-scoped receivable listing and settlement', () => {
+    expect(workflowRoutes).toContain("'/:id/receivables'");
+    expect(workflowRoutes).toContain("'/receivables/:receivableId/settlements'");
+    expect(workflowRoutes).toContain('requireServiceReceivableTenant');
+    expect(workflowController).toContain('listServiceReceivables');
+    expect(workflowController).toContain('(sr.amount - sr.paid_amount)::float AS remaining');
+  });
+
   it('registers bulk delete before ticket detail', () => {
     expect(workflowRoutes).toContain("requireServiceReceivableTenant");
     expect(workflowRoutes.indexOf("router.delete(\n  '/bulk'")).toBeLessThan(

@@ -32,7 +32,9 @@ describe('Service Workflow — SIAP_DIAMBIL & DIAMBIL status', () => {
     [ServiceStatus.DRAFT, ServiceStatus.BOOKING],
     [ServiceStatus.MENUGGU_APPROVAL, ServiceStatus.APPROVAL_DITOLAK],
     [ServiceStatus.APPROVAL_DITOLAK, ServiceStatus.MENUGGU_APPROVAL],
+    [ServiceStatus.APPROVAL_DITOLAK, ServiceStatus.ESTIMATE_PENDING],
     [ServiceStatus.SIAP_DIAMBIL, ServiceStatus.DIAMBIL],
+    [ServiceStatus.MENUGGU_PEMBAYARAN, ServiceStatus.DIAMBIL],
   ])('allows valid transition from %s to %s', (from, to) => {
     expect(canServiceTransition(from, to)).toBe(true);
   });
