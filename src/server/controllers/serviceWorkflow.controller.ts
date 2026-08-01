@@ -342,7 +342,7 @@ export async function uploadServicePhoto(req: Request, res: Response) {
     logServiceOperation(req, 'photo_upload', 'success', startedAt, { bytes: req.body.length });
     return res.status(200).json({ data: ticket, photoUrl: `/api/services/${req.params.id}/photos/${fileName}` });
   } catch (error: any) {
-    await storage.delete(objectPath).catch(() => undefined);
+    if (error.code !== 'EEXIST') await storage.delete(objectPath).catch(() => undefined);
     if (error.code === 'EEXIST') {
       logServiceOperation(req, 'photo_upload', 'rejected', startedAt, { statusCode: 409, reason: 'duplicate_file' });
       return res.status(409).json({ error: 'Foto sudah diunggah.' });
