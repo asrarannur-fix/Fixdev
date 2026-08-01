@@ -4,6 +4,10 @@ const TEST_BASE_URL = process.env.TEST_BASE_URL;
 const OWNER_EMAIL = process.env.TEST_OWNER_EMAIL;
 const OWNER_PASSWORD = process.env.TEST_OWNER_PASSWORD;
 const TENANT = 'devtes';
+const scopedHeaders = {
+  'X-Tenant-ID': '00000000-0000-4000-8000-000000000101',
+  'X-Branch-ID': '00000000-0000-4000-8000-000000000102',
+};
 
 test.skip(!TEST_BASE_URL || !OWNER_EMAIL || !OWNER_PASSWORD, 'TEST_BASE_URL, TEST_OWNER_EMAIL, and TEST_OWNER_PASSWORD required.');
 
@@ -14,20 +18,25 @@ test.describe('Service workflow workspace', () => {
     page.locator('tr:visible, [role="button"]:visible').filter({ hasText: ticket.ticketNo }).first();
 
   test.beforeEach(async ({ page }) => {
+    await page.setExtraHTTPHeaders({
+      Origin: TEST_BASE_URL!,
+      ...scopedHeaders,
+    });
     const login = await page.request.post(`${TEST_BASE_URL}/api/auth/login`, {
       data: { email: OWNER_EMAIL, password: OWNER_PASSWORD },
     });
     expect(login.ok()).toBeTruthy();
 
-    const tickets = await page.request.get(`${TEST_BASE_URL}/api/services?limit=1&offset=0&sort=newest`);
-    expect(tickets.ok()).toBeTruthy();
-    const payload = await tickets.json();
-    ticket = payload.data?.[0];
+    const tickets = await page.request.get(`${TEST_BASE_URL}/api/services?limit=1&offset=0&q=E2E-DEVTES-READY`, { headers: scopedHeaders });
+    const ticketBody = await tickets.text();
+    expect(tickets.ok(), `status=${tickets.status()} body=${ticketBody}`).toBeTruthy();
+    const payload = JSON.parse(ticketBody);
+    ticket = payload.data?.find((item: typeof ticket) => item.publicTrackingToken) || payload.data?.[0];
     expect(ticket?.id).toBeTruthy();
     expect(ticket?.ticketNo).toBeTruthy();
 
     await page.goto(`${TEST_BASE_URL}/tenant/${TENANT}/services`, { waitUntil: 'networkidle' });
-    const search = page.getByPlaceholder('Cari tiket, nama, perangkat...');
+    const search = page.getByPlaceholder('Cari tiket, pelanggan, atau perangkat');
     if (await search.isVisible()) return;
 
     const mobileService = page.getByRole('button', { name: 'Servis', exact: true });
@@ -38,13 +47,15 @@ test.describe('Service workflow workspace', () => {
       await page.getByText('Daftar Servis', { exact: true }).click();
     }
     await expect(search).toBeVisible();
+    await search.fill(ticket.ticketNo);
+    await expect(ticketControl(page)).toBeVisible();
   });
 
   test('opens real ticket detail and stable URL', async ({ page }) => {
     const row = ticketControl(page);
     await expect(row).toBeVisible();
     await row.click();
-    await expect(page.getByTestId('service-actions')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tutup detail tiket servis' })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`serviceId=${ticket.id}`));
   });
 
@@ -57,25 +68,26 @@ test.describe('Service workflow workspace', () => {
 
   test('detail survives refresh and browser back closes workspace', async ({ page }) => {
     await ticketControl(page).click();
-    await expect(page.getByTestId('service-actions')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tutup detail tiket servis' })).toBeVisible();
     await page.reload({ waitUntil: 'networkidle' });
-    await expect(page.getByTestId('service-actions')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tutup detail tiket servis' })).toBeVisible();
     await page.goBack();
     await expect(page).not.toHaveURL(/serviceId=/);
   });
 
   test('persists search in URL and after refresh', async ({ page }) => {
-    const search = page.getByPlaceholder('Cari tiket, nama, perangkat...');
+    const search = page.getByPlaceholder('Cari tiket, pelanggan, atau perangkat');
     await search.fill(ticket.ticketNo);
     await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(ticket.ticketNo)}`));
     await expect(ticketControl(page)).toBeVisible();
     await page.reload({ waitUntil: 'networkidle' });
+    expect(page.url()).toContain(`q=${encodeURIComponent(ticket.ticketNo)}`);
     await expect(search).toHaveValue(ticket.ticketNo);
   });
 
   test('opens service detail from direct URL', async ({ page }) => {
     await page.goto(`${TEST_BASE_URL}/tenant/${TENANT}/services?serviceId=${ticket.id}`, { waitUntil: 'networkidle' });
-    await expect(page.getByTestId('service-actions')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tutup detail tiket servis' })).toBeVisible();
   });
 
   test('keeps list filters and sort aligned with request URL', async ({ page }) => {
@@ -83,9 +95,9 @@ test.describe('Service workflow workspace', () => {
     page.on('request', (request) => {
       if (request.url().includes('/api/services?')) requests.push(request.url());
     });
-    await page.getByRole('combobox', { name: 'Filter semua status' }).selectOption({ index: 1 });
+    await page.getByRole('combobox', { name: 'Filter status' }).selectOption({ index: 1 });
     await page.getByRole('combobox', { name: 'Urutkan tiket servis' }).selectOption('oldest');
-    await page.getByPlaceholder('Cari tiket, nama, perangkat...').fill(ticket.ticketNo);
+    await page.getByPlaceholder('Cari tiket, pelanggan, atau perangkat').fill(ticket.ticketNo);
     await expect.poll(() => new URL(requests.at(-1) || TEST_BASE_URL).searchParams.get('q')).toBe(ticket.ticketNo);
     const requestUrl = new URL(requests.at(-1)!);
     expect(requestUrl.searchParams.get('sort')).toBe('oldest');
@@ -97,7 +109,7 @@ test.describe('Service workflow workspace', () => {
   });
 
   test('CSV export sends current read-only filters without downloading unbounded data', async ({ page }) => {
-    await page.getByPlaceholder('Cari tiket, nama, perangkat...').fill(ticket.ticketNo);
+    await page.getByPlaceholder('Cari tiket, pelanggan, atau perangkat').fill(ticket.ticketNo);
     const exportRequest = page.waitForRequest((request) => request.url().includes('/api/services/export.csv'));
     await page.getByRole('button', { name: /CSV/ }).click();
     const request = await exportRequest;
@@ -127,17 +139,16 @@ test.describe('Service workflow workspace', () => {
     await expect(page.getByText(/tidak ditemukan/i).first()).toBeVisible();
   });
 
-  test('opens public tracking from ticket-number link without mutation', async ({ page }) => {
+  test('public tracking token reads ticket without mutation', async ({ page }) => {
     test.skip(!ticket.publicTrackingToken, 'Selected ticket has no public tracking token.');
-    const before = await page.request.get(`${TEST_BASE_URL}/api/services/${ticket.id}`);
+    const before = await page.request.get(`${TEST_BASE_URL}/api/services/${ticket.id}`, { headers: scopedHeaders });
     expect(before.ok()).toBeTruthy();
-    const link = page.getByRole('link', { name: `Buka tracking publik tiket ${ticket.ticketNo}` });
-    await expect(link).toBeVisible();
-    const href = await link.getAttribute('href');
-    expect(href).toMatch(new RegExp(`\\?tracking=${ticket.publicTrackingToken}`));
-    await page.goto(new URL(href!, TEST_BASE_URL).toString(), { waitUntil: 'networkidle' });
-    await expect(page).toHaveURL(new RegExp(`\\?tracking=${ticket.publicTrackingToken}`));
-    const after = await page.request.get(`${TEST_BASE_URL}/api/services/${ticket.id}`);
+    const tracking = await page.request.get(`${TEST_BASE_URL}/api/service-tracking/token/${ticket.publicTrackingToken}`, {
+      headers: { Host: 'devtes.fixdev.web.id' },
+    });
+    expect(tracking.ok()).toBeTruthy();
+    expect(await tracking.json()).toMatchObject({ ticketNo: ticket.ticketNo });
+    const after = await page.request.get(`${TEST_BASE_URL}/api/services/${ticket.id}`, { headers: scopedHeaders });
     expect(await after.json()).toEqual(await before.json());
   });
 });

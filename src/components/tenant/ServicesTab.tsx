@@ -172,17 +172,21 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
   // Declaring missing states, variables, and helper functions
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [selectedPartWarehouseId, setSelectedPartWarehouseId] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [srvSort, setSrvSort] = useState<string>('newest');
-  const [srvSearchQuery, setSrvSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>(() => new URLSearchParams(window.location.search).get('status') || 'ALL');
+  const [srvSort, setSrvSort] = useState<string>(() => new URLSearchParams(window.location.search).get('sort') || 'newest');
+  const [srvSearchQuery, setSrvSearchQuery] = useState<string>(() => new URLSearchParams(window.location.search).get('q') || '');
   const [viewingServiceTicketId, setViewingServiceTicketId] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [fetchedService, setFetchedService] = useState<ServiceTicket | null>(null);
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     setSelectedServiceIds([]);
     setSelectedPartWarehouseId('');
-    setViewingServiceTicketId(null);
+    setSrvSearchQuery(params.get('q') || '');
+    setStatusFilter(params.get('status') || 'ALL');
+    setSrvSort(params.get('sort') || 'newest');
+    setViewingServiceTicketId(params.get('serviceId'));
     setFetchedService(null);
   }, [activeTenantId, currentBranchId]);
   const updateUrl = (updates: Record<string, string | null>) => {

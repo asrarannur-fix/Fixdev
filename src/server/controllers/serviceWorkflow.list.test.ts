@@ -1,15 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { timelineAggregate } from './serviceWorkflow.timeline';
 
 const controller = readFileSync(new URL('../../server/controllers/serviceWorkflow.controller.ts', import.meta.url), 'utf8');
 
 describe('service list query contract', () => {
+  it('normalizes SQL aliases before building timeline correlation', () => {
+    expect(timelineAggregate('st.')).toContain('WHERE e.ticket_id = st.id');
+    expect(timelineAggregate('st')).toContain('WHERE e.ticket_id = st.id');
+  });
+
   it('supports tenant/branch scoped bounded filters, KPI, and safe sort', () => {
     expect(controller).toContain('Math.min(100');
     expect(controller).toContain("req.query.technician || req.query.tech");
     expect(controller).toContain("req.query.group");
     expect(controller).toContain("req.query.sla");
     expect(controller).toContain("c.name ILIKE");
+    expect(controller).toContain("sql.replaceAll('$N'");
     expect(controller).toContain("st.tenant_id=$1");
     expect(controller).toContain("st.branch_id=$2");
     expect(controller).toContain('const sortMap');
@@ -55,7 +62,7 @@ describe('service list query contract', () => {
   });
 
   it('protects service payment and photo lifecycle boundaries', () => {
-    expect(controller).toContain("st.deleted_at IS NULL AND sr.status IN ('OPEN','PARTIAL')");
+    expect(controller).toContain("st.deleted_at IS NULL AND sr.status IN ('RECEIVABLE','OPEN','PARTIAL')");
     expect(controller).toContain("AND NOT EXISTS (SELECT 1 FROM service_payments");
     expect(controller).toContain("contentType === 'image/jpeg' && !fileName.endsWith('.jpg')");
   });

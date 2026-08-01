@@ -34,6 +34,8 @@ const ids = {
   user: "00000000-0000-4000-8000-000000000104",
   ready: "00000000-0000-4000-8000-000000000105",
   done: "00000000-0000-4000-8000-000000000106",
+  readyTrackingToken: "00000000-0000-4000-8000-000000000107",
+  doneTrackingToken: "00000000-0000-4000-8000-000000000108",
 };
 const pool = new Pool({ connectionString: databaseUrl, ssl: false });
 const client = await pool.connect();
@@ -70,14 +72,14 @@ try {
     [ids.user, ids.branch],
   );
   for (const ticket of [
-    [ids.ready, "E2E-DEVTES-READY", "SIAP_DIAMBIL", "E2E Ready Pickup"],
-    [ids.done, "E2E-DEVTES-DONE", "SELESAI", "E2E Technically Complete"],
+    [ids.ready, "E2E-DEVTES-READY", "SIAP_DIAMBIL", "E2E Ready Pickup", ids.readyTrackingToken],
+    [ids.done, "E2E-DEVTES-DONE", "SELESAI", "E2E Technically Complete", ids.doneTrackingToken],
   ]) {
     await client.query(
-      `INSERT INTO service_tickets (id,tenant_id,branch_id,ticket_no,device_name,status,estimated_cost,created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,250000,NOW())
-       ON CONFLICT (id) DO UPDATE SET tenant_id=EXCLUDED.tenant_id,branch_id=EXCLUDED.branch_id,ticket_no=EXCLUDED.ticket_no,device_name=EXCLUDED.device_name,status=EXCLUDED.status,estimated_cost=EXCLUDED.estimated_cost`,
-      [ticket[0], ids.tenant, ids.branch, ticket[1], ticket[3], ticket[2]],
+      `INSERT INTO service_tickets (id,tenant_id,branch_id,ticket_no,device_name,status,estimated_cost,public_tracking_token,created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,250000,$7,NOW())
+       ON CONFLICT (id) DO UPDATE SET tenant_id=EXCLUDED.tenant_id,branch_id=EXCLUDED.branch_id,ticket_no=EXCLUDED.ticket_no,device_name=EXCLUDED.device_name,status=EXCLUDED.status,estimated_cost=EXCLUDED.estimated_cost,public_tracking_token=EXCLUDED.public_tracking_token`,
+      [ticket[0], ids.tenant, ids.branch, ticket[1], ticket[3], ticket[2], ticket[4]],
     );
   }
   await client.query("COMMIT");

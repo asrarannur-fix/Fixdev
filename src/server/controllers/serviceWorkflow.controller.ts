@@ -384,7 +384,7 @@ function buildServiceTicketQuery(req: Request) {
   const sortMap: Record<string, string> = { newest: 'st.created_at DESC', oldest: 'st.created_at ASC', cost_desc: 'st.estimated_cost DESC', cost_asc: 'st.estimated_cost ASC', urgent: 'st.estimated_completion_date ASC NULLS LAST, st.created_at ASC' };
   const values: any[] = [req.tenantId, branchId];
   const filters = ['st.tenant_id=$1', 'st.branch_id=$2', 'st.deleted_at IS NULL'];
-  const add = (sql: string, value: any) => { values.push(value); filters.push(sql.replace('$N', `$${values.length}`)); };
+  const add = (sql: string, value: any) => { values.push(value); filters.push(sql.replaceAll('$N', `$${values.length}`)); };
   if (query) add(`(st.ticket_no ILIKE $N OR st.device_name ILIKE $N OR st.device_brand_model ILIKE $N OR c.name ILIKE $N)`, `%${query}%`);
   if (status && status !== 'ALL') add('st.status=$N', status);
   if (technician === 'unassigned') filters.push('st.assigned_tech_id IS NULL');
@@ -418,7 +418,10 @@ export async function listServiceTickets(req: Request, res: Response) {
     const kpiResult = await dbQuery(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK'))::int AS active, COUNT(*) FILTER (WHERE st.created_at < NOW() - INTERVAL '48 hours' AND st.status NOT IN ('DIAMBIL','DIBATALKAN','TIDAK_BISA_DIPERBAIKI','CUSTOMER_TIDAK_MERESPON','BARANG_TIDAK_DIAMBIL','RUSAK'))::int AS overdue, COALESCE(SUM(st.estimated_cost),0)::float AS estimated FROM service_tickets st LEFT JOIN customers c ON c.id=st.customer_id AND c.tenant_id=st.tenant_id WHERE ${where}`, values);
     const result = await dbQuery(`SELECT ${ticketSelect('st.')}, c.name AS "customerName" ${base} ORDER BY ${buildServiceTicketQuery(req).sortSql}, st.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, limit, offset]);
     res.json({ data: result.rows, total: countResult.rows[0]?.total || 0, limit, offset, kpi: kpiResult.rows[0] || { total: 0, active: 0, overdue: 0, estimated: 0 } });
-  } catch (error: any) { sendError(res, error); }
+  } catch (error: any) {
+    logger.error({ err: error.message, tenantId: req.tenantId, branchId: req.branchId }, '[service] ticket list failed');
+    sendError(res, error);
+  }
 }
 
 export async function exportServiceTickets(req: Request, res: Response) {
@@ -1458,7 +1461,7 @@ export async function settleServiceReceivable(req: Request, res: Response) {
       const receivable = await client.query(
         `SELECT sr.*,st.ticket_no FROM service_receivables sr
           JOIN service_tickets st ON st.id=sr.ticket_id AND st.tenant_id=sr.tenant_id AND st.branch_id=sr.branch_id
-          WHERE sr.id=$1 AND sr.tenant_id=$2 AND sr.branch_id=$3 AND st.deleted_at IS NULL AND sr.status IN ('OPEN','PARTIAL') FOR UPDATE`,
+          WHERE sr.id=$1 AND sr.tenant_id=$2 AND sr.branch_id=$3 AND st.deleted_at IS NULL AND sr.status IN ('RECEIVABLE','OPEN','PARTIAL') FOR UPDATE`,
         [req.params.receivableId, req.tenantId, req.branchId || req.headers['x-branch-id']]
       );
       if (!receivable.rows[0]) {
@@ -1481,9 +1484,9 @@ export async function settleServiceReceivable(req: Request, res: Response) {
         error.status = 422;
         throw error;
       }
-      await client.query(
+      const receivablePayment = await client.query(
         `INSERT INTO service_receivable_payments (tenant_id,branch_id,receivable_id,idempotency_key,amount,method,reference_no,created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
         [
           req.tenantId,
           item.branch_id,
@@ -1520,7 +1523,7 @@ export async function settleServiceReceivable(req: Request, res: Response) {
           req.tenantId,
           item.branch_id,
           `Pelunasan piutang servis ${item.ticket_no}`,
-          item.ticket_no,
+          `${item.ticket_no}:SETTLEMENT:${receivablePayment.rows[0].id}`,
           item.id,
           req.authActor?.userId,
         ]
@@ -1534,6 +1537,7 @@ export async function settleServiceReceivable(req: Request, res: Response) {
     });
     res.json({ data: result });
   } catch (error: any) {
+    logger.error({ err: error.message, tenantId: req.tenantId, receivableId: req.params.receivableId }, '[service] receivable settlement failed');
     sendError(res, error);
   }
 }

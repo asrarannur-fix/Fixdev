@@ -105,6 +105,7 @@ describe('service status event routes', () => {
     expect(workflowRoutes).toContain('requireServiceReceivableTenant');
     expect(workflowController).toContain('listServiceReceivables');
     expect(workflowController).toContain('(sr.amount - sr.paid_amount)::float AS remaining');
+    expect(workflowController).toContain("sr.status IN ('RECEIVABLE','OPEN','PARTIAL')");
   });
 
   it('registers bulk delete before ticket detail', () => {

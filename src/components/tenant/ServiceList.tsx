@@ -26,6 +26,7 @@ export const ServiceList: React.FC<any> = (props) => {
   const [dateTo, setDateTo] = React.useState('');
   const [slaFilter, setSlaFilter] = React.useState('ALL');
   const [assignedTech, setAssignedTech] = React.useState('ALL');
+  const [filtersHydrated, setFiltersHydrated] = React.useState(false);
   const filterStorageKey = 'fixdev_srv_filters';
 
   React.useEffect(() => {
@@ -33,35 +34,31 @@ export const ServiceList: React.FC<any> = (props) => {
     let saved: Record<string, string> = {};
     try { saved = JSON.parse(localStorage.getItem(filterStorageKey) || '{}'); } catch (error) { localStorage.removeItem(filterStorageKey); }
     const value = (key: string) => params.get(key) ?? saved[key];
-    const q = value('q'); if (q !== undefined) setSrvSearchQuery(q);
-    const sort = value('sort'); if (sort !== undefined) setSrvSort(sort);
-    const status = value('status'); if (status !== undefined && setStatusFilter) setStatusFilter(status);
     const nextWorkflow = value('workflow'); if (nextWorkflow !== undefined) setWorkflow(nextWorkflow);
     const from = value('dateFrom'); if (from !== undefined) setDateFrom(from);
     const to = value('dateTo'); if (to !== undefined) setDateTo(to);
     const sla = value('sla'); if (sla !== undefined) setSlaFilter(sla);
     const tech = value('tech'); if (tech !== undefined) setAssignedTech(tech);
+    const frame = requestAnimationFrame(() => setFiltersHydrated(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   React.useEffect(() => {
+    if (!filtersHydrated) return;
     const query = new URLSearchParams(window.location.search);
-    ['q', 'sort', 'status', 'workflow', 'dateFrom', 'dateTo', 'sla', 'tech'].forEach((key) => query.delete(key));
-    if (srvSearchQuery) query.set('q', srvSearchQuery);
-    if (srvSort !== 'urgent') query.set('sort', srvSort);
-    if (statusFilter !== 'ALL') query.set('status', statusFilter);
+    if (query.get('q') && !srvSearchQuery) return;
+    ['workflow', 'dateFrom', 'dateTo', 'sla', 'tech'].forEach((key) => query.delete(key));
     if (workflow !== 'ALL') query.set('workflow', workflow);
     if (dateFrom) query.set('dateFrom', dateFrom);
     if (dateTo) query.set('dateTo', dateTo);
     if (slaFilter !== 'ALL') query.set('sla', slaFilter);
     if (assignedTech !== 'ALL') query.set('tech', assignedTech);
-
-    const newUrl = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}${window.location.hash}`;
-    window.history.replaceState({}, '', newUrl);
-
+    const nextUrl = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', nextUrl);
     localStorage.setItem(filterStorageKey, JSON.stringify({
       q: srvSearchQuery, sort: srvSort, status: statusFilter, workflow, dateFrom, dateTo, sla: slaFilter, tech: assignedTech
     }));
-  }, [srvSearchQuery, srvSort, statusFilter, workflow, dateFrom, dateTo, slaFilter, assignedTech]);
+  }, [filtersHydrated, srvSearchQuery, srvSort, statusFilter, workflow, dateFrom, dateTo, slaFilter, assignedTech]);
 
   const now = new Date();
   const groups: Record<string, ServiceStatus[]> = {
