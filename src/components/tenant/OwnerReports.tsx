@@ -403,31 +403,25 @@ export const OwnerReports: React.FC<{
         </span>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* KPI Summary — ringkas untuk owner */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <KPICard
-          label="Omzet Hari Ini"
-          value={`Rp ${(metrics.posRevenue + metrics.serviceRevenue).toLocaleString()}`}
+          label="Total Pendapatan"
+          value={`Rp ${metrics.totalRevenue.toLocaleString()}`}
           trend={metrics.revenueDelta ? `${metrics.revenueDelta}%` : '-'}
           trendPositive={Number(metrics.revenueDelta) === 0 ? null : Number(metrics.revenueDelta) > 0}
         />
         <KPICard
-          label="Transaksi"
-          value={fTx.length.toString()}
-          trend={metrics.revenueDelta ? `${metrics.revenueDelta}%` : '-'}
-          trendPositive={Number(metrics.revenueDelta) === 0 ? null : Number(metrics.revenueDelta) > 0}
+          label="Laba Kotor"
+          value={`Rp ${metrics.grossProfit.toLocaleString()}`}
+          trend={`${metrics.profitMargin}% margin`}
+          trendPositive={Number(metrics.profitMargin) >= 0}
         />
         <KPICard
-          label="Tiket Service"
-          value={`${metrics.completedServices} selesai, ${metrics.activeTickets} aktif`}
-          trend={`${metrics.totalTickets > 0 ? ((metrics.completedServices / metrics.totalTickets) * 100).toFixed(0) : '0'}%`}
-          trendPositive={metrics.totalTickets > 0 && (metrics.completedServices / metrics.totalTickets) > 0.5 ? true : metrics.totalTickets > 0 ? false : null}
-        />
-        <KPICard
-          label="Stok Menipis"
-          value={metrics.lowStockCount.toString()}
-          trend={metrics.lowStockCount > 0 ? 'Perlu restock' : 'OK'}
-          trendPositive={metrics.lowStockCount > 0 ? false : true}
+          label="Arus Kas"
+          value={`Rp ${metrics.cashFlow.toLocaleString()}`}
+          trend={metrics.cashFlow >= 0 ? 'Positif' : 'Negatif'}
+          trendPositive={metrics.cashFlow >= 0}
         />
       </div>
 

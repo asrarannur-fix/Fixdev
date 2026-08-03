@@ -27,11 +27,8 @@ interface WidgetSettingsPanelProps {
 
 const WIDGET_COLORS: Record<string, string> = {
   "kpi-revenue": "from-emerald-400 to-teal-500",
-  "kpi-operations": "from-pink-400 to-rose-500",
-  "kpi-billing": "from-orange-400 to-amber-500",
-  "stock-alerts": "from-rose-400 to-red-500",
-  "ops-overview": "from-indigo-400 to-blue-500",
   "cash-flow": "from-violet-400 to-purple-500",
+  "ops-overview": "from-indigo-400 to-blue-500",
   "analytics": "from-emerald-400 to-teal-500",
 };
 

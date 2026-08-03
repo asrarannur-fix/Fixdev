@@ -64,20 +64,14 @@ export interface WidgetLayout {
 export const DEFAULT_LAYOUT: WidgetLayout = {
   order: [
     "kpi-revenue",
-    "kpi-operations",
-    "kpi-billing",
-    "stock-alerts",
-    "ops-overview",
     "cash-flow",
+    "ops-overview",
     "analytics",
   ],
   visible: {
     "kpi-revenue": true,
-    "kpi-operations": true,
-    "kpi-billing": true,
-    "stock-alerts": true,
-    "ops-overview": true,
     "cash-flow": true,
+    "ops-overview": true,
     "analytics": true,
   },
 };
