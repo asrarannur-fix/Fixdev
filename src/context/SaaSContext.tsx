@@ -1248,6 +1248,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     (async () => {
       try {
+        // Jangan poll endpoint auth saat tidak ada indikasi sesi lokal -> hindari 401 noise di konsol
+        const hasLocalSession = localStorage.getItem('saas_is_authenticated') === 'true' && !!localStorage.getItem('saas_curr_user');
+        if (!hasLocalSession) {
+          setApiLoading(false);
+          return;
+        }
         const profileRes = await fetch('/api/auth/profile', { credentials: 'include' });
         const dbUser = profileRes.ok ? await profileRes.json() : null;
 

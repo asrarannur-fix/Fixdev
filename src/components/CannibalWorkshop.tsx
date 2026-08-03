@@ -462,9 +462,9 @@ export const CannibalWorkshop: React.FC = () => {
                 <tbody className="divide-y divide-slate-100 dark:divide-zinc-805 font-medium">
                   {products.filter(
                     (p) =>
-                      p.sku.toLowerCase().includes("scrap") ||
-                      p.name.toLowerCase().includes("salvaged") ||
-                      p.sku.toLowerCase().includes("can-"),
+                      (p.sku || "").toLowerCase().includes("scrap") ||
+                      (p.name || "").toLowerCase().includes("salvaged") ||
+                      (p.sku || "").toLowerCase().includes("can-"),
                   ).length === 0 ? (
                     <tr>
                       <td
@@ -478,9 +478,9 @@ export const CannibalWorkshop: React.FC = () => {
                     products
                       .filter(
                         (p) =>
-                          p.sku.toLowerCase().includes("scrap") ||
-                          p.name.toLowerCase().includes("salvaged") ||
-                          p.sku.toLowerCase().includes("can-"),
+                          (p.sku || "").toLowerCase().includes("scrap") ||
+                          (p.name || "").toLowerCase().includes("salvaged") ||
+                          (p.sku || "").toLowerCase().includes("can-"),
                       )
                       .map((p) => (
                         <tr
