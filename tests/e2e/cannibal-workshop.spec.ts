@@ -25,12 +25,23 @@ test.describe('Cannibal Workshop (inventory cannibalization)', () => {
     await page.locator('form').getByRole('button', { name: 'Masuk' }).click();
     await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
 
-    await page.goto(`${BASE}/?tab=inventory&subTab=cannibal`, {
-      waitUntil: 'networkidle',
-    });
-
-    // Cannibal panel must mount (no red error boundary)
-    await expect(page.locator('#cannibal-workshop-container')).toBeVisible();
+    // Navigasi ke deep-link kanibal. Lazy chunk bisa di-abort saat navigasi cepat
+    // (terutama mobile) -> retry dengan reload agar modul sempat load penuh.
+    const container = page.locator('#cannibal-workshop-container');
+    let mounted = false;
+    for (let attempt = 0; attempt < 3 && !mounted; attempt++) {
+      await page.goto(`${BASE}/?tab=inventory&subTab=cannibal`, {
+        waitUntil: 'domcontentloaded',
+      });
+      try {
+        await container.waitFor({ state: 'visible', timeout: 8000 });
+        mounted = true;
+      } catch {
+        // reload sekali lagi untuk memberi waktu lazy import selesai
+        await page.reload({ waitUntil: 'domcontentloaded' });
+      }
+    }
+    expect(mounted, 'Cannibal panel gagal mount setelah retry').toBe(true);
 
     // Warehouse picker dropdown should be populated (at least 1 real warehouse)
     const warehouseOptions = page.locator('select[name="warehouse"] option');

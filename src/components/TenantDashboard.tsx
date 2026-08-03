@@ -14,11 +14,20 @@ import {
 } from '../utils/print';
 
 // Lazy loading all tenant module components
+// lazyWithRetry: tangani flake dynamic import (module script di-abort saat navigasi cepat)
+function lazyWithRetry(factory, retries = 3) {
+  const load = (n) =>
+    factory().catch((err) => {
+      if (n <= 0) throw err;
+      return new Promise((res) => setTimeout(res, 300)).then(() => load(n - 1));
+    });
+  return React.lazy(() => load(retries));
+}
 const ServicesTab = React.lazy(() =>
   import('./tenant/ServicesTab').then((m) => ({ default: m.ServicesTab }))
 );
 const POSTab = React.lazy(() => import('./tenant/POSTab').then((m) => ({ default: m.POSTab })));
-const InventoryTab = React.lazy(() =>
+const InventoryTab = lazyWithRetry(() =>
   import('./tenant/InventoryTab').then((m) => ({ default: m.InventoryTab }))
 );
 const AccountingTab = React.lazy(() =>

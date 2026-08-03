@@ -114,11 +114,15 @@ const MainAppContent: React.FC = () => {
   const { showToast } = useToast();
   const printNotifications = usePrintNotifications();
   const [activeTab, setActiveTab] = useState<string>(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab) return urlTab;
     const saved = localStorage.getItem('saas_active_tab');
     if (saved) return saved;
     return 'overview';
   });
   const [activeSubTab, setActiveSubTab] = useState<string>(() => {
+    const urlSub = new URLSearchParams(window.location.search).get('subTab');
+    if (urlSub) return urlSub;
     const saved = localStorage.getItem('saas_active_sub_tab');
     if (saved) return saved;
     return 'overview';
@@ -313,6 +317,27 @@ const MainAppContent: React.FC = () => {
     const ticketParam = params.get('ticket');
     const trackingParam = params.get('tracking');
     const subParam = params.get('sub');
+
+    // 🔗 Deep-link support: ?tab=inventory&subTab=cannibal (E2E + shared links)
+    const deepTab = params.get('tab');
+    const deepSubTab = params.get('subTab');
+    if (deepTab) {
+      const isSaTab = SUPER_ADMIN_TABS.includes(deepTab);
+      if (isControlPlane && !isSaTab && deepTab !== 'customer-portal') {
+        // Superadmin control plane harus di SA tab; abaikan deep-link tenant
+      } else if (isTenantWorkspace && isSaTab) {
+        // Tenant workspace tidak boleh ke SA tab; abaikan
+      } else {
+        setActiveTab(deepTab);
+        localStorage.setItem('saas_active_tab', deepTab);
+        if (deepSubTab) {
+          setActiveSubTab(deepSubTab);
+          localStorage.setItem('saas_active_sub_tab', deepSubTab);
+        }
+        return;
+      }
+    }
+
     if ((trackingParam || ticketParam) && subParam !== 'warranty-claim') {
       setActiveTab('customer-portal');
       setActiveSubTab('overview');
