@@ -22,10 +22,11 @@ test.describe('Service workflow workspace', () => {
       Origin: TEST_BASE_URL!,
       ...scopedHeaders,
     });
-    const login = await page.request.post(`${TEST_BASE_URL}/api/auth/login`, {
-      data: { email: OWNER_EMAIL, password: OWNER_PASSWORD },
-    });
-    expect(login.ok()).toBeTruthy();
+    await page.goto(`${TEST_BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+    await page.getByLabel('Alamat email').fill(OWNER_EMAIL!);
+    await page.getByLabel('Password').fill(OWNER_PASSWORD!);
+    await page.locator('form').getByRole('button', { name: 'Masuk' }).click();
+    await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
 
     const tickets = await page.request.get(`${TEST_BASE_URL}/api/services?limit=1&offset=0&q=E2E-DEVTES-READY`, { headers: scopedHeaders });
     const ticketBody = await tickets.text();
@@ -35,17 +36,8 @@ test.describe('Service workflow workspace', () => {
     expect(ticket?.id).toBeTruthy();
     expect(ticket?.ticketNo).toBeTruthy();
 
-    await page.goto(`${TEST_BASE_URL}/tenant/${TENANT}/services`, { waitUntil: 'networkidle' });
+    await page.goto(`${TEST_BASE_URL}/?tab=services&subTab=list`, { waitUntil: 'networkidle' });
     const search = page.getByPlaceholder('Cari tiket, pelanggan, atau perangkat');
-    if (await search.isVisible()) return;
-
-    const mobileService = page.getByRole('button', { name: 'Servis', exact: true });
-    if (await mobileService.isVisible()) {
-      await mobileService.click();
-    } else {
-      await page.getByRole('button', { name: /Servis, buka menu/ }).click();
-      await page.getByText('Daftar Servis', { exact: true }).click();
-    }
     await expect(search).toBeVisible();
     await search.fill(ticket.ticketNo);
     await expect(ticketControl(page)).toBeVisible();

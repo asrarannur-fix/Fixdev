@@ -335,6 +335,12 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
   );
 
   // Photo capture handlers (extracted for ServiceTicketCamera component)
+  const handleUploadPhoto = async (file: File) => {
+    const updated = await uploadServicePhoto(apiFetch, ticket.id, file);
+    onDetailUpdated?.(updated);
+    showToast('Foto berhasil diunggah.', 'success');
+  };
+
   const handleCapturePhoto = async () => {
     const canvas = document.createElement('canvas');
     canvas.width = 640;
@@ -592,7 +598,7 @@ export const ServiceDetailModal: React.FC<any> = (props) => {
                 stopCamera={stopCamera}
                 videoRef={videoRef}
                 onCapture={handleCapturePhoto}
-
+                onUpload={handleUploadPhoto}
               />
             )}
 

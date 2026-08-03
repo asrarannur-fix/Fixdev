@@ -15,11 +15,11 @@ test.skip(!run, 'TEST_BASE_URL, TEST_OWNER_EMAIL, and TEST_OWNER_PASSWORD requir
 test.describe('Service visual regression', () => {
   test.beforeEach(async ({ page }) => {
     await page.setExtraHTTPHeaders({ Origin: baseURL!, ...scopedHeaders });
-    const login = await page.request.post(`${baseURL}/api/auth/login`, {
-      data: { email, password },
-      headers: { Origin: baseURL! },
-    });
-    expect(login.ok()).toBeTruthy();
+    await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' });
+    await page.getByLabel('Alamat email').fill(email!);
+    await page.getByLabel('Password').fill(password!);
+    await page.locator('form').getByRole('button', { name: 'Masuk' }).click();
+    await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
   });
 
   for (const theme of ['light', 'dark'] as const) {
@@ -28,17 +28,8 @@ test.describe('Service visual regression', () => {
         localStorage.setItem('theme', selectedTheme);
         document.documentElement.classList.toggle('dark', selectedTheme === 'dark');
       }, theme);
-      await page.goto(`${baseURL}/tenant/devtes/services?q=${ticketNo}`, { waitUntil: 'networkidle' });
+      await page.goto(`${baseURL}/?tab=services&subTab=list&q=${ticketNo}`, { waitUntil: 'networkidle' });
       const search = page.getByPlaceholder('Cari tiket, pelanggan, atau perangkat');
-      if (!(await search.isVisible().catch(() => false))) {
-        const mobileService = page.getByRole('button', { name: 'Servis', exact: true });
-        if (await mobileService.isVisible().catch(() => false)) {
-          await mobileService.click();
-        } else {
-          await page.getByRole('button', { name: /Servis, buka menu/ }).click();
-          await page.getByRole('button', { name: 'Daftar Servis', exact: true }).click();
-        }
-      }
       await expect(search).toBeVisible();
       await search.fill(ticketNo);
       const ticketRow = isMobile

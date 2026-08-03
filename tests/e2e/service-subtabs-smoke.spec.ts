@@ -56,9 +56,10 @@ test('service subtabs and safe controls work against dev data', async ({ page })
   const row = page.locator('tr:visible').filter({ has: page.locator('td:visible') }).first();
   await expect(row).toBeVisible();
   await row.click();
-  await expect(page.getByTestId('service-actions')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Tutup detail tiket servis' })).toBeVisible();
 
-  const spk = page.getByRole('button', { name: 'SPK', exact: true });
+  const detail = page.getByRole('dialog', { name: 'Tiket Servis' });
+  const spk = detail.getByRole('button', { name: 'SPK', exact: true });
   if (await spk.isVisible().catch(() => false)) {
     await spk.click();
     await expect(page.getByRole('dialog', { name: 'Cetak Surat Perintah Kerja' })).toBeVisible();

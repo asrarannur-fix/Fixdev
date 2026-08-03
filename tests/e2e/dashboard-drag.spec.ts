@@ -4,9 +4,7 @@ const BASE = process.env.TEST_BASE_URL;
 const EMAIL = process.env.TEST_OWNER_EMAIL;
 const PASS = process.env.TEST_OWNER_PASSWORD;
 
-if (!BASE || !EMAIL || !PASS) {
-  throw new Error('TEST_BASE_URL, TEST_OWNER_EMAIL, and TEST_OWNER_PASSWORD are required for E2E tests.');
-}
+test.skip(!BASE || !EMAIL || !PASS, 'TEST_BASE_URL, TEST_OWNER_EMAIL, and TEST_OWNER_PASSWORD are required.');
 
 test.describe('Dashboard Widget Drag-and-Drop', () => {
   test.beforeEach(async ({ page, isMobile }) => {

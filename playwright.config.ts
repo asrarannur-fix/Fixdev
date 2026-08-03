@@ -31,7 +31,7 @@ export default defineConfig({
   ...(process.env.TEST_E2E_SERVER === '1'
     ? {
         webServer: {
-          command: `NODE_ENV=test PORT=${port} DEV_PORT=${port} DOTENV_CONFIG_PATH=/dev/null npm run dev`,
+          command: `NODE_ENV=test PORT=${port} DEV_PORT=${port} LOGIN_RATE_LIMIT_MAX=1000 RATE_LIMIT_MAX=10000 DOTENV_CONFIG_PATH=/dev/null npm run dev`,
           url: baseURL,
           reuseExistingServer: !process.env.CI,
           timeout: 60 * 1000,

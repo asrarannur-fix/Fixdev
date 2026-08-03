@@ -32,6 +32,7 @@ interface DocumentPrintoutsProps {
   showWarrantyPrintout: string | null;
   setShowWarrantyPrintout: (id: string | null) => void;
   tenantServices: ServiceTicket[];
+  activeTicket?: ServiceTicket | null;
   customers: Customer[];
   _employees?: Employee[];
   currentUser: User | null;
@@ -49,6 +50,7 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
   showWarrantyPrintout,
   setShowWarrantyPrintout,
   tenantServices,
+  activeTicket,
   customers,
   _employees,
   currentUser,
@@ -80,13 +82,13 @@ export const DocumentPrintouts: React.FC<DocumentPrintoutsProps> = ({
     <>
       {/* SPK Printout */}
       {showSpkPrintout && (() => {
-        const ticket = tenantServices.find((s) => s.id === showSpkPrintout);
+        const ticket = activeTicket?.id === showSpkPrintout ? activeTicket : tenantServices.find((s) => s.id === showSpkPrintout);
         const customer = ticket ? customers.find((c) => c.id === ticket.customerId) : undefined;
-        if (!ticket || !customer) return null;
+        if (!ticket) return null;
         return (
           <SPKPrintout
             ticket={ticket}
-            customer={customer}
+            customer={customer || { name: 'Pelanggan umum' }}
             printConfig={printConfig}
             logoUrl={logoUrl}
             currentUser={currentUser}

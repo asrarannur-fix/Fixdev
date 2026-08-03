@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, Upload } from 'lucide-react';
 
 interface Photo {
   id: string;
@@ -15,6 +15,7 @@ interface ServiceTicketCameraProps {
   stopCamera: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
   onCapture: () => Promise<void>;
+  onUpload: (file: File) => Promise<void>;
 }
 
 const photoSrc = (ticketId: string, value: string) => value.startsWith('blob:') || value.startsWith('data:') || value.startsWith('http') || value.startsWith('/')
@@ -28,6 +29,7 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
   stopCamera,
   videoRef,
   onCapture,
+  onUpload,
 }) => {
   const capturedConditions: Photo[] | undefined = ticket?.capturedConditions;
   const [pending, setPending] = React.useState(false);
@@ -107,13 +109,29 @@ export const ServiceTicketCamera: React.FC<ServiceTicketCameraProps> = ({
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={startCamera}
-          className="w-full bg-slate-50 border border-dashed border-slate-200 hover:bg-accent-lighter text-[10.5px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-accent cursor-pointer"
-        >
-          <Camera className="w-3.5 h-3.5" /> Ambil Foto Kondisi Baru
-        </button>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={startCamera}
+            className="bg-slate-50 border border-dashed border-slate-200 hover:bg-accent-lighter text-[10.5px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-accent cursor-pointer"
+          >
+            <Camera className="w-3.5 h-3.5" /> Ambil Foto
+          </button>
+          <label className="bg-slate-50 border border-dashed border-slate-200 hover:bg-accent-lighter text-[10.5px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-accent cursor-pointer">
+            <Upload className="w-3.5 h-3.5" /> Pilih Foto
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              capture="environment"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void onUpload(file).catch((cause) => setError(cause instanceof Error ? cause.message : 'Gagal mengunggah foto.'));
+              }}
+            />
+          </label>
+        </div>
       )}
     </div>
   );

@@ -169,6 +169,21 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
     ) : null;
   const steps = ['Pelanggan', 'Unit', 'Pemeriksaan', 'Konfirmasi'];
   const [currentStep, setCurrentStep] = React.useState(0);
+  const addPhotoFile = (file?: File) => {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      showToast('Foto harus JPG atau PNG maksimal 5 MB.', 'error');
+      return;
+    }
+    setNewSrvCapturedConditions((current: any[]) => [...current, {
+      id: crypto.randomUUID(),
+      category: selectedCaptureCategory,
+      url: URL.createObjectURL(file),
+      blob: file,
+      timestamp: new Date().toISOString(),
+    }]);
+    showToast('Foto kondisi fisik berhasil ditambahkan.', 'success');
+  };
   const validateStep = (step: number) => {
     if (step === 0 && !selectedReceptionCustomer && !(newSrvCustName.trim() && newSrvCustPhone.trim())) {
       showToast('Pilih pelanggan atau isi data pelanggan baru.', 'error');
@@ -1077,16 +1092,19 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                         >
                           <Camera className="w-3.5 h-3.5" /> Jepret Foto
                         </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            showToast('Kamera tidak tersedia; gunakan upload foto nyata.', 'error')
-                          }
-                          className="bg-slate-500 hover:bg-slate-600 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm"
-                          title="Demo dinonaktifkan di produksi"
-                        >
-                          <AlertCircle className="w-3.5 h-3.5" /> Demo dinonaktifkan
-                        </button>
+                        <label className="bg-slate-500 hover:bg-slate-600 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-sm">
+                          <Upload className="w-3.5 h-3.5" /> Pilih Foto
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            capture="environment"
+                            className="sr-only"
+                            onChange={(event) => {
+                              addPhotoFile(event.target.files?.[0]);
+                              event.target.value = '';
+                            }}
+                          />
+                        </label>
                         <button
                           type="button"
                           onClick={stopCamera}
@@ -1097,13 +1115,27 @@ export const ServiceReceptionWizard: React.FC<any> = (props) => {
                       </div>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-accent text-xs py-3.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 transition-all font-semibold shadow-xs"
-                    >
-                      <Camera className="w-4 h-4 text-slate-400" /> Buka Kamera Kondisi Fisik
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={startCamera}
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-accent text-xs py-3.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 transition-all font-semibold shadow-xs"
+                      >
+                        <Camera className="w-4 h-4 text-slate-400" /> Buka Kamera
+                      </button>
+                      <label className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-accent text-xs py-3.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 transition-all font-semibold shadow-xs">
+                        <Upload className="w-4 h-4 text-slate-400" /> Pilih Foto
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png"
+                          className="sr-only"
+                          onChange={(event) => {
+                            addPhotoFile(event.target.files?.[0]);
+                            event.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
                   )}
 
                   {/* Captured Photos Gallery */}

@@ -549,18 +549,39 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
     currentUser.role === UserRole.SUPER_ADMIN ||
     isSubTabFeatureAllowed(tabId, subId, tenantObj || {});
   const startCamera = async () => {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      showToast('Kamera hanya tersedia melalui HTTPS. Gunakan Pilih Foto.', 'error');
+      return;
+    }
     let stream: MediaStream | null = null;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (!videoRef.current) throw new Error('Video kamera tidak tersedia');
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        });
+      } catch (error: any) {
+        if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') throw error;
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
       setCameraActive(true);
-    } catch {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const video = videoRef.current;
+      if (!video) throw new Error('Pratinjau kamera tidak tersedia.');
+      video.srcObject = stream;
+      await video.play();
+    } catch (error: any) {
       stream?.getTracks().forEach((track) => track.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
       setCameraActive(false);
-      showToast('Gagal mengakses kamera perangkat', 'error');
+      const message = error?.name === 'NotAllowedError' || error?.name === 'SecurityError'
+        ? 'Izin kamera ditolak. Izinkan kamera di pengaturan browser atau gunakan Pilih Foto.'
+        : error?.name === 'NotFoundError'
+          ? 'Kamera tidak ditemukan. Gunakan Pilih Foto.'
+          : error?.name === 'NotReadableError'
+            ? 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.'
+            : error?.message || 'Gagal mengakses kamera perangkat.';
+      showToast(message, 'error');
     }
   };
   const stopCamera = () => {
@@ -1074,6 +1095,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         showWarrantyPrintout={showWarrantyPrintout}
         setShowWarrantyPrintout={setShowWarrantyPrintout}
         tenantServices={tenantServices}
+        activeTicket={fetchedService}
         customers={customers}
         _employees={employees}
         currentUser={currentUser}
