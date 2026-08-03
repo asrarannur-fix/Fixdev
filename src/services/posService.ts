@@ -239,7 +239,7 @@ export async function processPOSTransaction(
   if (parsed.paymentDetails && parsed.paymentDetails.startsWith('VOUCHER:')) {
     const voucherCode = parsed.paymentDetails.replace('VOUCHER:', '');
     const voucherRes = await client.query(
-      `SELECT discount_type, discount_value, max_discount, min_purchase FROM discount_vouchers
+      `SELECT id, discount_type, discount_value, max_discount, min_purchase FROM discount_vouchers
        WHERE tenant_id=$1 AND code=$2 AND is_active=TRUE
        AND valid_from <= NOW() AND (valid_until IS NULL OR valid_until > NOW())
        AND used_count < max_uses FOR UPDATE`,
@@ -414,8 +414,7 @@ export async function processPOSTransaction(
   }
 
   // Accounting journal
-  const netSales = subtotal - totalDisc;
-   const debitCode = paymentDebitAccountCode(parsed.paymentMethod);
+   const netSales = subtotal - totalDisc;
    const salesAcctId = await ensureAccount(client, tenantId, '40100');
   const taxAcctId = await ensureAccount(client, tenantId, '20100');
   const hppAcctId = await ensureAccount(client, tenantId, '50100');
@@ -438,16 +437,23 @@ export async function processPOSTransaction(
       );
     }
     if (appliedPayment > 0) {
-      const paidDebitAcctId = await ensureAccount(
-        client,
-        tenantId,
-        debitCode
-      );
-      await client.query(
-        `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
-         VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
-        [journalId, paidDebitAcctId, appliedPayment]
-      );
+      const payments = splitPayments?.length
+        ? splitPayments
+        : [{ method: parsed.paymentMethod, amount: appliedPayment }];
+      for (const payment of payments) {
+        const amount = Math.min(Math.max(0, Number(payment.amount) || 0), appliedPayment);
+        if (amount === 0) continue;
+        const paidDebitAcctId = await ensureAccount(
+          client,
+          tenantId,
+          paymentDebitAccountCode(payment.method)
+        );
+        await client.query(
+          `INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit)
+           VALUES (gen_random_uuid(), $1, $2, $3, 0)`,
+          [journalId, paidDebitAcctId, amount]
+        );
+      }
     }
     const receivableAmount = Math.max(0, cashDue - effectivePaid);
     if (receivableAmount > 0) {
@@ -594,8 +600,9 @@ export async function recallHoldCart(
      FOR UPDATE`,
     [holdId, tenantId, branchId]
   );
-  if (result.rows.length === 0) return null;
-  return result.rows[0] as HoldCartData;
+   if (result.rows.length === 0) return null;
+   await client.query(`UPDATE pos_holds SET recalled_at = NOW() WHERE id=$1`, [holdId]);
+   return result.rows[0] as HoldCartData;
 }
 
 export async function deleteHoldCart(
@@ -617,9 +624,11 @@ export async function getHeldCarts(
   branchId: string
 ): Promise<HoldCartData[]> {
   const res = await client.query(
-    `SELECT id, tenant_id, branch_id, shift_id, customer_id, items,
-            discount_amount, deposit_used, payment_method, payment_details,
-            notes, recalled_at, created_at
+    `SELECT id, tenant_id as "tenantId", branch_id as "branchId", shift_id as "shiftId",
+             customer_id as "customerId", items, discount_amount as "discountAmount",
+             deposit_used as "depositUsed", payment_method as "paymentMethod",
+             payment_details as "paymentDetails", notes, recalled_at as "recalledAt",
+             created_at as "createdAt"
      FROM pos_holds
      WHERE tenant_id=$1 AND branch_id=$2 AND recalled_at IS NULL
      ORDER BY created_at DESC`,
@@ -880,7 +889,11 @@ export async function getReceiptData(
     [txId, tenantId, branchId]
   );
   if (result.rows.length === 0) return null;
-  return result.rows[0] as POSReceiptData;
+  const receipt = result.rows[0];
+  for (const field of ['subtotal', 'discountAmount', 'taxAmount', 'grandTotal', 'amountPaid', 'changeAmount', 'depositUsed']) {
+    receipt[field] = Number(receipt[field]);
+  }
+  return receipt as POSReceiptData;
 }
 
 // ── Analytics ────────────────────────────────────────────────────────────────
@@ -922,13 +935,14 @@ export async function getPOSAnalytics(
   );
 
   const topProducts = await client.query(
-    `SELECT t.items->>'productId' AS "productId", t.items->>'name' AS "name",
-            SUM((t.items->>'quantity')::int) AS "quantity",
-            SUM((t.items->>'total')::numeric) AS "revenue"
-     FROM pos_transactions t
-     WHERE t.tenant_id=$1 AND t.branch_id=$2 AND t.created_at >= $3 AND t.items IS NOT NULL
-     GROUP BY t.items->>'productId', t.items->>'name'
-     HAVING t.items->>'productId' IS NOT NULL
+     `SELECT item->>'productId' AS "productId", item->>'name' AS "name",
+             SUM((item->>'quantity')::int) AS "quantity",
+             SUM((item->>'total')::numeric) AS "revenue"
+      FROM pos_transactions t
+      CROSS JOIN LATERAL jsonb_array_elements(t.items) AS item
+      WHERE t.tenant_id=$1 AND t.branch_id=$2 AND t.created_at >= $3
+      GROUP BY item->>'productId', item->>'name'
+      HAVING item->>'productId' IS NOT NULL
      ORDER BY revenue DESC LIMIT 10`,
     [tenantId, branchId, since]
   );

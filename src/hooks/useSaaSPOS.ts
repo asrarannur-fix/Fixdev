@@ -149,8 +149,7 @@ export function useSaaSPOS(props: UseSaaSPOSProps) {
             { method: paymentMethod, amount: mainAmount },
             { method: parsed.splitMethod as PaymentMethod, amount: splitNominal },
           ];
-          // Don't persist the internal JSON blob as paymentDetails.
-          finalDetails = undefined;
+          finalDetails = parsed.voucherCode ? `VOUCHER:${parsed.voucherCode}` : undefined;
         }
       } catch {
         // Not a split JSON (e.g. "VOUCHER:CODE") — keep as-is.

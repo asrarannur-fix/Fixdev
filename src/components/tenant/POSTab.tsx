@@ -186,6 +186,16 @@ const requireOpenShift = (action: string): boolean => {
       });
     });
 
+  const subtotal = effectiveCart.reduce(
+    (sum, item) => sum + (item.product.sellPrice || 0) * item.qty,
+    0
+  );
+  const discountAmount = effectiveCart.reduce((sum, item) => sum + (item.discount ?? 0), 0);
+  const activePOS = tenants.find((t: any) => t.id === (currentTenantId || contextTenantId));
+  const taxRatePct = activePOS?.settings?.taxSettings?.taxRate ?? 11;
+  const taxAmount = Math.max(0, (subtotal - discountAmount - voucherDiscount) * (taxRatePct / 100));
+  const grandTotal = Math.max(0, subtotal - discountAmount - voucherDiscount + taxAmount - effectiveDeposit);
+
   const effectiveHandleCheckout = React.useCallback(() => {
     if (!handlePOSCheckout) {
       showToast('Fungsi checkout tidak tersedia.', 'error');
@@ -226,6 +236,7 @@ const requireOpenShift = (action: string): boolean => {
       details = JSON.stringify({
         splitMethod: splitPaymentMethod,
         splitNominal: Number(splitAmount) || 0,
+        voucherCode: voucherCode.trim() || undefined,
       });
     }
     handlePOSCheckout(details, totalPaid);
@@ -239,17 +250,11 @@ const requireOpenShift = (action: string): boolean => {
     splitAmount,
     voucherCode,
     posAmountPaid,
+    grandTotal,
   ]);
 
   const effectiveGetBranchStock = getBranchStock ?? (() => 10);
 
-  const subtotal = effectiveCart.reduce(
-    (sum, item) => sum + (item.product.sellPrice || 0) * item.qty,
-    0
-  );
-  const discountAmount = effectiveCart.reduce((sum, item) => sum + (item.discount ?? 0), 0);
-  const activePOS = tenants.find((t: any) => t.id === (currentTenantId || contextTenantId));
-  const taxRatePct = activePOS?.settings?.taxSettings?.taxRate ?? 11;
   const [heldCarts, setHeldCarts] = useState<any[]>([]);
   // Load held carts from the backend (single source of truth: pos_holds).
   React.useEffect(() => {
@@ -278,9 +283,6 @@ const requireOpenShift = (action: string): boolean => {
       return hours > 24;
     });
   };
-
-  const taxAmount = Math.max(0, (subtotal - discountAmount - voucherDiscount) * (taxRatePct / 100));
-  const grandTotal = Math.max(0, subtotal - discountAmount - voucherDiscount + taxAmount - effectiveDeposit);
 
   const handleHoldSale = async () => {
     if (effectiveCart.length === 0) {
@@ -479,8 +481,8 @@ const requireOpenShift = (action: string): boolean => {
                   </p>
                   <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
                     {heldCarts.map((hc) => {
-                      const totalCartItems = (Array.isArray(hc.cart) ? hc.cart : []).reduce(
-                        (sum: number, item: any) => sum + (item.qty ?? 0),
+                      const totalCartItems = (Array.isArray(hc.items) ? hc.items : []).reduce(
+                        (sum: number, item: any) => sum + (item.quantity ?? 0),
                         0
                       );
                       return (
@@ -491,7 +493,7 @@ const requireOpenShift = (action: string): boolean => {
                           <div>
                             <p className="font-semibold text-slate-700">{totalCartItems} barang</p>
                             <p className="text-[8px] text-slate-400 font-mono">
-                              {new Date(Number(hc.id)).toLocaleTimeString()}
+                              {new Date(hc.createdAt).toLocaleTimeString()}
                             </p>
                           </div>
                           <div className="flex gap-1.5">
