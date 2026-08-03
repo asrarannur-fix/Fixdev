@@ -252,16 +252,31 @@ export const OwnerReports: React.FC<{
     const fShifts = (shifts || []).filter((s: any) => s.tenantId === currentTenantId);
     const fFieldVisits = (fieldVisits || []).filter((v: any) => v.tenantId === currentTenantId);
     return {
-      posRevenue: posRev,
-      serviceRevenue: servRev,
-      totalRevenue: posRev + servRev,
-      grossProfit: posRev + servRev - posCOGS,
-      profitMargin:
-        posRev + servRev > 0
-          ? (((posRev + servRev - posCOGS) / (posRev + servRev)) * 100).toFixed(1)
-          : '0',
-      completedServices: completed,
-      activeTickets: active,
+    posRevenue: posRev,
+    serviceRevenue: servRev,
+    totalRevenue: posRev + servRev,
+    grossProfit: posRev + servRev - posCOGS,
+    profitMargin:
+      posRev + servRev > 0
+        ? (((posRev + servRev - posCOGS) / (posRev + servRev)) * 100).toFixed(1)
+        : '0',
+    _prevRevenue: pRev,
+    _prevPeriodLabel: DATE_LABELS[dateRange === 'today' ? 'week' : dateRange],
+    weeklyTrend: (() => {
+      const days: number[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(Dt);
+        d.setDate(d.getDate() - i);
+        const ds = d.toISOString().slice(0, 10);
+        const dayRev = tx
+          .filter((t: any) => t.timestamp?.slice(0, 10) === ds)
+          .reduce((s: number, t: any) => s + (Number(t.grandTotal) || 0), 0);
+        days.push(dayRev);
+      }
+      return days;
+    })(),
+    completedServices: completed,
+    activeTickets: active,
       totalTickets: sv.length,
       avgTicketValue: tx.length > 0 ? posRev / tx.length : 0,
       deadStock: dead,
@@ -410,18 +425,21 @@ export const OwnerReports: React.FC<{
           value={`Rp ${metrics.totalRevenue.toLocaleString()}`}
           trend={metrics.revenueDelta ? `${metrics.revenueDelta}%` : '-'}
           trendPositive={Number(metrics.revenueDelta) === 0 ? null : Number(metrics.revenueDelta) > 0}
+          sub={`Sebelumnya: Rp ${metrics._prevRevenue?.toLocaleString() ?? '-'}`}
         />
         <KPICard
           label="Laba Kotor"
           value={`Rp ${metrics.grossProfit.toLocaleString()}`}
           trend={`${metrics.profitMargin}% margin`}
           trendPositive={Number(metrics.profitMargin) >= 0}
+          sub={`Margin ${metrics.profitMargin}%`}
         />
         <KPICard
           label="Arus Kas"
           value={`Rp ${metrics.cashFlow.toLocaleString()}`}
           trend={metrics.cashFlow >= 0 ? 'Positif' : 'Negatif'}
           trendPositive={metrics.cashFlow >= 0}
+          sub={`Kas masuk: Rp ${metrics.totalCashIn.toLocaleString()} / keluar: Rp ${metrics.totalCashOut.toLocaleString()}`}
         />
       </div>
 

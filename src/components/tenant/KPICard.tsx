@@ -6,9 +6,10 @@ interface KPICardProps {
   trend?: string;
   trendPositive?: boolean | null;
   accentColor?: string;
+  sub?: string;
 }
 
-export const KPICard: React.FC<KPICardProps> = ({ label, value, trend, trendPositive }) => (
+export const KPICard: React.FC<KPICardProps> = ({ label, value, trend, trendPositive, sub }) => (
   <div className="relative overflow-hidden rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-slate-200/50 dark:border-zinc-800/50 shadow-sm hover:shadow-md transition-all duration-300 p-4">
     <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{label}</p>
     <p className="text-xl font-black text-slate-800 dark:text-zinc-100 mt-1 truncate tracking-tight">{value}</p>
@@ -20,6 +21,9 @@ export const KPICard: React.FC<KPICardProps> = ({ label, value, trend, trendPosi
       }`}>
         {trend}
       </span>
+    )}
+    {sub && (
+      <p className="text-[9px] text-slate-400 dark:text-zinc-500 mt-1 truncate">{sub}</p>
     )}
   </div>
 );
